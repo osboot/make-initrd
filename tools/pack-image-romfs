@@ -1,0 +1,5 @@
+#!/bin/sh -efu
+
+. ${TOOLSDIR:?}/sh-functions
+
+genromfs -f "$outfile" -d "$rootdir"

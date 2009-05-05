@@ -1,0 +1,8 @@
+#!/bin/sh -efu
+
+if [ "${1-}" = 'modprobe-type' ]; then
+	case "$(/sbin/modprobe --version 2>/dev/null ||:)" in
+		*module-init-tools*version*) printf module-init-tools	;;
+		*modprobe*version*)          printf modutils		;;
+	esac
+fi

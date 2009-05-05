@@ -1,0 +1,32 @@
+#!/bin/ash -efu
+
+. shell-error
+
+dir="${WORKDIR:?Work directory required}"
+rootdir="${ROOTDIR:?Root directory required}"
+toolsdir="${TOOLSDIR:?Tools directory required}"
+statedir="${STATEDIR:?State directory required}"
+scriptdir="${SCRIPTDIR:?Scripts directory required}"
+imagefile="${IMAGEFILE:?Image file required}"
+
+outfile="$dir/initrd.img"
+
+image_type="${IMAGE_TYPE:?Image type required}"
+kernel="${KERNEL:?}"
+
+kernel_major="${kernel%%.*}"
+kernel_minor="${kernel#*.}"
+kernel_minor="${kernel_minor%%.*}"
+kernel_patch="${kernel#*.*.}"
+kernel_patch="${kernel_patch%%[^0-9]*}"
+
+if [ -z "${kernel_major##*[^0-9]*}" ] ||
+   [ -z "${kernel_minor##*[^0-9]*}" ] ||
+   [ -z "${kernel_patch##*[^0-9]*}" ]
+then
+	fatal "Invalid kernel version \"$kernel\""
+fi
+
+kernel_modules_dir="/lib/modules/$kernel"
+[ -d "$kernel_modules_dir" ] ||
+	fatal "Directory \"$kernel_modules_dir\" doesn't exist or not accessible."

@@ -1,0 +1,11 @@
+#!/bin/sh -efu
+
+. ${TOOLSDIR:?}/sh-functions
+
+case "$image_type" in
+	initramfs|romfs|ext2) ;;
+	*) fatal "Unknown image type: $image_type" ;;
+esac
+
+echo "Packing $image_type ..."
+exec "$toolsdir/pack-image-$image_type"

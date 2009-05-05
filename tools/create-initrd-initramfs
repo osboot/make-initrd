@@ -1,0 +1,38 @@
+#!/bin/sh -eu
+
+. ${TOOLSDIR:?}/sh-functions
+printf 'initramfs\n' > "$dir/type"
+
+cd "$rootdir"
+
+mkdir -p -- \
+	./etc \
+	./etc/modprobe.d \
+	./etc/udev/rules.d \
+	./etc/udev/initramfs-rules.d \
+	./conf \
+	./tmp
+
+cp -aLt . \
+	/lib/mkinitrd/initramfs-base/* \
+	/lib/mkinitrd/klibc/* \
+	/lib/mkinitrd/module-init-tools/* \
+	/lib/mkinitrd/udev/*
+
+/sbin/depmod -a -F "/boot/System.map-$KERNEL" -b . "$KERNEL"
+
+[ ! -f /etc/modprobe.conf ] ||
+	cp -aL /etc/modprobe.conf ./etc/modprobe.conf
+
+[ ! -d /etc/modprobe.d ] ||
+	find -L /etc/modprobe.d \
+		\( \
+			\! -name '*.rpm*' -a \
+			\! -name '*~' \
+		\) \
+		-exec cp -aLt ./etc/modprobe.d -- '{}' '+'
+
+[ ! -d /etc/udev/initramfs-rules.d ] ||
+	find -L /etc/udev/initramfs-rules.d/ \
+			-name '*.rules' \
+		-exec cp -aLt ./etc/udev/initramfs-rules.d -- '{}' '+'

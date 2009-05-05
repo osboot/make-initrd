@@ -1,0 +1,23 @@
+#!/bin/sh -efu
+
+. shell-error
+. ${TOOLSDIR:?}/sh-functions
+
+read type < "$dir/type"
+
+find "$scriptdir" -mindepth 1 -maxdepth 1 -type f |
+	sort -n |
+while read script; do
+	[ -x "$script" ] || continue
+
+	case "$script" in
+		*~|*.bak|*.rpmnew|*.rpmsave) continue ;;
+	esac
+
+	verbose "Run: \`$script'"
+
+	env WORKDIR="$dir" \
+	    ROOTDIR="$rootdir" \
+	    IMAGE_TYPE="$type" \
+		"$script" || fatal "$script: unable to run script."
+done

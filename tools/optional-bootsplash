@@ -1,0 +1,26 @@
+#!/bin/sh -efu
+
+. shell-var
+. ${TOOLSDIR:?}/sh-functions
+
+BIN_SPLASH=/sbin/splash
+
+[ -x "$BIN_SPLASH" ] &&
+	grep -qs '[[:space:]]splash_' "/boot/System.map-$kernel" ||
+	exit 0
+
+config="/etc/sysconfig/bootsplash"
+
+[ -s "$config" ] &&
+	. "$config" &&
+	is_yes "${SPLASH:-no}" &&
+	[ -n "${THEME-}" ] &&
+	fbresolution="$(fbresolution 2>/dev/null)" ||
+	exit 0
+
+themefile="/etc/bootsplash/themes/$THEME/config/bootsplash-$fbresolution.cfg"
+
+[ -f "$themefile" ] ||
+	exit 0
+
+"$BIN_SPLASH" -f -s "$themefile" >> "$outfile"

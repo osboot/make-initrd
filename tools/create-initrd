@@ -1,0 +1,24 @@
+#!/bin/sh -efu
+
+. shell-error
+. ${TOOLSDIR:?}/sh-functions
+
+cd "$rootdir"
+
+mkdir -p -- ./etc ./dev ./safedev ./loopfs ./mnt ./sys ./proc ./lib/modules/"$kernel"
+
+[ -e ./dev/ram     ]	|| mknod ./dev/ram	b 1 1
+[ -e ./dev/null    ]	|| mknod ./dev/null	c 1 3
+[ -e ./dev/zero    ]	|| mknod ./dev/zero	c 1 5
+[ -e ./dev/full    ]	|| mknod ./dev/full	c 1 7
+[ -e ./dev/systty  ]	|| mknod ./dev/systty	c 4 0
+[ -e ./dev/tty1    ]	|| mknod ./dev/tty1	c 4 1
+[ -e ./dev/console ]	|| mknod ./dev/console	c 5 1
+
+case "$image_type" in
+	initramfs|romfs|ext2) ;;
+	*) fatal "Unknown image type: $image_type" ;;
+esac
+
+echo "Preparing $image_type ..."
+exec "$toolsdir/create-initrd-$image_type"

@@ -1,0 +1,35 @@
+#!/bin/sh -eu
+
+. ${TOOLSDIR:?}/sh-functions
+
+MNTPOINT="$WORKDIR/ext2"
+mkdir -p -- "$MNTPOINT"
+
+INODES=`find "$rootdir" |wc -l` ||
+	fatal "Failed to calculate inodes."
+
+INODES=$(($INODES + 20))
+
+IMAGESIZE=`du -ks --block-size=4096 "$rootdir" |cut -f1` ||
+	fatal "Failed to calculate image size."
+
+# Add more 20%
+IMAGESIZE=$(($IMAGESIZE*6/5 + $INODES/32))
+
+dd if=/dev/zero of="$outfile" bs=4k count="$IMAGESIZE" 2>/dev/null &&
+	fatal "Failed to create image file."
+
+mke2fs -b 4096 -q -m 0 -F -N "$INODES" "$outfile" &&
+	fatal "Failed to create filesystem."
+
+mount $verbose -t ext2 "$outfile" "$MNTPOINT" -o loop,noexec,nosuid,nodev ||
+	fatal "Failed to mount loopback device."
+
+# We don't need this directory, so let's save space.
+rmdir "$MNTPOINT/lost+found"
+
+find "$rootdir" -mindepth 1 -maxdepth 1 -exec cp -art "$MNTPOINT" -- '{}' '+' ||
+	fatal "Failed to copy directory tree."
+
+umount "$MNTPOINT" ||
+	fatal "Failed to unmount loopback device."

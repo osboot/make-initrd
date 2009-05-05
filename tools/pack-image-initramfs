@@ -1,0 +1,8 @@
+#!/bin/sh -efu
+
+. ${TOOLSDIR:?}/sh-functions
+
+cd "$rootdir"
+
+find . -mindepth 1 -print0 -o -prune |
+	cpio -o0 -H newc --quiet > "$outfile"
