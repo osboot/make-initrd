@@ -7,6 +7,8 @@ case "${COMPRESS:-}" in
 	gzip|gz)   compress='gzip'  ;;
 	bzip2|bz2) compress='bzip2' ;;
 	lzma)      compress='lzma'  ;;
+	'')        compress=''      ;;
+	*) fatal "Unknown compress method: $COMPRESS"
 esac
 
 if [ -n "$compress" ]; then
