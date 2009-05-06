@@ -2,11 +2,17 @@
 
 all: initrd
 
+check-for-root:
+	@if [ "$$(id -u)" != 0 ]; then \
+	    echo "Only root can do that"; \
+	    exit 1; \
+	fi
+
 prepare:
 	@echo "Preparing work directory ..."
 	@mkdir -m 700 -p -- $(WORKDIR) $(STATEDIR) $(ROOTDIR)
 
-depmod: prepare
+depmod: check-for-root prepare
 	@echo "Generating module dependencies ..."
 	@if ! $(CHECK_STATE) $@ check; then \
 	    depmod -a -F "/boot/System.map-$(KERNEL)" "$(KERNEL)"; \
