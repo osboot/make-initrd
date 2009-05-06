@@ -15,10 +15,34 @@ mkdir -p -- ./etc ./dev ./safedev ./loopfs ./mnt ./sys ./proc ./lib/modules/"$ke
 [ -e ./dev/tty1    ]	|| mknod ./dev/tty1	c 4 1
 [ -e ./dev/console ]	|| mknod ./dev/console	c 5 1
 
-case "$image_type" in
-	initramfs|romfs|ext2) ;;
-	*) fatal "Unknown image type: $image_type" ;;
-esac
+mkdir -p -- \
+	./etc \
+	./etc/modprobe.d \
+	./etc/udev/rules.d \
+	./etc/udev/initramfs-rules.d \
+	./conf \
+	./tmp
 
-echo "Preparing $image_type ..."
-exec "$toolsdir/create-initrd-$image_type"
+cp -aLt . \
+	/lib/mkinitrd/initramfs-base/* \
+	/lib/mkinitrd/klibc/* \
+	/lib/mkinitrd/module-init-tools/* \
+	/lib/mkinitrd/udev/*
+
+/sbin/depmod -a -F "/boot/System.map-$KERNEL" -b . "$KERNEL"
+
+[ ! -f /etc/modprobe.conf ] ||
+	cp -aL /etc/modprobe.conf ./etc/modprobe.conf
+
+[ ! -d /etc/modprobe.d ] ||
+	find -L /etc/modprobe.d \
+		\( \
+			\! -name '*.rpm*' -a \
+			\! -name '*~' \
+		\) \
+		-exec cp -aLt ./etc/modprobe.d -- '{}' '+'
+
+[ ! -d /etc/udev/initramfs-rules.d ] ||
+	find -L /etc/udev/initramfs-rules.d/ \
+			-name '*.rules' \
+		-exec cp -aLt ./etc/udev/initramfs-rules.d -- '{}' '+'

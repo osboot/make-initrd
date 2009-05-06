@@ -1,4 +1,0 @@
-#!/bin/sh -efu
-
-. ${TOOLSDIR:?}/sh-functions
-printf 'romfs\n' > "$dir/type"

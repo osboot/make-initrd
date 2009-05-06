@@ -1,4 +1,0 @@
-#!/bin/sh -efu
-
-. ${TOOLSDIR:?}/sh-functions
-printf 'ext2\n' > "$dir/type"

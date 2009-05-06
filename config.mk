@@ -16,8 +16,9 @@ COMPRESS_IMAGE		= $(TOOLSDIR)/compress-image
 OPTIONAL_BOOTSPLASH	= $(TOOLSDIR)/optional-bootsplash
 
 # Global variables
-IMAGE_TYPE		= initramfs
 MODPROBE_TYPE		= $(shell $(GET_VARIABLE) modprobe-type)
+FSTAB			?= /etc/fstab
+RAIDTAB			?= /etc/raidtab
 
 # User defaults
 KERNEL		?= $(shell uname -r)
