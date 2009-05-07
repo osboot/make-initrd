@@ -2,9 +2,9 @@
 
 all: initrd
 
-add-modules: add-root-modules
+add-modules: add-rootfs-modules
 
-add-all-modules: add-root-modules add-ide-modules add-scsi-modules add-raid-modules
+add-all-modules: add-rootfs-modules add-ide-modules add-scsi-modules add-raid-modules
 
 check-for-root:
 	@if [ "$$(id -u)" != 0 ]; then \
@@ -24,9 +24,9 @@ create: depmod
 	@echo "Creating initrd image ..."
 	$(CREATE_INITRD)
 
-add-root-modules:
-	@echo "Acquiring modules ..."
-	$(ADD_MODULES_ROOT)
+add-rootfs-modules:
+	@echo "Acquiring root filesystem modules ..."
+	$(ADD_MODULES_ROOTFS)
 
 add-ide-modules:
 	@echo "Acquiring IDE modules ..."

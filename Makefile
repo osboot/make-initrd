@@ -6,4 +6,4 @@ COMPRESS	= gzip
 
 include $(CURDIR)/rules.mk
 
-initrd: create add-root-modules run-scripts pack compress optional-bootsplash install
+initrd: create add-rootfs-modules run-scripts pack compress optional-bootsplash install
