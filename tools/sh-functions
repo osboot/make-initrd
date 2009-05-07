@@ -2,26 +2,26 @@
 
 . shell-error
 
+toolsdir="${TOOLSDIR:?Tools directory required}"
+export PATH="$toolsdir:$PATH"
+
 dir="${WORKDIR:?Work directory required}"
 rootdir="${ROOTDIR:?Root directory required}"
-toolsdir="${TOOLSDIR:?Tools directory required}"
 scriptdir="${SCRIPTDIR:?Scripts directory required}"
 imagefile="${IMAGEFILE:?Image file required}"
 
 outfile="$dir/initrd.img"
-
-image_type="${IMAGE_TYPE:?Image type required}"
 kernel="${KERNEL:?}"
 
 kernel_major="${kernel%%.*}"
 kernel_minor="${kernel#*.}"
 kernel_minor="${kernel_minor%%.*}"
 kernel_patch="${kernel#*.*.}"
-kernel_patch="${kernel_patch%%[^0-9]*}"
+kernel_patch="${kernel_patch%%[!0-9]*}"
 
-if [ -z "${kernel_major##*[^0-9]*}" ] ||
-   [ -z "${kernel_minor##*[^0-9]*}" ] ||
-   [ -z "${kernel_patch##*[^0-9]*}" ]
+if [ -z "${kernel_major##*[!0-9]*}" ] ||
+   [ -z "${kernel_minor##*[!0-9]*}" ] ||
+   [ -z "${kernel_patch##*[!0-9]*}" ]
 then
 	fatal "Invalid kernel version \"$kernel\""
 fi

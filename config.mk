@@ -12,11 +12,16 @@ CREATE_INITRD		= $(TOOLSDIR)/create-initrd
 PACK_IMAGE		= $(TOOLSDIR)/pack-image
 COMPRESS_IMAGE		= $(TOOLSDIR)/compress-image
 OPTIONAL_BOOTSPLASH	= $(TOOLSDIR)/optional-bootsplash
+ADD_MODULES_ROOT	= $(TOOLSDIR)/add-modules-root
+ADD_MODULES_IDE		= /bin/true
+ADD_MODULES_SCSI	= /bin/true
+ADD_MODULES_RAID	= /bin/true
 
 # Global variables
-MODPROBE_TYPE		= $(shell $(GET_VARIABLE) modprobe-type)
 FSTAB			?= /etc/fstab
 RAIDTAB			?= /etc/raidtab
+FIRMWARE_DIRS		?= /lib/firmware /usr/lib/hotplug/firmware /usr/local/lib/firmware
+IGNORE_MODNAMES		?= ppa imm ide_scsi usb_storage
 
 # User defaults
 KERNEL		?= $(shell uname -r)
