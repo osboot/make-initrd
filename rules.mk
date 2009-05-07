@@ -10,21 +10,15 @@ check-for-root:
 
 prepare:
 	@echo "Preparing work directory ..."
-	@mkdir -m 700 -p -- $(WORKDIR) $(STATEDIR) $(ROOTDIR)
+	@mkdir -m 700 -p -- $(WORKDIR) $(ROOTDIR)
 
 depmod: check-for-root prepare
 	@echo "Generating module dependencies ..."
-	@if ! $(CHECK_STATE) $@ check; then \
-	    depmod -a -F "/boot/System.map-$(KERNEL)" "$(KERNEL)"; \
-	    $(CHECK_STATE) $@ state; \
-	fi
+	depmod -a -F "/boot/System.map-$(KERNEL)" "$(KERNEL)"
 
 create: depmod
 	@echo "Creating initrd image ..."
-	@if ! $(CHECK_STATE) $@ check; then \
-	    $(CREATE_INITRD); \
-	    $(CHECK_STATE) $@ state; \
-	fi
+	$(CREATE_INITRD)
 
 run-scripts:
 	@echo "Running scripts ..."
@@ -32,10 +26,7 @@ run-scripts:
 
 optional-bootsplash:
 	@echo "Building bootsplash ..."
-	@if [ ! -f "$(OUTFILE)" ] && ! $(CHECK_STATE) $@ check; then \
-	    $(OPTIONAL_BOOTSPLASH); \
-	    $(CHECK_STATE) $@ state; \
-	fi
+	$(OPTIONAL_BOOTSPLASH)
 
 pack: prepare
 	@echo "Packing image to archive ..."

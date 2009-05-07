@@ -5,7 +5,6 @@
 dir="${WORKDIR:?Work directory required}"
 rootdir="${ROOTDIR:?Root directory required}"
 toolsdir="${TOOLSDIR:?Tools directory required}"
-statedir="${STATEDIR:?State directory required}"
 scriptdir="${SCRIPTDIR:?Scripts directory required}"
 imagefile="${IMAGEFILE:?Image file required}"
 
