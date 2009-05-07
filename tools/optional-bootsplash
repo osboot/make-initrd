@@ -13,7 +13,7 @@ config="/etc/sysconfig/bootsplash"
 
 [ -s "$config" ] &&
 	. "$config" &&
-	is_yes "${SPLASH:-no}" &&
+	shell_var_is_yes "${SPLASH:-no}" &&
 	[ -n "${THEME-}" ] &&
 	fbresolution="$(fbresolution 2>/dev/null)" ||
 	exit 0
