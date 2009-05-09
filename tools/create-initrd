@@ -19,7 +19,6 @@ mkdir -p -- \
 	./etc \
 	./etc/modprobe.d \
 	./etc/udev/rules.d \
-	./etc/udev/initramfs-rules.d \
 	./conf \
 	./tmp
 
@@ -45,4 +44,4 @@ cp -aLt . \
 [ ! -d /etc/udev/initramfs-rules.d ] ||
 	find -L /etc/udev/initramfs-rules.d/ \
 			-name '*.rules' \
-		-exec cp -aLt ./etc/udev/initramfs-rules.d -- '{}' '+'
+		-exec cp -aLt ./etc/udev/rules.d -- '{}' '+'
