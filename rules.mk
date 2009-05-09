@@ -2,10 +2,6 @@
 
 all: initrd
 
-add-modules: add-rootfs-modules
-
-add-all-modules: add-rootfs-modules add-ide-modules add-scsi-modules add-raid-modules
-
 check-for-root:
 	@if [ "$$(id -u)" != 0 ]; then \
 	    echo "Only root can do that"; \
@@ -23,22 +19,6 @@ depmod: check-for-root prepare
 create: depmod
 	@echo "Creating initrd image ..."
 	$(CREATE_INITRD)
-
-add-rootfs-modules:
-	@echo "Acquiring root filesystem modules ..."
-	$(ADD_MODULES_ROOTFS)
-
-add-ide-modules:
-	@echo "Acquiring IDE modules ..."
-	$(ADD_MODULES_IDE)
-
-add-scsi-modules:
-	@echo "Acquiring SCSI modules ..."
-	$(ADD_MODULES_SCSI)
-
-add-raid-modules:
-	@echo "Acquiring RAID modules ..."
-	$(ADD_MODULES_RAID)
 
 run-scripts:
 	@echo "Running scripts ..."

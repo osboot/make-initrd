@@ -2,20 +2,12 @@
 
 . ${TOOLSDIR:?}/sh-functions
 
-ListModuleFiles() {
+list_module_files() {
 	modprobe --set-version="$kernel" --show-depends --ignore-all-commands "$@" 2>/dev/null |
 		cut -d\  -f2-
 }
 
-IgnoredModule() {
-	local name="$1" m
-	for m in off null ${IGNORE_MODNAMES-}; do
-		[ "$m" != "$name" ] || return 0
-	done
-	return 1
-}
-
-AddModuleFirmware() {
+add_module_firmware() {
 	local mod_name mod_path list name d fwfile
 
 	mod_name="$1"; shift
@@ -46,7 +38,7 @@ AddModuleFirmware() {
 	done
 }
 
-AddModuleFile() {
+add_module_file() {
 	local path="$1" name="$1"
 	name="${name##*/}"
 	name="${name%.ko}"
@@ -54,29 +46,25 @@ AddModuleFile() {
 	[ ! -f "$rootdir/$path" ] ||
 		return 0
 
-	if IgnoredModule "$name"; then
-		message "Module \"$name\" cannot be ignored because other modules depend on it"
-	fi
-
 	verbose "Found module \"$name\" as $path"
 
-	printf '%s\n' "$name" >> "$rootdir"/conf/modules
 	install -pD "$path" "$rootdir/$path"
 
-	AddModuleFirmware "$name" "$path"
+	add_module_firmware "$name" "$path"
 }
 
-AddModule() {
+add_module() {
 	local m name="$1"
 	name="${name##*/}"
 	name="${name%.ko}"
 
-	ListModuleFiles "$name" |
+	list_module_files "$name" |
 	while read m; do
-		AddModuleFile "$m"
+		add_module_file "$m"
 	done
+
 }
 
 for n in "$@"; do
-	AddModule "$n"
+	add_module "$n"
 done

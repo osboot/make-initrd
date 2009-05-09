@@ -12,16 +12,17 @@ CREATE_INITRD		= $(TOOLSDIR)/create-initrd
 PACK_IMAGE		= $(TOOLSDIR)/pack-image
 COMPRESS_IMAGE		= $(TOOLSDIR)/compress-image
 OPTIONAL_BOOTSPLASH	= $(TOOLSDIR)/optional-bootsplash
-ADD_MODULES_ROOTFS	= $(TOOLSDIR)/add-modules-rootfs
-ADD_MODULES_IDE		= /bin/true
-ADD_MODULES_SCSI	= /bin/true
-ADD_MODULES_RAID	= /bin/true
+ADD_MODULE		= $(TOOLSDIR)/add-module
+LOAD_MODULE		= $(TOOLSDIR)/load-module
+
 
 # Global variables
 FSTAB			?= /etc/fstab
 RAIDTAB			?= /etc/raidtab
 FIRMWARE_DIRS		?= /lib/firmware /usr/lib/hotplug/firmware /usr/local/lib/firmware
 IGNORE_MODNAMES		?= ppa imm ide_scsi usb_storage
+MODULES_ADD		=
+MODULES_LOAD		=
 
 # User defaults
 KERNEL		?= $(shell uname -r)

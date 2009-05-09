@@ -28,6 +28,8 @@ cp -aLt . \
 	/lib/mkinitrd/module-init-tools/* \
 	/lib/mkinitrd/udev/*
 
+add-module $MODULES_ADD
+load-module $MODULES_LOAD
 /sbin/depmod -a -F "/boot/System.map-$KERNEL" -b . "$KERNEL"
 
 [ ! -f /etc/modprobe.conf ] ||

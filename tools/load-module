@@ -1,0 +1,8 @@
+#!/bin/sh -efu
+
+. ${TOOLSDIR:?}/sh-functions
+
+for n in "$@"; do
+	add-module "$n"
+	printf '%s\n' "$n" >> "$rootdir"/conf/modules
+done
