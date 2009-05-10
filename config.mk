@@ -21,8 +21,8 @@ FSTAB			?= /etc/fstab
 RAIDTAB			?= /etc/raidtab
 FIRMWARE_DIRS		?= /lib/firmware /usr/lib/hotplug/firmware /usr/local/lib/firmware
 IGNORE_MODNAMES		?= ppa imm ide_scsi usb_storage
-MODULES_ADD		=
-MODULES_LOAD		=
+MODULES_ADD		?=
+MODULES_LOAD		?=
 
 # User defaults
 KERNEL		?= $(shell uname -r)
