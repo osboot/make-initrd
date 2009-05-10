@@ -2,6 +2,12 @@
 
 . ${TOOLSDIR:?}/sh-functions
 
+ignore_missing=1
+if [ "${1-}" = '-must-present' ]; then
+	ignore_missing=
+	shift
+fi
+
 list_module_files() {
 	modprobe --set-version="$kernel" --show-depends --ignore-all-commands "$@" 2>/dev/null |
 		cut -d\  -f2-
@@ -54,11 +60,16 @@ add_module_file() {
 }
 
 add_module() {
-	local m name="$1"
+	local m list name="$1"
 	name="${name##*/}"
 	name="${name%.ko}"
 
-	list_module_files "$name" |
+	list="$(list_module_files "$name")"
+
+	[ -n "$list" -o -n "$ignore_missing" ] ||
+		fatal "No module \"$name\" found for kernel $kernel"
+
+	printf '%s\n' "$list" |
 	while read m; do
 		add_module_file "$m"
 	done
