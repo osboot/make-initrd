@@ -4,5 +4,7 @@
 
 for n in "$@"; do
 	add-module "$n"
-	printf '%s\n' "$n" >> "$rootdir"/conf/modules
+	if ! fgrep -xqs "$n" "$rootdir"/conf/modules; then
+		printf '%s\n' "$n" >> "$rootdir"/conf/modules
+	fi
 done
