@@ -2,9 +2,9 @@
 
 . ${TOOLSDIR:?}/sh-functions
 
-ignore_missing=1
-if [ "${1-}" = '-must-present' ]; then
-	ignore_missing=
+ignore_missing=
+if [ "${1-}" = '--optional' ]; then
+	ignore_missing=1
 	shift
 fi
 
