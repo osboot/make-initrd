@@ -19,14 +19,38 @@ mkdir -p -- \
 	./etc \
 	./etc/modprobe.d \
 	./etc/udev/rules.d \
+	./lib/udev \
 	./conf \
 	./tmp
 
-cp -aLt . \
-	/lib/mkinitrd/initramfs-base/* \
-	/lib/mkinitrd/klibc/* \
-	/lib/mkinitrd/module-init-tools/* \
-	/lib/mkinitrd/udev/*
+cp -at . \
+	/lib/busybox-initramfs/*
+
+cp -at ./lib \
+	/lib/ld-* \
+	/lib/libc-*
+
+cp -at ./lib/udev \
+	/lib/udev/ata_id \
+	/lib/udev/cdrom_id \
+	/lib/udev/edd_id \
+	/lib/udev/firmware \
+	/lib/udev/path_id \
+	/lib/udev/scsi_id \
+	/lib/udev/usb_id \
+	/lib/udev/vol_id
+
+cp -at ./sbin \
+	/sbin/udevadm \
+	/sbin/udevd \
+	/sbin/modprobe
+
+cp -at ./bin \
+	/bin/ash
+
+ln -s ash ./bin/sh
+
+ldconfig -f /dev/null -r $rootdir /lib
 
 add-module $MODULES_ADD
 load-module $MODULES_LOAD
