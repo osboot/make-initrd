@@ -1,0 +1,104 @@
+# NFS filesystem mounting			-*- shell-script -*-
+
+# FIXME This needs error checking
+
+retry_nr=0
+DEVICE=${DEVICE:-eth0}
+
+# parse nfs bootargs + launch ipconfig and nfsmount
+do_nfsmount()
+{
+	# support ip options see linux sources Documentation/nfsroot.txt
+	case ${IPOPTS} in
+		none|off)
+			# Do nothing
+			;;
+		""|on|any)
+			# Bring up device
+			ipconfig ${DEVICE}
+			;;
+		dhcp|bootp|rarp|both)
+			ipconfig -c ${IPOPTS} -d ${DEVICE}
+			;;
+		*)
+			ipconfig -d $IPOPTS
+
+			# grab device entry from ip option
+			NEW_DEVICE=${IPOPTS#*:*:*:*:*:*}
+			if [ "${NEW_DEVICE}" != "${IPOPTS}" ]; then
+				NEW_DEVICE=${NEW_DEVICE%:*}
+			else
+				# wrong parse, possibly only a partial string
+				NEW_DEVICE=
+			fi
+			if [ -n "${NEW_DEVICE}" ]; then
+				DEVICE="${NEW_DEVICE}"
+			fi
+			;;
+	esac
+
+	# source relevant ipconfig output
+	. /tmp/net-${DEVICE}.conf
+
+	# get nfs root from dhcp
+	if [ "x${NFSROOT}" = "xauto" -o "x${NFSROOT}" = "x" ]; then
+		NFSROOT="${ROOTPATH}"
+		if [ "${NFSROOT#*:}" = "$NFSROOT" ]; then
+			NFSROOT="${ROOTSERVER}:${ROOTPATH}"
+		fi
+	# nfsroot=[<server-ip>:]<root-dir>[,<nfs-options>]
+	elif [ -n "${NFSROOT}" ]; then
+		# nfs options are an optional arg
+		if [ "${NFSROOT#*,}" != "${NFSROOT}" ]; then
+			NFSOPTS="-o ${NFSROOT#*,}"
+		fi
+		NFSROOT=${NFSROOT%%,*}
+		if [ "${NFSROOT#*:}" = "$NFSROOT" ]; then
+			NFSROOT=${ROOTSERVER}:${NFSROOT}
+		fi
+	fi
+
+	if [ -z "${NFSOPTS}" ]; then
+		NFSOPTS="-o retrans=10"
+	fi
+
+	run_scripts /scripts/nfs-premount
+
+	if [ ${readonly} = y ]; then
+		roflag="-o ro"
+	else
+		roflag="-o rw"
+	fi
+
+	nfsmount -o nolock ${roflag} ${NFSOPTS} ${NFSROOT} ${rootmnt}
+}
+
+# NFS root mounting
+mountroot()
+{
+	run_scripts /scripts/nfs-top
+
+	modprobe -q nfs
+	# For DHCP
+	modprobe -q af_packet
+
+	# Default delay is around 180s
+	# FIXME: add usplash_write info
+	if [ -z "${ROOTDELAY}" ]; then
+		delay=180
+	else
+		delay=${ROOTDELAY}
+	fi
+
+	# loop until nfsmount succeds
+	while [ ${retry_nr} -lt ${delay} ] && [ ! -e ${rootmnt}${init} ]; do
+		[ ${retry_nr} -gt 0 ] && \
+		[ "$quiet" != "y" ] && log_begin_msg "Retrying nfs mount"
+		do_nfsmount
+		retry_nr=$(( ${retry_nr} + 1 ))
+		[ ! -e ${rootmnt}${init} ] && /bin/sleep 1
+		[ ${retry_nr} -gt 0 ] && [ "$quiet" != "y" ] && log_end_msg
+	done
+
+	run_scripts /scripts/nfs-bottom
+}

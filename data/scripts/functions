@@ -1,0 +1,129 @@
+# -*- shell-script -*-
+
+_log_msg()
+{
+	if [ "$quiet" = "y" ]; then return; fi
+	echo "$@"
+}
+
+log_success_msg()
+{
+	_log_msg "Success: $@"
+}
+
+log_failure_msg()
+{
+	_log_msg "Failure: $@"
+}
+
+log_warning_msg()
+{
+	_log_msg "Warning: $@"
+}
+
+log_begin_msg()
+{
+	if [ -x /sbin/usplash_write ]; then
+		/sbin/usplash_write "TEXT $@"
+	fi
+	_log_msg "Begin: $@ ..."
+}
+
+log_end_msg()
+{
+	if [ -x /sbin/usplash_write ]; then
+		/sbin/usplash_write "SUCCESS ok"
+	fi
+	_log_msg "Done."
+	update_progress
+}
+
+update_progress()
+{
+	[ -d /dev/.initramfs ] || return
+
+	if [ -z "$PROGRESS_STATE" ]; then
+		export PROGRESS_STATE=0
+	fi
+
+	PROGRESS_STATE=$(($PROGRESS_STATE + 1))
+	echo "PROGRESS_STATE=${PROGRESS_STATE}" > /dev/.initramfs/progress_state
+
+	if [ -x /sbin/usplash_write ]; then
+		/sbin/usplash_write "PROGRESS $PROGRESS_STATE"
+	fi
+}
+
+panic()
+{
+	if [ -x /sbin/usplash_write ]; then
+		/sbin/usplash_write "QUIT"
+	fi
+	# Disallow console access
+	if [ "${panic}" = 0 ]; then
+		reboot
+	fi
+	modprobe -q i8042
+	modprobe -q atkbd
+	echo $@
+	PS1='(initramfs) ' /bin/sh -i </dev/console >/dev/console 2>&1
+}
+
+maybe_break()
+{
+	if [ "$1" = "${break}" ]; then
+		panic "Spawning shell within the initramfs"
+	fi
+}
+
+run_scripts()
+{
+	if [ -r "$1" ]; then
+		[ "$quiet" != "y" ] && log_begin_msg "Running $1"
+		. "$1"
+		[ "$quiet" != "y" ] && log_end_msg
+	fi
+}
+
+# Load custom modules first
+load_modules()
+{
+	if [ -e /conf/modules ]; then
+		cat /conf/modules | while read m; do
+			# Skip empty lines
+			if [ -z "$m" ];  then
+				continue
+			fi
+			# Skip comments - d?ash removes whitespace prefix
+			com=$(printf "%.1s" "${m}")
+			if [ "$com" = "#" ]; then
+				continue
+			fi
+			modprobe -q $m
+		done
+	fi
+}
+
+# lilo compatibility
+parse_numeric() {
+	case $1 in
+	"")
+		return
+		;;
+	/*)
+		return
+		;;
+	*:*)
+		minor=${1#*:}
+		major=${1%:*}
+		;;
+	*)
+		value=$(( 0x${1} ))
+		minor=$(( ${value} % 256 ))
+		major=$(( ${value} / 256 ))
+		;;
+	esac
+
+	mknod /dev/root b ${major} ${minor}
+	ROOT=/dev/root
+}

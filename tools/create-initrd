@@ -24,6 +24,7 @@ mkdir -p -- \
 	./tmp
 
 cp -at . \
+	"$datadir"/* \
 	/lib/busybox-initramfs/*
 
 cp -at ./lib \

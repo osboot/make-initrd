@@ -7,6 +7,7 @@ export PATH="$toolsdir:$PATH"
 
 dir="${WORKDIR:?Work directory required}"
 rootdir="${ROOTDIR:?Root directory required}"
+datadir="${DATADIR:?Data directory required}"
 scriptdir="${SCRIPTDIR:?Scripts directory required}"
 imagefile="${IMAGEFILE:?Image file required}"
 

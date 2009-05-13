@@ -1,6 +1,7 @@
 # System paths
 WORKDIR		?= $(CURDIR)/.work
 ROOTDIR		?= $(WORKDIR)/root
+DATADIR		?= $(WORKDIR)/data
 TOOLSDIR	 = $(CURDIR)/tools
 SCRIPTDIR	?= $(CURDIR)/scripts.d
 CONFIGDIR	?= $(CURDIR)/config.d
