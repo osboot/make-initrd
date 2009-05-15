@@ -52,9 +52,7 @@ add_module_file() {
 	[ ! -f "$rootdir/$path" ] ||
 		return 0
 
-	verbose "Found module \"$name\" as $path"
-
-	install -pD "$path" "$rootdir/$path"
+	put-file "$path"
 
 	add_module_firmware "$name" "$path"
 }
