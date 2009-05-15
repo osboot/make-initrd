@@ -1,4 +1,4 @@
-#!/bin/sh -eux
+#!/bin/sh -eu
 
 . shell-error
 . ${TOOLSDIR:?}/sh-functions
