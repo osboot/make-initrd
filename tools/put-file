@@ -2,17 +2,66 @@
 
 . ${TOOLSDIR:?}/sh-functions
 
-put_file() {
-	local fn="$1"
+canonicalize_file() {
+	local fn="$1" res= t=
+	while [ "$fn" != "$res" ]; do
+		res="$fn"
+		if [ -z "${fn##*//*}" ]; then
+			fn="${fn%%//*}/${fn#*//}"
+		elif [ -z "${fn##*/./*}" ]; then
+			fn="${fn%%/./*}/${fn#*/./}"
+		elif [ -z "${fn##*/../*}" ]; then
+			t="${fn%%/../*}"
+			t="${t%/*}"
+			fn="$t/${fn#*/../}"
+		elif [ -z "${fn##./*}" -o -n "${fn##/*}" ]; then
+			fn="$PWD/${fn##./}"
+		elif [ -z "${fn##*/}" ]; then
+			fn="${fn%%/}"
+		fi
+	done
+	printf '%s\n' "$fn"
+}
+
+copy_file() {
+	local fn="$1" l
+
 	while :; do
+		fn="$(canonicalize_file "$fn")"
+
 		mkdir -p -- "$rootdir/${fn%/*}"
 		cp -a -- "$fn" "$rootdir/$fn"
 
-		[ -L "$fn" ] && fn="$(readlink -ev -- "$fn" 2>/dev/null)" ] ||
+		if [ -L "$fn" ]; then
+			l="$(readlink -- "$fn")"
+			[ -n "${l##/*}" ] &&
+				fn="${fn%/*}/$l" ||
+				fn="$l"
+		else
 			break
+		fi
 	done
 }
 
-for fn in "$@"; do
-	put_file "$fn"
+copy_elf() {
+	local fn="$1"
+
+	copy_file "$fn"
+
+	ldd -- "$fn" |sed -n 's/.*[[:space:]]\([^ ]\+\) (0x.*/\1/p' |
+	while read lib; do
+		copy_file "$lib"
+	done
+}
+
+for fn; do
+	[ -e "$fn" ] ||
+		fatal "$fn: No such file or directory"
+
+	ftype="$(file -b -- "$fn")"
+
+	case "$ftype" in
+		ELF\ *|*\ ELF\ *) copy_elf  "$fn" ;;
+		*)                copy_file "$fn" ;;
+	esac
 done
