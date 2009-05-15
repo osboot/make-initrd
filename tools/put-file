@@ -2,18 +2,17 @@
 
 . ${TOOLSDIR:?}/sh-functions
 
-put_file()
-{
-	local file="$1"
+put_file() {
+	local fn="$1"
+	while :; do
+		mkdir -p -- "$rootdir/${fn%/*}"
+		cp -a -- "$fn" "$rootdir/$fn"
 
-	while true; do
-		mkdir -p "$(dirname "$rootdir$file")"
-		cp -a "$file" "$rootdir$file"
-		[ "$file" != "$(readlink -ev $file)" ] || break
-		file="$(readlink -ev $file)"
+		[ -L "$fn" ] && fn="$(readlink -ev -- "$fn" 2>/dev/null)" ] ||
+			break
 	done
 }
 
-for file in "$@"; do
-	put_file "$file"
+for fn in "$@"; do
+	put_file "$fn"
 done
