@@ -5,7 +5,19 @@
 
 cd "$rootdir"
 
-mkdir -p -- ./etc ./dev ./safedev ./loopfs ./mnt ./sys ./proc ./lib/modules/"$kernel"
+mkdir -p -- \
+	./conf \
+	./dev \
+	./etc \
+	./etc/modprobe.d \
+	./etc/udev/rules.d \
+	./lib/modules/"$kernel" \
+	./lib/udev \
+	./mnt \
+	./proc \
+	./sys \
+	./tmp \
+	#
 
 [ -e ./dev/ram     ]	|| mknod ./dev/ram	b 1 1
 [ -e ./dev/null    ]	|| mknod ./dev/null	c 1 3
@@ -15,13 +27,6 @@ mkdir -p -- ./etc ./dev ./safedev ./loopfs ./mnt ./sys ./proc ./lib/modules/"$ke
 [ -e ./dev/tty1    ]	|| mknod ./dev/tty1	c 4 1
 [ -e ./dev/console ]	|| mknod ./dev/console	c 5 1
 
-mkdir -p -- \
-	./etc \
-	./etc/modprobe.d \
-	./etc/udev/rules.d \
-	./lib/udev \
-	./conf \
-	./tmp
 
 cp -at . \
 	"$datadir"/*
@@ -39,7 +44,7 @@ put-file \
 	/sbin/udevadm \
 	/sbin/udevd \
 	/sbin/modprobe \
-#
+	#
 
 
 ln -s ash ./bin/sh
