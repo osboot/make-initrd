@@ -12,6 +12,10 @@ put_program()
 		ELF\ *|*\ ELF\ *)
 		helper="put-elf"
 		;;
+		Bourne\ shell\ script\ *)
+		#FIXME: process shell scripts more careful
+		helper="put-file"
+		;;
 		*)
 		fatal "Unexpected file type of $program: $type"
 	esac
