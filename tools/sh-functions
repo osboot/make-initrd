@@ -2,6 +2,8 @@
 
 . shell-error
 
+verbose="${VERBOSE:+-v}"
+
 toolsdir="${TOOLSDIR:?Tools directory required}"
 export PATH="$toolsdir:$PATH"
 

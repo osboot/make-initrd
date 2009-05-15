@@ -9,6 +9,7 @@ include $(CURDIR)/rules.mk
 pack: add-ls
 
 add-ls:
+	@echo "Add ls to image ..."
 	@$(PUT_FILE) /bin/ls
 
 initrd: create run-scripts pack compress optional-bootsplash install

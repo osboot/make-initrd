@@ -24,6 +24,7 @@ RAIDTAB			?= /etc/raidtab
 FIRMWARE_DIRS		?= /lib/firmware /usr/lib/hotplug/firmware /usr/local/lib/firmware
 MODULES_ADD		?=
 MODULES_LOAD		?=
+VERBOSE			?=
 
 # User defaults
 KERNEL		?= $(shell uname -r)
@@ -32,3 +33,11 @@ COMPRESS	?= gzip
 
 # Load extra configs
 -include $(CONFIGDIR)/*.mk
+
+ifdef VERBOSE
+  verbose=-v
+  Q=
+else
+  Q = @
+endif
+

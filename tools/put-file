@@ -29,8 +29,9 @@ copy_file() {
 	while :; do
 		fn="$(canonicalize_file "$fn")"
 
-		mkdir -p -- "$rootdir/${fn%/*}"
-		cp -a -- "$fn" "$rootdir/$fn"
+		mkdir -p $verbose -- "$rootdir/${fn%/*}"
+		[ -e "$rootdir/$fn" ] ||
+			cp -a $verbose -- "$fn" "$rootdir/$fn"
 
 		if [ -L "$fn" ]; then
 			l="$(readlink -- "$fn")"

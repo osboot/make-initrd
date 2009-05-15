@@ -10,15 +10,15 @@ check-for-root:
 
 prepare:
 	@echo "Preparing work directory ..."
-	@mkdir -m 700 -p -- $(WORKDIR) $(ROOTDIR)
+	@mkdir -m 700 -p $(verbose) -- $(WORKDIR) $(ROOTDIR)
 
 depmod: check-for-root prepare
 	@echo "Generating module dependencies ..."
-	depmod -a -F "/boot/System.map-$(KERNEL)" "$(KERNEL)"
+	$Qdepmod -a -F "/boot/System.map-$(KERNEL)" "$(KERNEL)"
 
 create: depmod
 	@echo "Creating initrd image ..."
-	$(CREATE_INITRD)
+	@$(CREATE_INITRD)
 
 run-scripts:
 	@echo "Running scripts ..."
@@ -26,7 +26,7 @@ run-scripts:
 
 optional-bootsplash:
 	@echo "Building bootsplash ..."
-	$(OPTIONAL_BOOTSPLASH)
+	@$(OPTIONAL_BOOTSPLASH)
 
 pack: prepare
 	@echo "Packing image to archive ..."
@@ -38,11 +38,11 @@ compress: pack
 
 install: pack
 	@echo "Installing image ..."
-	@mv -f -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"
+	@mv -f $(verbose) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"
 
 clean:
 	@echo "Removing work directory ..."
-	@rm -rf -- "$(WORKDIR)"
+	$Qrm -rf -- "$(WORKDIR)"
 
 # Load extra rules
 -include $(RULESDIR)/*.mk
