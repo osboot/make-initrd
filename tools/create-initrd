@@ -1,4 +1,4 @@
-#!/bin/sh -eu
+#!/bin/sh -eux
 
 . shell-error
 . ${TOOLSDIR:?}/sh-functions
@@ -27,11 +27,8 @@ cp -at . \
 	"$datadir"/* \
 	/lib/busybox-initramfs/*
 
-cp -at ./lib \
-	/lib/ld-* \
-	/lib/libc-*
-
-cp -at ./lib/udev \
+put-program \
+	/bin/ash \
 	/lib/udev/ata_id \
 	/lib/udev/cdrom_id \
 	/lib/udev/edd_id \
@@ -39,15 +36,12 @@ cp -at ./lib/udev \
 	/lib/udev/path_id \
 	/lib/udev/scsi_id \
 	/lib/udev/usb_id \
-	/lib/udev/vol_id
-
-cp -at ./sbin \
+	/lib/udev/vol_id \
 	/sbin/udevadm \
 	/sbin/udevd \
-	/sbin/modprobe
+	/sbin/modprobe \
+#
 
-cp -at ./bin \
-	/bin/ash
 
 ln -s ash ./bin/sh
 
@@ -58,7 +52,7 @@ load-module $MODULES_LOAD
 /sbin/depmod -a -F "/boot/System.map-$KERNEL" -b . "$KERNEL"
 
 [ ! -f /etc/modprobe.conf ] ||
-	cp -aL /etc/modprobe.conf ./etc/modprobe.conf
+	put-file -aL /etc/modprobe.conf ./etc/modprobe.conf
 
 [ ! -d /etc/modprobe.d ] ||
 	find -L /etc/modprobe.d \
@@ -66,7 +60,7 @@ load-module $MODULES_LOAD
 			\! -name '*.rpm*' -a \
 			\! -name '*~' \
 		\) \
-		-exec cp -aLt ./etc/modprobe.d -- '{}' '+'
+		-exec put-file '{}' '+'
 
 [ ! -d /etc/udev/initramfs-rules.d ] ||
 	find -L /etc/udev/initramfs-rules.d/ \
