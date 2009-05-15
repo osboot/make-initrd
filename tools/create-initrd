@@ -52,7 +52,7 @@ load-module $MODULES_LOAD
 /sbin/depmod -a -F "/boot/System.map-$KERNEL" -b . "$KERNEL"
 
 [ ! -f /etc/modprobe.conf ] ||
-	put-file -aL /etc/modprobe.conf ./etc/modprobe.conf
+	put-file /etc/modprobe.conf
 
 [ ! -d /etc/modprobe.d ] ||
 	find -L /etc/modprobe.d \
