@@ -15,6 +15,7 @@ COMPRESS_IMAGE		= $(TOOLSDIR)/compress-image
 OPTIONAL_BOOTSPLASH	= $(TOOLSDIR)/optional-bootsplash
 ADD_MODULE		= $(TOOLSDIR)/add-module
 LOAD_MODULE		= $(TOOLSDIR)/load-module
+PUT_PROGRAM		= $(TOOLSDIR)/put-program
 
 
 # Global variables

@@ -1,0 +1,19 @@
+#!/bin/sh -efu
+
+. ${TOOLSDIR:?}/sh-functions
+
+put_file()
+{
+	local file="$1"
+
+	while true; do
+		mkdir -p "$(dirname "$rootdir$file")"
+		cp -a "$file" "$rootdir$file"
+		[ "$file" != "$(readlink -ev $file)" ] || break
+		file="$(readlink -ev $file)"
+	done
+}
+
+for file in "$@"; do
+	put_file "$file"
+done

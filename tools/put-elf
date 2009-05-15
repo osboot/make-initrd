@@ -1,0 +1,15 @@
+#!/bin/sh -efu
+
+. ${TOOLSDIR:?}/sh-functions
+
+put_elf()
+{
+	local ldd_info="$(ldd "$1")"
+	local libs="$(echo "$ldd_info" |  grep ' (0x' | sed 's|.*[ \t]\([^ ]\+\) (0x.*|\1|')"
+
+	put-file $libs "$1"
+}
+
+for elf in "$@"; do
+	put_elf "$elf"
+done
