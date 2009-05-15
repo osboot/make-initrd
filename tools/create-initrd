@@ -24,8 +24,7 @@ mkdir -p -- \
 	./tmp
 
 cp -at . \
-	"$datadir"/* \
-	/lib/busybox-initramfs/*
+	"$datadir"/*
 
 put-file \
 	/bin/ash \
