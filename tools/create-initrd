@@ -27,7 +27,7 @@ cp -at . \
 	"$datadir"/* \
 	/lib/busybox-initramfs/*
 
-put-program \
+put-file \
 	/bin/ash \
 	/lib/udev/ata_id \
 	/lib/udev/cdrom_id \

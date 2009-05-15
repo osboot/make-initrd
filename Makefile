@@ -9,6 +9,6 @@ include $(CURDIR)/rules.mk
 pack: add-ls
 
 add-ls:
-	$(PUT_PROGRAM) /bin/ls
+	@$(PUT_FILE) /bin/ls
 
 initrd: create run-scripts pack compress optional-bootsplash install
