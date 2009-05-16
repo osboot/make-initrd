@@ -28,26 +28,12 @@ mkdir -p -- \
 [ -e ./dev/console ]	|| mknod ./dev/console	c 5 1
 
 
-cp -at . \
-	"$datadir"/*
-
-put-file \
-	/bin/ash \
-	/lib/udev/ata_id \
-	/lib/udev/cdrom_id \
-	/lib/udev/edd_id \
-	/lib/udev/firmware \
-	/lib/udev/path_id \
-	/lib/udev/scsi_id \
-	/lib/udev/usb_id \
-	/lib/udev/vol_id \
-	/sbin/udevadm \
-	/sbin/udevd \
-	/sbin/modprobe \
+cp $verbose -aLt . \
+	"$datadir"/* \
+	/lib/mkinitrd/klibc/* \
+	/lib/mkinitrd/udev/* \
+	/lib/mkinitrd/module-init-tools/* \
 	#
-
-
-ln -s ash ./bin/sh
 
 ldconfig -f /dev/null -r $rootdir /lib
 
