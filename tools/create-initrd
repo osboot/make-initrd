@@ -37,10 +37,6 @@ cp $verbose -aLt . \
 
 ldconfig -f /dev/null -r $rootdir /lib
 
-add-module $MODULES_ADD
-load-module $MODULES_LOAD
-/sbin/depmod -a -F "/boot/System.map-$KERNEL" -b . "$KERNEL"
-
 [ ! -f /etc/modprobe.conf ] ||
 	put-file /etc/modprobe.conf
 

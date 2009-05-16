@@ -29,6 +29,12 @@ optional-bootsplash:
 	@$(OPTIONAL_BOOTSPLASH)
 
 pack: prepare
+	@echo "Adding more modules and generating module dependencies ..."
+	@$(ADD_MODULE) $(MODULES_ADD)
+	@$(LOAD_MODULE) $(MODULES_LOAD)
+	$Q/sbin/depmod -a -F "/boot/System.map-$(KERNEL)" -b $(ROOTDIR) \
+		"$(KERNEL)"
+
 	@echo "Packing image to archive ..."
 	@$(PACK_IMAGE)
 
