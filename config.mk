@@ -27,6 +27,7 @@ MODULES_LOAD		?=
 VERBOSE			?=
 
 # User defaults
+FEATURES	?=
 KERNEL		?= $(shell uname -r)
 IMAGEFILE	?= /boot/initrd-$(KERNEL).img
 COMPRESS	?= gzip

@@ -1,6 +1,6 @@
 .EXPORT_ALL_VARIABLES:
 
-all: initrd
+all: install
 
 check-for-root:
 	@if [ "$$(id -u)" != 0 ]; then \
@@ -8,39 +8,18 @@ check-for-root:
 	    exit 1; \
 	fi
 
-prepare:
-	@echo "Preparing work directory ..."
-	@mkdir -m 700 -p $(verbose) -- $(WORKDIR) $(ROOTDIR)
-
-depmod: check-for-root prepare
-	@echo "Generating module dependencies ..."
+depmod-host: check-for-root
+	@echo "Generating module dependencies on host ..."
 	$Qdepmod -a -F "/boot/System.map-$(KERNEL)" "$(KERNEL)"
 
-create: depmod
+create: depmod-host
 	@echo "Creating initrd image ..."
+	@mkdir -m 700 -p $(verbose) -- $(WORKDIR) $(ROOTDIR)
 	@$(CREATE_INITRD)
 
-run-scripts:
-	@echo "Running scripts ..."
-	@$(RUN_SCRIPTS)
-
-optional-bootsplash:
-	@echo "Building bootsplash ..."
-	@$(OPTIONAL_BOOTSPLASH)
-
-pack: prepare
-	@echo "Adding more modules and generating module dependencies ..."
-	@$(ADD_MODULE) $(MODULES_ADD)
-	@$(LOAD_MODULE) $(MODULES_LOAD)
-	$Q/sbin/depmod -a -F "/boot/System.map-$(KERNEL)" -b $(ROOTDIR) \
-		"$(KERNEL)"
-
+pack: create
 	@echo "Packing image to archive ..."
 	@$(PACK_IMAGE)
-
-compress: pack
-	@echo "Compressing image ..."
-	@$(COMPRESS_IMAGE)
 
 install: pack
 	@echo "Installing image ..."
@@ -50,5 +29,5 @@ clean:
 	@echo "Removing work directory ..."
 	$Qrm -rf -- "$(WORKDIR)"
 
-# Load extra rules
--include $(RULESDIR)/*.mk
+# Load requested features
+include $(FEATURES:%=$(RULESDIR)/%.mk)
