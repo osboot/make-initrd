@@ -1,10 +1,10 @@
 ifndef _OPTIONAL_BOOTSPLASH_MK
 _OPTIONAL_BOOTSPLASH_MK = 1
 
-optional-bootsplash: pack
+optional-bootsplash: create
 	@echo "Building bootsplash ..."
 	@$(OPTIONAL_BOOTSPLASH)
 
-install: optional-bootsplash
+pack: optional-bootsplash
 
 endif

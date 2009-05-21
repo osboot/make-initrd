@@ -23,4 +23,7 @@ themefile="/etc/bootsplash/themes/$THEME/config/bootsplash-$fbresolution.cfg"
 [ -f "$themefile" ] ||
 	exit 0
 
-"$BIN_SPLASH" -f -s "$themefile" >> "$outfile"
+if ! "$BIN_SPLASH" -f -s "$themefile" > "$rootdir/bootsplash"; then
+	rm -rf -- "$rootdir/bootsplash"
+	exit 1
+fi
