@@ -1,0 +1,9 @@
+#!/bin/sh
+
+msg='Loading modules after udevd...'
+run() {
+	load_modules postudev
+
+	udevadm trigger
+	udevadm settle
+}

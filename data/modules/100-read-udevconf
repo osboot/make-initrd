@@ -1,0 +1,10 @@
+#!/bin/sh
+
+msg='Reading udev config from the real filesystem if possible...'
+run() {
+	if [ -e $rootmnt/etc/udev/udev.conf ]; then
+	    . $rootmnt/etc/udev/udev.conf
+	elif [ -e /etc/udev/udev.conf ]; then
+	    . /etc/udev/udev.conf
+	fi
+}

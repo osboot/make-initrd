@@ -1,0 +1,41 @@
+#!/bin/sh
+# Local filesystem mounting
+
+mountroot() {
+	# If the root device hasn't shown up yet, give it a little while
+	# to deal with removable devices
+	if ! wait_device "$ROOT" "Waiting for root file system"; then
+		# We've given up, but we'll let the user fix matters if they can
+		echo "	Check root= bootarg cat /proc/cmdline"
+		echo "	or missing modules, devices: cat /proc/modules ls /dev"
+		shell "ALERT!  $ROOT does not exist.  Dropping to a shell!"
+	fi
+
+	# Get the root filesystem type if not set
+	fs_type="$ROOTFSTYPE"
+	[ -n "$fs_type" ] ||
+		eval $(fstype < "$ROOT")
+
+	if [ "$fs_type" = "unknown" ] && [ -x /lib/udev/vol_id ]; then
+		fs_type="$(/lib/udev/vol_id -t "$ROOT")"
+		fs_type="${fs_type:-unknown}"
+	fi
+
+	roflag=-w
+	[ -z "$readonly" ] || roflag=-r
+
+	# FIXME This has no error checking
+	modprobe -qb "$fs_type"
+
+	# Mount root
+	mount "$roflag" -t "$fs_type" $ROOTFLAGS "$ROOT" "$rootmnt" || rc=$?
+
+	if [ "$rc" != 0 ] && [ "$fs_type" = ext3 ]; then
+		verbose "Warning: Trying to mount $ROOT as ext2 instead of ext3"
+		modprobe -qb ext2
+		mount "$roflag" -t ext2 $ROOTFLAGS "$ROOT" "$rootmnt" || rc=$?
+	fi
+
+	[ "$rc" = 0 ] ||
+		shell "Unable to mount $ROOT as $fs_type.  Dropping to a shell!"
+}

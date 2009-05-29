@@ -1,0 +1,18 @@
+#!/bin/sh -efu
+
+modules_file='/conf/modules-postudev'
+
+if [ "$#" -gt 0 ] && [-a -z "${1##--*}" ]; then
+	case "$1" in
+		--pre-udev)  modules_file='/conf/modules-preudev'  ;;
+		--post-udev) modules_file='/conf/modules-postudev' ;;
+	esac
+	shift
+fi
+
+for n in "$@"; do
+	add-module "$n"
+	if ! fgrep -xqs "$n" "$rootdir/$modules_file"; then
+		printf '%s\n' "$n" >> "$rootdir/$modules_file"
+	fi
+done

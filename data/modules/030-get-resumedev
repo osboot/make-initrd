@@ -1,0 +1,16 @@
+#!/bin/sh
+
+msg='Defining resume device...'
+run() {
+	[ -n "$NORESUME"  ] || resume="$RESUME"
+
+	case "$resume" in
+		LABEL=*)
+			echo "ENV{ID_FS_USAGE}==\"filesystem|other\", ENV{ID_FS_LABEL}==\"${resume#LABEL=}\", SYMLINK+=\"resume\"" > /etc/udev/rules.d/99-resume.rules
+			resume="/dev/resume"
+			;;
+		UUID=*)
+			resume="/dev/disk/by-uuid/${resume#UUID=}"
+			;;
+	esac
+}

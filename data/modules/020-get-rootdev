@@ -1,0 +1,17 @@
+#!/bin/sh
+
+msg='Defining root device...'
+run() {
+	case "$ROOT" in
+		LABEL=*)
+			echo "ENV{ID_FS_USAGE}==\"filesystem|other\", ENV{ID_FS_LABEL}==\"${ROOT#LABEL=}\", SYMLINK+=\"root\"" > /etc/udev/rules.d/99-root.rules
+			ROOT="/dev/root"
+			;;
+		UUID=*)
+			ROOT="/dev/disk/by-uuid/${ROOT#UUID=}"
+			;;
+		/dev/nfs)
+			BOOT=nfs
+			;;
+	esac
+}

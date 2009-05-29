@@ -1,0 +1,14 @@
+#!/bin/sh
+
+msg="Loading, please wait..."
+run() {
+	mount -t sysfs -o nodev,noexec,nosuid none /sys
+	mount -t proc  -o nodev,noexec,nosuid none /proc
+	mount -t tmpfs -o size=10M,mode=0755  udev /dev
+
+	mkdir /dev/.initramfs /dev/pts /dev/shm
+	mknod /dev/console c 5 1
+	mknod /dev/null    c 1 3
+
+	echo > /proc/sys/kernel/hotplug
+}

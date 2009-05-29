@@ -1,0 +1,7 @@
+#!/bin/sh
+
+msg='Running init...'
+run() {
+	# Chain to real filesystem
+	exec run-init "$rootmnt" "$init" "$@" <"$rootmnt"/dev/console >"$rootmnt"/dev/console
+}

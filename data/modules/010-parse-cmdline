@@ -1,0 +1,24 @@
+#!/bin/sh
+
+msg="Parsing command line options..."
+run() {
+	read CMDLINE </proc/cmdline
+	export CMDLINE
+
+	for x in $CMDLINE; do
+		s="$(replace -s= "[a-z]-" "[A-Z]_" "$x")"
+		case "$s" in
+		        *=*)
+		    	    export "$s"
+		    	    ;;
+    			*)
+    			    [ "$s" != 'RO' ] || readonly=1
+    			    [ "$s" != 'RW' ] || readonly=
+    			    export "$s=1"
+    			    ;;
+		esac
+	done
+
+	STOP=",$STOP,"
+	IGNORE=",$IGNORE,"
+}

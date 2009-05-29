@@ -1,0 +1,11 @@
+#!/bin/sh
+
+msg='Starting udevd...'
+run() {
+	mkdir -p /dev/.udev/db/
+	udevd --daemon
+
+	mkdir -p /dev/.udev/queue/
+	udevadm trigger --attr-match dev
+	udevadm settle
+}

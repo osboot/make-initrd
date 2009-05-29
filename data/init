@@ -1,0 +1,37 @@
+#!/bin/sh
+
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+
+BOOT='local'
+INIT='/sbin/init'
+QUIET=
+PANIC=
+STOP=','
+IGNORE=','
+rootmnt='/root'
+readonly=1
+
+[ ! -s /conf/initramfs.conf ] || . /conf/initramfs.conf
+. /scripts/functions
+
+run_scripts top
+
+for m in /modules/*; do
+	[ -x "$m" ] ||
+		continue
+	n="${m#*-}"
+
+	[ -n "${IGNORE##*,$n,*}" ] ||
+		continue
+
+	run_scripts "pre/$n"
+
+	. "$m"
+	message "$msg"
+
+	[ -n "${STOP##*,$n,*}" ] ||
+		shell "Spawning shell within the initramfs"
+	run
+
+	run_scripts "post/$n"
+done

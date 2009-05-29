@@ -1,0 +1,26 @@
+#!/bin/sh
+
+msg='Mounting root file system...'
+run() {
+	. /scripts/"$BOOT"
+
+	case "$ROOT" in
+		""|/*)
+			return
+			;;
+		*:*)
+			minor=${ROOT#*:}
+			major=${ROOT%:*}
+			;;
+		*)
+			value=$(( 0x$ROOT ))
+			minor=$(( $value % 256 ))
+			major=$(( $value / 256 ))
+			;;
+	esac
+
+	mknod /dev/root b ${major} ${minor}
+	ROOT=/dev/root
+
+	mountroot
+}

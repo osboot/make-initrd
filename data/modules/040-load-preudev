@@ -1,0 +1,6 @@
+#!/bin/sh
+
+msg='Loading modules before udevd...'
+run() {
+	load_modules preudev
+}

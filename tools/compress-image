@@ -1,0 +1,18 @@
+#!/bin/sh -efu
+
+. shell-error
+
+compress=
+case "$compress_method" in
+	gzip|gz)   compress='gzip'  ;;
+	bzip2|bz2) compress='bzip2' ;;
+	lzma)      compress='lzma'  ;;
+	lzo)       compress='lzop'  ;;
+	'')        compress=''      ;;
+	*) fatal "Unknown compress method: $compress_method"
+esac
+
+if [ -n "$compress" ]; then
+	$compress -9 < "$outfile" > "$outfile.x"
+	mv -f -- "$outfile.x" "$outfile"
+fi
