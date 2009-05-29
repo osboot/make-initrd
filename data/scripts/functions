@@ -1,12 +1,12 @@
 #!/bin/sh
 
 verbose() {
-	[ -n "$quiet" ] || echo "$@"
+	[ -n "$QUIET" ] || echo "$@"
 }
 
 shell() {
 	# Disallow console access
-	[ "$panic" != 0 ] || reboot
+	[ "$PANIC" != 0 ] || reboot
 
 	modprobe -q i8042
 	modprobe -q atkbd

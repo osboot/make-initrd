@@ -27,7 +27,7 @@ for m in /modules/*; do
 	run_scripts "pre/$n"
 
 	. "$m"
-	message "$msg"
+	verbose "$msg"
 
 	[ -n "${STOP##*,$n,*}" ] ||
 		shell "Spawning shell within the initramfs"
