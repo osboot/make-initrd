@@ -2,25 +2,26 @@
 
 . shell-error
 
-verbose="${VERBOSE:+-v}"
+export verbose="${VERBOSE:+-v}"
 
-toolsdir="${TOOLSDIR:?Tools directory required}"
-export PATH="$toolsdir:$PATH"
+export workdir="${WORKDIR:?Work directory required}"
+export rootdir="${ROOTDIR:?Root directory required}"
+export datadir="${DATADIR:?Data directory required}"
+export helpersdir="${HELPERSDIR:?Data directory required}"
+export scriptdir="${SCRIPTDIR:?Scripts directory required}"
+export imagefile="${IMAGEFILE:?Image file required}"
 
-dir="${WORKDIR:?Work directory required}"
-rootdir="${ROOTDIR:?Root directory required}"
-datadir="${DATADIR:?Data directory required}"
-scriptdir="${SCRIPTDIR:?Scripts directory required}"
-imagefile="${IMAGEFILE:?Image file required}"
-
-outfile="$dir/initrd.img"
-kernel="${KERNEL:?}"
+export compress_method="${COMPRESS-}"
+export outfile="$workdir/initrd.img"
+export kernel="${KERNEL:?}"
 
 kernel_major="${kernel%%.*}"
 kernel_minor="${kernel#*.}"
 kernel_minor="${kernel_minor%%.*}"
 kernel_patch="${kernel#*.*.}"
 kernel_patch="${kernel_patch%%[!0-9]*}"
+
+export kernel_major kernel_minor kernel_patch
 
 if [ -z "${kernel_major##*[!0-9]*}" ] ||
    [ -z "${kernel_minor##*[!0-9]*}" ] ||
@@ -29,6 +30,6 @@ then
 	fatal "Invalid kernel version \"$kernel\""
 fi
 
-kernel_modules_dir="/lib/modules/$kernel"
+export kernel_modules_dir="/lib/modules/$kernel"
 [ -d "$kernel_modules_dir" ] ||
 	fatal "Directory \"$kernel_modules_dir\" doesn't exist or not accessible."

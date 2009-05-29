@@ -1,21 +1,22 @@
 # System paths
 WORKDIR		?= $(CURDIR)/.work
 ROOTDIR		?= $(WORKDIR)/root
-DATADIR		?= $(CURDIR)/data
 TOOLSDIR	 = $(CURDIR)/tools
+DATADIR		?= /usr/share/initramfs-data/data
+HELPERSDIR	?= /usr/share/initramfs-data/tools
 SCRIPTDIR	?= $(CURDIR)/scripts.d
 CONFIGDIR	?= $(CURDIR)/config.d
 RULESDIR	?= $(CURDIR)/rules.d
 
 # Helpers
-GET_VARIABLE		= $(TOOLSDIR)/get-variable
-CREATE_INITRD		= $(TOOLSDIR)/create-initrd
-PACK_IMAGE		= $(TOOLSDIR)/pack-image
-COMPRESS_IMAGE		= $(TOOLSDIR)/compress-image
-OPTIONAL_BOOTSPLASH	= $(TOOLSDIR)/optional-bootsplash
-ADD_MODULE		= $(TOOLSDIR)/add-module
-LOAD_MODULE		= $(TOOLSDIR)/load-module
-PUT_FILE		= $(TOOLSDIR)/put-file
+GET_VARIABLE		= $(TOOLSDIR)/tool-runner get-variable
+CREATE_INITRD		= $(TOOLSDIR)/tool-runner create-initrd
+PACK_IMAGE		= $(TOOLSDIR)/tool-runner pack-image
+COMPRESS_IMAGE		= $(TOOLSDIR)/tool-runner compress-image
+OPTIONAL_BOOTSPLASH	= $(TOOLSDIR)/tool-runner optional-bootsplash
+ADD_MODULE		= $(TOOLSDIR)/tool-runner add-module
+LOAD_MODULE		= $(TOOLSDIR)/tool-runner load-module
+PUT_FILE		= $(TOOLSDIR)/tool-runner put-file
 
 
 # Global variables
