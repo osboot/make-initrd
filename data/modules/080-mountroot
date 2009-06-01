@@ -1,11 +1,12 @@
 #!/bin/sh
 
 msg='Mounting root file system...'
-run() {
-	. /scripts/"$BOOT"
+parseroot() {
+	local value minor major
 
 	case "$ROOT" in
 		""|/*)
+			return
 			;;
 		*:*)
 			minor=${ROOT#*:}
@@ -18,8 +19,12 @@ run() {
 			;;
 	esac
 
-	mknod /dev/root b ${major} ${minor}
-	ROOT=/dev/root
+	mknod /dev/root b "$major" "$minor"
+	ROOT='/dev/root'
+}
 
+run() {
+	. /scripts/"$BOOT"
+	parseroot
 	mountroot
 }
