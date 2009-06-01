@@ -6,7 +6,6 @@ run() {
 
 	case "$ROOT" in
 		""|/*)
-			return
 			;;
 		*:*)
 			minor=${ROOT#*:}
