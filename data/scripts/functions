@@ -37,7 +37,8 @@ wait_device() {
 	verbose "$2"
 
 	# Default delay is 180s
-	sec=$(( ${ROOTDELAY:-180} * 10 ))
+	#sec=$(( ${ROOTDELAY:-180} * 10 )
+	sec=${ROOTDELAY:-18}
 	while [ "$sec" -gt 0 ] && [ ! -e "$1" ]; do
 		/bin/sleep 0.1
 		sec=$(( $sec - 1 ))

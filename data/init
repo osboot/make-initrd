@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 
@@ -29,7 +29,7 @@ for m in /modules/*; do
 	. "$m"
 	verbose "$msg"
 
-	[ -n "${STOP##*,$n,*}" ] ||
+	[ "$STOP" != ',all,' -a -n "${STOP##*,$n,*}" ] ||
 		shell "Spawning shell within the initramfs"
 	run
 
