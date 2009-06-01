@@ -5,5 +5,5 @@ run() {
 	load_modules postudev
 
 	udevadm trigger
-	udevadm settle || true
+	udevadm settle
 }
