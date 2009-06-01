@@ -12,30 +12,29 @@ mountroot() {
 	fi
 
 	# Get the root filesystem type if not set
-	fs_type="$ROOTFSTYPE"
-	[ -n "$fs_type" ] ||
-		eval $(fstype < "$ROOT")
+	FSTYPE="$ROOTFSTYPE"
+	[ -n "$FSTYPE" ] || eval $(fstype < "$ROOT")
 
-	if [ "$fs_type" = "unknown" ] && [ -x /lib/udev/vol_id ]; then
-		fs_type="$(/lib/udev/vol_id -t "$ROOT")"
-		fs_type="${fs_type:-unknown}"
+	if [ "$FSTYPE" = "unknown" ] && [ -x /lib/udev/vol_id ]; then
+		FSTYPE="$(/lib/udev/vol_id -t "$ROOT")"
+		FSTYPE="${FSTYPE:-unknown}"
 	fi
 
 	roflag=-w
 	[ -z "$readonly" ] || roflag=-r
 
 	# FIXME This has no error checking
-	modprobe -qb "$fs_type"
+	modprobe -qb "$FSTYPE"
 
 	# Mount root
-	mount "$roflag" -t "$fs_type" $ROOTFLAGS "$ROOT" "$rootmnt" || rc=$?
+	mount "$roflag" -t "$FSTYPE" $ROOTFLAGS "$ROOT" "$rootmnt" || rc=$?
 
-	if [ "$rc" != 0 ] && [ "$fs_type" = ext3 ]; then
+	if [ "$rc" != 0 ] && [ "$FSTYPE" = ext3 ]; then
 		verbose "Warning: Trying to mount $ROOT as ext2 instead of ext3"
 		modprobe -qb ext2
 		mount "$roflag" -t ext2 $ROOTFLAGS "$ROOT" "$rootmnt" || rc=$?
 	fi
 
 	[ "$rc" = 0 ] ||
-		shell "Unable to mount $ROOT as $fs_type.  Dropping to a shell!"
+		shell "Unable to mount $ROOT as $FSTYPE.  Dropping to a shell!"
 }
