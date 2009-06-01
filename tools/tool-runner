@@ -1,0 +1,7 @@
+#!/bin/sh -eu
+
+. ${TOOLSDIR:?Tools directory required}/sh-functions
+export PATH="$helpersdir:$PATH"
+PROG="${1##*/}"
+shift
+. "$helpersdir/$PROG"
