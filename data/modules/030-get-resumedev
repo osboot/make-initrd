@@ -10,7 +10,8 @@ run() {
 			resume="/dev/resume"
 			;;
 		UUID=*)
-			resume="/dev/disk/by-uuid/${resume#UUID=}"
+			echo "ENV{ID_FS_USAGE}==\"filesystem|other\", ENV{ID_FS_UUID}==\"${resume#UUID=}\", SYMLINK+=\"resume\"" > /etc/udev/rules.d/99-resume.rules
+			resume="/dev/resume"
 			;;
 	esac
 }
