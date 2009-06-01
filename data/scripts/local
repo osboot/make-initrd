@@ -27,11 +27,13 @@ mountroot() {
 	modprobe -qb "$FSTYPE"
 
 	# Mount root
+	local rc=0
 	mount "$roflag" -t "$FSTYPE" $ROOTFLAGS "$ROOT" "$rootmnt" || rc=$?
 
 	if [ "$rc" != 0 ] && [ "$FSTYPE" = ext3 ]; then
 		verbose "Warning: Trying to mount $ROOT as ext2 instead of ext3"
 		modprobe -qb ext2
+		rc=0
 		mount "$roflag" -t ext2 $ROOTFLAGS "$ROOT" "$rootmnt" || rc=$?
 	fi
 
