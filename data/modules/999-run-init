@@ -3,5 +3,5 @@
 msg='Running init...'
 run() {
 	# Chain to real filesystem
-	exec run-init "$rootmnt" "$init" "$@" <"$rootmnt"/dev/console >"$rootmnt"/dev/console
+	exec run-init "$rootmnt" "$INIT" "$@" <"$rootmnt"/dev/console >"$rootmnt"/dev/console
 }
