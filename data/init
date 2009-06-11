@@ -2,14 +2,14 @@
 
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 
-BOOT='local'
-INIT='/sbin/init'
-QUIET=
-PANIC=
-STOP=','
-IGNORE=','
-rootmnt='/root'
-readonly=1
+export BOOT='local'
+export INIT='/sbin/init'
+export QUIET=
+export PANIC=
+export STOP=','
+export IGNORE=','
+export rootmnt='/root'
+export readonly=1
 
 [ ! -s /conf/initramfs.conf ] || . /conf/initramfs.conf
 . /scripts/functions

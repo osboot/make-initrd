@@ -1,7 +1,11 @@
 #!/bin/sh
 
+readonly=
+
 msg="Parsing command line options..."
 run() {
+	local x
+
 	read CMDLINE </proc/cmdline
 	export CMDLINE
 
@@ -18,6 +22,9 @@ run() {
     			    ;;
 		esac
 	done
+
+	[ "$ROOT" != '/dev/nfs' ] ||
+		BOOT='nfs'
 
 	STOP=",$STOP,"
 	IGNORE=",$IGNORE,"

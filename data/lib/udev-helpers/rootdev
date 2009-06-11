@@ -1,0 +1,22 @@
+#!/bin/sh
+
+. /dev/.initramfs/env
+. /scripts/functions
+
+devroot=
+add() {
+	get_dev devroot "$ROOT" || return 0
+
+	local roflag=-w
+	[ -z "$readonly" ] || roflag=-r
+
+	# Mount root
+	if ! mount "$roflag" $ROOTFLAGS -t "${ROOTFSTYPE:-$ID_FS_TYPE}" "$devroot" "$rootmnt"; then
+		mkdir -p /tmp/.initramfs-shell
+		echo "Unable to mount $devroot as $FSTYPE." >> /tmp/.initramfs-shell/rootdev
+		return
+	fi
+	ln -sf "$devroot" /dev/root
+}
+
+add

@@ -22,4 +22,5 @@ run() {
 	mknod /dev/ptmx    c 5 2
 
 	echo > /proc/sys/kernel/hotplug
+	echo /sbin/modprobe > /proc/sys/kernel/modprobe
 }

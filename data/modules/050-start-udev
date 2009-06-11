@@ -2,6 +2,9 @@
 
 msg='Starting udevd...'
 run() {
+	#FIXME: Use printenv
+	set > /dev/.initramfs/env
+
 	mkdir -p /dev/.udev/db/
 	udevd --daemon
 

@@ -31,20 +31,6 @@ load_modules() {
 	done < /conf/modules-"$1"
 }
 
-# wait_for_device <filename> <text>
-wait_device() {
-	[ ! -e "$1" ] || return 0
-	verbose "$2"
-
-	# Default delay is 180s
-	sec=$(( ${ROOTDELAY:-180} * 10 ))
-	while [ "$sec" -gt 0 ] && [ ! -e "$1" ]; do
-		/bin/sleep 0.1
-		sec=$(( $sec - 1 ))
-	done
-	[ -e "$1" ] || return 1
-}
-
 configure_network() {
 	# networking already configured thus bail out
 	[ -n "$DEVICE" ] && [ -e /tmp/net-"$DEVICE".conf ] && return 0
@@ -80,4 +66,35 @@ configure_network() {
 
 	# source relevant ipconfig output
 	. /tmp/net-${DEVICE}.conf
+}
+
+get_dev() {
+	local name retval value
+	retval="$1"; shift
+	name="$1"; shift
+
+	case "$name" in
+		UUID=*)
+			[ "$ID_FS_UUID" = "${name#UUID=}" ] ||
+				return 1
+			;;
+		LABEL=*)
+			[ "$ID_FS_LABEL" = "${name#LABEL=}" ] ||
+				return 1
+			;;
+		/*)
+			[ "$DEVNAME" = "$name" ] ||
+				return 1
+			;;
+		*:*)
+			[ "$MAJOR" = "${name%:*}" -a "$MINOR" = "${name#*:}" ] ||
+				return 1
+			;;
+		*)
+			local value=$(( 0x$name ))
+			[ "$MAJOR" = "$(( $value / 256 ))" -a "$MINOR" = "$(( $value % 256 ))" ] ||
+				return 1
+			;;
+	esac
+	eval "$retval=\"\$DEVNAME\""
 }
