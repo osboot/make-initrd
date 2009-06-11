@@ -2,7 +2,5 @@
 
 msg='Mounting root file system...'
 run() {
-	[ -f "/scripts/$BOOT" ] || return 0
-	. /scripts/"$BOOT"
-	mountroot
+	return 0
 }

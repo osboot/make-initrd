@@ -2,7 +2,6 @@
 
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 
-export BOOT='local'
 export INIT='/sbin/init'
 export QUIET=
 export PANIC=

@@ -23,9 +23,6 @@ run() {
 		esac
 	done
 
-	[ "$ROOT" != '/dev/nfs' ] ||
-		BOOT='nfs'
-
 	STOP=",$STOP,"
 	IGNORE=",$IGNORE,"
 }
