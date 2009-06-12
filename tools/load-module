@@ -2,7 +2,7 @@
 
 modules_file='/conf/modules-postudev'
 
-if [ "$#" -gt 0 ] && [-a -z "${1##--*}" ]; then
+if [ "$#" -gt 0 ] && [ -z "${1##--*}" ]; then
 	case "$1" in
 		--pre-udev)  modules_file='/conf/modules-preudev'  ;;
 		--post-udev) modules_file='/conf/modules-postudev' ;;
