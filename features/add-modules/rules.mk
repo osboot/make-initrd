@@ -1,5 +1,4 @@
-ifndef _ADD_MODULES_MK
-_ADD_MODULES_MK = 1
+$(call require,depmod-image)
 
 add-modules: create
 	@echo "Adding modules ..."
@@ -7,6 +6,3 @@ add-modules: create
 	@$(LOAD_MODULE) $(MODULES_LOAD)
 
 depmod-image: add-modules
-
-include $(RULESDIR)/depmod-image.mk
-endif

@@ -1,5 +1,8 @@
 .EXPORT_ALL_VARIABLES:
 
+# Features include helper: skip a feature which has already loaded
+require = $(foreach req,$(1),$(eval include $(filter-out $(MAKEFILE_LIST),$(req:%=$(FEATURESDIR)/%/rules.mk))))
+
 all: install
 
 check-for-root:
@@ -30,4 +33,4 @@ clean:
 	$Qrm -rf -- "$(WORKDIR)"
 
 # Load requested features
-include $(FEATURES:%=$(RULESDIR)/%.mk)
+include $(call require,$(FEATURES))

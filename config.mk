@@ -5,8 +5,7 @@ TOOLSDIR	 = $(CURDIR)/tools
 DATADIR		?= /usr/share/initramfs-data/data
 HELPERSDIR	?= /usr/share/initramfs-data/tools
 SCRIPTDIR	?= $(CURDIR)/scripts.d
-CONFIGDIR	?= $(CURDIR)/config.d
-RULESDIR	?= $(CURDIR)/rules.d
+FEATURESDIR	?= $(CURDIR)/features
 
 # Helpers
 GET_VARIABLE		= $(TOOLSDIR)/tool-runner get-variable
@@ -17,14 +16,12 @@ OPTIONAL_BOOTSPLASH	= $(TOOLSDIR)/tool-runner optional-bootsplash
 ADD_MODULE		= $(TOOLSDIR)/tool-runner add-module
 LOAD_MODULE		= $(TOOLSDIR)/tool-runner load-module
 PUT_FILE		= $(TOOLSDIR)/tool-runner put-file
-
+PUT_TREE		= $(TOOLSDIR)/tool-runner put-tree
 
 # Global variables
 FSTAB			?= /etc/fstab
 RAIDTAB			?= /etc/raidtab
 FIRMWARE_DIRS		?= /lib/firmware /usr/lib/hotplug/firmware /usr/local/lib/firmware
-MODULES_ADD		?=
-MODULES_LOAD		?=
 VERBOSE			?=
 
 # User defaults
@@ -34,7 +31,7 @@ IMAGEFILE	?= /boot/initrd-$(KERNEL).img
 COMPRESS	?= gzip
 
 # Load extra configs
--include $(CONFIGDIR)/*.mk
+include $(FEATURESDIR)/*/config.mk
 
 ifdef VERBOSE
   verbose=-v
