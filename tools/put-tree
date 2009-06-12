@@ -1,0 +1,5 @@
+#!/bin/sh -eu
+
+for tree in "$@"; do 
+	cp $verbose -aLt "$rootdir" "$tree"/*
+done

@@ -27,11 +27,11 @@ mkdir $verbose -p -- \
 [ -e ./dev/console ] || mknod ./dev/console c 5 1
 [ -e ./dev/ptmx    ] || mknod ./dev/ptmx    c 5 2
 
-cp $verbose -aLt . \
-	"$datadir"/* \
-	/lib/mkinitrd/klibc/* \
-	/lib/mkinitrd/udev/* \
-	/lib/mkinitrd/module-init-tools/* \
+put-tree \
+	"$datadir" \
+	/lib/mkinitrd/klibc \
+	/lib/mkinitrd/udev \
+	/lib/mkinitrd/module-init-tools \
 	#
 
 [ ! -f /etc/modprobe.conf ] ||
