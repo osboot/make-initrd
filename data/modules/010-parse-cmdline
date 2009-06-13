@@ -1,7 +1,5 @@
 #!/bin/sh
 
-readonly=
-
 msg="Parsing command line options..."
 run() {
 	local x

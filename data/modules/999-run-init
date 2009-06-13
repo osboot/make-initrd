@@ -2,6 +2,13 @@
 
 msg='Running init...'
 run() {
+	umount /sys
+	umount /proc
+	umount /dev/pts
+
+	# If /dev was not moved to the real filesystem, unmount it
+	[ "$use_initramfs_dev" = 1 ] || umount -l /dev
+
 	# Chain to real filesystem
 	exec run-init "$rootmnt" "$INIT" "$@" <"$rootmnt"/dev/console >"$rootmnt"/dev/console
 }
