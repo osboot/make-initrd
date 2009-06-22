@@ -9,6 +9,7 @@ export STOP=','
 export IGNORE=','
 export rootmnt='/root'
 export readonly=1
+export RESCUE_MODULES=
 
 [ ! -s /conf/initramfs.conf ] || . /conf/initramfs.conf
 . /scripts/functions
