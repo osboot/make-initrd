@@ -10,4 +10,9 @@ run() {
 	mkdir -p /dev/.udev/queue/
 	udevadm trigger --attr-match dev
 	udevadm settle
+
+	if [ -d /tmp/.initramfs-shell ]; then
+		nuke /tmp/.initramfs-shell
+		return 1
+	fi
 }
