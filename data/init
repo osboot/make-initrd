@@ -31,7 +31,9 @@ for m in /modules/*; do
 
 	[ "$STOP" != ',all,' -a -n "${STOP##*,$n,*}" ] ||
 		shell "Spawning shell within the initramfs"
-	run "$@"
+
+	run "$@" ||
+		shell "Stage '$n' failed"
 
 	run_scripts "post/$n"
 done
