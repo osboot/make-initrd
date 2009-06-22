@@ -7,6 +7,8 @@ devroot=
 add() {
 	get_dev devroot "$ROOT" || return 0
 
+	udev-msg "Mount '$devroot' as /dev/root"
+
 	local roflag=-w
 	[ -z "$readonly" ] || roflag=-r
 

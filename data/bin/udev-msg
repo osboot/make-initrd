@@ -1,0 +1,17 @@
+#!/bin/sh -efu
+
+writelock=/tmp/.udev-tty.lock
+
+exit_handler() {
+	local rc=$?
+	trap - EXIT
+	nuke -- $writelock
+	exit $rc
+}
+
+while ! mkdir $writelock >/dev/null 2>&1; do
+	sleep 0.1
+done
+trap exit_handler HUP INT QUIT TERM EXIT
+
+printf 'UDEV: %s\n' "$*" >/dev/systty
