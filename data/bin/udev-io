@@ -1,0 +1,33 @@
+#!/bin/sh -efu
+
+writelock=/tmp/.udev-tty.lock
+
+exit_handler() {
+	local rc=$?
+	trap - EXIT
+	nuke -- $writelock
+	exit $rc
+}
+
+while ! mkdir $writelock >/dev/null 2>&1; do
+	sleep 0.1
+done
+trap exit_handler HUP INT QUIT TERM EXIT
+
+say() {
+	[ "$#" -eq 0 ] || printf '\n' >/dev/systty
+}
+
+ask() {
+	local ANS=
+	read -r ANS </dev/systty
+	printf '%s\n' "$ANS"
+}
+
+mod="${1-}"; shift ||:
+[ "$#" -eq 0 ] || printf 'UDEV: %s' "$*" >/dev/systty
+
+case "$mod" in
+	ask|say) $mod "$@" ;;
+	*) printf 'Usage: ${0##*/} <ask|say> [message]\n' >/dev/systty ;;
+esac
