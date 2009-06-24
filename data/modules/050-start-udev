@@ -8,7 +8,7 @@ run() {
 	udevd --daemon
 
 	mkdir -p /dev/.udev/queue/
-	udevadm trigger --attr-match dev
+	udevadm trigger
 	udevadm settle
 
 	if [ -d /tmp/.initramfs-shell ]; then
