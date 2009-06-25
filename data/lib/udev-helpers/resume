@@ -1,0 +1,19 @@
+#!/bin/sh
+
+. /dev/.initramfs/env
+. /scripts/functions
+
+devresume=
+add() {
+	get_dev devresume "$RESUME" || return 0
+
+	if [ ! -e /sys/power/resume ]; then
+		udev-io say "Warning: Kernel does not support resume - doing normal boot"
+		return 0
+	fi
+
+	# hardcode path, uswsusp ships an resume binary too
+	/bin/resume "$devresume"
+}
+
+add
