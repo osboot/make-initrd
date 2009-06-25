@@ -11,8 +11,8 @@ run() {
 	udevadm trigger
 	udevadm settle
 
-	if [ -d /tmp/.initramfs-shell ]; then
-		nuke /tmp/.initramfs-shell
+	if [ -d /tmp/.udev-helper-error ]; then
+		nuke /tmp/.udev-helper-error
 		return 1
 	fi
 }
