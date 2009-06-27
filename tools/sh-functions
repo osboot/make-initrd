@@ -10,6 +10,7 @@ export datadir="${DATADIR:?Data directory required}"
 export helpersdir="${HELPERSDIR:?Data directory required}"
 export scriptdir="${SCRIPTDIR:?Scripts directory required}"
 export imagefile="${IMAGEFILE:?Image file required}"
+export modules_ignore=" ${MODULES_IGNORE-} "
 
 export compress_method="${COMPRESS-}"
 export outfile="$workdir/initrd.img"
