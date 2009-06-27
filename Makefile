@@ -4,6 +4,6 @@ IMAGEFILE	= $(CURDIR)/initrd-$(KERNEL).img
 COMPRESS	= gzip
 #MODULES_ADD	= ext3 ata_piix sd_mod
 
-FEATURES = autodetect-modules compress optional-bootsplash lazy-cleanup
+FEATURES = autodetect-modules compress bootsplash lazy-cleanup
 
 include $(CURDIR)/rules.mk
