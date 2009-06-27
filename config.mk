@@ -13,6 +13,7 @@ CREATE_INITRD		= $(TOOLSDIR)/tool-runner create-initrd
 PACK_IMAGE		= $(TOOLSDIR)/tool-runner pack-image
 ADD_MODULE		= $(TOOLSDIR)/tool-runner add-module
 LOAD_MODULE		= $(TOOLSDIR)/tool-runner load-module
+ADD_RESCUE_MODULES	= $(TOOLSDIR)/tool-runner add-rescue-modules
 PUT_FILE		= $(TOOLSDIR)/tool-runner put-file
 PUT_TREE		= $(TOOLSDIR)/tool-runner put-tree
 

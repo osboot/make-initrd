@@ -20,7 +20,13 @@ create: depmod-host
 	@mkdir -m 700 -p $(verbose) -- $(WORKDIR) $(ROOTDIR)
 	@$(CREATE_INITRD)
 
-pack: create
+rescue-modules:
+	if [ -n "$(RESCUE_MODULES)" ]; then \
+	    echo "Installing resue modules ..."; \
+	    $(ADD_RESCUE_MODULES) $(RESCUE_MODULES); \
+	fi
+
+pack: create rescue-modules
 	@echo "Packing image to archive ..."
 	@$(PACK_IMAGE)
 
