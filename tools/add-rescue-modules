@@ -1,7 +1,6 @@
 #!/bin/sh -efu
 
-[ -n "${RESCUE_MODULES-}" ] ||
-	return 0
+[ "$#" -gt 0 ] || return 0
 
-add-module $RESCUE_MODULES
-printf 'RESCUE_MODULES="%s"\n' "$RESCUE_MODULES" >> "$rootdir"/conf/initramfs.conf
+add-module "$@"
+printf 'RESCUE_MODULES="%s"\n' "$*" >> "$rootdir"/conf/initramfs.conf
