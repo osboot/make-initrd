@@ -17,8 +17,6 @@ PUT_FILE		= $(TOOLSDIR)/tool-runner put-file
 PUT_TREE		= $(TOOLSDIR)/tool-runner put-tree
 
 # Global variables
-FSTAB			?= /etc/fstab
-RAIDTAB			?= /etc/raidtab
 FIRMWARE_DIRS		?= /lib/firmware /usr/lib/hotplug/firmware /usr/local/lib/firmware
 VERBOSE			?=
 
