@@ -4,9 +4,6 @@ msg='Loading modules after udevd...'
 run() {
 	load_modules postudev
 
-	udevadm trigger
-	udevadm settle
-
 	if [ -d /tmp/.udev-helper-error ]; then
 		nuke /tmp/.udev-helper-error
 		return 1
