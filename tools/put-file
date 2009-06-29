@@ -52,7 +52,6 @@ copy_elf() {
 	ldd -- "$fn" |sed -n 's/.*[[:space:]]\([^ ]\+\) (0x.*/\1/p' |
 	while read lib; do
 		copy_file "$lib"
-		touch "$workdir/.flag-host-libs-installed"
 	done
 }
 

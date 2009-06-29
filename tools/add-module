@@ -52,7 +52,6 @@ add_module_file() {
 		return 0
 
 	put-file "$path"
-	touch "$workdir/.flag-depmod-needed"
 
 	add_module_firmware "$name" "$path"
 }
