@@ -1,6 +1,6 @@
 $(call require,depmod-image)
 
-autodetect-modules:
+autodetect-modules: create
 	@echo "Detecting modules..."
 	@$(AUTODETECT_MODULES)
 
