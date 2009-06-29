@@ -21,7 +21,7 @@ create: depmod-host
 	@$(CREATE_INITRD)
 
 rescue-modules:
-	if [ -n "$(RESCUE_MODULES)" ]; then \
+	@if [ -n "$(RESCUE_MODULES)" ]; then \
 	    echo "Installing resue modules ..."; \
 	    $(ADD_RESCUE_MODULES) $(RESCUE_MODULES); \
 	fi
