@@ -20,7 +20,7 @@ create: depmod-host
 	@mkdir -m 700 -p $(verbose) -- $(WORKDIR) $(ROOTDIR)
 	@$(CREATE_INITRD)
 
-rescue-modules:
+rescue-modules: create
 	@if [ -n "$(RESCUE_MODULES)" ]; then \
 	    echo "Installing resue modules ..."; \
 	    $(ADD_RESCUE_MODULES) $(RESCUE_MODULES); \
