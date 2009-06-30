@@ -4,10 +4,10 @@ msg='Loading modules after udevd...'
 run() {
 	load_modules postudev
 
-	udevadm trigger
 	udevadm settle
 
 	if [ -d /tmp/.udev-helper-error ]; then
+		verbose "Error flag found after postudev loading"
 		nuke /tmp/.udev-helper-error
 		return 1
 	fi

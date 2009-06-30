@@ -12,6 +12,7 @@ run() {
 	udevadm settle
 
 	if [ -d /tmp/.udev-helper-error ]; then
+		verbose "Error flag found after udev start"
 		nuke /tmp/.udev-helper-error
 		return 1
 	fi
