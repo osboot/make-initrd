@@ -8,7 +8,7 @@ add() {
 	get_dev devresume "$RESUME" || return 0
 
 	if [ ! -e /sys/power/resume ]; then
-		udev-io say "Warning: Kernel does not support resume - doing normal boot"
+		udev-io say "Kernel does not support resume - doing normal boot"
 		return 0
 	fi
 

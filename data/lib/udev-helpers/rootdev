@@ -5,11 +5,12 @@
 
 devroot=
 add() {
-	get_dev devroot "$ROOT" || return 0
-
+	# Do not mount root twice
 	[ ! -e /dev/root ] || return 0
 
-	udev-io say "Mount '$devroot' as /dev/root"
+	get_dev devroot "$ROOT" || return 0
+
+	udev-io say "Mount '$devroot' as $rootmnt"
 
 	local roflag=-w
 	[ -z "$readonly" ] || roflag=-r
