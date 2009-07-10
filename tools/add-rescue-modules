@@ -1,5 +1,8 @@
 #!/bin/sh -efu
 
+. ${TOOLSDIR:?Tools directory required}/sh-functions
+export PATH="$helpersdir:$PATH"
+
 [ "$#" -gt 0 ] || return 0
 
 add-module "$@"

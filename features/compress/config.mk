@@ -1,1 +1,1 @@
-COMPRESS_IMAGE = $(TOOLSDIR)/tool-runner compress-image
+COMPRESS_IMAGE = $(TOOLSDIR)/compress-image

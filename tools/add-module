@@ -1,5 +1,8 @@
 #!/bin/sh -efu
 
+. ${TOOLSDIR:?Tools directory required}/sh-functions
+export PATH="$helpersdir:$PATH"
+
 . shell-error
 
 ignore_missing=

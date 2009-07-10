@@ -1,1 +1,1 @@
-ADD_BOOTSPLASH = $(TOOLSDIR)/tool-runner add-bootsplash
+ADD_BOOTSPLASH = $(TOOLSDIR)/add-bootsplash

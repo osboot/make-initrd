@@ -1,5 +1,8 @@
 #!/bin/sh -eu
 
+. ${TOOLSDIR:?Tools directory required}/sh-functions
+export PATH="$helpersdir:$PATH"
+
 cd "$rootdir"
 
 mkdir $verbose -p -- \

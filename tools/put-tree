@@ -1,5 +1,8 @@
 #!/bin/sh -eu
 
+. ${TOOLSDIR:?Tools directory required}/sh-functions
+export PATH="$helpersdir:$PATH"
+
 for tree in "$@"; do 
 	cp $verbose -aLt "$rootdir" "$tree"/*
 done

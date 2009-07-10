@@ -9,14 +9,13 @@ FEATURESDIR	?= $(CURDIR)/features
 AUTODETECTDIR	?= $(CURDIR)/autodetect
 
 # Helpers
-GET_VARIABLE		= $(TOOLSDIR)/tool-runner get-variable
-CREATE_INITRD		= $(TOOLSDIR)/tool-runner create-initrd
-PACK_IMAGE		= $(TOOLSDIR)/tool-runner pack-image
-ADD_MODULE		= $(TOOLSDIR)/tool-runner add-module
-LOAD_MODULE		= $(TOOLSDIR)/tool-runner load-module
-ADD_RESCUE_MODULES	= $(TOOLSDIR)/tool-runner add-rescue-modules
-PUT_FILE		= $(TOOLSDIR)/tool-runner put-file
-PUT_TREE		= $(TOOLSDIR)/tool-runner put-tree
+CREATE_INITRD		= $(TOOLSDIR)/create-initrd
+PACK_IMAGE		= $(TOOLSDIR)/pack-image
+ADD_MODULE		= $(TOOLSDIR)/add-module
+LOAD_MODULE		= $(TOOLSDIR)/load-module
+ADD_RESCUE_MODULES	= $(TOOLSDIR)/add-rescue-modules
+PUT_FILE		= $(TOOLSDIR)/put-file
+PUT_TREE		= $(TOOLSDIR)/put-tree
 
 # Global variables
 FIRMWARE_DIRS		?= /lib/firmware /usr/lib/hotplug/firmware /usr/local/lib/firmware
