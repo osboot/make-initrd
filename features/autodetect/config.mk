@@ -1,2 +1,2 @@
 AUTODETECT ?=
-AUTODETECT_MODULES = $(TOOLSDIR)/autodetect-modules
+AUTODETECT_MODULES = $(TOOLSDIR)/autodetect
