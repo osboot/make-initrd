@@ -1,0 +1,63 @@
+#!/bin/sh -eu
+
+. "${0%/*}"/functions
+. shell-error
+
+get_majmin() {
+	local v
+	v="$(stat -c '%02t:%02T' "$1")" &&
+		printf '%d:%d\n' "0x${v%:*}" "0x${v#*:}" ||
+		return 1
+}
+
+get_device() {
+	case "$1" in
+		UUID=*|LABEL=*)
+			blkid -t "$1" -o device
+			return 0
+			;;
+		/*)
+			printf '%s\n' "$1"
+			return 0
+			;;
+	esac
+	return 1
+}
+
+find_modules() {
+	local target_majmin mod
+	mod="$1"; shift
+	target_majmin="$(get_majmin "$mod")"
+
+	find /sys/class/block -mindepth 1 -maxdepth 1 -printf '%h/%l\n' |
+	while read path; do
+		[ -f "$path/dev" ] ||
+			continue
+
+		read majmin < "$path/dev"
+
+		[ "$target_majmin" != "$majmin" ] ||
+			process_device "$path"
+	done | sort -u
+}
+
+t_fsname=
+t_fstype=
+eof=
+while [ -z "$eof" ]; do
+	read fsname fsdir fstype opts freq passno || eof=1
+	if [ "$fsdir" = "/" ]; then
+		t_fsname="$fsname"
+		t_fstype="$fstype"
+		break
+	fi
+done < /etc/fstab
+
+[ -n "$t_fsname" ] ||
+	fatal "Unable to find name of mounted root file system"
+
+device="$(get_device "$t_fsname")" ||
+	fatal "Unable to find root device"
+
+find_modules "$device"
+get_modules "$t_fstype"

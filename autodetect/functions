@@ -1,0 +1,52 @@
+#!/bin/sh -efu
+
+get_modules() {
+	/sbin/modprobe -q --show-depends --ignore-all-commands "$1" |
+		cut -d' ' -f2-
+}
+
+process_modalias() {
+	[ -f "$1"/modalias ] || return 0
+	local modalias
+	read modalias < "$1"/modalias
+	get_modules "$modalias"
+}
+
+process_raid() {
+	[ -d "$1"/md ] ||
+		return 0
+
+	local level
+	read level < "$1"/md/level
+
+	case "$level" in
+		raid4|raid5|raid6)
+			get_modules "raid456"
+			;;
+		*)
+			get_modules "$level"
+			;;
+	esac
+}
+
+process_device() {
+	local device
+	device="$(readlink -ev "$1" 2>/dev/null)" ||
+		return 0
+
+	process_raid "$device"
+
+	process_modalias "$device"
+
+	[ -z "${device##/sys/devices/*}" ] ||
+		return 0
+
+	if [ -d "$device/slaves" ]; then
+		local slave
+		for slave in "$device/slaves"/*; do
+			[ ! -e "$slave" ] ||
+				process_device "$device/slaves/${slave##*/}"
+		done
+	fi
+	process_device "$device/.."
+}
