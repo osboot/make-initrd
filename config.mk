@@ -6,6 +6,7 @@ DATADIR		?= $(CURDIR)/data
 HELPERSDIR	?= $(TOOLSDIR)
 SCRIPTDIR	?= $(CURDIR)/scripts.d
 FEATURESDIR	?= $(CURDIR)/features
+AUTODETECTDIR	?= $(CURDIR)/autodetect
 
 # Helpers
 GET_VARIABLE		= $(TOOLSDIR)/tool-runner get-variable
