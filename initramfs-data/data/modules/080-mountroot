@@ -1,0 +1,13 @@
+#!/bin/sh
+
+msg='Waiting root file system...'
+run() {
+	local sec
+	# Default delay is 180s
+	sec=$(( ${ROOTDELAY:-180} * 10 ))
+	while [ "$sec" -gt 0 ] && [ ! -e "$rootmnt/$INIT" ]; do
+		/bin/sleep 0.1
+		sec=$(( $sec - 1 ))
+	done
+	[ -e "$rootmnt/$INIT" ] || return 1
+}

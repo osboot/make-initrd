@@ -1,0 +1,39 @@
+#!/bin/sh
+
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+
+export INIT='/sbin/init'
+export QUIET=
+export PANIC=
+export STOP=','
+export IGNORE=','
+export rootmnt='/root'
+export readonly=1
+export RESCUE_MODULES=
+
+[ ! -s /conf/initramfs.conf ] || . /conf/initramfs.conf
+. /scripts/functions
+
+run_scripts top
+
+for m in /modules/*; do
+	[ -x "$m" ] ||
+		continue
+	n="${m#*-}"
+
+	[ -n "${IGNORE##*,$n,*}" ] ||
+		continue
+
+	run_scripts "pre/$n"
+
+	. "$m"
+	verbose "$msg"
+
+	[ "$STOP" != ',all,' -a -n "${STOP##*,$n,*}" ] ||
+		shell "Spawning shell within the initramfs"
+
+	run "$@" ||
+		shell "Stage '$n' failed"
+
+	run_scripts "post/$n"
+done

@@ -1,0 +1,78 @@
+#!/bin/sh -efu
+
+. shell-error
+
+ignore_missing=
+if [ "${1-}" = '--optional' ]; then
+	ignore_missing=1
+	shift
+fi
+
+list_module_files() {
+	modprobe --set-version="$kernel" --show-depends --ignore-all-commands "$@" 2>/dev/null |
+		cut -d\  -f2-
+}
+
+add_module_firmware() {
+	local mod_name mod_path list name d fwfile
+
+	mod_name="$1"; shift
+	mod_path="$1"; shift
+
+	list="$(modinfo -F firmware "$mod_path")" ||
+		return 0
+
+	for name in $list; do
+		fwfile=
+		for d in $FIRMWARE_DIRS; do
+			if [ -r "$d/$name" ]; then
+				fwfile="$d/$name"
+				break
+			fi
+		done
+
+		if [ -z "$fwfile" ]; then
+			message "Firmware file \"$name\" for module \"$mod_name\" not found"
+			continue
+		fi
+		[ -f "$rootdir/lib/firmware/$name" ] ||
+			continue
+
+		verbose "Adding firmware file \"$fwfile\" for module \"$mod_name\""
+		install -pD -- "$fwfile" "$rootdir/lib/firmware/$name"
+	done
+}
+
+add_module_file() {
+	local path="$1" name="$1"
+	name="${name##*/}"
+	name="${name%.ko}"
+
+	[ ! -f "$rootdir/$path" ] ||
+		return 0
+
+	put-file "$path"
+
+	add_module_firmware "$name" "$path"
+}
+
+add_module() {
+	local m list name="$1"
+	name="${name##*/}"
+	name="${name%.ko}"
+
+	list="$(list_module_files "$name")"
+
+	[ -n "$list" -o -n "$ignore_missing" ] ||
+		fatal "No module \"$name\" found for kernel $kernel"
+
+	printf '%s\n' "$list" |
+	while read m; do
+		add_module_file "$m"
+	done
+
+}
+
+for n in "$@"; do
+	add_module "$n"
+done

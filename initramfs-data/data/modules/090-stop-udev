@@ -1,0 +1,19 @@
+#!/bin/sh
+
+msg='Stopping udevd...'
+run() {
+	# Stop udevd, we'll miss a few events while we run init, but we catch up
+	udevadm settle
+
+	read udevd_pid < /dev/.udev/udevd.pid
+	kill $udevd_pid
+
+	for proc in /proc/[0-9]*; do
+		[ -x $proc/exe ] || continue
+		[ "$(readlink $proc/exe 2>/dev/null)" != /sbin/udevd ] ||
+			kill ${proc#/proc/}
+	done
+
+	# ignore any failed event because the init script will trigger again all events
+	nuke /dev/.udev/queue/
+}

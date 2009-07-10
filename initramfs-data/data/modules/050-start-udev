@@ -1,0 +1,19 @@
+#!/bin/sh
+
+msg='Starting udevd...'
+run() {
+	printenv -q > /dev/.initramfs/env
+
+	mkdir -p /dev/.udev/db/
+	udevd --daemon
+
+	mkdir -p /dev/.udev/queue/
+	udevadm trigger
+	udevadm settle
+
+	if [ -d /tmp/.udev-helper-error ]; then
+		verbose "Error flag found after udev start"
+		nuke /tmp/.udev-helper-error
+		return 1
+	fi
+}

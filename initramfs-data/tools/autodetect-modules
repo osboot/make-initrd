@@ -1,0 +1,99 @@
+#!/bin/sh -efu
+
+modalias="/lib/modules/$kernel/modules.alias"
+
+workdir=
+exit_handler() {
+	local rc=$?
+	trap - EXIT
+	rm -rf -- "$workdir"
+	exit $rc
+}
+
+modlist=' '
+addmodule() {
+	if [ -n "${modlist##* $1 *}" ]; then
+		modlist="$modlist $1 "
+
+		printf 'AutoDetect: %s ' "$1"
+		if [ -z "${modules_ignore##* $1 *}" ]; then
+			printf '(ignored)\n'
+			return
+		fi
+		printf '\n'
+		add-module "$1"
+	fi
+}
+
+workdir="$(mktemp -d -t "$PROG.XXXXXXXXXX")"
+trap exit_handler HUP INT QUIT TERM EXIT
+
+check_modalias() {
+	local subalias=
+	while read kword alias module; do
+		# Exclude modules by name
+		case "$module" in
+			acpi*|snd*|i2c_*|leds_*|*_wdt|*_agp|*fb) continue ;;
+		esac
+
+		# Split modules.alias
+		case "$kword $alias" in
+			'alias ip'*)     subalias="ip"    ;;
+			'alias pci'*)    subalias="pci"    ;;
+			'alias pnp'*)    subalias="pnp"    ;;
+			'alias usb'*)    subalias="usb"    ;;
+			'alias USB'*)    subalias="usb"    ;;
+			'alias dmi'*)    subalias="dmi"    ;;
+			'alias hid'*)    subalias="hid"    ;;
+			'alias char'*)   subalias="char"   ;;
+			'alias serio'*)  subalias="serio"  ;;
+			'alias pcmcia'*) subalias="pcmcia" ;;
+			'alias i2c'*)    continue          ;;
+			'alias acpi'*)   continue          ;;
+			*)               subalias="other"  ;;
+		esac
+		printf '%s %s\n' "$alias" "$module" >> "$workdir/modules.alias.$subalias"
+	done < "$modalias"
+
+	find /sys \
+		-noleaf \
+		-name 'modalias' \
+		-exec cat '{}' '+' >> "$workdir"/z
+
+	while read mod; do
+		case "$mod" in
+			pci*)      subalias="pci"    ;;
+			pnp*)      subalias="pnp"    ;;
+			dmi*)      subalias="dmi"    ;;
+			hid*)      subalias="hid"    ;;
+			usb*|USB*) subalias="usb"    ;;
+			char*)     subalias="char"   ;;
+			serio*)    subalias="serio"  ;;
+			pcmcia*)   subalias="pcmcia" ;;
+			*)         subalias="other"  ;;
+		esac
+
+		while read alias modname; do
+			case "$mod" in
+				$alias)
+					addmodule "$modname"
+					;;
+			esac
+		done < "$workdir/modules.alias.$subalias"
+	done < "$workdir"/z
+}
+
+check_raid() {
+	[ -f "/proc/mdstat" ] || return 0
+	sed -ne 's/^md.* \<\(raid[[:alnum:]]\+\)\>.*/\1/p' /proc/mdstat |
+	while read modname; do
+		addmodule "$modname"
+	done
+}
+
+find_modules() {
+	check_modalias
+	check_raid
+}
+
+find_modules
