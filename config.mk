@@ -2,7 +2,7 @@
 WORKDIR		?= $(CURDIR)/.work
 ROOTDIR		?= $(WORKDIR)/root
 TOOLSDIR	 = $(CURDIR)/tools
-DATADIR		?= /usr/share/initramfs-data/data
+DATADIR		?= $(CURDIR)/data
 HELPERSDIR	?= $(TOOLSDIR)
 SCRIPTDIR	?= $(CURDIR)/scripts.d
 FEATURESDIR	?= $(CURDIR)/features
