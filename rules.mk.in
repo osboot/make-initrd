@@ -17,7 +17,7 @@ depmod-host: check-for-root
 
 create: depmod-host
 	@echo "Creating initrd image ..."
-	@mkdir -m 700 -p $(verbose) -- $(WORKDIR) $(ROOTDIR)
+	@mkdir -m 755 -p $(verbose) -- $(WORKDIR) $(ROOTDIR)
 	@$(CREATE_INITRD)
 
 rescue-modules: create

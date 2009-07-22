@@ -1,14 +1,17 @@
 # System paths
-WORKDIR		?= $(CURDIR)/.work
+WORKDIR		?= @WORKDIR@/.work
 ROOTDIR		?= $(WORKDIR)/root
-TOOLSDIR	 = $(CURDIR)/tools
-DATADIR		?= $(CURDIR)/data
+
+TOOLSDIR	 = @PREFIX@/tools
+DATADIR		?= @PREFIX@/data
+SCRIPTDIR	?= @PREFIX@/scripts.d
+FEATURESDIR	?= @PREFIX@/features
+AUTODETECTDIR	?= @PREFIX@/autodetect
+
 HELPERSDIR	?= $(TOOLSDIR)
-SCRIPTDIR	?= $(CURDIR)/scripts.d
-FEATURESDIR	?= $(CURDIR)/features
-AUTODETECTDIR	?= $(CURDIR)/autodetect
 
 # Helpers
+GEN_INIT_CPIO		= @BINDIR@/gen_init_cpio
 CREATE_INITRD		= $(TOOLSDIR)/create-initrd
 PACK_IMAGE		= $(TOOLSDIR)/pack-image
 ADD_MODULE		= $(TOOLSDIR)/add-module

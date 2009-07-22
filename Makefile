@@ -1,11 +1,43 @@
-include $(CURDIR)/config.mk
+PROJECT = make-initrd
+VERSION = 0.1.0
 
-IMAGEFILE	= $(CURDIR)/initrd-$(KERNEL).img
-COMPRESS	= gzip
-#MODULES_ADD	= ext3 ahci ata_piix ata_generic sd_mod scsi_mod pata_acpi
+bindir  = /usr/bin
+datadir = /usr/share
+workdir = /tmp
+DESTDIR ?=
 
-AUTODETECT	= root net:wlan0
+CP = cp -a
+INSTALL = install
+MKDIR_P = mkdir -p
+TOUCH_R = touch -r
 
-FEATURES = autodetect add-modules compress bootsplash lazy-cleanup
+DIRS = autodetect data features tools
 
-include $(CURDIR)/rules.mk
+TARGETS = config.mk rules.mk
+
+SUBDIRS = src
+
+.PHONY:	$(SUBDIRS)
+
+all: $(SUBDIRS) $(TARGETS)
+
+%: %.in
+	sed \
+		-e 's,@VERSION@,$(VERSION),g' \
+		-e 's,@PROJECT@,$(PROJECT),g' \
+		-e 's,@PREFIX@,$(DESTDIR)$(datadir),g' \
+		-e 's,@BINDIR@,$(DESTDIR)$(bindir),g' \
+		-e 's,@WORKDIR@,$(DESTDIR)$(workdir),g' \
+		<$< >$@
+	$(TOUCH_R) $< $@
+	chmod --reference=$< $@
+
+install: $(SUBDIRS) $(TARGETS)
+	$(MKDIR_P) -- $(DESTDIR)$(datadir)/$(PROJECT) $(DESTDIR)$(workdir)
+	$(CP) -r -- $(DIRS) $(TARGETS)  $(DESTDIR)$(datadir)/$(PROJECT)/
+
+clean: $(SUBDIRS)
+	rm -f -- $(TARGETS)
+
+$(SUBDIRS):
+	$(MAKE) $(MFLAGS) -C "$@" $(MAKECMDGOALS)
