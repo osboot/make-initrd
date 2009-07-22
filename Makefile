@@ -25,7 +25,7 @@ all: $(SUBDIRS) $(TARGETS)
 	sed \
 		-e 's,@VERSION@,$(VERSION),g' \
 		-e 's,@PROJECT@,$(PROJECT),g' \
-		-e 's,@PREFIX@,$(DESTDIR)$(datadir),g' \
+		-e 's,@PREFIX@,$(DESTDIR)$(datadir)/$(PROJECT),g' \
 		-e 's,@BINDIR@,$(DESTDIR)$(bindir),g' \
 		-e 's,@WORKDIR@,$(DESTDIR)$(workdir),g' \
 		<$< >$@
