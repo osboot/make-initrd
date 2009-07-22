@@ -3,9 +3,49 @@
 . ${TOOLSDIR:?Tools directory required}/sh-functions
 export PATH="$helpersdir:$PATH"
 
-# TODO: Use gencpio
+get_majmin() {
+	local v
+	v="$(stat -c '%02t:%02T' "$1")" &&
+		printf '%d %d\n' "0x${v%:*}" "0x${v#*:}" ||
+		return 1
+}
 
-cd "$rootdir"
+filter() {
+	sed -e "s,\([a-z]\+[[:space:]]\+\)$rootdir/,\1,"
+}
 
-find . -mindepth 1 -print0 -o -prune |
-	cpio -o0 -H newc --quiet > "$outfile"
+{
+	# files
+	{
+		find "$rootdir" -mindepth 1 -type d -printf 'dir %p %#m 0 0\n'
+		find "$rootdir" -mindepth 1 -type p -printf 'pipe %p %#m 0 0\n'
+		find "$rootdir" -mindepth 1 -type s -printf 'sock %p %#m 0 0\n'
+		find "$rootdir" -mindepth 1 -type f -printf 'file %p %p %#m 0 0\n'
+		find "$rootdir" -mindepth 1 -type l -printf 'slink %p %l %#m 0 0\n'
+	} |
+		filter
+
+	# devices
+	{
+		find "$rootdir" -mindepth 1 -type b -printf 'nod %p %#m 0 0 b ? ?\n'
+		find "$rootdir" -mindepth 1 -type c -printf 'nod %p %#m 0 0 b ? ?\n'
+	} |
+		filter |
+	while read nod name mode uid gid dev_type maj min; do
+		printf 'nod %s ' "$name $mode $uid $gid $dev_type"
+		get_majmin "$rootdir/$name"
+	done
+
+	cat <<-EOF
+	nod dev/ram     0644 0 0 b 1 1
+	nod dev/null    0666 0 0 c 1 3
+	nod dev/zero    0666 0 0 c 1 5
+	nod dev/full    0666 0 0 c 1 7
+	nod dev/random  0666 0 0 c 1 8
+	nod dev/systty  0666 0 0 c 4 0
+	nod dev/tty1    0666 0 0 c 4 1
+	nod dev/console 0600 0 0 c 5 1
+	nod dev/ptmx    0666 0 0 c 5 2
+	EOF
+} |
+	gen_init_cpio - > "$outfile"
