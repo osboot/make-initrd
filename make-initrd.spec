@@ -19,6 +19,14 @@ Source0: %name-%version.tar
 %description
 Creates an initramfs image
 
+%package lvm
+Summary: LVM module for %name
+Group: System/Base
+Requires: lvm2
+
+%description lvm
+LVM module for %name
+
 %prep
 %setup -q
 
@@ -31,7 +39,11 @@ Creates an initramfs image
 %files
 %_sysconfdir/*
 %_bindir/*
-%_datadir/%name
+%_datadir/*
+%exclude %_datadir/%name/features/lvm
+
+%files lvm
+%_datadir/%name/features/lvm
 
 %changelog
 * Fri May 29 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.0-alt1
