@@ -8,8 +8,11 @@ Group: System/Base
 
 Packager: Alexey Gladkov <legion@altlinux.ru>
 
+Requires: libshell make sed module-init-tools coreutils grep glibc-utils
+
 # This avoids getting a dependency on sh from "#!/bin/sh".
 #AutoReq: yes, nopam, noperl, nopython, noshell, notcl
+AutoReq: noshell
 
 Source0: %name-%version.tar
 
@@ -26,6 +29,7 @@ Creates an initramfs image
 %makeinstall
 
 %files
+%_sysconfdir/*
 %_bindir/*
 %_datadir/%name
 

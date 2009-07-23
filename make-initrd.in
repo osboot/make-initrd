@@ -1,0 +1,5 @@
+#!/bin/sh -e
+
+/usr/bin/make -f "@PREFIX@/build.mk" "$@"
+[ "$#" -gt 0 ] ||
+	/usr/bin/make -f "@PREFIX@/build.mk" clean
