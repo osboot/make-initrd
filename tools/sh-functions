@@ -1,4 +1,4 @@
-#!/bin/ash -efu
+#!/bin/sh -efu
 
 . shell-error
 
