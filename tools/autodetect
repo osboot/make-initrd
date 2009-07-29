@@ -8,7 +8,8 @@ export PATH="$helpersdir:$PATH"
 param="$1"; shift
 
 module="${param%%:*}"
-arg="${param#*:}"
+arg=
+[ -n "${param##*:*}" ] || arg="${param#*:}"
 
 [ -f "$autodetectdir/detect-$module" ] ||
 	fatal "Unknown module: $module"
