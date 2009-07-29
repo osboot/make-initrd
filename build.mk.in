@@ -1,3 +1,0 @@
-include @PREFIX@/config.mk
-include @CONFIG@/initrd.mk
-include @PREFIX@/rules.mk

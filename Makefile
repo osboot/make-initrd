@@ -18,7 +18,7 @@ CONF = initrd.mk
 
 bin_TARGETS = make-initrd
 
-TARGETS = config.mk rules.mk build.mk
+TARGETS = config.mk rules.mk
 
 SUBDIRS = src
 
