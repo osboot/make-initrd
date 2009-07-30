@@ -45,7 +45,7 @@ LVM module for %name
 %make_install DESTDIR=%buildroot install
 
 %files
-%_sysconfdir/*
+%config(noreplace) %_sysconfdir/initrd.mk
 %_bindir/*
 %_datadir/*
 %exclude %_datadir/%name/features/lvm
