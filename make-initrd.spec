@@ -19,6 +19,14 @@ Source0: %name-%version.tar
 %description
 Creates an initramfs image
 
+%package klibc
+Summary: Unilities for %name
+Group: System/Base
+Requires(pre): klibc-utils-initramfs
+
+%description klibc
+Unilities for %name.
+
 %package lvm
 Summary: LVM module for %name
 Group: System/Base
@@ -34,13 +42,16 @@ LVM module for %name
 %make_build
 
 %install
-%makeinstall
+%make_install DESTDIR=%buildroot install
 
 %files
 %_sysconfdir/*
 %_bindir/*
 %_datadir/*
 %exclude %_datadir/%name/features/lvm
+
+%files klibc
+/lib/mkinitrd/klibc/bin/*
 
 %files lvm
 %_datadir/%name/features/lvm
