@@ -17,7 +17,7 @@ AutoReq: noshell
 Source0: %name-%version.tar
 
 %description
-Creates an initramfs image
+make-initrd is a new, uevent-driven initramfs infrastructure based around udev.
 
 %package klibc
 Summary: Unilities for %name
