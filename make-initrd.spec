@@ -9,6 +9,10 @@ Group: System/Base
 Packager: Alexey Gladkov <legion@altlinux.ru>
 
 Requires: libshell make sed module-init-tools coreutils grep glibc-utils
+Requires: make-initrd-klibc
+Requires: udev-initramfs module-init-tools-initramfs
+
+BuildRequires: klibc-devel
 
 # This avoids getting a dependency on sh from "#!/bin/sh".
 #AutoReq: yes, nopam, noperl, nopython, noshell, notcl
