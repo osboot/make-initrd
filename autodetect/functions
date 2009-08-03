@@ -1,15 +1,34 @@
 #!/bin/sh -efu
 
+. shell-error
+
+export verbose="${VERBOSE:+-v}"
+
+modules_verbosity() {
+	if [ -n "$verbose" ]; then
+		while read mod; do
+			printf '%s\n' "$mod" >&2
+			printf '%s\n' "$mod"
+		done
+	else
+		cat
+	fi
+}
+
 get_modules() {
+	local sysfs_path
+	sysfs_path="$1"; shift
+	verbose "sysfs: $sysfs_path"
 	/sbin/modprobe -q --set-version="$kernel" --show-depends --ignore-all-commands "$1" |
-		cut -d' ' -f2
+		cut -d' ' -f2 |
+		modules_verbosity
 }
 
 process_modalias() {
 	[ -f "$1"/modalias ] || return 0
 	local modalias
 	read modalias < "$1"/modalias
-	get_modules "$modalias"
+	get_modules "$1" "$modalias"
 }
 
 process_raid() {
@@ -21,10 +40,10 @@ process_raid() {
 
 	case "$level" in
 		raid4|raid5|raid6)
-			get_modules "raid456"
+			get_modules "$1" "raid456"
 			;;
 		*)
-			get_modules "$level"
+			get_modules "$1" "$level"
 			;;
 	esac
 }

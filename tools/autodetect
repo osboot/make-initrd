@@ -16,6 +16,6 @@ arg=
 
 "$autodetectdir/detect-$module" "$arg" |
 while read f; do
-	message "$f"
+	[ -n "$verbose" ] || message "$f"
 	put-file "$f"
 done

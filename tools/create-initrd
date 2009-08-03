@@ -25,18 +25,24 @@ put-tree /lib/mkinitrd/udev
 put-tree /lib/mkinitrd/module-init-tools
 put-tree "$datadir"
 
-[ ! -f /etc/modprobe.conf ] ||
+if [ -f /etc/modprobe.conf ]; then
+	verbose "Coping /etc/modprobe.conf ..."
 	put-file /etc/modprobe.conf
+fi
 
-[ ! -d /etc/modprobe.d ] ||
+if [ -d /etc/modprobe.d ]; then
+	verbose "Coping files from /etc/modprobe.d ..."
 	find -L /etc/modprobe.d \
 		\( \
 			\! -name '*.rpm*' -a \
 			\! -name '*~' \
 		\) \
 		-exec put-file '{}' '+'
+fi
 
-[ ! -d /etc/udev/initramfs-rules.d ] ||
+if [ -d /etc/udev/initramfs-rules.d ]; then
+	verbose "Coping files from /etc/udev/initramfs-rules.d ..."
 	find -L /etc/udev/initramfs-rules.d/ \
 			-name '*.rules' \
-		-exec cp $verbose -aLt ./etc/udev/rules.d -- '{}' '+'
+		-exec cp -aLt ./etc/udev/rules.d -- '{}' '+'
+fi

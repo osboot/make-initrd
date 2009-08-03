@@ -3,6 +3,7 @@
 . ${TOOLSDIR:?Tools directory required}/sh-functions
 export PATH="$helpersdir:$PATH"
 
-for tree in "$@"; do 
-	cp $verbose -aLt "$rootdir" "$tree"/*
+for tree in "$@"; do
+	verbose "Coping '$tree' recursively ..."
+	cp -aLt "$rootdir" "$tree"/*
 done

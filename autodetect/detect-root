@@ -60,4 +60,4 @@ device="$(get_device "$t_fsname")" ||
 	fatal "Unable to find root device"
 
 find_modules "$device"
-get_modules "$t_fstype"
+get_modules "modules for '$t_fstype' filesystem" "$t_fstype"
