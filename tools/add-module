@@ -12,8 +12,8 @@ if [ "${1-}" = '--optional' ]; then
 fi
 
 list_module_files() {
-	modprobe --set-version="$kernel" --show-depends --ignore-all-commands "$@" 2>/dev/null |
-		cut -d\  -f2-
+	/sbin/modprobe --set-version="$kernel" --show-depends --ignore-all-commands "$@" 2>/dev/null |
+		cut -d' ' -f2
 }
 
 add_module_firmware() {

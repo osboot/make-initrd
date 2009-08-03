@@ -2,7 +2,7 @@
 
 get_modules() {
 	/sbin/modprobe -q --set-version="$kernel" --show-depends --ignore-all-commands "$1" |
-		cut -d' ' -f2-
+		cut -d' ' -f2
 }
 
 process_modalias() {
