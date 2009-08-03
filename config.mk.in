@@ -1,5 +1,5 @@
 # System paths
-WORKDIR		?= @WORKDIR@/.work
+WORKDIR		?= @WORKDIR@/initrd-$(KERNEL).work
 ROOTDIR		?= $(WORKDIR)/root
 
 TOOLSDIR	 = @PREFIX@/tools
