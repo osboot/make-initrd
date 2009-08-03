@@ -1,2 +1,2 @@
-clean: install
-all: clean
+cleanup: install clean
+all: cleanup
