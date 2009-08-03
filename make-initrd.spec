@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.1.0
+Version: 0.1.1
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -61,5 +61,8 @@ LVM module for %name
 %_datadir/%name/features/lvm
 
 %changelog
+* Mon Aug 03 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.1-alt1
+- Fix: ALT#20936.
+
 * Fri May 29 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.0-alt1
 - Fist build.
