@@ -28,8 +28,6 @@ VERBOSE			?=
 FEATURES	?=
 KERNEL		?= $(shell uname -r)
 IMAGEFILE	?= /boot/initrd-$(KERNEL).img
-COMPRESS	?= gzip
-AUTODETECT	?=
 
 # Load extra configs
 include $(FEATURESDIR)/*/config.mk
