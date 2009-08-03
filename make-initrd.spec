@@ -65,4 +65,4 @@ LVM module for %name
 - Fix: ALT#20936.
 
 * Fri May 29 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.0-alt1
-- Fist build.
+- First build.
