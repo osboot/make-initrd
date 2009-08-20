@@ -2,7 +2,7 @@
 
 msg="Parsing command line options..."
 run() {
-	local x
+	local x s n
 
 	read CMDLINE </proc/cmdline
 	export CMDLINE
@@ -14,6 +14,9 @@ run() {
 		    	    export "$s"
 		    	    ;;
     			*)
+			    n="$(replace "[0-9]" "" "$s")"
+			    [ -n "$n" ] ||
+				    continue
     			    [ "$s" != 'RO' ] || readonly=1
     			    [ "$s" != 'RW' ] || readonly=
     			    export "$s=1"
