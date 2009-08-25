@@ -47,6 +47,8 @@ LVM module for %name
 
 %install
 %make_install DESTDIR=%buildroot install
+mkdir -p -- %buildroot/lib/mkinitrd/initramfs/{bin,sbin,lib}
+mv -f -- %buildroot/lib/mkinitrd/klibc/bin/* %buildroot/lib/mkinitrd/initramfs/bin/
 
 %files
 %config(noreplace) %_sysconfdir/initrd.mk
@@ -55,7 +57,7 @@ LVM module for %name
 %exclude %_datadir/%name/features/lvm
 
 %files klibc
-/lib/mkinitrd/klibc/bin/*
+/lib/mkinitrd/initramfs
 
 %files lvm
 %_datadir/%name/features/lvm

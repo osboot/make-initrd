@@ -23,6 +23,7 @@ mkdir $verbose -p -- \
 put-tree /lib/mkinitrd/klibc
 put-tree /lib/mkinitrd/udev
 put-tree /lib/mkinitrd/module-init-tools
+put-tree /lib/mkinitrd/initramfs
 put-tree "$datadir"
 
 if [ -f /etc/modprobe.conf ]; then
