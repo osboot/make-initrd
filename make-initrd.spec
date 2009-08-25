@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.1.2
+Version: 0.1.3
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -63,6 +63,12 @@ mv -f -- %buildroot/lib/mkinitrd/klibc/bin/* %buildroot/lib/mkinitrd/initramfs/b
 %_datadir/%name/features/lvm
 
 %changelog
+* Wed Aug 26 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.3-alt1
+- Move klibc utilities from /lib/mkinitrd/klibc/bin/
+  to /lib/mkinitrd/initramfs/bin/.
+- Accept "3" as runlevel in command line (ALT#21103).
+- Fix resume from disk (ALT#21102).
+
 * Mon Aug 03 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.2-alt1
 - Increase verbosity.
 - WORKDIR is kernel-depended now.
