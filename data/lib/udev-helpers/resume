@@ -12,6 +12,8 @@ add() {
 		return 0
 	fi
 
+	set_lock initrd
+
 	# hardcode path, uswsusp ships an resume binary too
 	/bin/resume "$devresume"
 }
