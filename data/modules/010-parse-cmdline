@@ -2,26 +2,30 @@
 
 msg="Parsing command line options..."
 run() {
-	local x s n
+	local x s n l=
+	local CMDLINE_PARAMS
 
 	read CMDLINE </proc/cmdline
 	export CMDLINE
 
+	for x in /etc/initrd/*; do
+		if [ -s "$x" ]; then
+			. "$x"
+			l="$l ${CMDLINE_PARAMS-}"
+		fi
+	done
+
 	for x in $CMDLINE; do
-		s="$(replace -s= "[a-z]-" "[A-Z]_" "$x")"
-		case "$s" in
-		        *=*)
-		    	    export "$s"
-		    	    ;;
-    			*)
-			    n="$(replace "[0-9]" "" "$s")"
-			    [ -n "$n" ] ||
-				    continue
-    			    [ "$s" != 'RO' ] || readonly=1
-    			    [ "$s" != 'RW' ] || readonly=
-    			    export "$s=1"
-    			    ;;
-		esac
+		s="$(replace -s= "[a-z]-." "[A-Z]__" "$x")"
+		for n in $l; do
+			export "$n="
+			case "$s" in
+				RW)	readonly=	;;
+				RO)	readonly=1	;;
+				$n)	export "$s=1"	;;
+				$n=*)	export "$s"	;;
+			esac
+		done
 	done
 
 	STOP=",$STOP,"

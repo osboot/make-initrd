@@ -7,7 +7,7 @@ run() {
 	umount /dev/pts
 
 	# If /dev was not moved to the real filesystem, unmount it
-	[ "$use_initramfs_dev" = 1 ] || umount -l /dev
+	[ -n "$INITRAMFS_DEV" ] || umount -l /dev
 
 	set_lock initrd
 

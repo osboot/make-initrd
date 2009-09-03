@@ -4,7 +4,7 @@ msg='Moving /dev to the real filesystem...'
 run() {
 	# Move /dev created in initramfs to the real filesystem if this is enabled
 	# in the udev configuration.
-	[ "$use_initramfs_dev" = 1 ] ||
+	[ -n "$INITRAMFS_DEV" ] ||
 		return 0
 
 	# Pass udev version from initramfs to the real system.
