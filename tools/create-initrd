@@ -27,12 +27,12 @@ put-tree /lib/mkinitrd/initramfs
 put-tree "$datadir"
 
 if [ -f /etc/modprobe.conf ]; then
-	verbose "Coping /etc/modprobe.conf ..."
+	verbose "Copying /etc/modprobe.conf ..."
 	put-file /etc/modprobe.conf
 fi
 
 if [ -d /etc/modprobe.d ]; then
-	verbose "Coping files from /etc/modprobe.d ..."
+	verbose "Copying files from /etc/modprobe.d ..."
 	find -L /etc/modprobe.d \
 		\( \
 			\! -name '*.rpm*' -a \
@@ -42,7 +42,7 @@ if [ -d /etc/modprobe.d ]; then
 fi
 
 if [ -d /etc/udev/initramfs-rules.d ]; then
-	verbose "Coping files from /etc/udev/initramfs-rules.d ..."
+	verbose "Copying files from /etc/udev/initramfs-rules.d ..."
 	find -L /etc/udev/initramfs-rules.d/ \
 			-name '*.rules' \
 		-exec cp -aLt ./etc/udev/rules.d -- '{}' '+'

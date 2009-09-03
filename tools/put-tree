@@ -4,6 +4,6 @@
 export PATH="$helpersdir:$PATH"
 
 for tree in "$@"; do
-	verbose "Coping '$tree' recursively ..."
+	verbose "Copying '$tree' recursively ..."
 	cp -afLt "$rootdir" "$tree"/*
 done
