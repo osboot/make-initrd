@@ -106,7 +106,7 @@ get_dev() {
 set_lock() {
 	local name="$1" sec=50
 	while ! mkdir "/tmp/$name.lock" >/dev/null 2>&1; do
-		if [ $sec -gt 0 ]; then
+		if [ $sec -eq 0 ]; then
 			shell "It seems that the deadlock occurred."
 			return
 		fi
