@@ -1,6 +1,6 @@
 Name: make-initrd
 Version: 0.1.4
-Release: alt1
+Release: alt2
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -64,6 +64,9 @@ mv -f -- %buildroot/lib/mkinitrd/klibc/bin/* %buildroot/lib/mkinitrd/initramfs/b
 %_datadir/%name/features/lvm
 
 %changelog
+* Fri Sep 04 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.4-alt2
+- Fix ugly bug in cmdline parser.
+
 * Thu Sep 03 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.4-alt1
 - Fix requires;
 - Fix deadlock;
