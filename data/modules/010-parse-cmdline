@@ -18,7 +18,6 @@ run() {
 	for x in $CMDLINE; do
 		s="$(replace -s= "[a-z]-." "[A-Z]__" "$x")"
 		for n in $l; do
-			export "$n="
 			case "$s" in
 				RW)	readonly=	;;
 				RO)	readonly=1	;;
