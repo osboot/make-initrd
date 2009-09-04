@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.1.3
+Version: 0.1.4
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -9,7 +9,7 @@ Group: System/Base
 Packager: Alexey Gladkov <legion@altlinux.ru>
 
 Requires: libshell make sed module-init-tools coreutils grep glibc-utils
-Requires: make-initrd-klibc
+Requires: make-initrd-klibc ash-klibc
 Requires: udev-initramfs module-init-tools-initramfs
 
 BuildRequires: klibc-devel
@@ -55,6 +55,7 @@ mv -f -- %buildroot/lib/mkinitrd/klibc/bin/* %buildroot/lib/mkinitrd/initramfs/b
 %_bindir/*
 %_datadir/*
 %exclude %_datadir/%name/features/lvm
+%doc docs/README.ru
 
 %files klibc
 /lib/mkinitrd/initramfs
@@ -63,6 +64,12 @@ mv -f -- %buildroot/lib/mkinitrd/klibc/bin/* %buildroot/lib/mkinitrd/initramfs/b
 %_datadir/%name/features/lvm
 
 %changelog
+* Thu Sep 03 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.4-alt1
+- Fix requires;
+- Fix deadlock;
+- Fix parsing /proc/cmdline.
+- Add docs/README.ru.
+
 * Wed Aug 26 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.3-alt1
 - Move klibc utilities from /lib/mkinitrd/klibc/bin/
   to /lib/mkinitrd/initramfs/bin/.
