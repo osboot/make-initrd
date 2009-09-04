@@ -1,0 +1,1 @@
+RAID_DATADIR	?= $(FEATURESDIR)/raid/data
