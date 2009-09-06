@@ -6,6 +6,10 @@ run() {
 	# Default delay is 180s
 	sec=$(( ${ROOTDELAY:-180} * 10 ))
 	while [ "$sec" -gt 0 ] && [ ! -e "$rootmnt/$INIT" ]; do
+		# wait user input if any
+		while ! mkdir "/tmp/udev-tty.lock" >/dev/null 2>&1; do :; done
+		/bin/nuke "/tmp/udev-tty.lock"
+
 		/bin/sleep 0.1
 		sec=$(( $sec - 1 ))
 	done

@@ -2,7 +2,9 @@
 
 . /scripts/functions
 
-set_lock udev-tty
+# wait 10 minutes for user input before report deadlock
+# XXX: need other lock implementation for udev-io?
+set_lock udev-tty 600
 
 say() {
 	[ "$#" -eq 0 ] || printf '\n' >/dev/systty
