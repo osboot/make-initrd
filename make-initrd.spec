@@ -39,6 +39,15 @@ Requires: lvm2
 %description lvm
 LVM module for %name
 
+%package luks
+Summary: LUKS module for %name
+Group: System/Base
+Requires: cryptsetup
+AutoReq: noshell
+
+%description luks
+LUKS module for %name
+
 %prep
 %setup -q
 
@@ -55,6 +64,7 @@ mv -f -- %buildroot/lib/mkinitrd/klibc/bin/* %buildroot/lib/mkinitrd/initramfs/b
 %_bindir/*
 %_datadir/*
 %exclude %_datadir/%name/features/lvm
+%exclude %_datadir/%name/features/luks
 %doc docs/README.ru
 
 %files klibc
@@ -62,6 +72,9 @@ mv -f -- %buildroot/lib/mkinitrd/klibc/bin/* %buildroot/lib/mkinitrd/initramfs/b
 
 %files lvm
 %_datadir/%name/features/lvm
+
+%files luks
+%_datadir/%name/features/luks
 
 %changelog
 * Fri Sep 04 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.4-alt2
