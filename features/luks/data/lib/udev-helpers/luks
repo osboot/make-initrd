@@ -1,0 +1,29 @@
+#!/bin/sh
+
+. /dev/.initramfs/env
+. /scripts/functions
+
+devluks=
+nameluks=
+password=
+add() {
+	cryptsetup isLuks "$DEVNAME" || return 0
+
+	[ -n "$LUKSDEV" ] || LUKSDEV="$DEVNAME"
+	get_dev devluks "$LUKSDEV" || return 0
+
+	nameluks="${devluks##*/}-luks"
+
+	# TODO: noecho
+	password="$(udev-io ask "Password for '$devluks': ")"
+	echo -n "$password" | cryptsetup --key-file=- luksOpen "$devluks" "$nameluks"
+	retcode="$?"
+
+	if [ "$retcode" != "0" ]; then
+		udev-io say "Unable activate LUKS: $retcode"
+		mkdir -p /tmp/.udev-helper-error
+		return
+	fi
+}
+
+add
