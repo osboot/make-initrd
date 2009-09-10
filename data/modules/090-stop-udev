@@ -16,4 +16,9 @@ run() {
 
 	# ignore any failed event because the init script will trigger again all events
 	nuke /dev/.udev/queue/
+
+	if is_lock udev; then
+		verbose "Error flag found after udev"
+		return 1
+	fi
 }

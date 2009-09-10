@@ -9,8 +9,6 @@ run() {
 	# If /dev was not moved to the real filesystem, unmount it
 	[ -n "$INITRAMFS_DEV" ] || umount -l /dev
 
-	set_lock initrd
-
 	# Chain to real filesystem
 	exec run-init "$rootmnt" "$INIT" "$@" <"$rootmnt"/dev/console >"$rootmnt"/dev/console
 }

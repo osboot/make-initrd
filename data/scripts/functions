@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. /scripts/locks
+
 verbose() {
 	[ -n "$QUIET" ] || echo "$@"
 }
@@ -101,18 +103,4 @@ get_dev() {
 			;;
 	esac
 	eval "$retval=\"\$DEVNAME\""
-}
-
-set_lock() {
-	local name="$1" sec="${2-50}"
-	while ! mkdir "/tmp/$name.lock" >/dev/null 2>&1; do
-		if [ $sec -eq 0 ]; then
-			shell "It seems that the deadlock occurred."
-			return
-		fi
-		verbose "Waiting until $name lock will be released ..."
-		sec=$(( $sec - 1 ))
-		sleep 0.1
-	done
-	trap "/bin/nuke -- /tmp/$name.lock" HUP INT QUIT TERM EXIT
 }

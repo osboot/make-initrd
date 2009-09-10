@@ -18,8 +18,7 @@ add() {
 	local FSTYPE="${ROOTFSTYPE:-$ID_FS_TYPE}"
 	# Mount root
 	if ! mount "$roflag" $ROOTFLAGS -t "$FSTYPE" "$devroot" "$rootmnt"; then
-		mkdir -p /tmp/.udev-helper-error
-		udev-io say "Unable to mount $devroot as $FSTYPE."
+		lock_udev "Unable to mount $devroot as $FSTYPE."
 		return
 	fi
 	ln -sf "$devroot" /dev/root
