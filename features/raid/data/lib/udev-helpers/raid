@@ -1,4 +1,0 @@
-#!/bin/sh
-
-! mkdir /tmp/md_run >/dev/null 2>&1 ||
-	/bin/md_run
