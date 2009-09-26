@@ -1,0 +1,49 @@
+#!/bin/sh
+
+. /dev/.initramfs/env
+
+cfg="ipconfig -t ${IPTIMEOUT:-30}"
+[ "$INTERFACE" != 'lo' ] || IP='127.0.0.1:::::lo:none'
+
+mcut() {
+	local f="$1" s="$2"
+	local IFS=:
+	set -- $s
+	[ "$#" -ge "$f" ] || return 1
+	eval printf '%s' "\$$f"
+}
+
+add() {
+	[ -n "$IP" -a ! -f "/tmp/net-$INTERFACE.conf" ] ||
+		return 0
+
+	local dev= proto=
+	case "$IP" in
+		*:*:*:*:*:*:*)
+			dev="$(mcut 6 "$IP")"
+			proto='static'
+			;;
+		*:*)
+			dev="$(mcut 1 "$IP")"
+			proto="$(mcut 2 "$IP")"
+			;;
+	esac
+
+	[ -z "$dev" -o "$dev" = "$INTERFACE" ] ||
+		return 0
+
+	case "$proto" in
+		none|off) ;;
+		dhcp|bootp|rarp|both)	$cfg -c "$proto" -d "$INTERFACE" ;;
+		on|any|'')		$cfg "$INTERFACE" ;;
+		static)			$cfg "$IP" ;;
+		*)			$cfg -d "$INTERFACE" ;;
+	esac
+
+	[ -f "/tmp/net-$INTERFACE.conf" ] ||
+		return 0
+
+	echo online > "/sys/${DEVPATH#/sys/}/uevent"
+}
+
+add

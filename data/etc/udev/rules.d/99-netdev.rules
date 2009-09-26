@@ -1,0 +1,1 @@
+SUBSYSTEM=="net", ACTION=="add", RUN+="/lib/udev-helpers/netdev add"
