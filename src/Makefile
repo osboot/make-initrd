@@ -3,7 +3,8 @@ KCC  = klcc -shared
 
 PROG = gen_init_cpio
 SRCS = gen_init_cpio.c
-OBJS = $(SRCS:.c=.o)
+
+CFLAGS = -Wall -Wextra
 
 klibc_PROGS = ls printenv replace
 klibc_SRCS  = ls.c printenv.c replace.c
@@ -20,11 +21,11 @@ MKDIR_P ?= mkdir -p
 
 all: $(PROG) $(klibc_PROGS)
 
-$(PROG): $(OBJS)
-	$(CC) $(LDFLAGS) -o $@ $< $(LIBS)
+$(PROG):
+	$(CC) $(CFLAGS) -o $@ $@.c
 
 $(klibc_PROGS):
-	$(KCC) -o $@ $@.c
+	$(KCC) $(CFLAGS) -o $@ $@.c
 
 install:
 	$(MKDIR_P) -- $(DESTDIR)$(bindir)
