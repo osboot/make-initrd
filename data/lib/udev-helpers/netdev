@@ -3,7 +3,6 @@
 . /dev/.initramfs/env
 
 cfg="ipconfig -t ${IPTIMEOUT:-30}"
-[ "$INTERFACE" != 'lo' ] || IP='127.0.0.1:::::lo:none'
 
 mcut() {
 	local f="$1" s="$2"
@@ -14,18 +13,18 @@ mcut() {
 }
 
 add() {
-	[ -n "$IP" -a ! -f "/tmp/net-$INTERFACE.conf" ] ||
+	[ ! -f "/tmp/net-$INTERFACE.conf" ] ||
 		return 0
 
 	local dev= proto=
-	case "$IP" in
+	case "$IPOPTS" in
 		*:*:*:*:*:*:*)
-			dev="$(mcut 6 "$IP")"
+			dev="$(mcut 6 "$IPOPTS")"
 			proto='static'
 			;;
 		*:*)
-			dev="$(mcut 1 "$IP")"
-			proto="$(mcut 2 "$IP")"
+			dev="$(mcut 1 "$IPOPTS")"
+			proto="$(mcut 2 "$IPOPTS")"
 			;;
 	esac
 
@@ -36,7 +35,7 @@ add() {
 		none|off) ;;
 		dhcp|bootp|rarp|both)	$cfg -c "$proto" -d "$INTERFACE" ;;
 		on|any|'')		$cfg "$INTERFACE" ;;
-		static)			$cfg "$IP" ;;
+		static)			$cfg "$IPOPTS" ;;
 		*)			$cfg -d "$INTERFACE" ;;
 	esac
 
@@ -46,4 +45,11 @@ add() {
 	echo online > "/sys/${DEVPATH#/sys/}/uevent"
 }
 
-add
+[ -n "$IP" ] || exit 0
+
+i=0
+while [ "$i" -lt "$IP" ]; do
+	eval "IPOPTS=\"\$IP$i\""
+	add
+	i=$(($i+1))
+done
