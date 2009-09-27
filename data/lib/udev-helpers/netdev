@@ -45,6 +45,11 @@ add() {
 	echo online > "/sys/${DEVPATH#/sys/}/uevent"
 }
 
+if [ "$INTERFACE" = 'lo' ]; then
+	IP0='127.0.0.1:::::lo:none'
+	IP=1
+fi
+
 [ -n "$IP" ] || exit 0
 
 i=0
