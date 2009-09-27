@@ -1,0 +1,1 @@
+SUBSYSTEM=="net", ACTION=="online", RUN+="/lib/udev-helpers/nfsroot"

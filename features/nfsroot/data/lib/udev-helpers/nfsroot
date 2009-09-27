@@ -1,0 +1,36 @@
+#!/bin/sh
+
+. /dev/.initramfs/env
+. /scripts/functions
+
+add() {
+	[ -n "$NFSROOT" ] ||
+		return 0
+
+	[ ! -e /dev/root ] || return 0
+
+	. "/tmp/net-$INTERFACE.conf"
+
+	# get nfs root from dhcp
+	if [ "$NFSROOT" = 'auto' ]; then
+		NFSROOT="$ROOTPATH"
+		[ "${NFSROOT#*:}" != "$NFSROOT" ] || NFSROOT="$ROOTSERVER:$ROOTPATH"
+	else
+	# nfsroot=[<server-ip>:]<root-dir>[,<nfs-options>]
+		[ "${NFSROOT#*,}" = "$NFSROOT" ] || NFSOPTS="-o ${NFSROOT#*,}"
+		NFSROOT=${NFSROOT%%,*}
+		[ "${NFSROOT#*:}" != "$NFSROOT" ] || NFSROOT="${ROOTSERVER}:${NFSROOT}"
+	fi
+
+	# nfs options are an optional arg
+	[ -n "$NFSOPTS" ] || NFSOPTS="-o retrans=10"
+
+	local roflag='-o rw'
+	[ -z "$readonly" ] || roflag='-o ro'
+
+	udev-io say "Mount '$NFSROOT' as $rootmnt"
+	nfsmount -o nolock $roflag $NFSOPTS "$NFSROOT" "$rootmnt"
+	ln -sf /dev/nfs /dev/root
+}
+
+add
