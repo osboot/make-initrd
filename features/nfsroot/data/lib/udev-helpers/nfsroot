@@ -19,7 +19,7 @@ add() {
 	# nfsroot=[<server-ip>:]<root-dir>[,<nfs-options>]
 		[ "${NFSROOT#*,}" = "$NFSROOT" ] || NFSOPTS="-o ${NFSROOT#*,}"
 		NFSROOT=${NFSROOT%%,*}
-		[ "${NFSROOT#*:}" != "$NFSROOT" ] || NFSROOT="${ROOTSERVER}:${NFSROOT}"
+		[ "${NFSROOT#*:}" != "$NFSROOT" ] || NFSROOT="$ROOTSERVER:$NFSROOT"
 	fi
 
 	# nfs options are an optional arg
@@ -28,8 +28,9 @@ add() {
 	local roflag='-o rw'
 	[ -z "$readonly" ] || roflag='-o ro'
 
+	nfsmount -o nolock $roflag $NFSOPTS "$NFSROOT" "$rootmnt" ||
+		return 0
 	udev-io say "Mount '$NFSROOT' as $rootmnt"
-	nfsmount -o nolock $roflag $NFSOPTS "$NFSROOT" "$rootmnt"
 	ln -sf /dev/nfs /dev/root
 }
 
