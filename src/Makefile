@@ -6,8 +6,8 @@ SRCS = gen_init_cpio.c
 
 CFLAGS = -Wall -Wextra
 
-klibc_PROGS = ls printenv replace
-klibc_SRCS  = ls.c printenv.c replace.c
+klibc_PROGS = ls printenv replace ifaddr
+klibc_SRCS  = ls.c printenv.c replace.c ifaddr.c
 
 klibc_bindir ?= /lib/mkinitrd/klibc/bin
 
