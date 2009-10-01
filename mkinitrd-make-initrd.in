@@ -29,8 +29,7 @@ print_version()
 	$PROG version $PROG_VERSION
 	Written by Alexey I. Froloff <raorn@altlinux.org>
 
-	Copyright (C) 2009  Alexey Gladkov <gladkov.alexey@gmail.com>
-	Copyright (C) 2009  Kirill A. Shutemov <kirill@shutemov.name>
+	Copyright (C) 2009  Alexey I. Froloff <raorn@altlinux.org>
 	This is free software; see the source for copying conditions.  There is NO
 	warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	EOF
