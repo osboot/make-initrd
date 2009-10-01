@@ -16,7 +16,7 @@ DIRS = autodetect data features tools
 
 CONF = initrd.mk
 
-bin_TARGETS = make-initrd
+bin_TARGETS = make-initrd mkinitrd-make-initrd
 
 TARGETS = config.mk rules.mk
 
