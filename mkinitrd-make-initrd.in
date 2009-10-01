@@ -12,6 +12,7 @@ show_help()
 	Usage: $PROG [options] <initrd-image> <kernel-version>
 
 	Options:
+	  --fstab=FILE       use FILE instead of /etc/fstab;
 	  -f, --force        force initrd image creation;
 	  -v, --verbose      print a message for each action;
 	  -V, --version      print program version and exit;
@@ -40,15 +41,16 @@ TEMP=`getopt -n $PROG -o a:,f,V,v,d,h -l type:,fstab:,preload:,with:,extra:,with
 	show_usage
 eval set -- "$TEMP"
 
-VERBOSE=
-IMAGEFILE=
-KERNEL=
 FORCE=
 while :; do
 	case "$1" in
-		-v|--verbose) VERBOSE=1
+		--fstab) shift
+			export FSTAB="$1"
 			;;
-		-a|--type|--fstab|--preload|--with|--extra|--add)
+		-v|--verbose)
+			export VERBOSE=1
+			;;
+		-a|--type|--preload|--with|--extra|--add)
 			message "Ignoring mkinitrd option \`$1=$2'..."
 			shift
 			;;
@@ -75,12 +77,12 @@ done
 [ $# -eq 2 ] ||
 	show_usage
 
-IMAGEFILE="$1"
-KERNEL="$2"
+export IMAGEFILE="$1"
+export KERNEL="$2"
 
 if [ -f "$IMAGEFILE" -a -z "$FORCE" ]; then
 	message "$IMAGEFILE already exists."
 	exit 1
 fi
 
-exec make-initrd VERBOSE=$VERBOSE IMAGEFILE="$IMAGEFILE" KERNEL="$KERNEL"
+exec make-initrd

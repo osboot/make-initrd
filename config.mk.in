@@ -23,6 +23,7 @@ PUT_TREE		= $(TOOLSDIR)/put-tree
 # Global variables
 FIRMWARE_DIRS		?= /lib/firmware /usr/lib/hotplug/firmware /usr/local/lib/firmware
 VERBOSE			?=
+FSTAB			?= /etc/fstab
 
 # User defaults
 FEATURES	?=

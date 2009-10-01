@@ -3,6 +3,8 @@
 . "${0%/*}"/functions
 . shell-error
 
+fstab="${FSTAB:-/etc/fstab}"
+
 get_majmin() {
 	local v
 	v="$(stat -c '%02t:%02T' "$1")" &&
@@ -51,7 +53,7 @@ while [ -z "$eof" ]; do
 		t_fstype="$fstype"
 		break
 	fi
-done < /etc/fstab
+done < "$fstab"
 
 [ -n "$t_fsname" ] ||
 	fatal "Unable to find name of mounted root file system"
