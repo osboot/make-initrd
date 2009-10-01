@@ -1,6 +1,0 @@
-#!/bin/sh
-
-msg='Running RAID detection...'
-run() {
-	md_run $CMDLINE
-}
