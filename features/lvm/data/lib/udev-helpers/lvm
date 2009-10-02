@@ -1,4 +1,8 @@
-#!/bin/sh
+#!/bin/udevsh
 
-/sbin/lvm vgscan
-/sbin/lvm vgchange -ay
+add() {
+	/sbin/lvm vgscan >/dev/null
+	/sbin/lvm vgchange -ay >/dev/null
+}
+
+add

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/udevsh
 
 . /dev/.initramfs/env
 

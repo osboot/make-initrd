@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/udevsh
 
 . /dev/.initramfs/env
 . /scripts/functions
@@ -30,7 +30,7 @@ add() {
 
 	nfsmount -o nolock $roflag $NFSOPTS "$NFSROOT" "$rootmnt" ||
 		return 0
-	udev-io say "Mount '$NFSROOT' as $rootmnt"
+	echo "Mount '$NFSROOT' as $rootmnt"
 	ln -sf /dev/nfs /dev/root
 }
 
