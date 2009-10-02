@@ -1,0 +1,11 @@
+#!/bin/sh -efu
+
+. /scripts/locks
+
+tty=/dev/systty
+
+# wait 10 minutes for user input before report deadlock
+# XXX: need other lock implementation for udev-io?
+set_lock tty 600
+
+/bin/sh "$@" >"$tty" 2>"$tty" <"$tty"
