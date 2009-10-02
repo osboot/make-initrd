@@ -35,5 +35,5 @@ wait_unlock() {
 
 lock_udev() {
 	mkdir -p "$lockd/udev"
-	udev-io say "$1"
+	echo "$1"
 }
