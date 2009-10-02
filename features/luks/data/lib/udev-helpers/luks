@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/udevsh
 
 . /dev/.initramfs/env
 . /scripts/functions
@@ -14,14 +14,11 @@ add() {
 
 	nameluks="${devluks##*/}-luks"
 
-	# TODO: noecho
-	password="$(udev-io ask "Password for '$devluks': ")"
-	echo -n "$password" | cryptsetup --key-file=- luksOpen "$devluks" "$nameluks"
+	cryptsetup --key-file=- luksOpen "$devluks" "$nameluks"
 	retcode="$?"
 
 	if [ "$retcode" != "0" ]; then
-		udev-io say "Unable activate LUKS: $retcode"
-		mkdir -p /tmp/.udev-helper-error
+		lock_udev "Unable activate LUKS: $retcode"
 		return
 	fi
 }
