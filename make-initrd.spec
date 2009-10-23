@@ -16,7 +16,7 @@ BuildRequires: klibc-devel
 
 # This avoids getting a dependency on sh from "#!/bin/sh".
 #AutoReq: yes, nopam, noperl, nopython, noshell, notcl
-AutoReq: noshell
+AutoReq: noshell, noshebang
 
 Source0: %name-%version.tar
 
@@ -35,6 +35,7 @@ Unilities for %name.
 Summary: LVM module for %name
 Group: System/Base
 Requires: lvm2
+AutoReq: noshell, noshebang
 
 %description lvm
 LVM module for %name
@@ -43,7 +44,7 @@ LVM module for %name
 Summary: LUKS module for %name
 Group: System/Base
 Requires: cryptsetup
-AutoReq: noshell
+AutoReq: noshell, noshebang
 
 %description luks
 LUKS module for %name
