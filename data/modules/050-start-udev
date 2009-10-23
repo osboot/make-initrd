@@ -4,10 +4,11 @@ msg='Starting udevd...'
 run() {
 	printenv -q > /dev/.initramfs/env
 
+	set_lock tty 600
+
 	mkdir -p /dev/.udev/db/
 	udevd --daemon
 
 	mkdir -p /dev/.udev/queue/
 	udevadm trigger
-	udevadm settle
 }

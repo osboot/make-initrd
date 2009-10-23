@@ -1,11 +1,16 @@
 #!/bin/sh -efu
 
-. /scripts/locks
+. /scripts/functions
 
 tty=/dev/systty
 
-# wait 10 minutes for user input before report deadlock
-# XXX: need other lock implementation for udev-io?
-set_lock tty 600
+stdin_needed() {
+	set_lock tty 600
+	/sbin/udevadm settle
+	/bin/sh "$@" >"$tty" 2>"$tty" <"$tty"
+}
 
-/bin/sh "$@" >"$tty" 2>"$tty" <"$tty"
+[ "${1-}" = "--stdin" ] ||
+	exec /bin/sh "$@" >"$tty" 2>"$tty"
+shift
+stdin_needed "$@" &

@@ -1,4 +1,4 @@
-#!/bin/udevsh
+#!/bin/udevsh --stdin
 
 . /dev/.initramfs/env
 . /scripts/functions
