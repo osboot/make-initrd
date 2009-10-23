@@ -1,6 +1,42 @@
 #!/bin/sh
 
-. /scripts/locks
+lockd=/tmp
+
+add_lock() {
+	local sec=$(($2*10))
+	while ! mkdir "$lockd/$1" >/dev/null 2>&1; do
+		if [ "$sec" != '-' ] && [ $sec -eq 0 ]; then
+			shell "It seems that the deadlock occurred."
+			return 1
+		fi
+		sec=$(($sec-1))
+		sleep 0.1
+	done
+}
+
+del_lock() {
+	/bin/nuke -- "$lockd/$1"
+}
+
+set_lock() {
+	add_lock "$1" "${2-50}" || return 0
+	trap "del_lock $1" HUP INT QUIT TERM EXIT
+}
+
+is_lock() {
+	[ -d "$lockd/$1" ]
+}
+
+wait_unlock() {
+	while is_lock "$1"; do
+		sleep 0.1
+	done
+}
+
+lock_udev() {
+	mkdir -p "$lockd/udev"
+	echo "$1"
+}
 
 verbose() {
 	[ -n "$QUIET" ] || echo "$@"
