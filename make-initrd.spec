@@ -1,6 +1,6 @@
 Name: make-initrd
-Version: 0.1.4
-Release: alt2
+Version: 0.1.5
+Release: alt1
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -78,6 +78,18 @@ mv -f -- %buildroot/lib/mkinitrd/klibc/bin/* %buildroot/lib/mkinitrd/initramfs/b
 %_datadir/%name/features/luks
 
 %changelog
+* Sun Oct 25 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.5-alt1
+- Add simple RAID feature.
+- Add simple NFS root support.
+- Add simple network configuration.
+- Add LUKS implemetation.
+- Use udevsh in all udev helpers.
+- device-mapper: Load dm_mod before udev.
+- add-modules: Add preload-modules and load-modules stage.
+- Allow to set more than one parameter with the same name.
+- mkinitrd-like make-initrd wrapper (thx Alexey I. Froloff).
+- RPM: Do not generate automatic requires from shebang.
+
 * Fri Sep 04 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.4-alt2
 - Fix ugly bug in cmdline parser.
 
