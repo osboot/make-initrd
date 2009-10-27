@@ -73,43 +73,6 @@ load_modules() {
 	done < /conf/modules-"$1"
 }
 
-configure_network() {
-	# networking already configured thus bail out
-	[ -n "$DEVICE" ] && [ -e /tmp/net-"$DEVICE".conf ] && return 0
-
-	# support ip options see linux sources Documentation/nfsroot.txt
-	case "$IPOPTS" in
-		none|off)
-			# Do nothing
-			;;
-		""|on|any)
-			# Bring up device
-			ipconfig "$DEVICE"
-			;;
-		dhcp|bootp|rarp|both)
-			ipconfig -c "$IPOPTS" -d "$DEVICE"
-			;;
-		*)
-			ipconfig -d "$IPOPTS"
-
-			# grab device entry from ip option
-			NEW_DEVICE="${IPOPTS#*:*:*:*:*:*}"
-			if [ "$NEW_DEVICE" != "$IPOPTS" ]; then
-				NEW_DEVICE="${NEW_DEVICE%:*}"
-			else
-				# wrong parse, possibly only a partial string
-				NEW_DEVICE=
-			fi
-			if [ -n "$NEW_DEVICE" ]; then
-				DEVICE="$NEW_DEVICE"
-			fi
-			;;
-	esac
-
-	# source relevant ipconfig output
-	. /tmp/net-${DEVICE}.conf
-}
-
 get_dev() {
 	local name retval value
 	retval="$1"; shift
