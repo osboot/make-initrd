@@ -62,6 +62,9 @@ LUKS module for %name
 %_datadir/%name/features/luks
 
 %changelog
+* Wed Nov 11 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.6-alt1
+- Remove klibc support.
+
 * Sun Oct 25 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.5-alt1
 - Add simple RAID feature.
 - Add simple NFS root support.
