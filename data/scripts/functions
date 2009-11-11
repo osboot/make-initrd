@@ -15,7 +15,7 @@ add_lock() {
 }
 
 del_lock() {
-	/bin/nuke -- "$lockd/$1"
+	/bin/rm -rf -- "$lockd/$1"
 }
 
 set_lock() {

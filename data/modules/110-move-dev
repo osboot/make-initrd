@@ -23,6 +23,6 @@ run() {
 
 	# create a temporary symlink to the final /dev for other initramfs
 	# scripts
-	nuke /dev
+	rm -rf /dev
 	ln -s $rootmnt/dev /dev
 }

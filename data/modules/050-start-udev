@@ -2,7 +2,7 @@
 
 msg='Starting udevd...'
 run() {
-	printenv -q > /dev/.initramfs/env
+	showenv -q > /dev/.initramfs/env
 
 	set_lock tty 600
 

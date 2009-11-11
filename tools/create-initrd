@@ -20,11 +20,18 @@ mkdir $verbose -p -- \
 	./var/lock \
 	#
 
-put-tree /lib/mkinitrd/klibc
-put-tree /lib/mkinitrd/udev
-put-tree /lib/mkinitrd/module-init-tools
-put-tree /lib/mkinitrd/initramfs
+[ -z "${PUT_DIRS-}"  ] || put-tree $PUT_DIRS
+[ -z "${PUT_FILES-}" ] || put-file $PUT_FILES
+
+# initrd specific files
 put-tree "$datadir"
+
+for n in bash dash mksh ash; do
+	[ -x ./bin/$n ] || continue
+	verbose "Setting /bin/$n as /bin/sh ..."
+	ln -s /bin/$n ./bin/sh
+	break
+done
 
 if [ -f /etc/modprobe.conf ]; then
 	verbose "Copying /etc/modprobe.conf ..."

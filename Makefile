@@ -1,5 +1,5 @@
 PROJECT = make-initrd
-VERSION = 0.1.0
+VERSION = $(shell sed '/^Version: */!d;s///;q' make-initrd.spec)
 
 sysconfdir = /etc
 bindir     = /usr/bin
@@ -18,11 +18,11 @@ CONF = initrd.mk
 
 bin_TARGETS = make-initrd mkinitrd-make-initrd
 
-TARGETS = config.mk rules.mk
+TARGETS = config.mk rules.mk initfiles.mk
 
 SUBDIRS = src
 
-.PHONY:	$(SUBDIRS)
+.PHONY: $(SUBDIRS)
 
 all: $(SUBDIRS) $(TARGETS) $(bin_TARGETS)
 

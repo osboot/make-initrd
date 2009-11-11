@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.1.5
+Version: 0.1.6
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -9,10 +9,7 @@ Group: System/Base
 Packager: Alexey Gladkov <legion@altlinux.ru>
 
 Requires: libshell make sed module-init-tools coreutils grep glibc-utils
-Requires: make-initrd-klibc ash-klibc
-Requires: udev-initramfs module-init-tools-initramfs
-
-BuildRequires: klibc-devel
+Requires: kinit-utils
 
 # This avoids getting a dependency on sh from "#!/bin/sh".
 #AutoReq: yes, nopam, noperl, nopython, noshell, notcl
@@ -22,14 +19,6 @@ Source0: %name-%version.tar
 
 %description
 make-initrd is a new, uevent-driven initramfs infrastructure based around udev.
-
-%package klibc
-Summary: Unilities for %name
-Group: System/Base
-Requires(pre): klibc-utils-initramfs
-
-%description klibc
-Unilities for %name.
 
 %package lvm
 Summary: LVM module for %name
@@ -57,8 +46,6 @@ LUKS module for %name
 
 %install
 %make_install DESTDIR=%buildroot install
-mkdir -p -- %buildroot/lib/mkinitrd/initramfs/{bin,sbin,lib}
-mv -f -- %buildroot/lib/mkinitrd/klibc/bin/* %buildroot/lib/mkinitrd/initramfs/bin/
 
 %files
 %config(noreplace) %_sysconfdir/initrd.mk
@@ -67,9 +54,6 @@ mv -f -- %buildroot/lib/mkinitrd/klibc/bin/* %buildroot/lib/mkinitrd/initramfs/b
 %exclude %_datadir/%name/features/lvm
 %exclude %_datadir/%name/features/luks
 %doc docs/README.ru
-
-%files klibc
-/lib/mkinitrd/initramfs
 
 %files lvm
 %_datadir/%name/features/lvm
