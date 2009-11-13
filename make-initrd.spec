@@ -1,6 +1,6 @@
 Name: make-initrd
 Version: 0.1.6
-Release: alt1
+Release: alt2
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -38,6 +38,14 @@ AutoReq: noshell, noshebang
 %description luks
 LUKS module for %name
 
+%package nfs
+Summary: NFS module for %name
+Group: System/Base
+AutoReq: noshell, noshebang
+
+%description nfs
+NFS module for %name
+
 %prep
 %setup -q
 
@@ -53,6 +61,7 @@ LUKS module for %name
 %_datadir/*
 %exclude %_datadir/%name/features/lvm
 %exclude %_datadir/%name/features/luks
+%exclude %_datadir/%name/features/nfsroot
 %doc docs/README.ru
 
 %files lvm
@@ -61,7 +70,15 @@ LUKS module for %name
 %files luks
 %_datadir/%name/features/luks
 
+%files nfs
+%_datadir/%name/features/nfsroot
+
 %changelog
+* Fri Nov 13 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.6-alt2
+- Add nfs subpackage.
+- Add INITRD variable to identify initramfs.
+- Minor bugfixes.
+
 * Wed Nov 11 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.6-alt1
 - Remove klibc support.
 
