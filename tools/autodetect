@@ -5,17 +5,18 @@ export PATH="$helpersdir:$PATH"
 
 . shell-error
 
-param="$1"; shift
+for param; do
+	module="${param%%:*}"
+	arg=
+	[ -n "${param##*:*}" ] || arg="${param#*:}"
 
-module="${param%%:*}"
-arg=
-[ -n "${param##*:*}" ] || arg="${param#*:}"
+	[ -f "$autodetectdir/detect-$module" ] ||
+		fatal "Unknown module: $module"
 
-[ -f "$autodetectdir/detect-$module" ] ||
-	fatal "Unknown module: $module"
-
-"$autodetectdir/detect-$module" "$arg" |
-while read f; do
-	[ -n "$verbose" ] || message "$f"
-	put-file "$f"
+	"$autodetectdir/detect-$module" "$arg" |
+	while read f; do
+		[ -n "$verbose" ] || message "$f"
+		put-file "$f"
+	done
 done
+

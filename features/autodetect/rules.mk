@@ -2,8 +2,6 @@ $(call require,depmod-image)
 
 autodetect: create
 	@echo "Detecting modules..."
-	@for m in $(AUTODETECT); do \
-		$(AUTODETECT_MODULES) $$m; \
-	done
+	@$(AUTODETECT_MODULES) $(AUTODETECT)
 
 depmod-image: autodetect
