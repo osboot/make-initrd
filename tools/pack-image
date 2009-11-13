@@ -43,7 +43,9 @@ filter() {
 	nod dev/full    0666 0 0 c 1 7
 	nod dev/random  0666 0 0 c 1 8
 	nod dev/systty  0666 0 0 c 4 0
+	nod dev/tty0    0666 0 0 c 4 0
 	nod dev/tty1    0666 0 0 c 4 1
+	nod dev/tty     0666 0 0 c 5 0
 	nod dev/console 0600 0 0 c 5 1
 	nod dev/ptmx    0666 0 0 c 5 2
 	EOF
