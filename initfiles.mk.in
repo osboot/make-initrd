@@ -11,8 +11,7 @@ PUT_FILES += \
 	/lib/udev/firmware \
 	/lib/udev/path_id \
 	/lib/udev/scsi_id \
-	/lib/udev/usb_id \
-	/lib/udev/vol_id
+	/lib/udev/usb_id
 
 # System utilities
 PUT_FILES += \
@@ -23,7 +22,6 @@ PUT_FILES += \
 	/sbin/halt \
 	/bin/ash \
 	/bin/cat \
-	/bin/false \
 	/bin/kill \
 	/bin/ln \
 	/bin/ls \
@@ -33,8 +31,7 @@ PUT_FILES += \
 	/bin/umount \
 	/bin/readlink \
 	/bin/rm \
-	/bin/sleep \
-	/bin/true
+	/bin/sleep
 
 # System files
 PUT_FILES += /etc/group /etc/passwd
