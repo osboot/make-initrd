@@ -26,6 +26,8 @@ mkdir $verbose -p -- \
 # initrd specific files
 put-tree "$datadir"
 
+:>>./etc/fstab
+
 for n in bash dash mksh ash; do
 	[ -x ./bin/$n ] || continue
 	verbose "Setting /bin/$n as /bin/sh ..."
