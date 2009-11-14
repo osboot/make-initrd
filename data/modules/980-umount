@@ -5,7 +5,5 @@ run() {
 	umount /sys
 	umount /proc
 	umount /dev/pts
-
-	# If /dev was not moved to the real filesystem, unmount it
-	[ -n "$INITRAMFS_DEV" ] || umount -l /dev
+	umount -l /dev
 }
