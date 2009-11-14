@@ -11,7 +11,8 @@ PUT_FILES += \
 	/lib/udev/firmware \
 	/lib/udev/path_id \
 	/lib/udev/scsi_id \
-	/lib/udev/usb_id
+	/lib/udev/usb_id \
+	/lib/udev/vol_id
 
 # System utilities
 PUT_FILES += \
