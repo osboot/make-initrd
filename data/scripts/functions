@@ -53,7 +53,7 @@ shell() {
 		done
 	fi
 	echo "$@"
-	PS1='(initramfs) ' /bin/sh -i </dev/console >/dev/console 2>&1
+	PS1='(initramfs) ' /bin/sh -i +m </dev/console >/dev/console 2>&1
 }
 
 run_scripts() {
