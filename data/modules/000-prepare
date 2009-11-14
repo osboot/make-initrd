@@ -2,13 +2,13 @@
 
 msg="Loading, please wait..."
 run() {
-	mount -t sysfs -o nodev,noexec,nosuid none /sys
-	mount -t proc  -o nodev,noexec,nosuid none /proc
-	mount -t tmpfs -o size=10M,mode=0755  udev /dev
+	mount -n -t sysfs -o nodev,noexec,nosuid none /sys
+	mount -n -t proc  -o nodev,noexec,nosuid none /proc
+	mount -n -t tmpfs -o size=10M,mode=0755  udev /dev
 
 	mkdir /dev/.initramfs /dev/pts /dev/shm
 
-	mount -t devpts devpts /dev/pts
+	mount -n -t devpts devpts /dev/pts
 
 	mknod /dev/ram     b 1 1
 	mknod /dev/null    c 1 3
