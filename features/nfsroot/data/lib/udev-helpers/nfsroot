@@ -4,10 +4,13 @@
 . /scripts/functions
 
 add() {
+	[ ! -e /dev/root ] || return 0
+
+	[ -n "$NFSROOT" -o "$ROOT" != '/dev/nfs' ] ||
+		NFSROOT='auto'
+
 	[ -n "$NFSROOT" ] ||
 		return 0
-
-	[ ! -e /dev/root ] || return 0
 
 	. "/tmp/net-$INTERFACE.conf"
 
