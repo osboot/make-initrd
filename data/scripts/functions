@@ -78,6 +78,9 @@ get_dev() {
 	retval="$1"; shift
 	name="$1"; shift
 
+	[ -n "$retval" -a -n "$name" ] ||
+		return 1
+
 	case "$name" in
 		UUID=*)
 			[ "$ID_FS_UUID" = "${name#UUID=}" ] ||
