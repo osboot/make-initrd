@@ -1,6 +1,6 @@
 Name: make-initrd
 Version: 0.1.6
-Release: alt2
+Release: alt3
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -74,6 +74,13 @@ NFS module for %name
 %_datadir/%name/features/nfsroot
 
 %changelog
+* Mon Nov 16 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.6-alt3
+- initrd.mk: Disable IMAGEFILE and use default value.
+- autodetect: Fix AUTODETECT variable.
+- Rename INITRD -> RUN_INITRD.
+- Turn off job control for emergency shell.
+- Allow ROOT=/dev/nfs.
+
 * Fri Nov 13 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.6-alt2
 - Add nfs subpackage.
 - Add INITRD variable to identify initramfs.
