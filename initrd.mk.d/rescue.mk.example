@@ -1,0 +1,15 @@
+IMAGE_SUFFIX = -rescue
+
+# trying to detect modules for root and input devices(like keyboard)
+AUTODETECT = root input net
+
+FEATURES = autodetect add-modules compress bootsplash cleanup
+
+MODULES_ADD += usbcore ehci-hcd
+
+PUT_FILES += \
+	/bin/dmesg \
+	/bin/openvt \
+	/sbin/chroot \
+	/sbin/badblocks \
+	/sbin/fsck.*
