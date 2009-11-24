@@ -40,3 +40,11 @@ clean:
 
 # Load requested features
 include $(call require,$(FEATURES))
+
+# Show summary after all actions
+summary:
+	@echo
+	@echo "Image is seved as $(IMAGEFILE)"
+	@echo
+
+all: summary

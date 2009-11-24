@@ -42,7 +42,7 @@ install: $(SUBDIRS) $(TARGETS) $(bin_TARGETS)
 	$(MKDIR_P) -- $(DESTDIR)$(workdir)
 	$(MKDIR_P) -- $(DESTDIR)$(datadir)/$(PROJECT)
 	$(CP) -r -- $(DIRS) $(TARGETS) $(DESTDIR)$(datadir)/$(PROJECT)/
-	$(MKDIR_P) -- $(DESTDIR)$(sysconfdir)
+	$(MKDIR_P) -- $(DESTDIR)$(sysconfdir)/initrd.mk.d
 	$(CP) $(CONF) $(DESTDIR)$(sysconfdir)/
 	$(MKDIR_P) -- $(DESTDIR)$(bindir)
 	$(CP) $(bin_TARGETS) $(DESTDIR)$(bindir)/
