@@ -29,7 +29,8 @@ FSTAB			?= /etc/fstab
 # User defaults
 FEATURES	?=
 KERNEL		?= $(shell uname -r)
-IMAGEFILE	?= /boot/initrd-$(KERNEL).img
+IMAGE_SUFFIX	?=
+IMAGEFILE	?= /boot/initrd-$(KERNEL)$(IMAGE_SUFFIX).img
 
 # Load extra configs
 include $(FEATURESDIR)/*/config.mk
