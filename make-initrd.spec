@@ -1,6 +1,6 @@
 Name: make-initrd
-Version: 0.1.6
-Release: alt3
+Version: 0.1.7
+Release: alt1
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -56,6 +56,7 @@ NFS module for %name
 %make_install DESTDIR=%buildroot install
 
 %files
+%dir %_sysconfdir/initrd.mk.d
 %config(noreplace) %_sysconfdir/initrd.mk
 %_bindir/*
 %_datadir/*
@@ -74,6 +75,10 @@ NFS module for %name
 %_datadir/%name/features/nfsroot
 
 %changelog
+* Wed Nov 25 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.7-alt1
+- Allow to pack few images by single make-initrd execution.
+- Change boottime output and rename modules.
+
 * Mon Nov 16 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.6-alt3
 - initrd.mk: Disable IMAGEFILE and use default value.
 - autodetect: Fix AUTODETECT variable.
