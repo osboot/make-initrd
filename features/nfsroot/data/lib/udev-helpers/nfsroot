@@ -33,7 +33,7 @@ add() {
 
 	nfsmount -o nolock $roflag $NFSOPTS "$NFSROOT" "$rootmnt" ||
 		return 0
-	echo "Mount '$NFSROOT' as $rootmnt"
+	message "Mount '$NFSROOT' as $rootmnt"
 	ln -sf /dev/nfs /dev/root
 }
 

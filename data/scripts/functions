@@ -2,6 +2,29 @@
 
 lockd=/tmp
 
+stage=${stage:-init}
+message() {
+	printf '[%-12s] %s\n' "$stage" "$*"
+}
+
+verbose() {
+	[ -n "$QUIET" ] || message "$@"
+}
+
+shell() {
+	# Disallow console access
+	[ "$PANIC" != 0 ] || reboot
+
+	if [ -n "$RESCUE_MODULES" ]; then
+		local m
+		for m in $RESCUE_MODULES; do
+			modprobe -q "$m"
+		done
+	fi
+	message "$@"
+	PS1='(initramfs) ' /bin/sh -i +m </dev/console >/dev/console 2>&1
+}
+
 add_lock() {
 	local sec=$(($2*10))
 	while ! mkdir "$lockd/$1" >/dev/null 2>&1; do
@@ -35,25 +58,7 @@ wait_unlock() {
 
 lock_udev() {
 	mkdir -p "$lockd/udev"
-	echo "$1"
-}
-
-verbose() {
-	[ -n "$QUIET" ] || echo "$@"
-}
-
-shell() {
-	# Disallow console access
-	[ "$PANIC" != 0 ] || reboot
-
-	if [ -n "$RESCUE_MODULES" ]; then
-		local m
-		for m in $RESCUE_MODULES; do
-			modprobe -q "$m"
-		done
-	fi
-	echo "$@"
-	PS1='(initramfs) ' /bin/sh -i +m </dev/console >/dev/console 2>&1
+	message "$1"
 }
 
 run_scripts() {

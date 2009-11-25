@@ -20,21 +20,22 @@ run_scripts top
 for m in /modules/*; do
 	[ -x "$m" ] ||
 		continue
-	n="${m#*-}"
 
-	[ -n "${IGNORE##*,$n,*}" ] ||
+	export stage="${m#*-}"
+
+	[ -n "${IGNORE##*,$stage,*}" ] ||
 		continue
 
-	run_scripts "pre/$n"
+	run_scripts "pre/$stage"
 
 	. "$m"
 	verbose "$msg"
 
-	[ "$STOP" != ',all,' -a -n "${STOP##*,$n,*}" ] ||
+	[ "$STOP" != ',all,' -a -n "${STOP##*,$stage,*}" ] ||
 		shell "Spawning shell within the initramfs"
 
 	run "$@" ||
-		shell "Stage '$n' failed"
+		shell "Stage '$stage' failed"
 
-	run_scripts "post/$n"
+	run_scripts "post/$stage"
 done

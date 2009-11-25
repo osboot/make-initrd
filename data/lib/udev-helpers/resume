@@ -8,7 +8,7 @@ add() {
 	get_dev devresume "$RESUME" || return 0
 
 	if [ ! -e /sys/power/resume ]; then
-		echo "Kernel does not support resume - doing normal boot"
+		message "Kernel does not support resume - doing normal boot"
 		return 0
 	fi
 

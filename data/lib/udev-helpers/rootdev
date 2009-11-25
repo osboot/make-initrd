@@ -10,8 +10,6 @@ add() {
 
 	get_dev devroot "$ROOT" || return 0
 
-	echo "Mount '$devroot' as $rootmnt"
-
 	local roflag=-w
 	[ -z "$readonly" ] || roflag=-r
 
@@ -21,6 +19,7 @@ add() {
 		lock_udev "Unable to mount $devroot as $FSTYPE."
 		return
 	fi
+	message "Mount '$devroot' as $rootmnt"
 	ln -sf "$devroot" /dev/root
 }
 
