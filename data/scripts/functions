@@ -95,6 +95,14 @@ get_dev() {
 			[ "$ID_FS_LABEL" = "${name#LABEL=}" ] ||
 				return 1
 			;;
+		/dev/disk/by-uuid/*)
+			[ "/dev/disk/by-uuid/$ID_FS_UUID_ENC" = "$name" ] ||
+				return 1
+			;;
+		/dev/disk/by-label/*)
+			[ "/dev/disk/by-label/$ID_FS_LABEL_ENC" = "$name" ] ||
+				return 1
+			;;
 		/*)
 			[ "$DEVNAME" = "$name" ] ||
 				return 1
