@@ -93,6 +93,9 @@ NFS module for %name
 * Wed Nov 25 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.7-alt1
 - Allow to pack few images by single make-initrd execution.
 - Change boottime output and rename modules.
+- Add support for /dev/disk/by-{uuid,label}/* devices.
+- Fix device-mapper support.
+- Rename feature 'device-mapper' to 'devmapper'.
 
 * Mon Nov 16 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.6-alt3
 - initrd.mk: Disable IMAGEFILE and use default value.
