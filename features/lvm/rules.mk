@@ -1,6 +1,6 @@
-$(call require,device-mapper)
+$(call require,devmapper)
 
-lvm: device-mapper
+lvm: devmapper
 	@echo "Adding LVM support ..."
 	@$(PUT_FILE) $(LVM_BIN) $(LVM_CONF)
 	@$(PUT_TREE) $(LVM_DATADIR)

@@ -1,6 +1,6 @@
-$(call require,device-mapper,depmod-image)
+$(call require,devmapper,depmod-image)
 
-luks: device-mapper
+luks: devmapper
 	@echo "Adding LUKS support ..."
 	@$(PUT_FILE) $(CRYPTSETUP_BIN)
 	@$(PUT_TREE) $(LUKS_DATADIR)
