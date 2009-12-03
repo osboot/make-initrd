@@ -20,9 +20,19 @@ Source0: %name-%version.tar
 %description
 make-initrd is a new, uevent-driven initramfs infrastructure based around udev.
 
+%package devmapper
+Summary: device-mapper module for %name
+Group: System/Base
+Requires: dmsetup >= 1.02.39-alt2
+AutoReq: noshell, noshebang
+
+%description devmapper
+device-mapper module for %name
+
 %package lvm
 Summary: LVM module for %name
 Group: System/Base
+Requires: %name-devmapper = %version-%release
 Requires: lvm2
 AutoReq: noshell, noshebang
 
@@ -32,6 +42,7 @@ LVM module for %name
 %package luks
 Summary: LUKS module for %name
 Group: System/Base
+Requires: %name-devmapper = %version-%release
 Requires: cryptsetup
 AutoReq: noshell, noshebang
 
@@ -60,10 +71,14 @@ NFS module for %name
 %config(noreplace) %_sysconfdir/initrd.mk
 %_bindir/*
 %_datadir/*
+%exclude %_datadir/%name/features/devmapper
 %exclude %_datadir/%name/features/lvm
 %exclude %_datadir/%name/features/luks
 %exclude %_datadir/%name/features/nfsroot
 %doc docs/README.ru
+
+%files devmapper
+%_datadir/%name/features/devmapper
 
 %files lvm
 %_datadir/%name/features/lvm
