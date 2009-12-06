@@ -90,7 +90,7 @@ NFS module for %name
 %_datadir/%name/features/nfsroot
 
 %changelog
-* Wed Nov 25 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.7-alt1
+* Thu Dec 03 2009 Kirill A. Shutemov <kas@altlinux.org> 0.1.7-alt1
 - Allow to pack few images by single make-initrd execution.
 - Change boottime output and rename modules.
 - Add support for /dev/disk/by-{uuid,label}/* devices.
