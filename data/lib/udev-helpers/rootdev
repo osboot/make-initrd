@@ -15,7 +15,7 @@ add() {
 
 	local FSTYPE="${ROOTFSTYPE:-$ID_FS_TYPE}"
 	# Mount root
-	if ! mount "$roflag" $ROOTFLAGS -t "$FSTYPE" "$devroot" "$rootmnt"; then
+	if ! mount "$roflag" -o ${ROOTFLAGS:-defaults} -t "$FSTYPE" "$devroot" "$rootmnt"; then
 		lock_udev "Unable to mount $devroot as $FSTYPE."
 		return
 	fi
