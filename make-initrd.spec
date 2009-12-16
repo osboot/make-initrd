@@ -1,6 +1,6 @@
 Name: make-initrd
 Version: 0.1.7
-Release: alt1
+Release: alt2
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -90,6 +90,9 @@ NFS module for %name
 %_datadir/%name/features/nfsroot
 
 %changelog
+* Thu Dec 17 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.7-alt2
+- Fix handling of ROOTFLAGS variable.
+
 * Thu Dec 03 2009 Kirill A. Shutemov <kas@altlinux.org> 0.1.7-alt1
 - Allow to pack few images by single make-initrd execution.
 - Change boottime output and rename modules.
