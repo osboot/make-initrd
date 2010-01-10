@@ -21,16 +21,17 @@ ADD_RESCUE_MODULES	= $(TOOLSDIR)/add-rescue-modules
 PUT_FILE		= $(TOOLSDIR)/put-file
 PUT_TREE		= $(TOOLSDIR)/put-tree
 
-# Global variables
-FIRMWARE_DIRS		?= /lib/firmware /usr/lib/hotplug/firmware /usr/local/lib/firmware
-VERBOSE			?=
-FSTAB			?= /etc/fstab
 
 # User defaults
 FEATURES	?=
 KERNEL		?= $(shell uname -r)
 IMAGE_SUFFIX	?=
 IMAGEFILE	?= /boot/initrd-$(KERNEL)$(IMAGE_SUFFIX).img
+
+# Global variables
+FIRMWARE_DIRS		?= /lib/firmware/updates /lib/firmware /lib/firmware/$(KERNEL)/updates /lib/firmware/$(KERNEL)
+VERBOSE			?=
+FSTAB			?= /etc/fstab
 
 # Load extra configs
 include $(FEATURESDIR)/*/config.mk
