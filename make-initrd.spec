@@ -66,10 +66,15 @@ NFS module for %name
 %install
 %make_install DESTDIR=%buildroot install
 
+mkdir -p %buildroot/%_sysconfdir/sysconfig
+echo "MKINITRD=%_sbindir/mkinitrd-make-initrd" > %buildroot/%_sysconfdir/sysconfig/installkernel
+
 %files
 %dir %_sysconfdir/initrd.mk.d
 %config(noreplace) %_sysconfdir/initrd.mk
+%config(noreplace) %_sysconfdir/sysconfig/installkernel
 %_bindir/*
+%_sbindir/*
 %_datadir/*
 %exclude %_datadir/%name/features/devmapper
 %exclude %_datadir/%name/features/lvm
