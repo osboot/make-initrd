@@ -3,6 +3,7 @@ VERSION = $(shell sed '/^Version: */!d;s///;q' make-initrd.spec)
 
 sysconfdir = /etc
 bindir     = /usr/bin
+sbindir    = /usr/sbin
 datadir    = /usr/share
 workdir    = /tmp
 DESTDIR   ?=
@@ -16,7 +17,7 @@ DIRS = autodetect data features tools
 
 CONF = initrd.mk
 
-bin_TARGETS = make-initrd mkinitrd-make-initrd
+sbin_TARGETS = make-initrd mkinitrd-make-initrd
 
 TARGETS = config.mk rules.mk initfiles.mk
 
@@ -24,7 +25,7 @@ SUBDIRS = src
 
 .PHONY: $(SUBDIRS)
 
-all: $(SUBDIRS) $(TARGETS) $(bin_TARGETS)
+all: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS)
 
 %: %.in
 	sed \
@@ -38,17 +39,17 @@ all: $(SUBDIRS) $(TARGETS) $(bin_TARGETS)
 	$(TOUCH_R) $< $@
 	chmod --reference=$< $@
 
-install: $(SUBDIRS) $(TARGETS) $(bin_TARGETS)
+install: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS)
 	$(MKDIR_P) -- $(DESTDIR)$(workdir)
 	$(MKDIR_P) -- $(DESTDIR)$(datadir)/$(PROJECT)
 	$(CP) -r -- $(DIRS) $(TARGETS) $(DESTDIR)$(datadir)/$(PROJECT)/
 	$(MKDIR_P) -- $(DESTDIR)$(sysconfdir)/initrd.mk.d
 	$(CP) $(CONF) $(DESTDIR)$(sysconfdir)/
 	$(MKDIR_P) -- $(DESTDIR)$(bindir)
-	$(CP) $(bin_TARGETS) $(DESTDIR)$(bindir)/
+	$(CP) $(sbin_TARGETS) $(DESTDIR)$(sbindir)/
 
 clean: $(SUBDIRS)
-	rm -f -- $(TARGETS) $(bin_TARGETS)
+	rm -f -- $(TARGETS) $(sbin_TARGETS)
 
 $(SUBDIRS):
 	$(MAKE) $(MFLAGS) -C "$@" $(MAKECMDGOALS)
