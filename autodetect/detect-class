@@ -1,0 +1,13 @@
+#!/bin/sh -eu
+
+. "${0%/*}"/functions
+
+class="${1?More arguments required}"
+
+[ -d "/sys/class/$class" ] ||
+	fatal "$class: Sys class not found"
+
+find "/sys/class/$class/" -mindepth 1 -maxdepth 1 -printf '%h/%l\n' |
+while read path; do
+	process_device "$path/device"
+done | sort -u

@@ -1,0 +1,113 @@
+#!/bin/sh -efu
+
+autodetectdir="@PREFIX@/autodetect"
+
+kernel="$(uname -r)"
+show='path'
+delim='
+'
+. shell-error
+. shell-getopt
+
+show_help() {
+	cat <<EOF
+Usage: $PROG [options] param...
+
+Options:
+
+  -d, --delim=DEILM      use DELIM instead of NEWLINE for field delimiter;
+  -k, --kernel=VERSION   set the kernel version, rather than using uname;
+  -m, --modules=DIR      set autodetect modules directory;
+  -t, --type=TYPE        show results as path, file or name;
+  -V, --version          print program version and exit;
+  -h, --help             show this text and exit.
+
+EOF
+	exit
+}
+
+print_version() {
+	cat <<EOF
+$PROG version $PROG_VERSION
+Written by Alexey Gladkov <gladkov.alexey@gmail.com>
+
+Copyright (C) 2010  Alexey Gladkov <gladkov.alexey@gmail.com>
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+EOF
+	exit
+}
+
+
+TEMP=`getopt -n $PROG -o d:,k:,m:,t:,V,v,h -l delim:,kernel:,modules:,type:,version,verbose,help -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
+
+while :; do
+	case "$1" in
+		-d|--delim) shift
+			delim="$1"
+			;;
+		-k|--kernel) shift
+			kernel="$1"
+			;;
+		-m|--modules) shift
+			autodetectdir="$1"
+			;;
+		-t|--type) shift
+			case "$1" in
+				path|file|name) show="$1"
+					;;
+				*)
+					fatal "Unknown type: $1"
+					;;
+			esac
+			;;
+		-v|--verbose)
+			export verbose=1
+			;;
+		-V|--version)
+			print_version
+			;;
+		-h|--help)
+			show_help
+			;;
+		--)
+			shift
+			break
+			;;
+	esac
+	shift
+done
+
+[ "$#" -gt 0 ] ||
+	fatal "More argumets required."
+
+export kernel
+
+for param; do
+	module="${param%%:*}"
+	arg=
+	[ -n "${param##*:*}" ] || arg="${param#*:}"
+
+	[ -f "$autodetectdir/detect-$module" ] ||
+		fatal "Unknown module: $module"
+
+	"$autodetectdir/detect-$module" "$arg" |
+	while read f; do
+		case "$show" in
+			path)
+				;;
+			file)
+				f="${f##*/}"
+				;;
+			name)
+				f="${f##*/}"
+				f="${f%.ko}"
+				;;
+		esac
+		[ -z "$verbose" ] ||
+			printf '%s: %s\n' "$module" "$f" >&2
+		printf '%s%s' "$f" "$delim"
+	done
+done
