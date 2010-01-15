@@ -64,6 +64,9 @@ add_module() {
 	name="${name##*/}"
 	name="${name%.ko}"
 
+	check_blacklist "$name" ||
+		return 0
+
 	list="$(list_module_files "$name")"
 
 	[ -n "$list" -o -n "$ignore_missing" ] ||

@@ -12,6 +12,7 @@ export scriptdir="${SCRIPTDIR:?Scripts directory required}"
 export autodetectdir="${AUTODETECTDIR:?Autodetect directory required}"
 export imagefile="${IMAGEFILE:?Image file required}"
 export modules_ignore=" ${MODULES_IGNORE-} "
+export blacklist="${BLACKLIST_MODULES-}"
 
 export compress_method="${COMPRESS-}"
 export outfile="$workdir/initrd.img"
@@ -35,3 +36,25 @@ fi
 export kernel_modules_dir="/lib/modules/$kernel"
 [ -d "$kernel_modules_dir" ] ||
 	fatal "Directory \"$kernel_modules_dir\" doesn't exist or not accessible."
+
+normalize_modname() {
+	printf '%s' "$*" |tr '-' '_'
+}
+
+[ -z "$blacklist" ] ||
+	blacklist="$(normalize_modname "$blacklist")"
+
+check_blacklist() {
+	[ -n "$blacklist" ] ||
+		return 0
+
+	local m module
+	module="$(normalize_modname "$1")"
+
+	for m in $blacklist; do
+		m="${m##*/}"
+		m="${m%.ko}"
+		[ "$module" != "$m" ] ||
+			return 1
+	done
+}

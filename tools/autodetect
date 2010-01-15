@@ -15,6 +15,12 @@ for param; do
 
 	"$autodetectdir/detect-$module" "$arg" |
 	while read f; do
+		name="${f##*/}"
+		name="${name%.ko}"
+
+		check_blacklist "$name" ||
+			continue
+
 		[ -n "$verbose" ] || message "$f"
 		put-file "$f"
 	done
