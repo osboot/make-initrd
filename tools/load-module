@@ -1,7 +1,6 @@
 #!/bin/sh -efu
 
-. ${TOOLSDIR:?Tools directory required}/sh-functions
-export PATH="$helpersdir:$PATH"
+. sh-functions
 
 modules_file='/conf/modules-postudev'
 

@@ -9,7 +9,7 @@ SCRIPTDIR	?= @PREFIX@/scripts.d
 FEATURESDIR	?= @PREFIX@/features
 AUTODETECTDIR	?= @PREFIX@/autodetect
 
-HELPERSDIR	?= $(TOOLSDIR)
+PATH		= $(TOOLSDIR):$(shell echo $$PATH)
 
 # Helpers
 GEN_INIT_CPIO		= @BINDIR@/gen_init_cpio
