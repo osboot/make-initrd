@@ -13,7 +13,7 @@ INSTALL = install
 MKDIR_P = mkdir -p
 TOUCH_R = touch -r
 
-DIRS = autodetect data features tools
+DIRS = data features tools
 
 CONF = initrd.mk
 

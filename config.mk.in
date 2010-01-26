@@ -7,7 +7,6 @@ TOOLSDIR	 = @PREFIX@/tools
 DATADIR		?= @PREFIX@/data
 SCRIPTDIR	?= @PREFIX@/scripts.d
 FEATURESDIR	?= @PREFIX@/features
-AUTODETECTDIR	?= @PREFIX@/autodetect
 SYSCONFDIR	?= /etc
 
 PATH		= $(TOOLSDIR):$(shell echo $$PATH)
