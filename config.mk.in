@@ -35,7 +35,11 @@ FSTAB			?= /etc/fstab
 BLACKLIST_MODULES	?=
 
 # Load extra configs
-include $(FEATURESDIR)/*/config.mk
+feature_configs		 = $(realpath $(wildcard $(FEATURESDIR)/*/config.mk))
+ifeq "$(feature_configs)" ''
+$(error Cannot find configs for feature. Something goes wrong.)
+endif
+include $(feature_configs)
 
 ifdef VERBOSE
   verbose=-v
