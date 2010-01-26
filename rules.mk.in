@@ -1,9 +1,36 @@
 .EXPORT_ALL_VARIABLES:
 
 # Features include helper: skip a feature which has already loaded
-require = $(foreach req,$(1),$(eval include $(filter-out $(MAKEFILE_LIST),$(req:%=$(FEATURESDIR)/%/rules.mk))))
+require = $(foreach req,$(1), \
+		$(eval include $(filter-out $(MAKEFILE_LIST), \
+				$(realpath $(req:%=$(FEATURESDIR)/%/rules.mk)))))
 
-all: install
+ifneq "$(strip $(INITRD_CONFIG))" ''
+
+# Load user configuration
+include $(INITRD_CONFIG)
+
+# Load requested features
+ifneq "$(strip $(FEATURES))" ''
+include $(call require,$(FEATURES))
+endif # FEATURES
+
+endif # INITRD_CONFIG
+
+all:
+	@for c in $(INITRD_CONFIG_LIST); do \
+		echo "Config file: $$c"; \
+		wsuffix="$${c##*/}"; \
+		wsuffix="$${wsuffix%.mk}"; \
+		export WORKDIR_SUFFIX="$$wsuffix"; \
+		export INITRD_CONFIG="$$c"; \
+		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f $(MAKE_INITRD_BIN) genimage; \
+	done
+
+genimage: install
+	@echo
+	@echo "Image is saved as $(IMAGEFILE)"
+	@echo
 
 check-for-root:
 	@if [ "$$(id -u)" != 0 ]; then \
@@ -37,14 +64,3 @@ install: pack
 clean:
 	@echo "Removing work directory ..."
 	$Qrm -rf -- "$(WORKDIR)"
-
-# Load requested features
-include $(call require,$(FEATURES))
-
-# Show summary after all actions
-summary:
-	@echo
-	@echo "Image is seved as $(IMAGEFILE)"
-	@echo
-
-all: summary

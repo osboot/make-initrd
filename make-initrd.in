@@ -1,17 +1,4 @@
-#!/bin/sh -eu
-
-for img in "@CONFIG@"/initrd.mk "@CONFIG@"/initrd.mk.d/*.mk; do
-	[ -f "$img" ] || continue
-
-	wsuffix="${img##*/}"
-	wsuffix="${wsuffix%.mk}"
-
-	export WORKDIR_SUFFIX="$wsuffix"
-
-	/usr/bin/make -f - "$@" <<-EOF
-		include @PREFIX@/config.mk
-		include @PREFIX@/initfiles.mk
-		include $img
-		include @PREFIX@/rules.mk
-	EOF
-done
+#!/usr/bin/make -rf
+include @PREFIX@/config.mk
+include @PREFIX@/initfiles.mk
+include @PREFIX@/rules.mk
