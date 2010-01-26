@@ -1,0 +1,20 @@
+#!/bin/sh -e
+
+. sh-functions
+. guess-functions
+
+iface=
+if [ -n "$1" ]; then
+	[ -n ${1##iface=?*} ] ||
+		exit 1
+	iface=${1#iface=}
+fi
+
+if [ -n "$iface" ]; then
+	device "/sys/class/net/$iface"
+	exit 0
+fi
+
+for iface in /sys/class/net/*; do
+	device "$iface"
+done

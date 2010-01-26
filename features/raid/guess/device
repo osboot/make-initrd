@@ -1,0 +1,18 @@
+#!/bin/sh -efu
+
+. guess-functions
+
+[ -d "$1"/md ] ||
+	exit 0
+
+read level < "$1"/md/level
+case "$level" in
+	raid4|raid5|raid6)
+		guess_module "raid456"
+		;;
+	*)
+		guess_module "$level"
+		;;
+esac
+
+guess_feature raid

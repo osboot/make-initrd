@@ -18,6 +18,13 @@ MAKE_INITRD_BIN		= @SBINDIR@/make-initrd
 INITRD_CONFIG		?=
 INITRD_CONFIG_LIST	 = $(wildcard $(SYSCONFDIR)/initrd.mk $(SYSCONFDIR)/initrd.mk.d/*.mk)
 
+# Guess variables
+GUESS_DEVICE_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/device)
+GUESS_COMMON_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/common)
+
+# Guess targets configuration
+RESOLVE_MODALIAS	?= 1
+
 # Helpers
 GEN_INIT_CPIO		= @BINDIR@/gen_init_cpio
 CREATE_INITRD		= $(TOOLSDIR)/create-initrd

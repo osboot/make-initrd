@@ -1,0 +1,11 @@
+#!/bin/sh -efu
+
+. guess-functions
+
+[ -d "$1"/dm ] ||
+	exit 0
+
+uuid="$(cat "$1"/dm/uuid)"
+
+[ -n "${uuid##LVM-*}" ] ||
+	guess_feature lvm

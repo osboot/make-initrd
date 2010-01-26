@@ -1,0 +1,14 @@
+#!/bin/sh -efu
+
+. guess-functions
+
+[ -d "$1"/dm ] ||
+	exit 0
+
+uuid="$(cat "$1"/dm/uuid)"
+
+if [ -z "${uuid##CRYPT-*}" ]; then
+	guess_feature luks
+	# We need keyboard to enter password
+	guess-kbd
+fi
