@@ -1,0 +1,19 @@
+#!/bin/sh -efu
+
+. guess-functions
+
+if [ ! -f "$imagefile" ]; then
+	guess_feature compress
+	exit 0
+fi
+
+type="$(file -bz "$imagefile")"
+case "$type" in 
+	*bzip2\ compressed\ data*) ;;
+	*gzip\ compressed\ data*)  ;;
+	*)
+		exit 0
+		;;
+esac
+
+guess_feature compress

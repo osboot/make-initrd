@@ -1,0 +1,83 @@
+#!/bin/sh -efu
+
+get_majmin() {
+	local v devnode
+
+	devnode="$(readlink -ev "$1" 2>/dev/null)" ||
+		return 1
+
+	v="$(stat -c '%02t:%02T' "$devnode")" &&
+		printf '%d:%d\n' "0x${v%:*}" "0x${v#*:}" ||
+		return 1
+}
+
+get_device() {
+	case "$1" in
+		UUID=*|LABEL=*)
+			/sbin/blkid -t "$1" -o device
+			return 0
+			;;
+		/*)
+			printf '%s\n' "$1"
+			return 0
+			;;
+	esac
+	return 1
+}
+
+guess_modalias() {
+	printf '%s\n' "$1" >> "$WORKDIR/guess/modalias"
+}
+
+guess_module() {
+	printf '%s\n' "$1" >> "$WORKDIR/guess/modules"
+}
+
+guess_feature() {
+	printf '%s\n' "$1" >> "$WORKDIR/guess/features"
+}
+
+resolve_modalias() {
+	/sbin/modprobe -q --set-version="$kernel" --show-depends --ignore-all-commands "$1" |
+		cut -d' ' -f2 |
+	while read mod; do
+		mod="${mod##*/}"
+		mod="${mod%.ko}"
+		printf '%s\n' "$mod"
+	done
+}
+
+device() {
+	local device_file
+	device_file="$(readlink -ev "$1" 2>/dev/null)" ||
+		return 0
+	shift
+
+	[ -z "${device_file##/sys/devices/*}" ] ||
+		return 0
+
+	for m in modalias parent slaves ${GUESS_DEVICE_SCRIPTS-}; do
+		"$m" "$device_file"
+	done
+}
+
+modalias() {
+	[ -f "$1"/modalias ] ||
+		return 0
+	local alias
+	read alias < "$1"/modalias
+	guess_modalias "$alias"
+}
+
+parent() {
+	device "$1/.."
+}
+
+slaves() {
+	[ -d "$1/slaves" ] ||
+		return 0
+	for slave in "$1/slaves"/*; do
+		[ ! -e "$slave" ] ||
+			device "$1/slaves/${slave##*/}"
+	done
+}

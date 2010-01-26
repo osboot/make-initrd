@@ -1,0 +1,6 @@
+#!/bin/sh -eu
+
+. sh-functions
+. guess-functions
+
+device "$1"

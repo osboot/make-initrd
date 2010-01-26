@@ -1,7 +1,2 @@
-# save image into /tmp for tests.
-#IMAGEFILE  = /tmp/initrd-$(KERNEL).img
-
-# trying to detect modules for root and input devices(like keyboard)
-AUTODETECT = root input
-
-FEATURES = autodetect add-modules compress bootsplash cleanup
+# trying to detect modules and features to access to root volume
+AUTODETECT = common root resume

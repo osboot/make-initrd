@@ -1,0 +1,16 @@
+#!/bin/sh -eu
+
+. sh-functions
+. guess-functions
+
+# udev >= v148
+[ -x /lib/udev/input_id ] ||
+	exit 0
+
+for path in /sys/class/input/*; do
+	/lib/udev/input_id "${path#/sys}" 2>/dev/null |
+		grep -qs '^ID_INPUT_KEYBOARD=1' ||
+		continue
+
+	device "$path"
+done

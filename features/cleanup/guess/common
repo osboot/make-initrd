@@ -1,0 +1,6 @@
+#!/bin/sh -efu
+
+. guess-functions
+
+[ -d "$rootdir" ] ||
+	guess_feature "cleanup"

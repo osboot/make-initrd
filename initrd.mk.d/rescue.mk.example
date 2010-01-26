@@ -1,9 +1,7 @@
 IMAGE_SUFFIX = -rescue
 
-# trying to detect modules for root and input devices(like keyboard)
-AUTODETECT = root input net
-
-FEATURES = autodetect add-modules compress bootsplash cleanup
+# trying to detect modules and features for root and keyboard devices
+AUTODETECT = root kbd net
 
 MODULES_ADD += usbcore ehci-hcd
 

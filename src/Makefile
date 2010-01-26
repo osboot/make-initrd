@@ -18,7 +18,7 @@ all: $(PROG)
 $(PROG):
 	$(CC) $(CFLAGS) -o $@ $@.c
 
-install:
+install: $(PROG)
 	$(MKDIR_P) -- $(DESTDIR)$(bindir)
 	$(INSTALL) -p -m755 $(PROG) $(DESTDIR)$(bindir)/
 

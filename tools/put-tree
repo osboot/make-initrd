@@ -1,7 +1,6 @@
 #!/bin/sh -eu
 
-. ${TOOLSDIR:?Tools directory required}/sh-functions
-export PATH="$helpersdir:$PATH"
+. sh-functions
 
 for tree in "$@"; do
 	verbose "Copying '$tree' recursively ..."

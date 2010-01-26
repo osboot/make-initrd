@@ -1,0 +1,27 @@
+#!/bin/sh -eu
+
+. sh-functions
+. guess-functions
+
+read cmdline </proc/cmdline
+
+resume=
+for x in $cmdline; do
+	[ -z "${x##resume=*}" ] ||
+		continue
+	resume=${x#resume=}
+done
+
+[ -n "$resume" ] ||
+	exit 0
+
+device_list="$(get_device "$resume")" ||
+	fatal "Unable to find root device"
+
+for device_file in $device_list; do
+	majmin="$(get_majmin "$device_file")" ||
+		continue
+
+	# kernel >= 2.6.27
+	device "/sys/dev/block/$majmin"
+done

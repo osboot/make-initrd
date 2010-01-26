@@ -1,0 +1,34 @@
+#!/bin/sh -eu
+
+. sh-functions
+. guess-functions
+
+fstab="${FSTAB:-/etc/fstab}"
+
+t_fsname=
+t_fstype=
+eof=
+while [ -z "$eof" ]; do
+	read fsname fsdir fstype opts freq passno || eof=1
+	if [ "$fsdir" = "/" ]; then
+		t_fsname="$fsname"
+		t_fstype="$fstype"
+		break
+fi
+done < "$fstab"
+
+[ -n "$t_fsname" ] ||
+	fatal "Unable to find name of mounted root file system"
+
+device_list="$(get_device "$t_fsname")" ||
+	fatal "Unable to find root device"
+
+for device_file in $device_list; do
+	guess_module "$t_fstype"
+
+	majmin="$(get_majmin "$device_file")" ||
+		continue
+
+	# kernel >= 2.6.27
+	device "/sys/dev/block/$majmin"
+done

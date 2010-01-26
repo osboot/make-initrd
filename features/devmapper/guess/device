@@ -1,0 +1,8 @@
+#!/bin/sh -efu
+
+. guess-functions
+
+[ -d "$1"/dm ] ||
+	exit 0
+
+guess_feature devmapper

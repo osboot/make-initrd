@@ -7,9 +7,22 @@ TOOLSDIR	 = @PREFIX@/tools
 DATADIR		?= @PREFIX@/data
 SCRIPTDIR	?= @PREFIX@/scripts.d
 FEATURESDIR	?= @PREFIX@/features
-AUTODETECTDIR	?= @PREFIX@/autodetect
+SYSCONFDIR	?= /etc
 
-HELPERSDIR	?= $(TOOLSDIR)
+PATH		= $(TOOLSDIR):$(shell echo $$PATH)
+
+MAKE_INITRD_BIN		= @SBINDIR@/make-initrd
+
+# Config file locations
+INITRD_CONFIG		?=
+INITRD_CONFIG_LIST	 = $(wildcard $(SYSCONFDIR)/initrd.mk $(SYSCONFDIR)/initrd.mk.d/*.mk)
+
+# Guess variables
+GUESS_DEVICE_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/device)
+GUESS_COMMON_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/common)
+
+# Guess targets configuration
+RESOLVE_MODALIAS	?= 1
 
 # Helpers
 GEN_INIT_CPIO		= @BINDIR@/gen_init_cpio
@@ -35,7 +48,11 @@ FSTAB			?= /etc/fstab
 BLACKLIST_MODULES	?=
 
 # Load extra configs
-include $(FEATURESDIR)/*/config.mk
+feature_configs		 = $(realpath $(wildcard $(FEATURESDIR)/*/config.mk))
+ifeq "$(feature_configs)" ''
+$(error Cannot find configs for feature. Something goes wrong.)
+endif
+include $(feature_configs)
 
 ifdef VERBOSE
   verbose=-v

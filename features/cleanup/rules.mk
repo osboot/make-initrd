@@ -1,2 +1,2 @@
 cleanup: install clean
-all: cleanup
+genimage: cleanup

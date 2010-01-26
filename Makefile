@@ -13,7 +13,7 @@ INSTALL = install
 MKDIR_P = mkdir -p
 TOUCH_R = touch -r
 
-DIRS = autodetect data features tools
+DIRS = data features tools
 
 CONF = initrd.mk
 
@@ -34,6 +34,7 @@ all: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS)
 		-e 's,@CONFIG@,$(DESTDIR)$(sysconfdir),g' \
 		-e 's,@PREFIX@,$(DESTDIR)$(datadir)/$(PROJECT),g' \
 		-e 's,@BINDIR@,$(DESTDIR)$(bindir),g' \
+		-e 's,@SBINDIR@,$(DESTDIR)$(sbindir),g' \
 		-e 's,@WORKDIR@,$(DESTDIR)$(workdir),g' \
 		<$< >$@
 	$(TOUCH_R) $< $@
