@@ -47,7 +47,7 @@ resolve_modalias() {
 	done
 }
 
-device() {
+guess_device() {
 	local device_file
 	device_file="$(readlink -ev "$1" 2>/dev/null)" ||
 		return 0
@@ -70,7 +70,7 @@ modalias() {
 }
 
 parent() {
-	device "$1/.."
+	guess_device "$1/.."
 }
 
 slaves() {
@@ -78,6 +78,6 @@ slaves() {
 		return 0
 	for slave in "$1/slaves"/*; do
 		[ ! -e "$slave" ] ||
-			device "$1/slaves/${slave##*/}"
+			guess_device "$1/slaves/${slave##*/}"
 	done
 }

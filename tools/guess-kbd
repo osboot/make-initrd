@@ -12,5 +12,5 @@ for path in /sys/class/input/*; do
 		grep -qs '^ID_INPUT_KEYBOARD=1' ||
 		continue
 
-	device "$path"
+	guess_device "$path"
 done

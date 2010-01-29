@@ -11,10 +11,10 @@ if [ -n "$1" ]; then
 fi
 
 if [ -n "$iface" ]; then
-	device "/sys/class/net/$iface"
+	guess_device "/sys/class/net/$iface"
 	exit 0
 fi
 
 for iface in /sys/class/net/*; do
-	device "$iface"
+	guess_device "$iface"
 done
