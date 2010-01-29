@@ -7,10 +7,10 @@
 [ -x /lib/udev/input_id ] ||
 	exit 0
 
-for path in /sys/class/input/*; do
-	/lib/udev/input_id "${path#/sys}" 2>/dev/null |
+for path in "$SYSFS_PATH"/class/input/*; do
+	/lib/udev/input_id "${path#$SYSFS_PATH}" 2>/dev/null |
 		grep -qs '^ID_INPUT_KEYBOARD=1' ||
 		continue
 
-	guess_device "$path"
+	guess_device "${path#$SYSFS_PATH}"
 done

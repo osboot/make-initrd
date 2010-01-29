@@ -2,10 +2,10 @@
 
 . guess-functions
 
-[ -d "$1"/dm ] ||
+[ -d "$SYSFS_PATH$1"/dm ] ||
 	exit 0
 
-uuid="$(cat "$1"/dm/uuid)"
+uuid="$(cat "$SYSFS_PATH$1"/dm/uuid)"
 
 if [ -z "${uuid##CRYPT-*}" ]; then
 	guess_feature luks

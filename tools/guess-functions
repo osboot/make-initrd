@@ -49,23 +49,23 @@ resolve_modalias() {
 
 guess_device() {
 	local device_file
-	device_file="$(readlink -ev "$1" 2>/dev/null)" ||
+	device_file="$(readlink -ev "$SYSFS_PATH$1" 2>/dev/null)" ||
 		return 0
 	shift
 
-	[ -z "${device_file##/sys/devices/*}" ] ||
+	[ -z "${device_file##$SYSFS_PATH/devices/*}" ] ||
 		return 0
 
 	for m in modalias parent slaves ${GUESS_DEVICE_SCRIPTS-}; do
-		"$m" "$device_file"
+		"$m" "${device_file#$SYSFS_PATH}"
 	done
 }
 
 modalias() {
-	[ -f "$1"/modalias ] ||
+	[ -f "$SYSFS_PATH$1"/modalias ] ||
 		return 0
 	local alias
-	read alias < "$1"/modalias
+	read alias < "$SYSFS_PATH$1"/modalias
 	guess_modalias "$alias"
 }
 
@@ -74,9 +74,9 @@ parent() {
 }
 
 slaves() {
-	[ -d "$1/slaves" ] ||
+	[ -d "$SYSFS_PATH$1/slaves" ] ||
 		return 0
-	for slave in "$1/slaves"/*; do
+	for slave in "$SYSFS_PATH$1/slaves"/*; do
 		[ ! -e "$slave" ] ||
 			guess_device "$1/slaves/${slave##*/}"
 	done

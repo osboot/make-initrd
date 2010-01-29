@@ -11,10 +11,10 @@ if [ -n "$1" ]; then
 fi
 
 if [ -n "$iface" ]; then
-	guess_device "/sys/class/net/$iface"
+	guess_device "/class/net/$iface"
 	exit 0
 fi
 
-for iface in /sys/class/net/*; do
-	guess_device "$iface"
+for iface in "$SYSFS_PATH"/class/net/*; do
+	guess_device "${iface#$SYSFS_PATH}"
 done

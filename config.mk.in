@@ -8,6 +8,7 @@ DATADIR		?= @PREFIX@/data
 SCRIPTDIR	?= @PREFIX@/scripts.d
 FEATURESDIR	?= @PREFIX@/features
 SYSCONFDIR	?= /etc
+SYSFS_PATH	?= /sys
 
 PATH		= $(TOOLSDIR):$(shell echo $$PATH)
 

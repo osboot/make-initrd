@@ -30,5 +30,5 @@ for device_file in $device_list; do
 		continue
 
 	# kernel >= 2.6.27
-	guess_device "/sys/dev/block/$majmin"
+	guess_device "/dev/block/$majmin"
 done
