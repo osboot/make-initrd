@@ -1,12 +1,19 @@
 PROJECT = make-initrd
 VERSION = $(shell sed '/^Version: */!d;s///;q' make-initrd.spec)
 
-sysconfdir = /etc
-bindir     = /usr/bin
-sbindir    = /usr/sbin
-datadir    = /usr/share
-workdir    = /tmp
-DESTDIR   ?=
+sysconfdir ?= /etc
+bindir     ?= /usr/bin
+sbindir    ?= /usr/sbin
+datadir    ?= /usr/share
+workdir    ?= /tmp
+prefix     ?= $(datadir)/$(PROJECT)
+DESTDIR    ?=
+
+ifdef MKLOCAL
+prefix  = $(CURDIR)
+bindir  = $(CURDIR)
+sbindir = $(CURDIR)
+endif
 
 CP = cp -a
 INSTALL = install
@@ -32,7 +39,7 @@ all: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS)
 		-e 's,@VERSION@,$(VERSION),g' \
 		-e 's,@PROJECT@,$(PROJECT),g' \
 		-e 's,@CONFIG@,$(DESTDIR)$(sysconfdir),g' \
-		-e 's,@PREFIX@,$(DESTDIR)$(datadir)/$(PROJECT),g' \
+		-e 's,@PREFIX@,$(DESTDIR)$(prefix),g' \
 		-e 's,@BINDIR@,$(DESTDIR)$(bindir),g' \
 		-e 's,@SBINDIR@,$(DESTDIR)$(sbindir),g' \
 		-e 's,@WORKDIR@,$(DESTDIR)$(workdir),g' \
