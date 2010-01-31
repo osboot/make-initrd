@@ -53,7 +53,7 @@ install: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS)
 	$(CP) -r -- $(DIRS) $(TARGETS) $(DESTDIR)$(datadir)/$(PROJECT)/
 	$(MKDIR_P) -- $(DESTDIR)$(sysconfdir)/initrd.mk.d
 	$(CP) $(CONF) $(DESTDIR)$(sysconfdir)/
-	$(MKDIR_P) -- $(DESTDIR)$(bindir)
+	$(MKDIR_P) -- $(DESTDIR)$(sbindir)
 	$(CP) $(sbin_TARGETS) $(DESTDIR)$(sbindir)/
 
 clean: $(SUBDIRS)
