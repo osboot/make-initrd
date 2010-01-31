@@ -9,7 +9,7 @@ Group: System/Base
 Packager: Alexey Gladkov <legion@altlinux.ru>
 
 Requires: libshell make sed module-init-tools coreutils grep glibc-utils
-Requires: kinit-utils
+Requires: kinit-utils ash
 
 # This avoids getting a dependency on sh from "#!/bin/sh".
 #AutoReq: yes, nopam, noperl, nopython, noshell, notcl
