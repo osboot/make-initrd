@@ -1,0 +1,35 @@
+#!/bin/sh -efu
+
+. sh-functions
+
+reportdir="$workdir/report"
+
+mkdir -p -- \
+	"$reportdir"/etc \
+	"$reportdir"/sys \
+	"$reportdir"/proc \
+	#
+
+cp -aP \
+	/sys \
+	"$reportdir" 2>/dev/null ||:
+cp -a  \
+	/proc/cmdline \
+	/proc/crypto \
+	/proc/filesystems \
+	/proc/mdstat \
+	/proc/mounts \
+	/proc/modules \
+	/proc/version \
+	/proc/partitions \
+	"$reportdir"/proc/ 2>/dev/null ||:
+cp -a  \
+	/etc/fstab \
+	"$reportdir"/etc/
+
+outfile="$PWD/make-initrd-bugreport-$(date +"%Y%m%d").tar.bz2"
+
+cd "$workdir"
+tar -cjf "$outfile" report
+
+printf '\nPlease submit %s to authors\n\n' "$outfile"

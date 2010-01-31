@@ -89,3 +89,8 @@ guess-config: AUTODETECT ?= common root resume
 guess-config: guess check-for-root
 	@cat $(WORKDIR)/guess/guessed.mk
 	$Qrm -rf -- "$(WORKDIR)"
+
+bug-report: check-for-root
+	@mkdir -m 755 -p -- $(WORKDIR)
+	@$(TOOLSDIR)/bug-report
+	$Qrm -rf -- "$(WORKDIR)"
