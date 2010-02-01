@@ -27,6 +27,9 @@ cp -a  \
 	/etc/fstab \
 	"$reportdir"/etc/
 
+[ -z "${VERSION-}" ] ||
+		printf '%s\n' "$VERSION" > "$reportdir"/.version
+
 outfile="$PWD/make-initrd-bugreport-$(date +"%Y%m%d").tar.bz2"
 
 cd "$workdir"

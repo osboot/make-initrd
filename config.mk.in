@@ -1,3 +1,4 @@
+VERSION		 = @VERSION@
 # System paths
 WORKDIR_SUFFIX	?= work
 WORKDIR		?= @WORKDIR@/initrd-$(KERNEL).$(WORKDIR_SUFFIX)
