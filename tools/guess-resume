@@ -16,7 +16,7 @@ done
 	exit 0
 
 device_list="$(get_device "$resume")" ||
-	fatal "Unable to find root device"
+	fatal "Unable to find resume device"
 
 for device_file in $device_list; do
 	majmin="$(get_majmin "$device_file")" ||
