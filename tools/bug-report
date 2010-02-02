@@ -16,6 +16,7 @@ cp -aP \
 cp -a  \
 	/proc/cmdline \
 	/proc/crypto \
+	/proc/devices \
 	/proc/filesystems \
 	/proc/mdstat \
 	/proc/mounts \
