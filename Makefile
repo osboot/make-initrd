@@ -24,6 +24,8 @@ DIRS = data features tools
 
 CONF = initrd.mk
 
+PREPROCESS_TARGET = make-initrd mkinitrd-make-initrd config.mk
+
 sbin_TARGETS = make-initrd mkinitrd-make-initrd
 
 TARGETS = config.mk rules.mk initfiles.mk
@@ -57,7 +59,7 @@ install: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS)
 	$(CP) $(sbin_TARGETS) $(DESTDIR)$(sbindir)/
 
 clean: $(SUBDIRS)
-	rm -f -- $(TARGETS) $(sbin_TARGETS)
+	rm -f -- $(PREPROCESS_TARGET)
 
 $(SUBDIRS):
 	$(MAKE) $(MFLAGS) -C "$@" $(MAKECMDGOALS)
