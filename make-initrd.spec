@@ -83,7 +83,7 @@ echo "MKINITRD=%_sbindir/mkinitrd-make-initrd" > %buildroot/%_sysconfdir/sysconf
 %exclude %_datadir/%name/features/lvm
 %exclude %_datadir/%name/features/luks
 %exclude %_datadir/%name/features/nfsroot
-%doc docs/README.ru
+%doc README.ru
 
 %files devmapper
 %_datadir/%name/features/devmapper
