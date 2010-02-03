@@ -1,6 +1,6 @@
 Name: make-initrd
-Version: 0.1.7
-Release: alt2
+Version: 0.2.0
+Release: alt1
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -10,6 +10,9 @@ Packager: Alexey Gladkov <legion@altlinux.ru>
 
 Requires: libshell make sed module-init-tools coreutils grep glibc-utils
 Requires: kinit-utils ash
+
+# guess-kbd
+Requires: udev >= 149-alt1
 
 # This avoids getting a dependency on sh from "#!/bin/sh".
 #AutoReq: yes, nopam, noperl, nopython, noshell, notcl
@@ -95,6 +98,17 @@ echo "MKINITRD=%_sbindir/mkinitrd-make-initrd" > %buildroot/%_sysconfdir/sysconf
 %_datadir/%name/features/nfsroot
 
 %changelog
+* Wed Feb 03 2010 Alexey Gladkov <legion@altlinux.ru> 0.2.0-alt1
+- make-initrd: Add new arguments:
+  + guess-config: guessing configuration;
+  + bug-report: helps to generate an error report to developers.
+- Introduce new flexible system for guessing configuration.
+- Add BLACKLIST_MODULES variable.
+- Add installkernel support.
+- Fix firmware dirs (thx Valery Inozemtsev).
+- Check /lib/udev/vol_id availability.
+- Move make-initrd and mkinitrd-make-initrd to sbindir.
+
 * Thu Dec 17 2009 Alexey Gladkov <legion@altlinux.ru> 0.1.7-alt2
 - Fix handling of ROOTFLAGS variable.
 
