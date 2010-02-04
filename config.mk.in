@@ -23,9 +23,6 @@ INITRD_CONFIG_LIST	 = $(wildcard $(SYSCONFDIR)/initrd.mk $(SYSCONFDIR)/initrd.mk
 GUESS_DEVICE_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/device)
 GUESS_COMMON_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/common)
 
-# Guess targets configuration
-RESOLVE_MODALIAS	?= 1
-
 # Helpers
 GEN_INIT_CPIO		= @BINDIR@/gen_init_cpio
 CREATE_INITRD		= $(TOOLSDIR)/create-initrd
@@ -36,18 +33,24 @@ ADD_RESCUE_MODULES	= $(TOOLSDIR)/add-rescue-modules
 PUT_FILE		= $(TOOLSDIR)/put-file
 PUT_TREE		= $(TOOLSDIR)/put-tree
 
+# Global variables
+RESOLVE_MODALIAS	?= 1
+KERNEL			?= $(shell uname -r)
+
+# This user's preferences are make sence only if user's config file is loaded.
+ifneq "$(INITRD_CONFIG)" ''
 
 # User defaults
-FEATURES	?=
-KERNEL		?= $(shell uname -r)
-IMAGE_SUFFIX	?=
-IMAGEFILE	?= /boot/initrd-$(KERNEL)$(IMAGE_SUFFIX).img
+FEATURES		?=
+IMAGE_SUFFIX		?=
+IMAGEFILE		?= /boot/initrd-$(KERNEL)$(IMAGE_SUFFIX).img
 
-# Global variables
 FIRMWARE_DIRS		?= /lib/firmware/updates /lib/firmware /lib/firmware/$(KERNEL)/updates /lib/firmware/$(KERNEL)
 VERBOSE			?=
 FSTAB			?= /etc/fstab
 BLACKLIST_MODULES	?=
+
+endif # INITRD_CONFIG
 
 # Load extra configs
 feature_configs		 = $(realpath $(wildcard $(FEATURESDIR)/*/config.mk))

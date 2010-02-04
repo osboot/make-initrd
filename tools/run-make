@@ -1,18 +1,4 @@
 #!/bin/sh -efu
 
-. shell-quote
-
-showenv() {
-	local n v
-
-	for n in MAKEFLAGS MFLAGS \
-		PATH PWD SHELL TERM TMP TMPDIR USER \
-		WORKDIR_SUFFIX INITRD_CONFIG;
-	do
-		eval v="\${$n:-}"
-		[ -n "$v" ] || continue
-		printf '%s="%s"\n' "$n" "$(quote_shell "$v")"
-	done
-}
-
-eval env -i $(showenv) $(quote_shell "$@")
+unset MAKELEVEL
+exec "$@"
