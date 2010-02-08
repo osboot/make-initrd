@@ -52,6 +52,7 @@ add_module_file() {
 	[ ! -f "$rootdir/$path" ] ||
 		return 0
 
+	verbose "Adding module \"$name.ko\""
 	put-file "$path"
 
 	add_module_firmware "$name" "$path"
