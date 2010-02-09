@@ -1,7 +1,7 @@
 # Features include helper: skip a feature which has already loaded
 require = $(foreach req,$(1), \
-		$(eval include $(filter-out $(MAKEFILE_LIST), \
-				$(realpath $(req:%=$(FEATURESDIR)/%/rules.mk)))))
+   $(eval include $(filter-out $(MAKEFILE_LIST), \
+      $(realpath $(req:%=$(FEATURESDIR)/%/rules.mk)))))
 
 genimage: install
 	@echo
@@ -36,17 +36,17 @@ show-guessed:
 create: depmod-host show-guessed
 	@echo "Creating initrd image ..."
 	@mkdir -m 755 -p $(verbose) -- $(WORKDIR) $(ROOTDIR)
-	@$(CREATE_INITRD)
+	@$(TOOLSDIR)/create-initrd
 
 rescue-modules: create
 	@if [ -n "$(RESCUE_MODULES)" ]; then \
 	    echo "Installing resue modules ..."; \
-	    $(ADD_RESCUE_MODULES) $(RESCUE_MODULES); \
+	    $(TOOLSDIR)/add-rescue-modules $(RESCUE_MODULES); \
 	fi
 
 pack: create rescue-modules
 	@echo "Packing image to archive ..."
-	@$(PACK_IMAGE)
+	@$(TOOLSDIR)/pack-image
 
 install: pack
 	@echo "Installing image ..."

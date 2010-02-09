@@ -1,5 +1,5 @@
 raid:
 	@echo "Adding RAID support ..."
-	@$(PUT_TREE) $(RAID_DATADIR)
+	@$(TOOLSDIR)/put-tree $(RAID_DATADIR)
 
 pack: raid

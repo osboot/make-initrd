@@ -1,5 +1,5 @@
 nfsroot:
 	@echo "Adding NFS root support ..."
-	@$(PUT_TREE) $(NFS_DATADIR)
+	@$(TOOLSDIR)/put-tree $(NFS_DATADIR)
 
 pack: nfsroot

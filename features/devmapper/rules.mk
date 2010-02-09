@@ -1,7 +1,7 @@
 $(call require,depmod-image)
 devmapper: create
 	@echo "Adding device-mapper support ..."
-	@$(PUT_FILE) $(DMSETUP) $(DM_UDEV_RULES)
-	@$(LOAD_MODULE) --pre-udev dm_mod
+	@$(TOOLSDIR)/put-file $(DMSETUP) $(DM_UDEV_RULES)
+	@$(TOOLSDIR)/load-module --pre-udev dm_mod
 
 depmod-image: devmapper

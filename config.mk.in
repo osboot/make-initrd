@@ -24,16 +24,6 @@ INITRD_CONFIG_LIST	 = $(wildcard $(SYSCONFDIR)/initrd.mk $(SYSCONFDIR)/initrd.mk
 GUESS_DEVICE_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/device)
 GUESS_COMMON_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/common)
 
-# Helpers
-GEN_INIT_CPIO		= @BINDIR@/gen_init_cpio
-CREATE_INITRD		= $(TOOLSDIR)/create-initrd
-PACK_IMAGE		= $(TOOLSDIR)/pack-image
-ADD_MODULE		= $(TOOLSDIR)/add-module
-LOAD_MODULE		= $(TOOLSDIR)/load-module
-ADD_RESCUE_MODULES	= $(TOOLSDIR)/add-rescue-modules
-PUT_FILE		= $(TOOLSDIR)/put-file
-PUT_TREE		= $(TOOLSDIR)/put-tree
-
 # Global variables
 RESOLVE_MODALIAS	?= 1
 KERNEL			?= $(shell uname -r)
