@@ -1,8 +1,9 @@
 VERSION		 = @VERSION@
 # System paths
+TEMPDIR		?= @TEMPDIR@
 WORKDIR_SUFFIX	?= work
-WORKDIR		?= @WORKDIR@/initrd-$(KERNEL).$(WORKDIR_SUFFIX)
-ROOTDIR		?= $(WORKDIR)/root
+WORKDIR		 = $(TEMPDIR)/initrd-$(KERNEL).$(WORKDIR_SUFFIX)
+ROOTDIR		 = $(WORKDIR)/root
 
 TOOLSDIR	 = @PREFIX@/tools
 DATADIR		?= @PREFIX@/data

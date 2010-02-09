@@ -5,7 +5,7 @@ sysconfdir ?= /etc
 bindir     ?= /usr/bin
 sbindir    ?= /usr/sbin
 datadir    ?= /usr/share
-workdir    ?= /tmp
+tempdir    ?= /tmp
 prefix     ?= $(datadir)/$(PROJECT)
 DESTDIR    ?=
 
@@ -44,13 +44,13 @@ all: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS)
 		-e 's,@PREFIX@,$(DESTDIR)$(prefix),g' \
 		-e 's,@BINDIR@,$(DESTDIR)$(bindir),g' \
 		-e 's,@SBINDIR@,$(DESTDIR)$(sbindir),g' \
-		-e 's,@WORKDIR@,$(DESTDIR)$(workdir),g' \
+		-e 's,@TEMPDIR@,$(DESTDIR)$(tempdir),g' \
 		<$< >$@
 	$(TOUCH_R) $< $@
 	chmod --reference=$< $@
 
 install: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS)
-	$(MKDIR_P) -- $(DESTDIR)$(workdir)
+	$(MKDIR_P) -- $(DESTDIR)$(tempdir)
 	$(MKDIR_P) -- $(DESTDIR)$(datadir)/$(PROJECT)
 	$(CP) -r -- $(DIRS) $(TARGETS) $(DESTDIR)$(datadir)/$(PROJECT)/
 	$(MKDIR_P) -- $(DESTDIR)$(sysconfdir)/initrd.mk.d
