@@ -18,7 +18,22 @@ depmod-host: check-for-root
 	@echo "Generating module dependencies on host ..."
 	$Qdepmod -a -F "/boot/System.map-$(KERNEL)" "$(KERNEL)"
 
-create: depmod-host
+# We should use it here because WORKDIR should be in the same
+# context with create target.
+show-guessed:
+	@if [ -s "$(WORKDIR)/guess/modules" -o -s "$(WORKDIR)/guess/modalias" ]; then \
+	   printf 'Guessed modules: '; \
+	   tr '\n' ' ' < "$(WORKDIR)/guess/modules"; \
+	   tr '\n' ' ' < "$(WORKDIR)/guess/modalias"; \
+	   printf '\n'; \
+	fi
+	@if [ -s "$(WORKDIR)/guess/features" ]; then \
+	   printf 'Guessed features: '; \
+	   tr '\n' ' ' < "$(WORKDIR)/guess/features"; \
+	   printf '\n'; \
+	fi
+
+create: depmod-host show-guessed
 	@echo "Creating initrd image ..."
 	@mkdir -m 755 -p $(verbose) -- $(WORKDIR) $(ROOTDIR)
 	@$(CREATE_INITRD)
