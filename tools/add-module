@@ -73,6 +73,8 @@ add_module() {
 
 	printf '%s\n' "$list" |
 	while read m; do
+		[ -n "$m" ] ||
+			continue
 		add_module_file "$m"
 	done
 

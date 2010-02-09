@@ -3,7 +3,8 @@ $(call require,depmod-image)
 add-modules: create
 	@if [ -n "$(MODULES_ADD)" ]; then \
 		echo "Adding modules ..."; \
-		$(ADD_MODULE) $(MODULES_ADD); \
+		[ -n "$(RESOLVE_MODALIAS)" ] && args= || args=--optional; \
+		$(ADD_MODULE) $$args $(MODULES_ADD); \
 	fi
 
 preload-modules: create
