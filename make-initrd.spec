@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.2.0
+Version: 0.2.1
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -7,6 +7,8 @@ License: GPL3
 Group: System/Base
 
 Packager: Alexey Gladkov <legion@altlinux.ru>
+
+BuildRequires: help2man
 
 Requires: libshell make sed module-init-tools coreutils grep glibc-utils
 Requires: kinit-utils ash
@@ -78,7 +80,8 @@ echo "MKINITRD=%_sbindir/mkinitrd-make-initrd" > %buildroot/%_sysconfdir/sysconf
 %config(noreplace) %_sysconfdir/sysconfig/installkernel
 %_bindir/*
 %_sbindir/*
-%_datadir/*
+%_datadir/%name
+%_man1dir/*
 %exclude %_datadir/%name/features/devmapper
 %exclude %_datadir/%name/features/lvm
 %exclude %_datadir/%name/features/luks
@@ -98,6 +101,13 @@ echo "MKINITRD=%_sbindir/mkinitrd-make-initrd" > %buildroot/%_sysconfdir/sysconf
 %_datadir/%name/features/nfsroot
 
 %changelog
+* Wed Feb 10 2010 Alexey Gladkov <legion@altlinux.ru> 0.2.1-alt1
+- Fix user's parameters translation over environment.
+- Increase verbosity.
+- make-initrd:
+  + Forbidden to call private goals.
+  + Add help and version targets.
+
 * Wed Feb 03 2010 Alexey Gladkov <legion@altlinux.ru> 0.2.0-alt1
 - make-initrd: Add new arguments:
   + guess-config: guessing configuration;
