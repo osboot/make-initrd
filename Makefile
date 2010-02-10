@@ -5,6 +5,8 @@ sysconfdir ?= /etc
 bindir     ?= /usr/bin
 sbindir    ?= /usr/sbin
 datadir    ?= /usr/share
+mandir     ?= $(datadir)/man
+man1dir    ?= $(mandir)/man1
 tempdir    ?= /tmp
 prefix     ?= $(datadir)/$(PROJECT)
 DESTDIR    ?=
@@ -64,6 +66,8 @@ install: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS)
 	$(CP) $(CONF) $(DESTDIR)$(sysconfdir)/
 	$(MKDIR_P) -- $(DESTDIR)$(sbindir)
 	$(CP) $(sbin_TARGETS) $(DESTDIR)$(sbindir)/
+	$(MKDIR_P) -- $(DESTDIR)$(man1dir)
+	$(CP) $(MAN1PAGES) $(DESTDIR)$(man1dir)/
 
 clean: $(SUBDIRS)
 	rm -f -- $(PREPROCESS_TARGET) $(MANPAGES)
