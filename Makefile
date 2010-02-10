@@ -15,10 +15,14 @@ bindir  = $(CURDIR)
 sbindir = $(CURDIR)
 endif
 
+MAN1PAGES = make-initrd.1
+MANPAGES  = $(MAN1PAGES)
+
 CP = cp -a
 INSTALL = install
 MKDIR_P = mkdir -p
 TOUCH_R = touch -r
+HELP2MAN = env --unset=MAKELEVEL help2man -N --help-option=help --version-option=version
 
 DIRS = data features tools
 
@@ -34,7 +38,10 @@ SUBDIRS = src
 
 .PHONY: $(SUBDIRS)
 
-all: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS)
+all: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS) $(MANPAGES)
+
+%.1: % %.1.inc
+	$(HELP2MAN) -i $@.inc -- ./$< >$@
 
 %: %.in
 	sed \
@@ -59,7 +66,7 @@ install: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS)
 	$(CP) $(sbin_TARGETS) $(DESTDIR)$(sbindir)/
 
 clean: $(SUBDIRS)
-	rm -f -- $(PREPROCESS_TARGET)
+	rm -f -- $(PREPROCESS_TARGET) $(MANPAGES)
 
 $(SUBDIRS):
 	$(MAKE) $(MFLAGS) -C "$@" $(MAKECMDGOALS)

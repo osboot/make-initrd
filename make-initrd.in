@@ -57,3 +57,33 @@ bug-report: check-for-root
 	@mkdir -m 755 -p -- $(WORKDIR)
 	@$(TOOLSDIR)/bug-report
 	$Qrm -rf -- "$(WORKDIR)"
+
+version:
+	@echo "make-initrd version $(VERSION)"
+	@echo "Written by Alexey Gladkov, Kirill Shutemov."
+	@echo ""
+	@echo "Copyright (C) 2009,2010  Alexey Gladkov <gladkov.alexey@gmail.com>"
+	@echo "Copyright (C) 2009,2010  Kirill A. Shutemov <kirill@shutemov.name>"
+	@echo "This is free software; see the source for copying conditions.  There is NO"
+	@echo "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."
+
+help:
+	@echo ""
+	@echo "Usage: make-initrd [<option>]"
+	@echo ""
+	@echo "make-initrd is a new, uevent-driven initramfs"
+	@echo "infrastructure based around udev."
+	@echo ""
+	@echo "Without options, the program generates images"
+	@echo "for all the configuration files."
+	@echo ""
+	@echo "Options:"
+	@echo "   guess-config   guesses the current configuration"
+	@echo "                  and generates the config file."
+	@echo "   bug-report     makes the archive for developers"
+	@echo "                  when bug happens."
+	@echo "   version        output version information and exit."
+	@echo "   help           display this help and exit."
+	@echo ""
+	@echo "Report bugs to authors."
+	@echo ""
