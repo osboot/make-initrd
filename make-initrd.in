@@ -21,6 +21,14 @@ ifneq "$(strip $(FEATURES))" ''
 include $(call require,$(FEATURES))
 endif # FEATURES
 
+else # !INITRD_CONFIG
+
+public_goals  = all guess-config bug-report help version
+private_goals = $(filter-out $(public_goals),$(MAKECMDGOALS))
+
+ifneq "$(private_goals)" ''
+    $(error You MUST NOT call private goals directly: $(private_goals))
+endif
 endif # INITRD_CONFIG
 
 all:
