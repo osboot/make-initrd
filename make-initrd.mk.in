@@ -49,11 +49,17 @@ guess: check-for-root
 	@cat /dev/null > $(WORKDIR)/guess/modalias
 	@cat /dev/null > $(WORKDIR)/guess/features
 	@for i in $(AUTODETECT); do \
+		mod="$$i"; \
+		arg=""; \
 		if [ -z "$${i##*:*}" ]; then \
-			"$(TOOLSDIR)/guess-$${i%%:*}" "$${i#*:}"; \
+			mod="$${i%%:*}"; \
+			arg="$${i#*:}"; \
+		fi; \
+		if [ -x "$(TOOLSDIR)/guess-$$mod" ]; then \
+			"$(TOOLSDIR)/guess-$$mod" "$$arg"; \
 		else \
-			"$(TOOLSDIR)/guess-$$i"; \
-		fi;\
+			echo "Warning: Unknown guessing module: $$mod" >&2; \
+		fi; \
 	done
 	@$(TOOLSDIR)/guess-config > $(WORKDIR)/guess/guessed.mk
 
