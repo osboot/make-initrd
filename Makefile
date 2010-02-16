@@ -24,17 +24,17 @@ CP = cp -a
 INSTALL = install
 MKDIR_P = mkdir -p
 TOUCH_R = touch -r
-HELP2MAN = env --unset=MAKELEVEL help2man -N --help-option=help --version-option=version
+HELP2MAN = help2man -N
 
 DIRS = data features tools
 
 CONF = initrd.mk
 
-PREPROCESS_TARGET = make-initrd mkinitrd-make-initrd config.mk
+PREPROCESS_TARGET = make-initrd mkinitrd-make-initrd config.mk make-initrd.mk
 
 sbin_TARGETS = make-initrd mkinitrd-make-initrd
 
-TARGETS = config.mk rules.mk initfiles.mk
+TARGETS = config.mk rules.mk initfiles.mk make-initrd.mk
 
 SUBDIRS = src
 

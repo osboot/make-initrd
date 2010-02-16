@@ -14,8 +14,6 @@ SYSFS_PATH	?= /sys
 
 PATH		= $(TOOLSDIR):$(shell echo $$PATH)
 
-MAKE_INITRD_BIN		= @SBINDIR@/make-initrd
-
 # Config file locations
 INITRD_CONFIG		?=
 INITRD_CONFIG_LIST	 = $(wildcard $(SYSCONFDIR)/initrd.mk $(SYSCONFDIR)/initrd.mk.d/*.mk)

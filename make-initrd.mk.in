@@ -1,0 +1,98 @@
+.EXPORT_ALL_VARIABLES:
+.DEFAULT_GOAL := all
+
+include @PREFIX@/config.mk
+include @PREFIX@/initfiles.mk
+include @PREFIX@/rules.mk
+
+ifneq "$(strip $(INITRD_CONFIG))" ''
+
+# Load user configuration
+include $(INITRD_CONFIG)
+
+# Load guessed parameters
+ifeq ($(MAKECMDGOALS),genimage)
+include $(WORKDIR)/guess/guessed.mk
+endif
+
+# Load requested features
+ifneq "$(strip $(FEATURES))" ''
+include $(call require,$(FEATURES))
+endif # FEATURES
+
+else # !INITRD_CONFIG
+
+help_goals    = -h --help help
+version_goals = -V --version version
+public_goals  = all guess-config bug-report $(help_goals) $(version_goals)
+private_goals = $(filter-out $(public_goals),$(MAKECMDGOALS))
+
+ifneq "$(private_goals)" ''
+    $(error You MUST NOT call private goals directly: $(private_goals))
+endif
+endif # INITRD_CONFIG
+
+all: check-for-root
+	@for c in $(INITRD_CONFIG_LIST); do \
+		echo "Config file: $$c"; \
+		wsuffix="$${c##*/}"; \
+		wsuffix="$${wsuffix%.mk}"; \
+		export WORKDIR_SUFFIX="$$wsuffix"; \
+		export INITRD_CONFIG="$$c"; \
+		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @PREFIX@/make-initrd.mk guess; \
+		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @PREFIX@/make-initrd.mk genimage; \
+	done
+
+guess: check-for-root
+	@mkdir -m 755 -p -- $(WORKDIR)/guess
+	@cat /dev/null > $(WORKDIR)/guess/modules
+	@cat /dev/null > $(WORKDIR)/guess/modalias
+	@cat /dev/null > $(WORKDIR)/guess/features
+	@for i in $(AUTODETECT); do \
+		if [ -z "$${i##*:*}" ]; then \
+			"$(TOOLSDIR)/guess-$${i%%:*}" "$${i#*:}"; \
+		else \
+			"$(TOOLSDIR)/guess-$$i"; \
+		fi;\
+	done
+	@$(TOOLSDIR)/guess-config > $(WORKDIR)/guess/guessed.mk
+
+guess-config: AUTODETECT ?= common root resume
+guess-config: guess check-for-root
+	@cat $(WORKDIR)/guess/guessed.mk
+	$Qrm -rf -- "$(WORKDIR)"
+
+bug-report: check-for-root
+	@mkdir -m 755 -p -- $(WORKDIR)
+	@$(TOOLSDIR)/bug-report
+	$Qrm -rf -- "$(WORKDIR)"
+
+$(version_goals):
+	@echo "make-initrd version $(VERSION)"
+	@echo "Written by Alexey Gladkov, Kirill Shutemov."
+	@echo ""
+	@echo "Copyright (C) 2009,2010  Alexey Gladkov <gladkov.alexey@gmail.com>"
+	@echo "Copyright (C) 2009,2010  Kirill A. Shutemov <kirill@shutemov.name>"
+	@echo "This is free software; see the source for copying conditions.  There is NO"
+	@echo "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."
+
+$(help_goals):
+	@echo ""
+	@echo "Usage: make-initrd [<option>]"
+	@echo ""
+	@echo "make-initrd is a new, uevent-driven initramfs"
+	@echo "infrastructure based around udev."
+	@echo ""
+	@echo "Without options, the program generates images"
+	@echo "for all the configuration files."
+	@echo ""
+	@echo "Options:"
+	@echo "   guess-config   guesses the current configuration"
+	@echo "                  and generates the config file."
+	@echo "   bug-report     makes the archive for developers"
+	@echo "                  when bug happens."
+	@echo "   -V, --version  output version information and exit."
+	@echo "   -h, --help     display this help and exit."
+	@echo ""
+	@echo "Report bugs to authors."
+	@echo ""
