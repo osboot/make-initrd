@@ -12,7 +12,7 @@ include $(INITRD_CONFIG)
 
 # Load guessed parameters
 ifeq ($(MAKECMDGOALS),genimage)
-include $(WORKDIR)/guess/guessed.mk
+include $(GUESSDIR)/guessed.mk
 endif
 
 # Load requested features
@@ -44,10 +44,10 @@ all: check-for-root
 	done
 
 guess: check-for-root
-	@mkdir -m 755 -p -- $(WORKDIR)/guess
-	@cat /dev/null > $(WORKDIR)/guess/modules
-	@cat /dev/null > $(WORKDIR)/guess/modalias
-	@cat /dev/null > $(WORKDIR)/guess/features
+	@mkdir -m 755 -p -- $(GUESSDIR)
+	@cat /dev/null > $(GUESSDIR)/modules
+	@cat /dev/null > $(GUESSDIR)/modalias
+	@cat /dev/null > $(GUESSDIR)/features
 	@for i in $(AUTODETECT); do \
 		mod="$$i"; \
 		arg=""; \
@@ -61,17 +61,19 @@ guess: check-for-root
 			echo "Warning: Unknown guessing module: $$mod" >&2; \
 		fi; \
 	done
-	@$(TOOLSDIR)/guess-config > $(WORKDIR)/guess/guessed.mk
+	@$(TOOLSDIR)/guess-config > $(GUESSDIR)/guessed.mk
 
 guess-config: AUTODETECT ?= common root resume
-guess-config: guess check-for-root
-	@cat $(WORKDIR)/guess/guessed.mk
-	$Qrm -rf -- "$(WORKDIR)"
+guess-config: check-for-root guess
+	@cat $(GUESSDIR)/guessed.mk
+	$Qrm -rf -- "$(GUESSDIR)"
+	$Qrmdir -- "$(WORKDIR)"
 
 bug-report: check-for-root
-	@mkdir -m 755 -p -- $(WORKDIR)
+	@mkdir -m 755 -p -- $(REPORTDIR)
 	@$(TOOLSDIR)/bug-report
-	$Qrm -rf -- "$(WORKDIR)"
+	$Qrm -rf -- "$(REPORTDIR)"
+	$Qrmdir -- "$(WORKDIR)"
 
 $(version_goals):
 	@echo "make-initrd version $(VERSION)"

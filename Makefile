@@ -7,7 +7,7 @@ sbindir    ?= /usr/sbin
 datadir    ?= /usr/share
 mandir     ?= $(datadir)/man
 man1dir    ?= $(mandir)/man1
-tempdir    ?= /tmp
+tmpdir     ?= /tmp
 prefix     ?= $(datadir)/$(PROJECT)
 DESTDIR    ?=
 
@@ -53,7 +53,7 @@ all: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS) $(MANPAGES)
 		-e 's,@PREFIX@,$(DESTDIR)$(prefix),g' \
 		-e 's,@BINDIR@,$(DESTDIR)$(bindir),g' \
 		-e 's,@SBINDIR@,$(DESTDIR)$(sbindir),g' \
-		-e 's,@TEMPDIR@,$(DESTDIR)$(tempdir),g' \
+		-e 's,@TMPDIR@,$(DESTDIR)$(tmpdir),g' \
 		<$< >$@
 	$(TOUCH_R) $< $@
 	chmod --reference=$< $@

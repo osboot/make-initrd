@@ -21,21 +21,21 @@ depmod-host: check-for-root
 # We should use it here because WORKDIR should be in the same
 # context with create target.
 show-guessed:
-	@if [ -s "$(WORKDIR)/guess/modules" -o -s "$(WORKDIR)/guess/modalias" ]; then \
+	@if [ -s "$(GUESSDIR)/modules" -o -s "$(GUESSDIR)/modalias" ]; then \
 	   printf 'Guessed modules: '; \
-	   tr '\n' ' ' < "$(WORKDIR)/guess/modules"; \
-	   tr '\n' ' ' < "$(WORKDIR)/guess/modalias"; \
+	   tr '\n' ' ' < "$(GUESSDIR)/modules"; \
+	   tr '\n' ' ' < "$(GUESSDIR)/modalias"; \
 	   printf '\n'; \
 	fi
-	@if [ -s "$(WORKDIR)/guess/features" ]; then \
+	@if [ -s "$(GUESSDIR)/features" ]; then \
 	   printf 'Guessed features: '; \
-	   tr '\n' ' ' < "$(WORKDIR)/guess/features"; \
+	   tr '\n' ' ' < "$(GUESSDIR)/features"; \
 	   printf '\n'; \
 	fi
 
 create: depmod-host show-guessed
 	@echo "Creating initrd image ..."
-	@mkdir -m 755 -p $(verbose) -- $(WORKDIR) $(ROOTDIR)
+	@mkdir -m 755 -p $(verbose) -- $(ROOTDIR)
 	@$(TOOLSDIR)/create-initrd
 
 rescue-modules: create
@@ -54,4 +54,5 @@ install: pack
 
 clean:
 	@echo "Removing work directory ..."
-	$Qrm -rf -- "$(WORKDIR)"
+	$Qrm -rf $(verbose) -- "$(ROOTDIR)" "$(GUESSDIR)"
+	$Qrmdir -- "$(WORKDIR)"

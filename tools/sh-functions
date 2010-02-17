@@ -6,6 +6,8 @@ export verbose="${VERBOSE:+-v}"
 
 export workdir="${WORKDIR:?Work directory required}"
 export rootdir="${ROOTDIR:?Root directory required}"
+export guessdir="${GUESSDIR:?Autodetect directory required}"
+export reportdir="${REPORTDIR:?Bug report directory required}"
 export datadir="${DATADIR:?Data directory required}"
 export scriptdir="${SCRIPTDIR:?Scripts directory required}"
 export imagefile="${IMAGEFILE-}"

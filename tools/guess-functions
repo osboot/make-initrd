@@ -1,5 +1,7 @@
 #!/bin/sh -efu
 
+. sh-functions
+
 get_majmin() {
 	local v devnode
 
@@ -26,15 +28,15 @@ get_device() {
 }
 
 guess_modalias() {
-	printf '%s\n' "$1" >> "$WORKDIR/guess/modalias"
+	printf '%s\n' "$1" >> "$guessdir/modalias"
 }
 
 guess_module() {
-	printf '%s\n' "$1" >> "$WORKDIR/guess/modules"
+	printf '%s\n' "$1" >> "$guessdir/modules"
 }
 
 guess_feature() {
-	printf '%s\n' "$1" >> "$WORKDIR/guess/features"
+	printf '%s\n' "$1" >> "$guessdir/features"
 }
 
 resolve_modalias() {

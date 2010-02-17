@@ -1,4 +1,23 @@
 #!/bin/sh -efu
 
+PROG="${0##*/}"
+TEMPDIR=
+
+exit_handler() {
+	[ -z "$TEMPDIR" ] || rm -rf -- "$TEMPDIR"
+	exit 1
+}
+
+TEMPDIR="$(mktemp -d "@TMPDIR@/$PROG.XXXXXXXXX")"
+trap exit_handler HUP INT QUIT TERM
+
+export TEMPDIR
 unset MAKELEVEL
-exec /usr/bin/make -r -f @PREFIX@/make-initrd.mk -- "$@"
+
+rc=0
+/usr/bin/make -r -f @PREFIX@/make-initrd.mk -- "$@" || rc=$?
+
+[ -z "$TEMPDIR" ] ||
+	rmdir -- "$TEMPDIR" 2>/dev/null ||:
+
+exit $rc

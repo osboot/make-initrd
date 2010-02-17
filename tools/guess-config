@@ -1,35 +1,34 @@
 #!/bin/sh -efu
 
-. sh-functions
 . guess-functions
 
 if [ -n "${RESOLVE_MODALIAS-}" ]; then
 	while read -r alias; do
 		resolve_modalias "$alias"
-	done < "$WORKDIR/guess/modalias" >> "$WORKDIR/guess/modules"
-	> "$WORKDIR/guess/modalias"
+	done < "$guessdir/modalias" >> "$guessdir/modules"
+	> "$guessdir/modalias"
 fi
 
-if [ -s "$WORKDIR/guess/modules" -o -s "$WORKDIR/guess/modalias" ]; then
-	printf '%s\n' 'add-modules' >> "$WORKDIR/guess/features"
+if [ -s "$guessdir/modules" -o -s "$guessdir/modalias" ]; then
+	printf '%s\n' 'add-modules' >> "$guessdir/features"
 fi
 
-sort -uo "$WORKDIR/guess/modules"  "$WORKDIR/guess/modules"
-sort -uo "$WORKDIR/guess/modalias" "$WORKDIR/guess/modalias"
-sort -uo "$WORKDIR/guess/features" "$WORKDIR/guess/features"
+sort -uo "$guessdir/modules"  "$guessdir/modules"
+sort -uo "$guessdir/modalias" "$guessdir/modalias"
+sort -uo "$guessdir/features" "$guessdir/features"
 
 printf 'MODULES_ADD\t+= '
 while read n; do
 	printf '%s ' "$n"
-done < "$WORKDIR/guess/modules"
+done < "$guessdir/modules"
 
 while read n; do
 	printf '%s ' "$n"
-done < "$WORKDIR/guess/modalias"
+done < "$guessdir/modalias"
 printf '\n'
 
 printf 'FEATURES\t+= '
 while read n; do
 	printf '%s ' "$n"
-done < "$WORKDIR/guess/features"
+done < "$guessdir/features"
 printf '\n'

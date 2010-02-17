@@ -1,14 +1,32 @@
 VERSION		 = @VERSION@
-# System paths
-TEMPDIR		?= @TEMPDIR@
+
+# Temprary directory used for processing all images.
+# It is created once when the make-initrd starts.
+TEMPDIR		?=
+
+ifeq "$(TEMPDIR)" ''
+$(error TEMPDIR is empty. You SHOULD NOT use config.mk directly.)
+endif
+
+# This is the working directory for each image.
+# It is created for each configuration file.
 WORKDIR_SUFFIX	?= work
-WORKDIR		 = $(TEMPDIR)/initrd-$(KERNEL).$(WORKDIR_SUFFIX)
-ROOTDIR		 = $(WORKDIR)/root
+WORKDIR		 = $(TEMPDIR)/$(KERNEL).$(WORKDIR_SUFFIX)
+
+# This is the root directory of the image.
+ROOTDIR		 = $(WORKDIR)/img
+
+# In this directory are files received from autodetect.
+GUESSDIR	 = $(WORKDIR)/guess
+
+# This is directory used for bug-report target.
+REPORTDIR	 = $(WORKDIR)/report
 
 TOOLSDIR	 = @PREFIX@/tools
 DATADIR		?= @PREFIX@/data
 SCRIPTDIR	?= @PREFIX@/scripts.d
 FEATURESDIR	?= @PREFIX@/features
+BOOTDIR		?= /boot
 SYSCONFDIR	?= /etc
 SYSFS_PATH	?= /sys
 
@@ -32,7 +50,7 @@ ifneq "$(INITRD_CONFIG)" ''
 # User defaults
 FEATURES		?=
 IMAGE_SUFFIX		?=
-IMAGEFILE		?= /boot/initrd-$(KERNEL)$(IMAGE_SUFFIX).img
+IMAGEFILE		?= $(BOOTDIR)/initrd-$(KERNEL)$(IMAGE_SUFFIX).img
 
 FIRMWARE_DIRS		?= /lib/firmware/updates /lib/firmware /lib/firmware/$(KERNEL)/updates /lib/firmware/$(KERNEL)
 VERBOSE			?=
