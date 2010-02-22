@@ -24,7 +24,7 @@ CP = cp -a
 INSTALL = install
 MKDIR_P = mkdir -p
 TOUCH_R = touch -r
-HELP2MAN = help2man -N
+HELP2MAN = env -i help2man -N
 
 DIRS = data features tools
 
