@@ -5,6 +5,7 @@ PROG_VERSION="@VERSION@"
 
 . shell-error
 . shell-getopt
+. shell-args
 
 show_help()
 {
