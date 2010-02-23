@@ -1,21 +1,106 @@
 #!/bin/sh -efu
 
+. shell-error
+. shell-getopt
+. shell-args
+
 PROG="${0##*/}"
 TEMPDIR=
+BOOTDIR="@BOOTDIR@"
+KERNEL="$(uname -r)"
+VERBOSE=
+
+print_version() {
+	cat <<-EOF
+	make-initrd version @VERSION@
+	Written by Alexey Gladkov, Kirill Shutemov.
+
+	Copyright (C) 2009,2010  Alexey Gladkov <gladkov.alexey@gmail.com>
+	Copyright (C) 2009,2010  Kirill A. Shutemov <kirill@shutemov.name>
+	This is free software; see the source for copying conditions.  There is NO
+	warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	EOF
+	exit
+}
+
+show_help() {
+	cat <<-EOF
+
+	Usage: make-initrd [<option>]
+
+	make-initrd is a new, uevent-driven initramfs
+	infrastructure based around udev.
+
+	Without options, the program generates images
+	for all the configuration files.
+
+	Options:
+	   guess-config           guesses the current configuration
+	                          and generates the config file.
+	   bug-report             makes the archive for developers
+	                          when bug happens.
+	   -b, --bootdir=DIR      set boot directory (default: $BOOTDIR).
+	   -k, --kernel=VERSION   set kernel version (default: $KERNEL).
+	   -v, --verbose          print a message for each action.
+	   -V, --version          output version information and exit.
+	   -h, --help             display this help and exit.
+
+	Report bugs to authors.
+
+	EOF
+	exit
+}
 
 exit_handler() {
 	[ -z "$TEMPDIR" ] || rm -rf -- "$TEMPDIR"
 	exit 1
 }
 
+TEMP=`getopt -n $PROG -o 'b:,k:,h,v,V' -l 'bootdir:,kernel:,help,verbose,version' -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
+
+while :; do
+	case "$1" in
+		-b|--bootdir) shift
+			BOOTDIR="$(opt_check_dir --bootdir "$1")"
+			;;
+		-k|--kernel) shift
+			[ -z "$1" ] || KERNEL="$1"
+			;;
+		-h|--help)
+			show_help
+			;;
+		-v|--verbose)
+			VERBOSE=1
+			;;
+		-V|--version)
+			print_version
+			;;
+		--) shift
+			break
+			;;
+		*)
+			fatal "Unknown option: $1"
+			;;
+	esac
+	shift
+done
+
+[ -r "/lib/modules/$KERNEL" ] ||
+	fatal "/lib/modules/$KERNEL: Not readable."
+
+[ -d "/lib/modules/$KERNEL" ] ||
+	fatal "/lib/modules/$KERNEL: Not a directory."
+
 TEMPDIR="$(mktemp -d "@TMPDIR@/$PROG.XXXXXXXXX")"
 trap exit_handler HUP INT QUIT TERM
 
-export TEMPDIR
+export TEMPDIR KERNEL BOOTDIR VERBOSE
 unset MAKELEVEL
 
 rc=0
-/usr/bin/make -r -f @PREFIX@/make-initrd.mk -- "$@" || rc=$?
+make -r -f @PREFIX@/make-initrd.mk -- "$@" || rc=$?
 
 [ -z "$TEMPDIR" ] ||
 	rmdir -- "$TEMPDIR" 2>/dev/null ||:

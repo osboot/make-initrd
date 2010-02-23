@@ -2,6 +2,7 @@ PROJECT = make-initrd
 VERSION = $(shell sed '/^Version: */!d;s///;q' make-initrd.spec)
 
 sysconfdir ?= /etc
+bootdir    ?= /boot
 bindir     ?= /usr/bin
 sbindir    ?= /usr/sbin
 datadir    ?= /usr/share
@@ -49,11 +50,12 @@ all: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS) $(MANPAGES)
 	sed \
 		-e 's,@VERSION@,$(VERSION),g' \
 		-e 's,@PROJECT@,$(PROJECT),g' \
-		-e 's,@CONFIG@,$(DESTDIR)$(sysconfdir),g' \
-		-e 's,@PREFIX@,$(DESTDIR)$(prefix),g' \
-		-e 's,@BINDIR@,$(DESTDIR)$(bindir),g' \
-		-e 's,@SBINDIR@,$(DESTDIR)$(sbindir),g' \
-		-e 's,@TMPDIR@,$(DESTDIR)$(tmpdir),g' \
+		-e 's,@BOOTDIR@,$(bootdir),g' \
+		-e 's,@CONFIG@,$(sysconfdir),g' \
+		-e 's,@PREFIX@,$(prefix),g' \
+		-e 's,@BINDIR@,$(bindir),g' \
+		-e 's,@SBINDIR@,$(sbindir),g' \
+		-e 's,@TMPDIR@,$(tmpdir),g' \
 		<$< >$@
 	$(TOUCH_R) $< $@
 	chmod --reference=$< $@
