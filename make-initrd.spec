@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.2.1
+Version: 0.2.2
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -72,7 +72,10 @@ NFS module for %name
 %make_install DESTDIR=%buildroot install
 
 mkdir -p %buildroot/%_sysconfdir/sysconfig
-echo "MKINITRD=%_sbindir/mkinitrd-make-initrd" > %buildroot/%_sysconfdir/sysconfig/installkernel
+cat > %buildroot/%_sysconfdir/sysconfig/installkernel <<-EOF
+	INITRD_GENERATOR=make-initrd
+	MKINITRD=%_sbindir/mkinitrd-make-initrd
+EOF
 
 %files
 %dir %_sysconfdir/initrd.mk.d
@@ -101,6 +104,12 @@ echo "MKINITRD=%_sbindir/mkinitrd-make-initrd" > %buildroot/%_sysconfdir/sysconf
 %_datadir/%name/features/nfsroot
 
 %changelog
+* Mon Feb 22 2010 Alexey Gladkov <legion@altlinux.ru> 0.2.2-alt1
+- Add wrapper to run the main program.
+- Add check for AUTODETECT modules existence.
+- Use mktemp for work directory.
+- Fix manpage.
+
 * Wed Feb 10 2010 Alexey Gladkov <legion@altlinux.ru> 0.2.1-alt1
 - Fix user's parameters translation over environment.
 - Increase verbosity.
