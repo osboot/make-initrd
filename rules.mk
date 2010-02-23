@@ -50,6 +50,7 @@ pack: create rescue-modules
 
 install: pack
 	@echo "Installing image ..."
+	@chmod 600 -- "$(WORKDIR)/initrd.img"
 	@mv -f $(verbose) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"
 
 clean:
