@@ -93,7 +93,7 @@ done
 [ -d "/lib/modules/$KERNEL" ] ||
 	fatal "/lib/modules/$KERNEL: Not a directory."
 
-TEMPDIR="$(mktemp -d "@TMPDIR@/$PROG.XXXXXXXXX")"
+TEMPDIR="$(mktemp -dt "$PROG.XXXXXXXXX")"
 trap exit_handler HUP INT QUIT TERM
 
 export TEMPDIR KERNEL BOOTDIR VERBOSE
