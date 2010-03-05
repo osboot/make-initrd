@@ -88,12 +88,19 @@ while :; do
 done
 
 [ -r "/lib/modules/$KERNEL" ] ||
-	fatal "/lib/modules/$KERNEL: Not readable."
+	fatal "/lib/modules/$KERNEL: Not readable"
 
 [ -d "/lib/modules/$KERNEL" ] ||
-	fatal "/lib/modules/$KERNEL: Not a directory."
+	fatal "/lib/modules/$KERNEL: Not a directory"
 
-TEMPDIR="$(mktemp -dt "$PROG.XXXXXXXXX")"
+WORKDIR="${INITRD_WORKDIR-}"
+WORKDIR="${WORKDIR:-${TMPDIR-}}"
+WORKDIR="${WORKDIR:-/tmp}"
+
+[ -d "$WORKDIR" ] ||
+	fatal "$WORKDIR: Not a directory"
+
+TEMPDIR="$(mktemp -d "$WORKDIR/$PROG.XXXXXXXXX")"
 trap exit_handler HUP INT QUIT TERM
 
 export TEMPDIR KERNEL BOOTDIR VERBOSE
