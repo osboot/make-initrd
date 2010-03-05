@@ -27,12 +27,14 @@ put-tree "$datadir"
 
 :>>./etc/fstab
 
-for n in bash dash mksh ash; do
-	[ -x ./bin/$n ] || continue
-	verbose "Setting /bin/$n as /bin/sh ..."
-	ln -s /bin/$n ./bin/sh
-	break
-done
+if [ ! -x ./bin/sh ]; then
+	for n in bash dash mksh ash; do
+		[ -x ./bin/$n ] || continue
+		verbose "Setting $n as /bin/sh ..."
+		ln -s $n ./bin/sh
+		break
+	done
+fi
 
 if [ -f /etc/modprobe.conf ]; then
 	verbose "Copying /etc/modprobe.conf ..."
