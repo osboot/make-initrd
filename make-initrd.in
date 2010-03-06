@@ -56,6 +56,29 @@ exit_handler() {
 	exit 1
 }
 
+# Check WORKDIR for 'noexec' mount option.
+check_noexec() {
+	local rc=0
+	printf '#!/bin/sh\nexit 0\n' > "$TEMPDIR/check"
+
+	if ! chmod 700 -- "$TEMPDIR/check"; then
+		rc=1
+	fi
+
+	if [ "$rc" = 0 ] && [ ! -x "$TEMPDIR/check" ]; then
+		message "$WORKDIR: Unable to check executable bit"
+		rc=1
+	fi
+
+	if [ "$rc" = 0 ] && ! "$TEMPDIR/check"; then
+		message "$WORKDIR: Unable to execute script in this directory"
+		rc=1
+	fi
+
+	rm -f -- "$TEMPDIR/check"
+	return $rc
+}
+
 TEMP=`getopt -n $PROG -o 'b:,k:,h,v,V' -l 'bootdir:,kernel:,help,verbose,version' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
@@ -102,6 +125,12 @@ WORKDIR="${WORKDIR:-/tmp}"
 
 TEMPDIR="$(mktemp -d "$WORKDIR/$PROG.XXXXXXXXX")"
 trap exit_handler HUP INT QUIT TERM
+
+if ! check_noexec; then
+	message "Perhaps 'noexec' mount option used?"
+	rm -rf -- "$TEMPDIR"
+	exit 1
+fi
 
 export TEMPDIR KERNEL BOOTDIR VERBOSE
 unset MAKELEVEL
