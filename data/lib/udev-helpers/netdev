@@ -2,7 +2,7 @@
 
 . /dev/.initramfs/env
 
-cfg="ipconfig -t ${IPTIMEOUT:-30}"
+cfg="ipconfig -q -t ${IPTIMEOUT:-30}"
 
 mcut() {
 	local f="$1" s="$2"
