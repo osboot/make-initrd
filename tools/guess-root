@@ -10,11 +10,13 @@ t_fstype=
 eof=
 while [ -z "$eof" ]; do
 	read fsname fsdir fstype opts freq passno || eof=1
+	[ -n "${fsname##\#*}" ] ||
+		continue
 	if [ "$fsdir" = "/" ]; then
 		t_fsname="$fsname"
 		t_fstype="$fstype"
 		break
-fi
+	fi
 done < "$fstab"
 
 [ -n "$t_fsname" ] ||
