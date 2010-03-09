@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.2.2
+Version: 0.2.3
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -10,8 +10,10 @@ Packager: Alexey Gladkov <legion@altlinux.ru>
 
 BuildRequires: help2man
 
-Requires: libshell make sed module-init-tools coreutils grep glibc-utils
-Requires: kinit-utils ash
+Requires: ash libshell make sed module-init-tools coreutils grep glibc-utils
+
+# ipconfig -q
+Requires: kinit-utils >= 1.5.15-alt3
 
 # guess-kbd
 Requires: udev >= 149-alt1
@@ -104,6 +106,12 @@ EOF
 %_datadir/%name/features/nfsroot
 
 %changelog
+* Wed Mar 10 2010 Alexey Gladkov <legion@altlinux.ru> 0.2.3-alt1
+- make-initrd:
+  + Add INITRD_WORKDIR variable.
+  + Check WORKDIR for 'noexec' mount option.
+- guess-root: Ignore comments and empty strings in fstab.
+
 * Mon Feb 22 2010 Alexey Gladkov <legion@altlinux.ru> 0.2.2-alt1
 - Add wrapper to run the main program.
 - Add check for AUTODETECT modules existence.
