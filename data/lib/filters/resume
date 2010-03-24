@@ -1,0 +1,13 @@
+#!/bin/sh -efu
+
+. /dev/.initramfs/env
+. /scripts/functions
+
+devresume=
+get_dev devresume "$RESUME" ||
+	exit 0
+
+if [ -n "$devresume" ]; then
+	event="$(mk_event resume)"
+	echo "INIT_RESUME='$devresume'" > "$event"
+fi

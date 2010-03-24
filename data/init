@@ -9,6 +9,7 @@ export PANIC=
 export STOP=','
 export IGNORE=','
 export rootmnt='/root'
+export eventdir='/dev/.initramfs/udev'
 export readonly=1
 export RESCUE_MODULES=
 
@@ -17,25 +18,25 @@ export RESCUE_MODULES=
 
 run_scripts top
 
-for m in /modules/*; do
-	[ -x "$m" ] ||
+for f in /modules/*; do
+	[ -x "$f" ] ||
 		continue
 
-	export stage="${m#*-}"
+	export m="${f#*-}"
 
-	[ -n "${IGNORE##*,$stage,*}" ] ||
+	[ -n "${IGNORE##*,$m,*}" ] ||
 		continue
 
-	run_scripts "pre/$stage"
+	run_scripts "pre/$m"
 
-	. "$m"
+	. "$f"
 	verbose "$msg"
 
-	[ "$STOP" != ',all,' -a -n "${STOP##*,$stage,*}" ] ||
+	[ "$STOP" != ',all,' -a -n "${STOP##*,$m,*}" ] ||
 		shell "Spawning shell within the initramfs"
 
-	run "$@" ||
-		shell "Stage '$stage' failed"
+	run_module "$m" "$@" ||
+		shell "Stage '$m' failed"
 
-	run_scripts "post/$stage"
+	run_scripts "post/$m"
 done

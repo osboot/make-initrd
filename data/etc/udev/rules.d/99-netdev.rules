@@ -1,1 +1,1 @@
-SUBSYSTEM=="net", ACTION=="add", RUN+="/lib/udev-helpers/netdev add"
+SUBSYSTEM=="net", ACTION=="add", RUN+="/lib/filters/netdev"

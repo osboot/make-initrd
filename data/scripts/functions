@@ -1,10 +1,11 @@
 #!/bin/sh
 
-lockd=/tmp
-
-stage=${stage:-init}
 message() {
-	printf '[%-12s] %s\n' "$stage" "$*"
+	printf 'initrd:%s %s\n' "${stage:+ $stage:}" "$*"
+}
+
+error() {
+	message "ERROR: $*"
 }
 
 verbose() {
@@ -25,40 +26,10 @@ shell() {
 	PS1='(initramfs) ' /bin/sh -i +m </dev/console >/dev/console 2>&1
 }
 
-add_lock() {
-	local sec=$(($2*10))
-	while ! mkdir "$lockd/$1" >/dev/null 2>&1; do
-		if [ "$sec" != '-' ] && [ $sec -eq 0 ]; then
-			shell "It seems that the deadlock occurred."
-			return 1
-		fi
-		sec=$(($sec-1))
-		sleep 0.1
-	done
-}
-
-del_lock() {
-	/bin/rm -rf -- "$lockd/$1"
-}
-
-set_lock() {
-	add_lock "$1" "${2-50}" || return 0
-	trap "del_lock $1" HUP INT QUIT TERM EXIT
-}
-
-is_lock() {
-	[ -d "$lockd/$1" ]
-}
-
-wait_unlock() {
-	while is_lock "$1"; do
-		sleep 0.1
-	done
-}
-
-lock_udev() {
-	mkdir -p "$lockd/udev"
-	message "$1"
+run_module() {
+	local stage
+	stage="$1"; shift
+	run "$@"
 }
 
 run_scripts() {
@@ -76,6 +47,20 @@ load_modules() {
 		[ -n "${m##\#*}" ] || continue
 		modprobe -q $m
 	done < /conf/modules-"$1"
+}
+
+dir_not_empty() {
+	local f
+	for f in "$1"/*; do
+		[ -e "$f" ] ||
+			return 1
+		return 0
+	done
+}
+
+mk_event() {
+	mkdir -p -- "$eventdir/$1"
+	mktemp "$eventdir/$1"/event.XXXXXXXXX
 }
 
 get_dev() {

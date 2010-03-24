@@ -1,8 +1,0 @@
-#!/bin/udevsh
-
-add() {
-	/sbin/lvm vgscan >/dev/null
-	/sbin/lvm vgchange -ay >/dev/null
-}
-
-add

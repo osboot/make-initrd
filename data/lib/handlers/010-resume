@@ -1,0 +1,22 @@
+#!/bin/sh
+
+. /scripts/functions
+
+handler() {
+	if [ ! -e /sys/power/resume ]; then
+		message "Kernel does not support resume - doing normal boot"
+		return 0
+	fi
+
+	# hardcode path, uswsusp ships an resume binary too
+	/bin/resume "$INIT_RESUME"
+	return 0
+}
+
+for e in "$eventdir"/resume/*; do
+	[ -f "$e" ] ||
+		break
+
+	# Ignore the return code to continue normal boot
+	( . "$e"; handler; ) ||:
+done

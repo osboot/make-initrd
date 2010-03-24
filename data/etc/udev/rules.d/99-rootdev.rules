@@ -1,1 +1,1 @@
-SUBSYSTEM=="block", ACTION=="add", ENV{ID_FS_USAGE}=="filesystem", RUN+="/lib/udev-helpers/rootdev add"
+SUBSYSTEM=="block", ACTION=="add", ENV{ID_FS_USAGE}=="filesystem", RUN+="/lib/filters/rootdev"

@@ -1,17 +1,8 @@
-#!/bin/udevsh
+#!/bin/sh -efu
 
-. /dev/.initramfs/env
 . /scripts/functions
 
-add() {
-	[ ! -e /dev/root ] || return 0
-
-	[ -n "$NFSROOT" -o "$ROOT" != '/dev/nfs' ] ||
-		NFSROOT='auto'
-
-	[ -n "$NFSROOT" ] ||
-		return 0
-
+handler() {
 	. "/tmp/net-$INTERFACE.conf"
 
 	# get nfs root from dhcp
@@ -34,7 +25,16 @@ add() {
 	nfsmount -o nolock $roflag $NFSOPTS "$NFSROOT" "$rootmnt" ||
 		return 0
 	message "Mount '$NFSROOT' as $rootmnt"
-	ln -sf /dev/nfs /dev/root
+	ln -s /dev/nfs /dev/root
 }
 
-add
+rc=0
+for e in "$eventdir"/nfsroot/*; do
+	[ -f "$e" ] && [ ! -e /dev/root ] ||
+		break
+
+	( . "$e"; handler; ) ||
+		rc=1
+done
+
+exit $rc

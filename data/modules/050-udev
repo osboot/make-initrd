@@ -1,0 +1,61 @@
+#!/bin/sh
+
+msg='Starting udevd...'
+
+run() {
+	# Save the environment, to use it inside udev filters.
+	showenv -q > /dev/.initramfs/env
+
+	mkdir -p /dev/.udev/db/
+	udevd --daemon --resolve-names=never
+
+	udevadm trigger
+
+	local name handler fail=
+
+	# It is not currently limit since the execution of programs
+        # takes time, which is not counted. But we do not want to use
+        # additional utilities to calculate the time limit.
+	local sec=$((${ROOTDELAY:-180}*10))
+
+	while [ "$sec" -gt 0 ]; do
+		# Wait udev event queue
+		udevadm settle
+
+		# Our main goal is mounting root.
+		[ ! -e "$rootmnt/$INIT" ] ||
+			break
+
+		# Run udev handlers
+		for handler in /lib/handlers/*; do
+			name="${handler##*/}"
+			name="${name#*-}"
+
+			[ -x "$handler" ] &&
+				dir_not_empty "$eventdir/$name" ||
+				continue
+
+			verbose "Running $name handler ..."
+			if ! "$handler"; then
+				fail="$name"
+				break 2
+			fi
+
+			# Remove processed files.
+			rm -rf -- "$eventdir/$name"
+		done
+
+		sleep 0.1
+		sec=$(($sec-1))
+	done
+
+	if [ -n "$fail" ]; then
+		error "Udev's event handler failed: $fail"
+		return 1
+	fi
+
+	if [ ! -e "$rootmnt/$INIT" ]; then
+		error "Unable to mount root"
+		return 1
+	fi
+}

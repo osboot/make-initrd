@@ -1,0 +1,29 @@
+#!/bin/sh
+
+. /scripts/functions
+
+nameluks=
+password=
+handler() {
+	nameluks="${INIT_LUKS##*/}-luks"
+
+	cryptsetup --key-file=- luksOpen "$INIT_LUKS" "$nameluks"
+	retcode="$?"
+
+	if [ "$retcode" != "0" ]; then
+		error "Unable to activate LUKS: $retcode"
+		return 1
+	fi
+	ln -s "$nameluks" /dev/root
+}
+
+rc=0
+for e in "$eventdir"/luks/*; do
+	[ -f "$e" ] && [ ! -e /dev/root ] ||
+		break
+
+	( . "$e"; handler; ) ||
+		rc=1
+done
+
+exit $rc

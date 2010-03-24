@@ -1,0 +1,15 @@
+#!/bin/sh -efu
+
+. /dev/.initramfs/env
+. /scripts/functions
+
+if [ "$INTERFACE" = 'lo' ]; then
+	IP0='127.0.0.1:::::lo:none'
+	IP=1
+fi
+
+[ -n "$IP" ] ||
+	exit 0
+
+event="$(mk_event netdev)"
+showenv -q > "$event"

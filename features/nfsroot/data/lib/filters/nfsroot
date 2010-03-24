@@ -1,0 +1,13 @@
+#!/bin/sh
+
+. /dev/.initramfs/env
+. /scripts/functions
+
+[ -n "$NFSROOT" -o "$ROOT" != '/dev/nfs' ] ||
+	NFSROOT='auto'
+
+[ -n "$NFSROOT" ] ||
+	exit 0
+
+event="$(mk_event nfsroot)"
+showenv -q > "$event"

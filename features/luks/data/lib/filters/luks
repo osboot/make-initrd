@@ -1,0 +1,17 @@
+#!/bin/sh
+
+. /dev/.initramfs/env
+. /scripts/functions
+
+cryptsetup isLuks "$DEVNAME" ||
+	exit 0
+
+[ -n "$LUKSDEV" ] ||
+	LUKSDEV="$DEVNAME"
+
+devluks=
+get_dev devluks "$LUKSDEV" ||
+	exit 0
+
+event="$(mk_event luks)"
+echo "INIT_LUKS='$devluks'" > "$event"

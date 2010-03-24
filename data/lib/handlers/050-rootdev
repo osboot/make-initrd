@@ -1,0 +1,29 @@
+#!/bin/sh
+
+. /scripts/functions
+
+handler() {
+	local FSTYPE="${ROOTFSTYPE:-$ID_FS_TYPE}"
+
+	if ! mount "$roflag" -o ${ROOTFLAGS:-defaults} -t "$FSTYPE" "$INIT_ROOT" "$rootmnt"; then
+		error "Unable to mount $devroot as $FSTYPE."
+		return 1
+	fi
+
+	message "Mount '$INIT_ROOT' as $rootmnt"
+	ln -s "$INIT_ROOT" /dev/root
+}
+
+roflag=-w
+[ -z "$readonly" ] || roflag=-r
+
+rc=0
+for e in "$eventdir"/rootdev/*; do
+	[ -f "$e" ] && [ ! -e /dev/root ] ||
+		break
+
+	( . "$e"; handler; ) ||
+		rc=1
+done
+
+exit $rc

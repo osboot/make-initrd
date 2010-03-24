@@ -30,6 +30,7 @@ PUT_FILES += \
 	/bin/ls \
 	/bin/mkdir \
 	/bin/mknod \
+	/bin/mktemp \
 	/bin/mount \
 	/bin/umount \
 	/bin/readlink \

@@ -1,0 +1,5 @@
+#!/bin/sh -efu
+
+. /dev/.initramfs/env
+
+echo > "$eventdir"/lvm/event

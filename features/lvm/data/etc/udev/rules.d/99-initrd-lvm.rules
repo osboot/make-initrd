@@ -1,1 +1,1 @@
-SUBSYSTEM=="block", ACTION=="add", RUN+="/lib/udev-helpers/lvm add"
+SUBSYSTEM=="block", ACTION=="add", ENV{ID_FS_TYPE}=="LVM2_member", RUN+="/lib/filters/lvm"

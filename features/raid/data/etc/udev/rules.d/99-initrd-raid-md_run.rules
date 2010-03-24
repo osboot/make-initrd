@@ -1,1 +1,1 @@
-SUBSYSTEM=="block", ACTION=="add", RUN+="/lib/udev-helpers/md_run"
+SUBSYSTEM=="block", ACTION=="add", RUN+="/lib/filters/md_run"
