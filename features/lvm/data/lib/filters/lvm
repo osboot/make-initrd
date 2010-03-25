@@ -2,4 +2,5 @@
 
 . /dev/.initramfs/env
 
+mkdir -p -- "$eventdir"/lvm
 echo > "$eventdir"/lvm/event

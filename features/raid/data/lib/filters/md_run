@@ -38,4 +38,5 @@ done
 [ -n "$found" ] ||
 	exit 0
 
+mkdir -p -- "$eventdir"/raid
 echo > "$eventdir"/raid/event
