@@ -50,7 +50,7 @@ run() {
 	done
 
 	if [ -n "$fail" ]; then
-		error "Udev's event handler failed: $fail"
+		error "event handler failed: $fail"
 		return 1
 	fi
 

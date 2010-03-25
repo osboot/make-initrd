@@ -28,7 +28,8 @@ shell() {
 
 run_module() {
 	local stage
-	stage="$1"; shift
+	export stage="$1"
+	shift
 	run "$@"
 }
 
