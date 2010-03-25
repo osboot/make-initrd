@@ -6,7 +6,7 @@ handler() {
 	local FSTYPE="${ROOTFSTYPE:-$ID_FS_TYPE}"
 
 	if ! mount "$roflag" -o ${ROOTFLAGS:-defaults} -t "$FSTYPE" "$INIT_ROOT" "$rootmnt"; then
-		error "Unable to mount $devroot as $FSTYPE."
+		error "Unable to mount $INIT_ROOT as $FSTYPE."
 		return 1
 	fi
 
