@@ -3,6 +3,7 @@
 . /dev/.initramfs/env
 . /scripts/functions
 
+DEVNAME="/dev/${DEVNAME#/dev}"
 cryptsetup isLuks "$DEVNAME" ||
 	exit 0
 
