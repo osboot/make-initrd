@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.2.3
+Version: 0.3.0
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -10,6 +10,8 @@ Packager: Alexey Gladkov <legion@altlinux.ru>
 
 BuildRequires: help2man
 
+Provides: mkinitrd = 2:%version-%release
+
 Requires: ash libshell make sed module-init-tools coreutils grep glibc-utils
 
 # ipconfig -q
@@ -17,6 +19,9 @@ Requires: kinit-utils >= 1.5.15-alt3
 
 # guess-kbd
 Requires: udev >= 149-alt1
+
+# installkernel
+Requires: bootloader-utils >= 0.4.8-alt1
 
 # This avoids getting a dependency on sh from "#!/bin/sh".
 #AutoReq: yes, nopam, noperl, nopython, noshell, notcl
@@ -30,7 +35,7 @@ make-initrd is a new, uevent-driven initramfs infrastructure based around udev.
 %package devmapper
 Summary: device-mapper module for %name
 Group: System/Base
-Requires: dmsetup >= 1.02.39-alt2
+Requires: dmsetup >= 1.02.44-alt3
 AutoReq: noshell, noshebang
 
 %description devmapper
@@ -106,6 +111,11 @@ EOF
 %_datadir/%name/features/nfsroot
 
 %changelog
+* Wed Mar 31 2010 Alexey Gladkov <legion@altlinux.ru> 0.3.0-alt1
+- Rewrite handling of udev events.
+- Fix mounting the root before resume (ALT#23183).
+- Fix races in the lvm activation (ALT#23077).
+
 * Wed Mar 10 2010 Alexey Gladkov <legion@altlinux.ru> 0.2.3-alt1
 - make-initrd:
   + Add INITRD_WORKDIR variable.
