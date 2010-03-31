@@ -9,6 +9,7 @@ run() {
 	mkdir -p /dev/.udev/db/
 	udevd --daemon --resolve-names=never
 
+	udevadm control --property=STARTUP=1
 	udevadm trigger
 
 	local name handler fail=
