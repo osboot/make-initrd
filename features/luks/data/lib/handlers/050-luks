@@ -14,13 +14,11 @@ handler() {
 		error "Unable to activate LUKS: $retcode"
 		return 1
 	fi
-	ln -s "$nameluks" /dev/root
 }
 
 rc=0
 for e in "$eventdir"/luks/*; do
-	[ -f "$e" ] && [ ! -e /dev/root ] ||
-		break
+	[ -f "$e" ] || break
 
 	( . "$e"; handler; ) ||
 		rc=1
