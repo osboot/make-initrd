@@ -14,16 +14,20 @@ cp -aP \
 	/sys \
 	"$reportdir" 2>/dev/null ||:
 cp -a  \
+	/proc/config.gz \
+	/proc/cpuinfo \
 	/proc/cmdline \
 	/proc/crypto \
 	/proc/devices \
 	/proc/filesystems \
 	/proc/mdstat \
-	/proc/mounts \
 	/proc/modules \
-	/proc/version \
 	/proc/partitions \
+	/proc/sys \
+	/proc/version \
 	"$reportdir"/proc/ 2>/dev/null ||:
+cat /proc/mounts > "$reportdir"/proc/mounts
+
 cp -a  \
 	/etc/fstab \
 	"$reportdir"/etc/
