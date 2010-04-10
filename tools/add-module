@@ -36,7 +36,7 @@ add_module_firmware() {
 			message "Firmware file \"$name\" for module \"$mod_name\" not found"
 			continue
 		fi
-		[ -f "$rootdir/lib/firmware/$name" ] ||
+		[ ! -f "$rootdir/lib/firmware/$name" ] ||
 			continue
 
 		verbose "Adding firmware file \"$fwfile\" for module \"$mod_name\""
