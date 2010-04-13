@@ -12,6 +12,9 @@ run() {
 	udevadm control --property=STARTUP=1
 	udevadm trigger
 
+	# Load user-defined modules
+	load_modules postudev
+
 	local name handler fail=
 
 	# It is not currently limit since the execution of programs
