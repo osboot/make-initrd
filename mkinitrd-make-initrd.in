@@ -79,11 +79,10 @@ done
 	show_usage
 
 export IMAGEFILE="$1"
-export KERNEL="$2"
 
 if [ -f "$IMAGEFILE" -a -z "$FORCE" ]; then
 	message "$IMAGEFILE already exists."
 	exit 1
 fi
 
-exec make-initrd
+exec make-initrd -k "$2"
