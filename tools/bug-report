@@ -30,7 +30,10 @@ cat /proc/mounts > "$reportdir"/proc/mounts
 
 cp -a  \
 	/etc/fstab \
+	/etc/blkid.tab \
 	"$reportdir"/etc/
+
+blkid -c /dev/null >/etc/blkid.out
 
 [ -z "${VERSION-}" ] ||
 		printf '%s\n' "$VERSION" > "$reportdir"/.version
