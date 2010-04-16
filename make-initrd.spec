@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.3.0
+Version: 0.3.1
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -111,6 +111,15 @@ EOF
 %_datadir/%name/features/nfsroot
 
 %changelog
+* Fri Apr 16 2010 Alexey Gladkov <legion@altlinux.ru> 0.3.1-alt1
+- Add protection from overlapping names of images (ALT#23334).
+- guess: add module virtio_pci if virtio-pci detected.
+- bug-report: store blkid output.
+- bug-report: store more info from /proc.
+- mkinitrd-make-initrd: Fix kernel version (ALT#23226).
+- Fix MODULES_LOAD variable.
+- Fix adding firmware.
+
 * Wed Mar 31 2010 Alexey Gladkov <legion@altlinux.ru> 0.3.0-alt1
 - Rewrite handling of udev events.
 - Fix mounting the root before resume (ALT#23183).
