@@ -1,0 +1,6 @@
+#!/bin/sh -efu
+
+. guess-functions
+
+[ -n "${1##/devices/virtio-pci}" ] ||
+	guess_module virtio_pci
