@@ -31,15 +31,18 @@ endif
 endif # INITRD_CONFIG
 
 all: check-for-root
-	@for c in $(INITRD_CONFIG_LIST); do \
+	@rc=0; \
+	for c in $(INITRD_CONFIG_LIST); do \
 		echo "Config file: $$c"; \
 		wsuffix="$${c##*/}"; \
 		wsuffix="$${wsuffix%.mk}"; \
 		export WORKDIR_SUFFIX="$$wsuffix"; \
 		export INITRD_CONFIG="$$c"; \
-		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @PREFIX@/make-initrd.mk guess; \
-		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @PREFIX@/make-initrd.mk genimage; \
-	done
+		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @PREFIX@/make-initrd.mk guess    || { rc=1; break; }; \
+		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @PREFIX@/make-initrd.mk genimage || { rc=1; break; }; \
+	done; \
+	rm -f -- $(TEMPDIR)/images; \
+	exit $$rc
 
 guess: check-for-root
 	@mkdir -m 755 -p -- $(GUESSDIR)

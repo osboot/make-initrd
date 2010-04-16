@@ -49,9 +49,20 @@ pack: create rescue-modules
 	@$(TOOLSDIR)/pack-image
 
 install: pack
-	@echo "Installing image ..."
-	@chmod 600 -- "$(WORKDIR)/initrd.img"
-	@mv -f $(verbose) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"
+	@if [ -f "$(TEMPDIR)/images" ] && fgrep -xqs "$(IMAGEFILE)" "$(TEMPDIR)/images"; then \
+	    echo ""; \
+	    echo "An attempt to create two images with the same name. There is possibility" >&2; \
+	    echo "that you forgot to define IMAGE_SUFFIX or IMAGEFILE in one of the config files." >&2; \
+	    echo "" >&2; \
+	    echo "ERROR: Unable to overwrite the image $(IMAGEFILE)" >&2; \
+	    echo "" >&2; \
+	    exit 1; \
+	else \
+	    echo "Installing image ..."; \
+	    chmod 600 -- "$(WORKDIR)/initrd.img"; \
+	    mv -f $(verbose) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"; \
+	    echo "$(IMAGEFILE)" >> "$(TEMPDIR)/images"; \
+	fi
 
 clean:
 	@echo "Removing work directory ..."
