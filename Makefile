@@ -21,11 +21,15 @@ endif
 MAN1PAGES = make-initrd.1
 MANPAGES  = $(MAN1PAGES)
 
+TEXIDOCS  = make-initrd.texi
+INFODOCS  = $(TEXIDOCS:.texi=.info)
+
 CP = cp -a
 INSTALL = install
 MKDIR_P = mkdir -p
 TOUCH_R = touch -r
 HELP2MAN = env -i help2man -N
+MAKEINFO_FLAGS = -D "VERSION $(VERSION)"
 
 DIRS = data features tools
 
@@ -41,7 +45,7 @@ SUBDIRS = src
 
 .PHONY: $(SUBDIRS)
 
-all: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS) $(MANPAGES)
+all: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS) $(MANPAGES) $(INFODOCS)
 
 %.1: % %.1.inc
 	$(HELP2MAN) -i $@.inc -- ./$< >$@
@@ -72,7 +76,7 @@ install: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS)
 	$(CP) $(MAN1PAGES) $(DESTDIR)$(man1dir)/
 
 clean: $(SUBDIRS)
-	rm -f -- $(PREPROCESS_TARGET) $(MANPAGES)
+	rm -f -- $(PREPROCESS_TARGET) $(MANPAGES) $(INFODOCS)
 
 $(SUBDIRS):
 	$(MAKE) $(MFLAGS) -C "$@" $(MAKECMDGOALS)

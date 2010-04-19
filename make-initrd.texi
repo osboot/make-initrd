@@ -1,0 +1,255 @@
+\input texinfo   @c -*-texinfo-*-
+@c %**start of header
+@setfilename make-initrd.info
+@settitle make-initrd @value{VERSION} manual
+@c %**end of header
+
+@paragraphindent none
+@set UPDATED April 19, 2010
+
+@copying
+This manual covers make-initrd, version @value{VERSION}.
+
+Copyright @copyright{} 2009, 2010 Alexey Gladkov.
+
+@quotation
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.2 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, with the Front-Cover Texts being ``A GNU Manual,''
+and with the Back-Cover Texts as in (a) below.  A copy of the
+license is included in the section entitled ``GNU Free Documentation
+License.''
+
+(a) The FSF's Back-Cover Text is: ``You have the freedom to
+copy and modify this GNU manual.  Buying copies from the FSF
+supports it in developing GNU and promoting software freedom.''
+@end quotation
+@end copying
+
+@titlepage
+@title Make-initrd
+@subtitle for version @value{VERSION}, @value{UPDATED}
+@author Alexey Gladkov (@email{gladkov.alexey@@gmail.com})
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@contents
+
+
+@node Top
+@top Make-initrd
+
+This file documents make-initrd (version @value{VERSION}, @value{UPDATED}).
+
+Make-initrd is an uevent-driven initramfs infrastructure based around udev.
+
+@menu
+* Overview::               Overview of make-initrd.
+* Requires::               Programs and libraries needed to run.
+* Configuration::          Parametes and Goals.
+* Index::                  Index of Chapters and Variables.
+@end menu
+
+
+@node Overview
+@chapter Overview
+@cindex Chapter
+
+The initramfs has one purpose in life -- getting the rootfs mounted
+so that we can transition to the real rootfs.
+
+If you have problems with `make-initrd' or think you've found a bug,
+please report it to the developers; we cannot promise to do anything but
+we might well want to fix it.
+
+@xref{bug-report}, for more info.
+
+
+@node Requires
+@chapter Requires
+@cindex Chapter
+
+make-initrd uses @acronym{GNU} make to establish and properly
+maintain the relationship between modules.
+
+Most scripts use libshell, a set of functions frequently used
+in shell scripts.
+
+kinit-utils is a set of tools from klibc ported to glibc.
+These tools have broad enough functionality and small size.
+
+
+@node Configuration
+@chapter Configuration
+@cindex Chapter
+
+Configuration file for make-initrd is /etc/initrd.mk. In essence,
+the configuration file is a Makefile. Actually part of it.
+
+You can generate multiple images for one kernel version (for example
+general, failsafe and rescue). For that reason /etc/initrd.mk.d
+directory is used. In this directory each file with the `.mk'
+extension is regarded as a configuration file.
+
+@menu
+* Variables::
+* Features::
+* Goals::
+@end menu
+
+
+@node Variables, Features,, Configuration
+@chapter Variables
+@cindex Chapter
+
+@unnumberedsubsec KERNEL
+@cindex KERNEL
+Specifies kernel version for corresponding modules in the image.
+
+Default: $(uname -r)
+
+@unnumberedsubsec IMAGE_SUFFIX
+@cindex IMAGE_SUFFIX
+Specifies suffix for the image. This parameter is useful
+if multiple initrd images are generated for one kernel version.
+
+@unnumberedsubsec IMAGEFILE
+@cindex IMAGEFILE
+Specifies output filename for the image.
+
+Default: $(BOOTDIR)/initrd-$(KERNEL)$(IMAGE_SUFFIX).img
+
+@unnumberedsubsec COMPRESS
+@cindex COMPRESS
+Determines compress method for the image.
+
+Valid values are: gzip, bzip2, lzma, lzo.
+
+@unnumberedsubsec FEATURES
+@cindex FEATURES
+This parameter lists the features of the image.
+This list can be specified in any order.
+
+@xref{Features}, for more info.
+
+@unnumberedsubsec AUTODETECT
+@cindex AUTODETECT
+This variable contains the list of subsystems which add
+appropriate kernel modules and features automatically.
+
+@itemize @bullet
+@item
+root - finds modules needed to access root filesystem device
+and the filesystem itself (if they are not added in the kernel);
+@item
+resume - finds modules needed to access hibernation image device.
+This is useful when the device is encrypted or in an unexpected location.
+@item
+common - adds features for general use. Don't disable this feature
+unless you know what you are doing.
+@item
+net - adds kernel modules for network devices (netboot).
+@item
+kbd - adds modules for the keyboard.
+@end itemize
+
+@unnumberedsubsec MODULES_ADD
+@cindex MODULES_ADD
+The parameter lists the names of modules to be added to the image
+so that the needed ones could be autoloaded by udev when it starts.
+
+@unnumberedsubsec MODULES_PRELOAD
+@cindex MODULES_PRELOAD
+The parameter lists the names of modules to be added to the image
+and unconditionally loaded before udev start.
+
+@unnumberedsubsec MODULES_LOAD
+@cindex MODULES_LOAD
+The parameter lists the names of modules to be added to the image
+and unconditionally loaded after udev start.
+
+@unnumberedsubsec VERBOSE
+@cindex VERBOSE
+Print a message for each action.
+
+@unnumberedsubsec FIRMWARE_DIRS
+@cindex FIRMWARE_DIRS
+This parameter describes the list of directories with firmware.
+
+@unnumberedsubsec PUT_FILES
+@cindex PUT_FILES
+This parameter describes the list of files that need
+to be put in the image initrd. The files are copied
+with the same path as the original file.
+
+@unnumberedsubsec PUT_DIRS
+@cindex PUT_DIRS
+This parameter describes the list of directories to be
+copied into the image.
+
+
+@node Features, Goals, Variables, Configuration
+@chapter Features
+@cindex Chapter
+
+This is the part of functionality that is executed during
+image creation or subsequent boot employing it.
+
+Follow features adds the ability to mount rootfs:
+
+@itemize @bullet
+@item
+luks - from LUKS partition;
+@item
+lvm - from LVM partition;
+@item
+nfsroot - over NFS;
+@item
+raid - from RAID partition.
+@end itemize
+
+The Follow features adds the functionality not for to mount rootfs,
+but for image generation:
+
+@itemize @bullet
+@item
+bootsplash - adds console splash animations;
+@item
+compress - compress image after generation;
+@item
+cleanup - remove all working directories.
+@end itemize
+
+Most features are automatically determined and shouldn't be set manually.
+
+
+@node Goals,, Features, Configuration
+@chapter Goals
+@cindex Chapter
+
+There is a number of specific goals which are very useful
+in the generation of the image.
+
+@unnumberedsubsec guess-config
+@cindex guess-config
+This goal prints the intended configuration on stdout.
+It is compiled based on your current configuration and
+the feature list from AUTODETECT variable.
+
+@unnumberedsubsec @anchor{bug-report}bug-report
+@cindex bug-report
+This goal collects system configuration data and puts those
+into an archive. If you have any problems with make-initrd
+this goal will help to gather the information necessary for
+developers to diagnose and fix bugs.
+
+
+@node Index
+@unnumbered Index
+
+@printindex cp
+
+@bye
