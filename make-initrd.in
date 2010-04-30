@@ -7,6 +7,7 @@
 PROG="${0##*/}"
 TEMPDIR=
 BOOTDIR="@BOOTDIR@"
+SYSFS_PATH="${SYSFS_PATH:-/sys}"
 KERNEL="$(uname -r)"
 VERBOSE=
 
@@ -115,6 +116,15 @@ done
 
 [ -d "/lib/modules/$KERNEL" ] ||
 	fatal "/lib/modules/$KERNEL: Not a directory"
+
+[ -e "/dev/null" ] ||
+	fatal "/dev: Not available"
+
+[ -r "/proc/mounts" ] ||
+	fatal "/proc/mounts: Not readable"
+
+grep -qs " $SYSFS_PATH sysfs " /proc/mounts ||
+	fatal "$SYSFS_PATH: Not mounted"
 
 WORKDIR="${INITRD_WORKDIR-}"
 WORKDIR="${WORKDIR:-${TMPDIR-}}"
