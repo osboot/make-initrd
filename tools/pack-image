@@ -2,13 +2,6 @@
 
 . sh-functions
 
-get_majmin() {
-	local v
-	v="$(stat -c '%02t:%02T' "$1")" &&
-		printf '%d %d\n' "0x${v%:*}" "0x${v#*:}" ||
-		return 1
-}
-
 filter() {
 	sed -e "s,\([a-z]\+[[:space:]]\+\)$rootdir/,\1,"
 }

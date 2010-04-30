@@ -58,3 +58,14 @@ check_blacklist() {
 			return 1
 	done
 }
+
+get_majmin() {
+	local v devnode
+
+	devnode="$(readlink -ev "$1" 2>/dev/null)" ||
+		return 1
+
+	v="$(stat -c '%02t:%02T' "$devnode")" &&
+		printf '%d:%d\n' "0x${v%:*}" "0x${v#*:}" ||
+		return 1
+}
