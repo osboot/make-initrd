@@ -6,6 +6,7 @@ bootdir    ?= /boot
 bindir     ?= /usr/bin
 sbindir    ?= /usr/sbin
 datadir    ?= /usr/share
+infodir    ?= $(datadir)/info
 mandir     ?= $(datadir)/man
 man1dir    ?= $(mandir)/man1
 tmpdir     ?= /tmp
@@ -74,6 +75,8 @@ install: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS)
 	$(CP) $(sbin_TARGETS) $(DESTDIR)$(sbindir)/
 	$(MKDIR_P) -- $(DESTDIR)$(man1dir)
 	$(CP) $(MAN1PAGES) $(DESTDIR)$(man1dir)/
+	$(MKDIR_P) -- $(DESTDIR)$(infodir)
+	$(CP) $(INFODOCS) $(DESTDIR)$(infodir)/
 
 clean: $(SUBDIRS)
 	rm -f -- $(PREPROCESS_TARGET) $(MANPAGES) $(INFODOCS)
