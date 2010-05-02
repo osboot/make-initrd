@@ -62,10 +62,9 @@ Make-initrd is an uevent-driven initramfs infrastructure based around udev.
 @chapter Overview
 @cindex Chapter
 
-The initramfs has one purpose in life -- getting the rootfs mounted
-so that we can transition to the real rootfs.
+The only propose of initramfs is getting the root filesystem mounted.
 
-Make-initrd -- a program to creation initramfs. Logically, the program
+Make-initrd is a program for creation initramfs. Logically, the program
 can be divided into three parts:
 
 @itemize @bullet
@@ -79,7 +78,7 @@ A set of programs run inside the image.
 
 If you have problems with `make-initrd' or think you've found a bug,
 please report it to the developers; we cannot promise to do anything but
-we might well want to fix it.
+we might well want to fix it. Patches are welcome.
 
 @xref{bug-report}, for more info.
 
@@ -174,17 +173,17 @@ kbd - adds modules for the keyboard.
 
 @unnumberedsubsec MODULES_ADD
 @cindex MODULES_ADD
-The parameter lists the names of modules to be added to the image
-so that the needed ones could be autoloaded by udev when it starts.
+The parameter contains the names of modules to be added to the image.
+Thay can be loaded by udev if needed when it starts.
 
 @unnumberedsubsec MODULES_PRELOAD
 @cindex MODULES_PRELOAD
-The parameter lists the names of modules to be added to the image
+The parameter contains the names of modules to be added to the image
 and unconditionally loaded before udev start.
 
 @unnumberedsubsec MODULES_LOAD
 @cindex MODULES_LOAD
-The parameter lists the names of modules to be added to the image
+The parameter contains the names of modules to be added to the image
 and unconditionally loaded after udev start.
 
 @unnumberedsubsec VERBOSE
@@ -211,10 +210,10 @@ copied into the image.
 @chapter Features
 @cindex Chapter
 
-This is the part of functionality that is executed during
+This is the part of functionality which executes during
 image creation or subsequent boot employing it.
 
-Follow features adds the ability to mount rootfs:
+Follow features adds the ability to mount root filesystem:
 
 @itemize @bullet
 @item
@@ -227,8 +226,8 @@ nfsroot - over NFS;
 raid - from RAID partition.
 @end itemize
 
-The Follow features adds the functionality not for to mount rootfs,
-but for image generation:
+The Follow features adds the functionality not for to mount root
+filesystem, but for image generation:
 
 @itemize @bullet
 @item
