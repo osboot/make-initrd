@@ -61,6 +61,18 @@ Make-initrd is an uevent-driven initramfs infrastructure based around udev.
 The initramfs has one purpose in life -- getting the rootfs mounted
 so that we can transition to the real rootfs.
 
+Make-initrd -- a program to creation initramfs. Logically, the program
+can be divided into three parts:
+
+@itemize @bullet
+@item
+Image generator;
+@item
+Automatic configuration detector;
+@item
+A set of programs run inside the image.
+@end itemize
+
 If you have problems with `make-initrd' or think you've found a bug,
 please report it to the developers; we cannot promise to do anything but
 we might well want to fix it.
