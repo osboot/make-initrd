@@ -2,6 +2,10 @@
 @c %**start of header
 @setfilename make-initrd.info
 @settitle make-initrd @value{VERSION} manual
+@dircategory Basics
+@direntry
+* Initramfs generation: (make-initrd). Initramfs infrastructure based around udev.
+@end direntry
 @c %**end of header
 
 @paragraphindent none
