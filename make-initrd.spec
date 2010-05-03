@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.3.1
+Version: 0.3.2
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -22,6 +22,9 @@ Requires: udev >= 149-alt1
 
 # installkernel
 Requires: bootloader-utils >= 0.4.8-alt1
+
+# blkid
+Requires: util-linux >= 2.17.2-alt1
 
 # This avoids getting a dependency on sh from "#!/bin/sh".
 #AutoReq: yes, nopam, noperl, nopython, noshell, notcl
@@ -92,6 +95,7 @@ EOF
 %_sbindir/*
 %_datadir/%name
 %_man1dir/*
+%_infodir/*
 %exclude %_datadir/%name/features/devmapper
 %exclude %_datadir/%name/features/lvm
 %exclude %_datadir/%name/features/luks
@@ -111,6 +115,10 @@ EOF
 %_datadir/%name/features/nfsroot
 
 %changelog
+* Sun May 02 2010 Alexey Gladkov <legion@altlinux.ru> 0.3.2-alt1
+- guess: add usb-storage and ub detection (ALT#23342).
+- Add texinfo documentation.
+
 * Fri Apr 16 2010 Alexey Gladkov <legion@altlinux.ru> 0.3.1-alt1
 - Add protection from overlapping names of images (ALT#23334).
 - guess: add module virtio_pci if virtio-pci detected.
