@@ -1,7 +1,7 @@
 IMAGE_SUFFIX = -rescue
 
 # trying to detect modules and features for root and keyboard devices
-AUTODETECT = root kbd net
+AUTODETECT = common root resume kbd net
 
 MODULES_ADD += usbcore ehci-hcd
 

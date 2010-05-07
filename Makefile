@@ -36,6 +36,8 @@ DIRS = data features tools
 
 CONF = initrd.mk
 
+CONF_EXAMPLES = $(wildcard $(CURDIR)/initrd.mk.d/*.example)
+
 PREPROCESS_TARGET = make-initrd mkinitrd-make-initrd config.mk make-initrd.mk
 
 sbin_TARGETS = make-initrd mkinitrd-make-initrd
@@ -71,6 +73,7 @@ install: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS)
 	$(CP) -r -- $(DIRS) $(TARGETS) $(DESTDIR)$(datadir)/$(PROJECT)/
 	$(MKDIR_P) -- $(DESTDIR)$(sysconfdir)/initrd.mk.d
 	$(CP) $(CONF) $(DESTDIR)$(sysconfdir)/
+	$(CP) $(CONF_EXAMPLES) $(DESTDIR)$(sysconfdir)/initrd.mk.d/
 	$(MKDIR_P) -- $(DESTDIR)$(sbindir)
 	$(CP) $(sbin_TARGETS) $(DESTDIR)$(sbindir)/
 	$(MKDIR_P) -- $(DESTDIR)$(man1dir)

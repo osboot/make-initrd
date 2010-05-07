@@ -1,0 +1,11 @@
+include /etc/initrd.mk
+
+IMAGE_SUFFIX = -debug
+
+PUT_FILES += \
+	/bin/dmesg \
+	/bin/grep \
+	/bin/lsmod \
+	/bin/ps \
+	/bin/sed \
+	/sbin/chroot
