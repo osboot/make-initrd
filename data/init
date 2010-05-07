@@ -1,5 +1,8 @@
 #!/bin/sh
 
+mkdir /dev/.initramfs
+/bin/showenv > /dev/.initramfs/kern
+
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 
 export RUN_INITRD=1

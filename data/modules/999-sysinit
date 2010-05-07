@@ -2,6 +2,23 @@
 
 msg='Running init...'
 run() {
+	local var newroot prog
+
+	newroot="$rootmnt"
+	prog="$INIT"
+
+	# Clean environment
+	showenv > /dev/.initramfs/env
+
+	while read var; do
+		unset "${var%%=*}"
+	done < /dev/.initramfs/env
+
+	# Restore kernel environment
+	while read var; do
+		export "$var"
+	done < /dev/.initramfs/kern
+
 	# Chain to real filesystem
-	exec run-init "$rootmnt" "$INIT" "$@" <"$rootmnt"/dev/console >"$rootmnt"/dev/console
+	exec /bin/run-init "$newroot" "$prog" "$@" </dev/console >/dev/console 2>&1
 }

@@ -4,6 +4,4 @@ msg='Umounting filesystems...'
 run() {
 	umount /sys
 	umount /proc
-	umount /dev/pts
-	umount -l /dev
 }
