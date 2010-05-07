@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.3.2
+Version: 0.3.3
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -89,6 +89,7 @@ EOF
 
 %files
 %dir %_sysconfdir/initrd.mk.d
+%config(noreplace) %_sysconfdir/initrd.mk.d/*.mk.example
 %config(noreplace) %_sysconfdir/initrd.mk
 %config(noreplace) %_sysconfdir/sysconfig/installkernel
 %_bindir/*
@@ -115,6 +116,10 @@ EOF
 %_datadir/%name/features/nfsroot
 
 %changelog
+* Fri May 07 2010 Alexey Gladkov <legion@altlinux.ru> 0.3.3-alt1
+- init: Reset environment.
+- Add config examples.
+
 * Sun May 02 2010 Alexey Gladkov <legion@altlinux.ru> 0.3.2-alt1
 - guess: add usb-storage and ub detection (ALT#23342).
 - Add texinfo documentation.
