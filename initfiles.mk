@@ -1,5 +1,5 @@
-PUT_DIRS  =
-PUT_FILES =
+PUT_DIRS  ?=
+PUT_FILES ?=
 
 # UDEV utilities
 PUT_FILES += \
