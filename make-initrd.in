@@ -10,6 +10,7 @@ BOOTDIR="@BOOTDIR@"
 SYSFS_PATH="${SYSFS_PATH:-/sys}"
 KERNEL="$(uname -r)"
 VERBOSE=
+no_checks=
 
 print_version() {
 	cat <<-EOF
@@ -80,7 +81,7 @@ check_noexec() {
 	return $rc
 }
 
-TEMP=`getopt -n $PROG -o 'b:,k:,h,v,V' -l 'bootdir:,kernel:,help,verbose,version' -- "$@"` ||
+TEMP=`getopt -n $PROG -o 'b:,k:,N,h,v,V' -l 'bootdir:,kernel:,no-checks,help,verbose,version' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -91,6 +92,9 @@ while :; do
 			;;
 		-k|--kernel) shift
 			[ -z "$1" ] || KERNEL="$1"
+			;;
+		-N|--no-checks)
+			no_checks=1
 			;;
 		-h|--help)
 			show_help
@@ -111,20 +115,22 @@ while :; do
 	shift
 done
 
-[ -r "/lib/modules/$KERNEL" ] ||
-	fatal "/lib/modules/$KERNEL: Not readable"
+if [ -z "$no_checks" ]; then
+	[ -r "/lib/modules/$KERNEL" ] ||
+		fatal "/lib/modules/$KERNEL: Not readable"
 
-[ -d "/lib/modules/$KERNEL" ] ||
-	fatal "/lib/modules/$KERNEL: Not a directory"
+	[ -d "/lib/modules/$KERNEL" ] ||
+		fatal "/lib/modules/$KERNEL: Not a directory"
 
-[ -e "/dev/null" ] ||
-	fatal "/dev: Not available"
+	[ -e "/dev/null" ] ||
+		fatal "/dev: Not available"
 
-[ -r "/proc/mounts" ] ||
-	fatal "/proc/mounts: Not readable"
+	[ -r "/proc/mounts" ] ||
+		fatal "/proc/mounts: Not readable"
 
-grep -qs " $SYSFS_PATH sysfs " /proc/mounts ||
-	fatal "$SYSFS_PATH: Not mounted"
+	grep -qs " $SYSFS_PATH sysfs " /proc/mounts ||
+		fatal "$SYSFS_PATH: Not mounted"
+fi
 
 WORKDIR="${INITRD_WORKDIR-}"
 WORKDIR="${WORKDIR:-${TMPDIR-}}"
