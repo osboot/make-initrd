@@ -45,6 +45,10 @@ rescue-modules: create
 	fi
 
 pack: create rescue-modules
+	@printf 'Packed modules: '
+	@find $(ROOTDIR)/lib/modules/$(KERNEL) -type f -name '*.ko' -printf '%f\n' 2>/dev/null | \
+	    sed -e 's/\.ko$$//' | sort | tr '\n' ' '
+	@printf '\n'
 	@echo "Packing image to archive ..."
 	@$(TOOLSDIR)/pack-image
 
