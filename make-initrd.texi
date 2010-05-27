@@ -235,7 +235,13 @@ bootsplash - adds console splash animations;
 @item
 compress - compress image after generation;
 @item
-cleanup - remove all working directories.
+cleanup - remove all working directories;
+@item
+usb - adds usb modules for usb storages and keyboards;
+@item
+ide-to-scsi - adds modules to migrate from IDE to SCSI;
+@item
+scsi-to-ide - adds modules to migrate from SCSI to IDE.
 @end itemize
 
 Most features are automatically determined and shouldn't be set manually.
