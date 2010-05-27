@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.3.3
+Version: 0.3.4
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -116,6 +116,12 @@ EOF
 %_datadir/%name/features/nfsroot
 
 %changelog
+* Fri May 28 2010 Alexey Gladkov <legion@altlinux.org> 0.3.4-alt1
+- Show kernel modules list befor image creation.
+- Add new features: usb, scsi-to-ide, ide-to-scsi.
+- make-initrd: Add --no-checks option.
+- allow user to add extra PUT_FILES and PUT_DIRS (thx Vitaly Kuznetsov).
+
 * Fri May 07 2010 Alexey Gladkov <legion@altlinux.ru> 0.3.3-alt1
 - init: Reset environment.
 - Add config examples.
