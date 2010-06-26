@@ -5,10 +5,18 @@
 reportdir="$workdir/report"
 
 mkdir -p -- \
+	"$reportdir"/boot \
 	"$reportdir"/etc \
 	"$reportdir"/sys \
 	"$reportdir"/proc \
 	#
+
+kern="$(uname -r)"
+if [ -f "/boot/config-$kern" ]; then
+	cp -a \
+		"/boot/config-$kern" \
+		"$reportdir"/boot/
+fi
 
 cp -aP \
 	/sys \
