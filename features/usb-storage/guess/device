@@ -2,6 +2,11 @@
 
 . guess-functions
 
+if [ -s "$KERNEL_CONFIG" ]; then
+	grep -qs '^[[:space:]]*CONFIG_USB_LIBUSUAL=y' "$KERNEL_CONFIG" ||
+		exit 0
+fi
+
 found=
 if [ -f "$SYSFS_PATH/$1"/uevent ]; then
 	! egrep '^DRIVER=(ub|usb-storage)$' "$SYSFS_PATH/$1"/uevent ||

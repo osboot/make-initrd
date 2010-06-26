@@ -51,7 +51,7 @@ ifneq "$(INITRD_CONFIG)" ''
 FEATURES		?=
 IMAGE_SUFFIX		?=
 IMAGEFILE		?= $(BOOTDIR)/initrd-$(KERNEL)$(IMAGE_SUFFIX).img
-
+KERNEL_CONFIG		?= $(BOOTDIR)/config-$(KERNEL)
 FIRMWARE_DIRS		?= /lib/firmware/updates /lib/firmware /lib/firmware/$(KERNEL)/updates /lib/firmware/$(KERNEL)
 VERBOSE			?=
 FSTAB			?= /etc/fstab
