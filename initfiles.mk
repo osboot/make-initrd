@@ -19,12 +19,17 @@ PUT_FILES += \
 # System utilities
 PUT_FILES += \
 	/sbin/blkid \
+	/sbin/chroot \
+	/sbin/depmod \
+	/sbin/lsmod \
 	/sbin/modprobe \
 	/sbin/reboot \
 	/sbin/poweroff \
 	/sbin/halt \
 	/bin/ash \
 	/bin/cat \
+	/bin/cp \
+	/bin/dmesg \
 	/bin/kill \
 	/bin/ln \
 	/bin/ls \
