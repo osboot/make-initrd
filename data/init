@@ -36,7 +36,7 @@ for f in /modules/*; do
 	verbose "$msg"
 
 	[ "$STOP" != ',all,' -a -n "${STOP##*,$m,*}" ] ||
-		shell "Spawning shell within the initramfs"
+		shell
 
 	run_module "$m" "$@" ||
 		shell "Stage '$m' failed"
