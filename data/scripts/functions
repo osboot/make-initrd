@@ -12,6 +12,16 @@ verbose() {
 	[ -n "$QUIET" ] || message "$@"
 }
 
+modprobe_check() {
+	local s
+	for s in /scripts/kmodules/*check-"$1"; do
+		if [ -x "$s" ]; then
+			"$s" || return 0
+		fi
+	done
+	modprobe -q "$1"
+}
+
 shell() {
 	# Disallow console access
 	[ "$PANIC" != 0 ] || reboot
@@ -19,7 +29,7 @@ shell() {
 	if [ -n "$RESCUE_MODULES" ]; then
 		local m
 		for m in $RESCUE_MODULES; do
-			modprobe -q "$m"
+			modprobe_check "$m"
 		done
 	fi
 	[ "$#" -eq 0 ] || message "$@"
@@ -47,7 +57,7 @@ load_modules() {
 	[ ! -e /conf/modules-"$1" ] ||
 	while read m; do
 		[ -n "${m##\#*}" ] || continue
-		modprobe -q $m
+		modprobe_check "$m"
 	done < /conf/modules-"$1"
 }
 

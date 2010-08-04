@@ -3,18 +3,36 @@
 . sh-functions
 
 modules_file='/conf/modules-postudev'
+modules_list=
+modules_check=
 
-if [ "$#" -gt 0 ] && [ -z "${1##--*}" ]; then
+while [ "$#" -gt 0 ]; do
 	case "$1" in
-		--pre-udev)  modules_file='/conf/modules-preudev'  ;;
-		--post-udev) modules_file='/conf/modules-postudev' ;;
+		--pre-udev)
+			modules_file='/conf/modules-preudev'
+			;;
+		--post-udev)
+			modules_file='/conf/modules-postudev'
+			;;
+		--check) shift
+			[ -x "$1" ] ||
+				fatal "Not executable: $1"
+			modules_check="$1"
+			;;
+		*)
+			modules_list="$modules_list ${1##*/}"
+			;;
 	esac
 	shift
-fi
+done
 
-for n in "$@"; do
+for n in $modules_list; do
+	! fgrep -xqs "$n" "$rootdir/$modules_file" ||
+		continue
+
 	add-module "$n"
-	if ! fgrep -xqs "$n" "$rootdir/$modules_file"; then
-		printf '%s\n' "$n" >> "$rootdir/$modules_file"
-	fi
+	printf '%s\n' "$n" >> "$rootdir/$modules_file"
+
+	[ -z "$modules_check" ] ||
+		cp -a -- "$modules_check" "$rootdir/scripts/kmodules/check-$n"
 done
