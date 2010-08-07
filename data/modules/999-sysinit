@@ -1,6 +1,6 @@
 #!/bin/sh
 
-msg='Running init ($INIT)...'
+msg="Running init ($INIT)..."
 run() {
 	local var newroot prog
 
