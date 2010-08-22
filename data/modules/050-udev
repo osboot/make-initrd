@@ -25,6 +25,7 @@ run() {
 	while [ "$sec" -gt 0 ]; do
 		# Wait udev event queue
 		udevadm settle
+		udevadm control --stop-exec-queue
 
 		# Our main goal is mounting root.
 		[ ! -e "$rootmnt/$INIT" ] ||
@@ -48,10 +49,12 @@ run() {
 			# Remove processed files.
 			rm -rf -- "$eventdir/$name"
 		done
+		udevadm control --start-exec-queue
 
 		sleep 0.1
 		sec=$(($sec-1))
 	done
+	udevadm control --start-exec-queue
 
 	if [ -n "$fail" ]; then
 		error "event handler failed: $fail"
