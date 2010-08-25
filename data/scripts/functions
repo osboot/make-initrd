@@ -8,6 +8,10 @@ error() {
 	message "ERROR: $*"
 }
 
+debug() {
+	[ -z "$DEBUG" ] || message "$@"
+}
+
 verbose() {
 	[ -n "$QUIET" ] || message "$@"
 }

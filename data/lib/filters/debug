@@ -1,0 +1,9 @@
+#!/bin/sh -efu
+
+. /dev/.initramfs/env
+
+[ -n "$DEBUG" ] ||
+	exit 0
+
+mkdir -p -- /tmp/uevents
+showenv > "/tmp/uevents/$$"

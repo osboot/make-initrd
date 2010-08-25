@@ -48,6 +48,7 @@ run() {
 		done
 	done
 
+	[ -z "$DEBUG" ] || QUIET=
 	STOP=",$STOP,"
 	IGNORE=",$IGNORE,"
 }

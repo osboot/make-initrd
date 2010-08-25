@@ -7,6 +7,7 @@ export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 
 export RUN_INITRD=1
 export INIT='/sbin/init'
+export DEBUG=
 export QUIET=
 export PANIC=
 export STOP=','
