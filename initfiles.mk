@@ -42,8 +42,5 @@ PUT_FILES += \
 	/bin/rm \
 	/bin/sleep
 
-# System files
-PUT_FILES += /etc/group /etc/passwd
-
 # initrd specific utilities
 PUT_DIRS += /lib/initrd
