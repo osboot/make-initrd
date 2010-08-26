@@ -1,4 +1,4 @@
 #!/bin/sh -efu
 
 /sbin/lvm vgscan >/dev/null
-/sbin/lvm vgchange -ay >/dev/null
+/sbin/lvm vgchange -ay --noudevsync >/dev/null
