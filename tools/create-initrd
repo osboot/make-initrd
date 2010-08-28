@@ -51,9 +51,12 @@ if [ -d /etc/modprobe.d ]; then
 		-exec put-file '{}' '+'
 fi
 
-if [ -d /etc/udev/initramfs-rules.d ]; then
-	verbose "Copying files from /etc/udev/initramfs-rules.d ..."
-	find -L /etc/udev/initramfs-rules.d/ \
+for d in lib etc; do
+	[ -d "/$d/udev/initramfs-rules.d" ] ||
+		continue
+	verbose "Copying files from /$d/udev/initramfs-rules.d ..."
+	find -L "/$d/udev/initramfs-rules.d" \
 			-name '*.rules' \
 		-exec cp -aLt ./etc/udev/rules.d -- '{}' '+'
-fi
+	break
+done
