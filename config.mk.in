@@ -43,6 +43,7 @@ GUESS_COMMON_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/common)
 # Global variables
 RESOLVE_MODALIAS	?= 1
 KERNEL			?= $(shell uname -r)
+KERNEL_CONFIG           ?= $(BOOTDIR)/config-$(KERNEL)
 
 # This user's preferences are make sence only if user's config file is loaded.
 ifneq "$(INITRD_CONFIG)" ''
@@ -51,7 +52,6 @@ ifneq "$(INITRD_CONFIG)" ''
 FEATURES		?=
 IMAGE_SUFFIX		?=
 IMAGEFILE		?= $(BOOTDIR)/initrd-$(KERNEL)$(IMAGE_SUFFIX).img
-KERNEL_CONFIG		?= $(BOOTDIR)/config-$(KERNEL)
 FIRMWARE_DIRS		?= /lib/firmware/updates /lib/firmware /lib/firmware/$(KERNEL)/updates /lib/firmware/$(KERNEL)
 VERBOSE			?=
 FSTAB			?= /etc/fstab
