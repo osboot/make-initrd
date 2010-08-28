@@ -1,0 +1,29 @@
+group: NFS feature changes
+regexp: ^nfs:
+filter: s/^nfs: //
+
+group: LUKS feature changes
+regexp: ^luks:
+filter: s/^luks: //
+
+group: LVM feature changes
+regexp: ^lvm:
+filter: s/^lvm: //
+
+group: Raid feature changes
+regexp: ^raid:
+filter: s/^raid: //
+
+group: Device mapper feature changes
+regexp: ^devmapper:
+filter: s/^devmapper: //
+
+group: Documentation
+regexp: ^doc:
+filter: s/^doc: //
+
+group: Other fixes
+regexp: ^Fix
+
+group: New
+regexp: .*

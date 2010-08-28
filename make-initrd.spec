@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.3.6
+Version: 0.3.7
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -19,9 +19,6 @@ Requires: kinit-utils >= 1.5.15-alt3
 
 # guess-kbd
 Requires: udev >= 149-alt1
-
-# udev-161
-Requires: /lib/udev/initramfs-rules.d
 
 # installkernel
 Requires: bootloader-utils >= 0.4.8-alt1
@@ -119,6 +116,11 @@ EOF
 %_datadir/%name/features/nfsroot
 
 %changelog
+* Sun Aug 29 2010 Alexey Gladkov <legion@altlinux.ru> 0.3.7-alt1
+- Fix requires.
+- Other fixes:
+  + Fix guess-config (ALT#23956).
+
 * Sat Aug 28 2010 Alexey Gladkov <legion@altlinux.ru> 0.3.6-alt1
 - NFS feature changes:
   + preload modules only if feature enabled.
