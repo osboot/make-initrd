@@ -31,9 +31,9 @@ shell() {
 	[ "$PANIC" != 0 ] || reboot
 
 	if [ -n "$RESCUE_MODULES" ]; then
-		local m
-		for m in $RESCUE_MODULES; do
-			modprobe_check "$m"
+		local kmod
+		for kmod in $RESCUE_MODULES; do
+			modprobe_check "$kmod"
 		done
 	fi
 	[ "$#" -eq 0 ] || message "$@"

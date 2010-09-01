@@ -28,7 +28,7 @@ for f in /modules/*; do
 
 	export m="${f#*-}"
 
-	[ -n "${IGNORE##*,$m,*}" ] ||
+	[ -n "$m" -a -n "${IGNORE##*,$m,*}" ] ||
 		continue
 
 	run_scripts "pre/$m"
