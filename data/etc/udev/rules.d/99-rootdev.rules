@@ -1,1 +1,1 @@
-SUBSYSTEM=="block", ACTION=="add", ENV{ID_FS_USAGE}=="filesystem", RUN+="/lib/filters/rootdev"
+SUBSYSTEM=="block", ACTION!="remove", ENV{ID_FS_USAGE}=="filesystem", RUN+="/lib/filters/rootdev"

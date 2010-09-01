@@ -1,1 +1,1 @@
-SUBSYSTEM=="block", ACTION=="add", ENV{ID_FS_TYPE}=="LVM2_member", RUN+="/lib/filters/lvm"
+SUBSYSTEM=="block", ACTION!="remove", ENV{ID_FS_TYPE}=="LVM2_member", RUN+="/lib/filters/lvm"
