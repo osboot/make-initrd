@@ -1,6 +1,6 @@
 MULTIPATH_PRELOAD	= dm-multipath
 MULTIPATH_MODULES	= scsi_dh scsi_dh_alua scsi_dh_emc \
-			  scsi_dh_hp_sw scsi_dh_rda
+			  scsi_dh_hp_sw scsi_dh_rdac
 
 MULTIPATH_BIN		= /sbin/multipath /sbin/kpartx \
 			  /lib/udev/kpartx_id
