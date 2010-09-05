@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.3.7
+Version: 0.3.8
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -72,6 +72,16 @@ AutoReq: noshell, noshebang
 %description nfs
 NFS module for %name
 
+%package multipath
+Summary: multipath module for %name
+Group: System/Base
+Requires: %name-devmapper = %version-%release
+Requires: multipath-tools
+AutoReq: noshell, noshebang
+
+%description multipath
+Multipath module for %name
+
 %prep
 %setup -q
 
@@ -101,6 +111,7 @@ EOF
 %exclude %_datadir/%name/features/lvm
 %exclude %_datadir/%name/features/luks
 %exclude %_datadir/%name/features/nfsroot
+%exclude %_datadir/%name/features/multipath
 %doc README.ru
 
 %files devmapper
@@ -115,7 +126,15 @@ EOF
 %files nfs
 %_datadir/%name/features/nfsroot
 
+%files multipath
+%_datadir/%name/features/multipath
+
 %changelog
+* Sun Sep 05 2010 Alexey Gladkov <legion@altlinux.ru> 0.3.8-alt1
+- Add multipath subpackage (ALT#24009).
+- Fix typo in module name (ALT#24008).
+- Fix udev rules for builtin kernel modules (ALT#23985).
+
 * Sun Aug 29 2010 Alexey Gladkov <legion@altlinux.ru> 0.3.7-alt1
 - Fix requires.
 - Other fixes:
