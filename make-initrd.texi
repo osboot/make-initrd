@@ -223,6 +223,8 @@ lvm - from LVM partition;
 @item
 nfsroot - over NFS;
 @item
+multipath - from multipath devices;
+@item
 raid - from RAID partition.
 @end itemize
 
