@@ -79,6 +79,15 @@ mk_event() {
 	mktemp "$eventdir/$1"/event.XXXXXXXXX
 }
 
+devlinks_check() {
+	local l
+	for l in $DEVLINKS; do
+		[ "$1" != "$l" ] ||
+			return 0
+	done
+	return 1
+}
+
 get_dev() {
 	local name retval value
 	retval="$1"; shift
@@ -105,7 +114,7 @@ get_dev() {
 				return 1
 			;;
 		/*)
-			[ "$DEVNAME" = "$name" ] ||
+			[ "$DEVNAME" = "$name" ] || devlinks_check "$name" ||
 				return 1
 			;;
 		*:*)
