@@ -42,6 +42,7 @@ GUESS_COMMON_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/common)
 
 # Global variables
 RESOLVE_MODALIAS	?= 1
+UDEV_VERSION		?= $(shell udevd --version)
 KERNEL			?= $(shell uname -r)
 KERNEL_CONFIG           ?= $(BOOTDIR)/config-$(KERNEL)
 
