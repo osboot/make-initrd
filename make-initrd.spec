@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.3.8
+Version: 0.3.9
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -130,6 +130,10 @@ EOF
 %_datadir/%name/features/multipath
 
 %changelog
+* Sun Sep 19 2010 Alexey Gladkov <legion@altlinux.ru> 0.3.9-alt1
+- Search for device name in $DEVLINKS variable (ALT#24082)
+- Add raid rules for udev >= 151 (ALT#23884)
+
 * Sun Sep 05 2010 Alexey Gladkov <legion@altlinux.ru> 0.3.8-alt1
 - Add multipath subpackage (ALT#24009).
 - Fix typo in module name (ALT#24008).
