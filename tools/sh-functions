@@ -44,21 +44,6 @@ normalize_modname() {
 [ -z "$blacklist" ] ||
 	blacklist="$(normalize_modname "$blacklist")"
 
-check_blacklist() {
-	[ -n "$blacklist" ] ||
-		return 0
-
-	local m module
-	module="$(normalize_modname "$1")"
-
-	for m in $blacklist; do
-		m="${m##*/}"
-		m="${m%.ko}"
-		[ "$module" != "$m" ] ||
-			return 1
-	done
-}
-
 get_majmin() {
 	local v devnode
 
