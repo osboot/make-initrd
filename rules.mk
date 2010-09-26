@@ -70,5 +70,5 @@ install: pack
 
 clean:
 	@echo "Removing work directory ..."
-	$Qrm -rf $(verbose) -- "$(ROOTDIR)" "$(GUESSDIR)"
+	$Qrm -rf -- "$(ROOTDIR)" "$(GUESSDIR)"
 	$Qrmdir -- "$(WORKDIR)"
