@@ -55,7 +55,7 @@ run_module() {
 
 run_scripts() {
 	local s
-	for s in /scripts/"$1"/*; do
+	for s in /scripts/all/* /scripts/"$1"/*; do
 		[ -x "$s" ] || continue
 		verbose "Running $s ..."
 		. "$s"
