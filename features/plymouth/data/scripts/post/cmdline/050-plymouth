@@ -1,0 +1,13 @@
+#!/bin/sh -efu
+
+plymouth_script() {
+	[ -z "$NOSPLASH" ] || return 0
+
+	mknod -m 0660 /dev/fb0 c 29 0
+	ln -s fb0 /dev/fb
+
+	/bin/plymouthd --attach-to-session
+	/bin/plymouth --show-splash
+}
+
+plymouth_script
