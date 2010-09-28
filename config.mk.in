@@ -45,6 +45,7 @@ RESOLVE_MODALIAS	?= 1
 UDEV_VERSION		?= $(shell udevd --version)
 KERNEL			?= $(shell uname -r)
 KERNEL_CONFIG           ?= $(BOOTDIR)/config-$(KERNEL)
+KERNEL_MODULES          ?= /lib/modules/$(KERNEL)/kernel
 ARCH                    ?= $(uname -m)
 
 ifeq "$(ARCH)" 'x86_64'

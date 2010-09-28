@@ -93,6 +93,16 @@ add_module() {
 	done
 }
 
-for n in "$@"; do
-	add_module "$n"
+for n; do
+	if [ -n "${n##*[/\[\].*&^\$\\\\/]*}" ]; then
+		add_module "$n"
+
+	elif [ -n "${KERNEL_MODULES-}" ]; then
+		find "$KERNEL_MODULES" -type f |egrep -e "$n" |
+		while read m; do
+			add_module "$m"
+		done
+	else
+		fatal "Unable to handle pattern: $n"
+	fi
 done
