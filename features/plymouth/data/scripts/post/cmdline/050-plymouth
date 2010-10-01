@@ -6,7 +6,7 @@ plymouth_script() {
 	mknod -m 0660 /dev/fb0 c 29 0
 	ln -s fb0 /dev/fb
 
-	/bin/plymouthd --attach-to-session
+	/sbin/plymouthd
 	/bin/plymouth --show-splash
 }
 
