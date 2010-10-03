@@ -1,0 +1,20 @@
+#!/bin/sh -efu
+
+sect=
+while read l; do
+	case "$l" in
+		'[Plymouth Theme]')
+			sect=1
+			;;
+		'['*)
+			sect=
+			;;
+		ModuleName*=*)
+			[ -n "$sect" ] || continue
+			s="${l#ModuleName}"
+			s="${s##*=}"
+			set -- $s
+			printf '[%s]\n' "$1"
+			;;
+	esac
+done < "/usr/share/plymouth/themes/$1/$1.plymouth"

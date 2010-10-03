@@ -1,7 +1,7 @@
 PLYMOUTH_THEME  ?= $(shell plymouth-set-default-theme)
 PLYMOUTH_MODULES = drivers/gpu/drm/
 PLYMOUTH_DATADIR = $(FEATURESDIR)/plymouth/data
-PLYMOUTH_PLUGIN = $(shell grep "ModuleName *= *" /usr/share/plymouth/themes/$(PLYMOUTH_THEME)/$(PLYMOUTH_THEME).plymouth | sed 's/ModuleName *= *//')
+PLYMOUTH_PLUGIN  = $(shell $(FEATURESDIR)/plymouth/get-plugin $(PLYMOUTH_THEME))
 PLYMOUTH_FILES   = \
 	/bin/plymouth \
 	/sbin/plymouthd \
