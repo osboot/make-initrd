@@ -2,8 +2,9 @@
 
 msg="Loading, please wait..."
 run() {
-	mount -n -t sysfs -o nodev,noexec,nosuid none /sys
-	mount -n -t proc  -o nodev,noexec,nosuid none /proc
+	mount -n -t sysfs    -o nodev,noexec,nosuid none /sys
+	mount -n -t proc     -o nodev,noexec,nosuid none /proc
+	mount -n -t devtmpfs -o mode=755 udevfs /dev >/dev/null 2>&1 ||:
 
 	echo > /proc/sys/kernel/hotplug
 	echo /sbin/modprobe > /proc/sys/kernel/modprobe
