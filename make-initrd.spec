@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.3.9
+Version: 0.4.0
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -38,6 +38,7 @@ make-initrd is a new, uevent-driven initramfs infrastructure based around udev.
 %package devmapper
 Summary: device-mapper module for %name
 Group: System/Base
+Requires: %name = %version-%release
 Requires: dmsetup >= 1.02.44-alt3
 AutoReq: noshell, noshebang
 
@@ -47,6 +48,7 @@ device-mapper module for %name
 %package lvm
 Summary: LVM module for %name
 Group: System/Base
+Requires: %name = %version-%release
 Requires: %name-devmapper = %version-%release
 Requires: lvm2
 AutoReq: noshell, noshebang
@@ -57,6 +59,7 @@ LVM module for %name
 %package luks
 Summary: LUKS module for %name
 Group: System/Base
+Requires: %name = %version-%release
 Requires: %name-devmapper = %version-%release
 Requires: cryptsetup
 AutoReq: noshell, noshebang
@@ -75,12 +78,23 @@ NFS module for %name
 %package multipath
 Summary: multipath module for %name
 Group: System/Base
+Requires: %name = %version-%release
 Requires: %name-devmapper = %version-%release
 Requires: multipath-tools
 AutoReq: noshell, noshebang
 
 %description multipath
 Multipath module for %name
+
+%package plymouth
+Summary: plymouth module for %name
+Group: System/Base
+Requires: %name = %version-%release
+Requires: plymouth
+AutoReq: noshell, noshebang
+
+%description plymouth
+plymouth module for %name
 
 %prep
 %setup -q
@@ -112,6 +126,7 @@ EOF
 %exclude %_datadir/%name/features/luks
 %exclude %_datadir/%name/features/nfsroot
 %exclude %_datadir/%name/features/multipath
+%exclude %_datadir/%name/features/plymouth
 %doc README.ru
 
 %files devmapper
@@ -129,7 +144,18 @@ EOF
 %files multipath
 %_datadir/%name/features/multipath
 
+%files plymouth
+%_datadir/%name/features/plymouth
+
 %changelog
+* Thu Oct 28 2010 Alexey Gladkov <legion@altlinux.ru> 0.4.0-alt1
+- Add devtmpfs support.
+- Add plymouth support (thx Alexey Shabalin).
+- Add hooks for rescue shell and for all /init stages.
+- Allow to add kernel modules by pattern.
+- Fix BLACKLIST_MODULES.
+- luks: do not try to handle a device twice (thx Kirill A. Shutemov).
+
 * Sun Sep 19 2010 Alexey Gladkov <legion@altlinux.ru> 0.3.9-alt1
 - Search for device name in $DEVLINKS variable (ALT#24082)
 - Add raid rules for udev >= 151 (ALT#23884)
