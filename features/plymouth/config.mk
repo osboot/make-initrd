@@ -16,4 +16,5 @@ PLYMOUTH_FILES   = \
 	/usr/$(LIBNAME)/plymouth/renderers/drm.so \
 	/usr/$(LIBNAME)/plymouth/renderers/frame-buffer.so \
 	/usr/$(LIBNAME)/plymouth/$(PLYMOUTH_PLUGIN).so \
-	$(wildcard /usr/share/plymouth/themes/$(PLYMOUTH_THEME)/*)
+	$(wildcard /usr/share/plymouth/themes/$(PLYMOUTH_THEME)/*) \
+	/var/lib/plymouth/boot-duration
