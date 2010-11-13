@@ -13,7 +13,6 @@ PLYMOUTH_FILES   = \
 	/usr/share/plymouth/themes/text/text.plymouth \
 	/usr/$(LIBNAME)/plymouth/details.so \
 	/usr/$(LIBNAME)/plymouth/text.so \
-	/usr/$(LIBNAME)/plymouth/renderers/drm.so \
 	/usr/$(LIBNAME)/plymouth/renderers/frame-buffer.so \
 	/usr/$(LIBNAME)/plymouth/$(PLYMOUTH_PLUGIN).so \
 	$(wildcard /usr/share/plymouth/themes/$(PLYMOUTH_THEME)/*) \
