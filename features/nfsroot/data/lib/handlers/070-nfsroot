@@ -25,12 +25,12 @@ handler() {
 	nfsmount -o nolock $roflag $NFSOPTS "$NFSROOT" "$rootmnt" ||
 		return 0
 	message "Mount '$NFSROOT' as $rootmnt"
-	ln -s /dev/nfs /dev/root
+	ln -s /dev/nfs /dev/.initramfs/root
 }
 
 rc=0
 for e in "$eventdir"/nfsroot/*; do
-	[ -f "$e" ] && [ ! -e /dev/root ] ||
+	[ -f "$e" ] && [ ! -e /dev/.initramfs/root ] ||
 		break
 
 	( . "$e"; handler; ) ||
