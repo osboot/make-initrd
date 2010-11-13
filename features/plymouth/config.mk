@@ -1,5 +1,5 @@
 PLYMOUTH_THEME  ?= $(shell plymouth-set-default-theme)
-PLYMOUTH_MODULES = drivers/gpu/drm/
+PLYMOUTH_MODULES = drivers/gpu/drm/ drm drm_kms_helper
 PLYMOUTH_DATADIR = $(FEATURESDIR)/plymouth/data
 PLYMOUTH_PLUGIN  = $(shell $(FEATURESDIR)/plymouth/get-plugin $(PLYMOUTH_THEME))
 PLYMOUTH_FILES   = \
