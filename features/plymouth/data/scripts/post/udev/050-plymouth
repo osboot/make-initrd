@@ -2,10 +2,8 @@
 
 plymouth_script() {
 	[ -z "$NOSPLASH" ] || return 0
-        # Run plymouth here only on vesa framebuffer
-	[ "${vga%x*}" = 0 ] || return 0
-
-	mknod -m 0660 /dev/fb0 c 29 0
+	# Run plymouth here if it looks like KMS framebuffer
+	[ "${vga%x*}" = "0" ] && return 0
 
 	/sbin/plymouthd
 	/bin/plymouth --show-splash
