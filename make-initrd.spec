@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.4.1
+Version: 0.4.2
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -148,6 +148,11 @@ EOF
 %_datadir/%name/features/plymouth
 
 %changelog
+* Sun Nov 14 2010 Alexey Gladkov <legion@altlinux.ru> 0.4.2-alt1
+- More plymouth fixes (thx Anton V. Boyarshinov)
+- Use /dev/.initramfs/root instad of /dev/root to avoid name
+  collisions (ALT#24526) (thx Kirill A. Shutemov).
+
 * Mon Nov 01 2010 Alexey Gladkov <legion@altlinux.ru> 0.4.1-alt1
 - Drop devtmpfs support.
 - Fix plymouth plugin detection.
