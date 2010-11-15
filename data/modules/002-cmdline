@@ -1,7 +1,6 @@
 #!/bin/sh
 
-msg="Parsing command line options..."
-
+msg=
 parse_attrs() {
 	multival=
 	case "$n" in

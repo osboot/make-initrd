@@ -19,5 +19,5 @@ run() {
 	done
 
 	# ignore any failed event because the init script will trigger again all events
-	rm -rf /dev/.udev/queue/
+	rm -rf /dev/.udev
 }

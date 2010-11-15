@@ -1,7 +1,29 @@
 #!/bin/sh
 
-msg="Loading, please wait..."
+makenod() {
+	[ -e /dev/$1 ] || mknod /dev/$1 $2 $3 $4
+}
+
+msg=
 run() {
+	if ! mount -n -t devtmpfs -o mode=755,size=5m udevfs /dev 2>/dev/null; then
+		mount -n -t tmpfs -o mode=755,size=5m udevfs /dev
+	fi
+
+	makenod ram     b 1 1
+	makenod null    c 1 3
+	makenod zero    c 1 5
+	makenod full    c 1 7
+	makenod random  c 1 8
+	makenod systty  c 4 0
+	makenod tty0    c 4 0
+	makenod tty1    c 4 1
+	makenod tty     c 5 0
+	makenod console c 5 1
+	makenod ptmx    c 5 2
+
+	mkdir /dev/.initramfs /dev/pts /dev/shm
+
 	mount -n -t sysfs    -o nodev,noexec,nosuid none /sys
 	mount -n -t proc     -o nodev,noexec,nosuid none /proc
 

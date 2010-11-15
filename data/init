@@ -3,40 +3,23 @@
 mkdir /dev/.initramfs
 /bin/showenv > /dev/.initramfs/kern
 
-export PATH=/bin:/sbin:/usr/bin:/usr/sbin
-
-export RUN_INITRD=1
-export INIT='/sbin/init'
-export DEBUG=
-export QUIET=
-export PANIC=
-export STOP=','
-export IGNORE=','
-export rootmnt='/root'
-export eventdir='/dev/.initramfs/udev'
-export readonly=1
-export RESCUE_MODULES=
-
-[ ! -s /conf/initramfs.conf ] || . /conf/initramfs.conf
 . /scripts/functions
 
-run_scripts top
-
 for f in /modules/*; do
-	[ -x "$f" ] ||
+	m="${f#*-}"
+	[ -x "$f" -a -n "$m" ] ||
 		continue
 
-	export m="${f#*-}"
-
-	[ -n "$m" -a -n "${IGNORE##*,$m,*}" ] ||
+	[ -z "$IGNORE" ] || [ -n "${IGNORE##*,$m,*}" ] ||
 		continue
 
 	run_scripts "pre/$m"
 
 	. "$f"
-	verbose "$msg"
+	[ -z "$msg" ] ||
+		verbose "$msg"
 
-	[ "$STOP" != ',all,' -a -n "${STOP##*,$m,*}" ] ||
+	[ -z "$STOP" ] || [ "$STOP" != ',all,' -a -n "${STOP##*,$m,*}" ] ||
 		shell
 
 	run_module "$m" "$@" ||

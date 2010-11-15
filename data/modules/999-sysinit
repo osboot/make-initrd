@@ -14,6 +14,14 @@ run() {
 		unset "${var%%=*}"
 	done < /dev/.initramfs/env
 
+	/bin/rm -rf /dev/.initramfs
+
+	if [ -d "$newroot/dev" ]; then
+		/bin/mount --move /dev "$newroot/dev"
+	else
+		/bin/umount /dev
+	fi
+
 	# Restore kernel environment
 	while read var; do
 		export "$var"

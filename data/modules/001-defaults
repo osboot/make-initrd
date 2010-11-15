@@ -1,0 +1,19 @@
+#!/bin/sh
+
+msg=
+run() {
+	[ ! -s /conf/initramfs.conf ] || . /conf/initramfs.conf
+
+	export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+	export RUN_INITRD=1
+	export INIT='/sbin/init'
+	export DEBUG=
+	export QUIET=
+	export PANIC=
+	export STOP=','
+	export IGNORE=','
+	export rootmnt='/root'
+	export eventdir='/dev/.initramfs/udev'
+	export readonly=1
+	export RESCUE_MODULES=${RESCUE_MODULES-}
+}
