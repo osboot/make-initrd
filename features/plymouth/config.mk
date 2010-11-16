@@ -8,7 +8,6 @@ PLYMOUTH_FILES   = \
 	/etc/plymouth/plymouthd.conf \
 	/usr/share/plymouth/plymouthd.defaults \
 	/etc/altlinux-release \
-	/usr/share/pixmaps/altlinux.png \
 	/usr/share/plymouth/themes/details/details.plymouth \
 	/usr/share/plymouth/themes/text/text.plymouth \
 	/usr/$(LIBNAME)/plymouth/details.so \
