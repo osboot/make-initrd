@@ -1,0 +1,13 @@
+#!/bin/sh -efu
+
+. guess-functions
+
+printf '%s\n' drivers/char/agp
+
+f=/sys/class/graphics/fb0/device/modalias
+[ -e "$f" ] ||
+	exit 0
+
+read modalias < "$f"
+
+resolve_modalias "$modalias" 2>/dev/null ||:
