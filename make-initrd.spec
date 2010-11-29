@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.4.2
+Version: 0.4.3
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -17,8 +17,8 @@ Requires: ash libshell make sed module-init-tools coreutils grep glibc-utils
 # ipconfig -q
 Requires: kinit-utils >= 1.5.15-alt3
 
-# guess-kbd
-Requires: udev >= 149-alt1
+# Move /dev from initrd to the real system.
+Requires: udev >= 164-alt2
 
 # installkernel
 Requires: bootloader-utils >= 0.4.8-alt1
@@ -148,6 +148,13 @@ EOF
 %_datadir/%name/features/plymouth
 
 %changelog
+* Tue Nov 30 2010 Alexey Gladkov <legion@altlinux.ru> 0.4.3-alt1
+- Move /dev into real system.
+- Plymouth feature changes:
+  + Check /dev/fb0 before creation.
+  + Add search of the necessary modules.
+  + Remove a file which creates unnecessary dependence.
+
 * Sun Nov 14 2010 Alexey Gladkov <legion@altlinux.ru> 0.4.2-alt1
 - More plymouth fixes (thx Anton V. Boyarshinov)
 - Use /dev/.initramfs/root instad of /dev/root to avoid name
