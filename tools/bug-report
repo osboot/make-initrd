@@ -41,7 +41,7 @@ cp -a  \
 	/etc/blkid.tab \
 	"$reportdir"/etc/
 
-blkid -c /dev/null >/etc/blkid.out
+blkid -c /dev/null >"$reportdir"/etc/blkid.out
 
 [ -z "${VERSION-}" ] ||
 		printf '%s\n' "$VERSION" > "$reportdir"/.version
