@@ -1,6 +1,6 @@
 Name: make-initrd
 Version: 0.4.3
-Release: alt1
+Release: alt2
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -21,7 +21,7 @@ Requires: kinit-utils >= 1.5.15-alt3
 Requires: udev >= 164-alt2
 
 # installkernel
-Requires: bootloader-utils >= 0.4.8-alt1
+Requires: bootloader-utils >= 0.4.10-alt1
 
 # blkid
 Requires: util-linux >= 2.17.2-alt1
@@ -105,17 +105,10 @@ plymouth module for %name
 %install
 %make_install DESTDIR=%buildroot install
 
-mkdir -p %buildroot/%_sysconfdir/sysconfig
-cat > %buildroot/%_sysconfdir/sysconfig/installkernel <<-EOF
-	INITRD_GENERATOR=make-initrd
-	MKINITRD=%_sbindir/mkinitrd-make-initrd
-EOF
-
 %files
 %dir %_sysconfdir/initrd.mk.d
 %config(noreplace) %_sysconfdir/initrd.mk.d/*.mk.example
 %config(noreplace) %_sysconfdir/initrd.mk
-%config(noreplace) %_sysconfdir/sysconfig/installkernel
 %_bindir/*
 %_sbindir/*
 %_datadir/%name
@@ -148,6 +141,10 @@ EOF
 %_datadir/%name/features/plymouth
 
 %changelog
+* Tue Dec 07 2010 Alexey Gladkov <legion@altlinux.ru> 0.4.3-alt2
+- make-initrd: Fix help message.
+- Move /etc/sysconfig/installkernel to bootloader-utils.
+
 * Tue Nov 30 2010 Alexey Gladkov <legion@altlinux.ru> 0.4.3-alt1
 - Move /dev into real system.
 - Plymouth feature changes:
