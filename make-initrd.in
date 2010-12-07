@@ -38,13 +38,15 @@ show_help() {
 
 	Options:
 	   guess-config           guesses the current configuration
-	                          and generates the config file.
+	                          and generates the config file;
 	   bug-report             makes the archive for developers
-	                          when bug happens.
-	   -b, --bootdir=DIR      set boot directory (default: $BOOTDIR).
-	   -k, --kernel=VERSION   set kernel version (default: $KERNEL).
-	   -v, --verbose          print a message for each action.
-	   -V, --version          output version information and exit.
+	                          when bug happens;
+	   -N, --no-checks        don't check /dev, /proc and the kernel
+	                          modules directory;
+	   -b, --bootdir=DIR      set boot directory (default: $BOOTDIR);
+	   -k, --kernel=VERSION   set kernel version (default: $KERNEL);
+	   -v, --verbose          print a message for each action;
+	   -V, --version          output version information and exit;
 	   -h, --help             display this help and exit.
 
 	Report bugs to authors.
