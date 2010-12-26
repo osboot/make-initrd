@@ -34,7 +34,7 @@ PATH		= $(TOOLSDIR):$(shell echo $$PATH)
 
 # Config file locations
 INITRD_CONFIG		?=
-INITRD_CONFIG_LIST	 = $(wildcard $(SYSCONFDIR)/initrd.mk $(SYSCONFDIR)/initrd.mk.d/*.mk)
+INITRD_CONFIG_LIST	?= $(wildcard $(SYSCONFDIR)/initrd.mk $(SYSCONFDIR)/initrd.mk.d/*.mk)
 
 # Guess variables
 GUESS_DEVICE_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/device)

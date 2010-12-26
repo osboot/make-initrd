@@ -11,6 +11,7 @@ SYSFS_PATH="${SYSFS_PATH:-/sys}"
 KERNEL="$(uname -r)"
 VERBOSE=
 no_checks=
+config=
 
 print_version() {
 	cat <<-EOF
@@ -43,6 +44,7 @@ show_help() {
 	                          when bug happens;
 	   -N, --no-checks        don't check /dev, /proc and the kernel
 	                          modules directory;
+	   -c, --config=FILE      set custom config file;
 	   -b, --bootdir=DIR      set boot directory (default: $BOOTDIR);
 	   -k, --kernel=VERSION   set kernel version (default: $KERNEL);
 	   -v, --verbose          print a message for each action;
@@ -83,7 +85,7 @@ check_noexec() {
 	return $rc
 }
 
-TEMP=`getopt -n $PROG -o 'b:,k:,N,h,v,V' -l 'bootdir:,kernel:,no-checks,help,verbose,version' -- "$@"` ||
+TEMP=`getopt -n $PROG -o 'b:,c:,k:,N,h,v,V' -l 'bootdir:,config:,kernel:,no-checks,help,verbose,version' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -91,6 +93,9 @@ while :; do
 	case "$1" in
 		-b|--bootdir) shift
 			BOOTDIR="$(opt_check_dir --bootdir "$1")"
+			;;
+		-c|--config) shift
+			config="$(opt_check_read --config "$1")"
 			;;
 		-k|--kernel) shift
 			[ -z "$1" ] || KERNEL="$1"
@@ -149,6 +154,9 @@ if ! check_noexec; then
 	rm -rf -- "$TEMPDIR"
 	exit 1
 fi
+
+[ -z "$config" ] ||
+	export INITRD_CONFIG_LIST="$config"
 
 export TEMPDIR KERNEL BOOTDIR VERBOSE
 unset MAKELEVEL
