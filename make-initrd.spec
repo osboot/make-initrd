@@ -1,6 +1,6 @@
 Name: make-initrd
-Version: 0.4.3
-Release: alt2
+Version: 0.4.4
+Release: alt1
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -141,6 +141,11 @@ plymouth module for %name
 %_datadir/%name/features/plymouth
 
 %changelog
+* Mon Dec 27 2010 Alexey Gladkov <legion@altlinux.ru> 0.4.4-alt1
+- put-file: Fix recursion.
+- make-initrd: Add --config option.
+- bug-report: Add blkid output.
+
 * Tue Dec 07 2010 Alexey Gladkov <legion@altlinux.ru> 0.4.3-alt2
 - make-initrd: Fix help message.
 - Move /etc/sysconfig/installkernel to bootloader-utils.
