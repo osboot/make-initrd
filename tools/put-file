@@ -4,66 +4,105 @@
 . shell-error
 
 canonicalize_file() {
-	local fn="$1" res= t=
-	while [ "$fn" != "$res" ]; do
-		res="$fn"
-		if [ -z "${fn##*//*}" ]; then
-			fn="${fn%%//*}/${fn#*//}"
-		elif [ -z "${fn##*/./*}" ]; then
-			fn="${fn%%/./*}/${fn#*/./}"
-		elif [ -z "${fn##*/../*}" ]; then
-			t="${fn%%/../*}"
-			t="${t%/*}"
-			fn="$t/${fn#*/../}"
-		elif [ -z "${fn##./*}" -o -n "${fn##/*}" ]; then
-			fn="$PWD/${fn##./}"
-		elif [ -z "${fn##*/}" ]; then
-			fn="${fn%%/}"
-		fi
-	done
-	printf '%s\n' "$fn"
+	local __canonicalize_file_name="$1" __canonicalize_file_result
+	__canonicalize_file() {
+		local fn="$1" r= t=
+		while [ "$fn" != "$r" ]; do
+			r="$fn"
+			if [ -z "${fn##*//*}" ]; then
+				fn="${fn%%//*}/${fn#*//}"
+			elif [ -z "${fn##*/./*}" ]; then
+				fn="${fn%%/./*}/${fn#*/./}"
+			elif [ -z "${fn##*/../*}" ]; then
+				t="${fn%%/../*}"
+				t="${t%/*}"
+				fn="$t/${fn#*/../}"
+			elif [ -z "${fn##./*}" -o -n "${fn##/*}" ]; then
+				fn="$PWD/${fn##./}"
+			elif [ -z "${fn##*/}" ]; then
+				fn="${fn%%/}"
+			fi
+		done
+		__canonicalize_file_result="$fn"
+	}
+	__canonicalize_file "$2"
+	eval "$__canonicalize_file_name=\$__canonicalize_file_result"
 }
 
-copy_file() {
+copy_regfile() {
+	local fn="$1" dir
+
+	canonicalize_file 'fn' "$fn"
+
+	[ ! -e "$rootdir/$fn" ] ||
+		return 1
+
+	dir="$rootdir/${fn%/*}"
+	[ -d "$dir" ] ||
+		mkdir -p -- "$dir"
+
+	cp -ad -- "$fn" "$dir/"
+}
+
+copy_symlink() {
 	local fn="$1" l
 
-	while :; do
-		fn="$(canonicalize_file "$fn")"
+	copy_regfile "$fn" ||
+		return 0
 
-		mkdir -p -- "$rootdir/${fn%/*}"
-		[ -e "$rootdir/$fn" ] ||
-			cp -a -- "$fn" "$rootdir/$fn"
+	l="$(readlink -m -- "$fn")"
+	copy "$l"
+}
 
-		if [ -L "$fn" ]; then
-			l="$(readlink -- "$fn")"
-			[ -n "${l##/*}" ] &&
-				fn="${fn%/*}/$l" ||
-				fn="$l"
-		else
-			break
-		fi
+copy_elffile() {
+	local fn="$1" libs
+
+	copy_regfile "$fn" ||
+		return 0
+
+	# ignore all kernel modules.
+	[ -n "${fn##$kernel_modules_dir/*.ko}" ] ||
+		return 0
+
+	# avoid subshell incapsulation.
+	libs="$(ldd -- "$fn" |sed -n 's/.*[[:space:]]\([^ ]\+\) (0x.*/\1/p')"
+
+	for lib in $libs; do
+		copy "$lib"
 	done
 }
 
-copy_elf() {
-	local fn="$1"
+copy() {
+	local fn="$1" otype=
 
-	copy_file "$fn"
+	[ ! -e "$fn" ] ||
+		otype="$(file -b -- "$fn" 2>/dev/null)"
 
-	ldd -- "$fn" |sed -n 's/.*[[:space:]]\([^ ]\+\) (0x.*/\1/p' |
-	while read lib; do
-		copy_file "$lib"
-	done
+	case "$otype" in
+		'')		# ignore nonexistent file
+				error "$fn: No such file or directory"
+				;;
+		'broken symbolic link to '*)
+				# ignore broken symlink
+				error "$fn: Broken symlink"
+				;;
+		'symbolic link to '*)
+				copy_symlink "$fn"
+				;;
+		'ELF '*|*' ELF '*)
+				[ -n "${otype##* statically linked*}" ] &&
+					copy_elffile "$fn" ||
+					copy_regfile "$fn"
+				;;
+		*)
+				copy_regfile "$fn"
+				;;
+	esac ||:
 }
 
 for fn; do
 	[ -e "$fn" ] ||
 		fatal "$fn: No such file or directory"
 
-	ftype="$(file -b -- "$fn")"
-
-	case "$ftype" in
-		ELF\ *|*\ ELF\ *) copy_elf  "$fn" ;;
-		*)                copy_file "$fn" ;;
-	esac
+	copy "$fn"
 done
