@@ -4,5 +4,5 @@
 
 for tree in "$@"; do
 	verbose "Copying '$tree' recursively ..."
-	cp -afLt "$rootdir" "$tree"/*
+	cp -aPt "$rootdir" "$tree"/*
 done
