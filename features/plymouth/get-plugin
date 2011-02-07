@@ -1,5 +1,8 @@
 #!/bin/sh -efu
 
+[ -f "/usr/share/plymouth/themes/$1/$1.plymouth" ] ||
+	exit 0
+
 sect=
 while read l; do
 	case "$l" in
