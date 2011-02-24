@@ -1,6 +1,6 @@
 Name: make-initrd
 Version: 0.4.4
-Release: alt2
+Release: alt3
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -141,6 +141,9 @@ plymouth module for %name
 %_datadir/%name/features/plymouth
 
 %changelog
+* Thu Feb 24 2011 Alexey Gladkov <legion@altlinux.ru> 0.4.4-alt3
+- plymouth: until plymouth does it itsself, touch /dev/.systemd/plymouth.
+
 * Tue Feb 08 2011 Alexey Gladkov <legion@altlinux.ru> 0.4.4-alt2
 - plymouth: Fix plugin detection errors.
 - put-tree: Fix PUT_DIRS.
