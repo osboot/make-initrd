@@ -80,8 +80,8 @@ dir_not_empty() {
 }
 
 mk_event() {
-	mkdir -p -- "$eventdir/$1"
-	mktemp "$eventdir/$1"/event.XXXXXXXXX
+	mkdir -p -- "$udev_eventdir/$1"
+	mktemp "$udev_eventdir/$1"/event.XXXXXXXXX
 }
 
 devlinks_check() {

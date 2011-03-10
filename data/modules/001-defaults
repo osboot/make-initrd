@@ -13,7 +13,8 @@ run() {
 	export STOP=','
 	export IGNORE=','
 	export rootmnt='/root'
-	export eventdir='/dev/.initramfs/udev'
+	export udev_eventdir='/dev/.initramfs/udev-events'
+	export handler_eventdir='/dev/.initramfs/handler-events'
 	export readonly=1
 	export RESCUE_MODULES=${RESCUE_MODULES-}
 }

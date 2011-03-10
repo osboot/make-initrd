@@ -21,7 +21,7 @@ handler() {
 }
 
 rc=0
-for e in "$eventdir"/luks/*; do
+for e in "$handler_eventdir"/luks/*; do
 	[ -f "$e" ] || break
 
 	( . "$e"; handler; ) ||

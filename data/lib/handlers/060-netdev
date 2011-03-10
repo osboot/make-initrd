@@ -56,7 +56,7 @@ handler() {
 }
 
 rc=0
-for e in "$eventdir"/netdev/*; do
+for e in "$handler_eventdir"/netdev/*; do
 	[ -f "$e" ] ||
 		break
 

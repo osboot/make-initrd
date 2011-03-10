@@ -29,7 +29,7 @@ handler() {
 }
 
 rc=0
-for e in "$eventdir"/nfsroot/*; do
+for e in "$handler_eventdir"/nfsroot/*; do
 	[ -f "$e" ] && [ ! -e /dev/.initramfs/root ] ||
 		break
 

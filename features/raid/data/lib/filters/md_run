@@ -2,5 +2,5 @@
 
 . /dev/.initramfs/env
 
-mkdir -p -- "$eventdir"/md_run
-echo > "$eventdir"/md_run/event
+mkdir -p -- "$udev_eventdir"/md_run
+echo > "$udev_eventdir"/md_run/event

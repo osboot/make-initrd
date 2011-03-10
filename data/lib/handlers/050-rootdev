@@ -18,7 +18,7 @@ roflag=-w
 [ -z "$readonly" ] || roflag=-r
 
 rc=0
-for e in "$eventdir"/rootdev/*; do
+for e in "$handler_eventdir"/rootdev/*; do
 	[ -f "$e" ] && [ ! -e /dev/.initramfs/root ] ||
 		break
 

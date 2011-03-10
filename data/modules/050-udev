@@ -25,11 +25,22 @@ run() {
 	while [ "$sec" -gt 0 ]; do
 		# Wait udev event queue
 		udevadm settle
+
+		# Stop queue to avoid race
 		udevadm control --stop-exec-queue
 
 		# Our main goal is mounting root.
-		[ ! -e "$rootmnt/$INIT" ] ||
+		if [ -e "$rootmnt/$INIT" ]; then
+			udevadm control --start-exec-queue
 			break
+		fi
+
+		mkdir -p -- "$handler_eventdir"
+		mv "$udev_eventdir"/* "$handler_eventdir"
+
+		# Some handler uses udev, so we have to start it before
+		# start queue handlers.
+		udevadm control --start-exec-queue
 
 		# Run udev handlers
 		for handler in /lib/handlers/*; do
@@ -37,7 +48,7 @@ run() {
 			name="${name#*-}"
 
 			[ -x "$handler" ] &&
-				dir_not_empty "$eventdir/$name" ||
+				dir_not_empty "$handler_eventdir/$name" ||
 				continue
 
 			verbose "Running $name handler ..."
@@ -45,16 +56,14 @@ run() {
 				fail="$name"
 				break 2
 			fi
-
-			# Remove processed files.
-			rm -rf -- "$eventdir/$name"
 		done
-		udevadm control --start-exec-queue
+
+		# Remove processed files.
+		rm -rf -- "$handler_eventdir"
 
 		sleep 0.1
 		sec=$(($sec-1))
 	done
-	udevadm control --start-exec-queue
 
 	if [ -n "$fail" ]; then
 		error "event handler failed: $fail"

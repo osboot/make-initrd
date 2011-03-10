@@ -37,6 +37,7 @@ PUT_FILES += \
 	/bin/mknod \
 	/bin/mktemp \
 	/bin/mount \
+	/bin/mv \
 	/bin/umount \
 	/bin/readlink \
 	/bin/rm \

@@ -13,7 +13,7 @@ handler() {
 	return 0
 }
 
-for e in "$eventdir"/resume/*; do
+for e in "$handler_eventdir"/resume/*; do
 	[ -f "$e" ] ||
 		break
 
