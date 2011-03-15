@@ -15,6 +15,7 @@ run() {
 	makenod zero    c 1 5
 	makenod full    c 1 7
 	makenod random  c 1 8
+	makenod kmsg    c 1 11
 	makenod systty  c 4 0
 	makenod tty0    c 4 0
 	makenod tty1    c 4 1
