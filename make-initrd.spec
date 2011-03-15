@@ -1,6 +1,6 @@
 Name: make-initrd
-Version: 0.4.4
-Release: alt3
+Version: 0.4.5
+Release: alt1
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -141,6 +141,11 @@ plymouth module for %name
 %_datadir/%name/features/plymouth
 
 %changelog
+* Wed Mar 16 2011 Alexey Gladkov <legion@altlinux.ru> 0.4.5-alt1
+- udev: Restart udev queue before running handlers (thx Kirill A. Shutemov).
+- netdev: Initialize 'lo' interface only for network boot.
+- Create /dev/kmsg.
+
 * Thu Feb 24 2011 Alexey Gladkov <legion@altlinux.ru> 0.4.4-alt3
 - plymouth: until plymouth does it itsself, touch /dev/.systemd/plymouth.
 
