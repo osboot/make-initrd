@@ -1,6 +1,6 @@
 Name: make-initrd
 Version: 0.4.5
-Release: alt2
+Release: alt3
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -141,6 +141,9 @@ plymouth module for %name
 %_datadir/%name/features/plymouth
 
 %changelog
+* Wed Mar 16 2011 Alexey Gladkov <legion@altlinux.ru> 0.4.5-alt3
+- initrd: Fix events moving from udev_eventdir to handler_eventdir (ALT#25243).
+
 * Wed Mar 16 2011 Alexey Gladkov <legion@altlinux.ru> 0.4.5-alt2
 - udev: Create udev-eventdir befor udev start.
 - plymouth: Fix plugin detection errors.
