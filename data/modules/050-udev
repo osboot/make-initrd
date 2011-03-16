@@ -15,7 +15,7 @@ run() {
 	# Load user-defined modules
 	load_modules postudev
 
-	local name handler fail=
+	local name eventgroup handler fail=
 
 	# It is not currently limit since the execution of programs
         # takes time, which is not counted. But we do not want to use
@@ -36,7 +36,11 @@ run() {
 		fi
 
 		mkdir -p -- "$handler_eventdir"
-		mv "$udev_eventdir"/* "$handler_eventdir"
+
+		for eventgroup in "$udev_eventdir"/*; do
+			[ ! -d "$eventgroup" ] ||
+				mv "$eventgroup" "$handler_eventdir"
+		done
 
 		# Some handler uses udev, so we have to start it before
 		# start queue handlers.
