@@ -1,5 +1,8 @@
 #!/bin/sh -efu
 
+[ "$#" -gt 0 ] ||
+	exit 0
+
 [ -f "/usr/share/plymouth/themes/$1/$1.plymouth" ] ||
 	exit 0
 
