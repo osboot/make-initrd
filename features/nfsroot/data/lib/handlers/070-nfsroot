@@ -1,4 +1,4 @@
-#!/bin/sh -efu
+#!/bin/sh
 
 . /scripts/functions
 
@@ -30,7 +30,7 @@ handler() {
 
 rc=0
 for e in "$handler_eventdir"/nfsroot/*; do
-	[ -f "$e" ] && [ ! -e /dev/.initramfs/root ] ||
+	[ -f "$e" ] && [ ! -L /dev/.initramfs/root ] ||
 		break
 
 	( . "$e"; handler; ) ||

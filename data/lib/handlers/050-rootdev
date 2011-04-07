@@ -19,7 +19,7 @@ roflag=-w
 
 rc=0
 for e in "$handler_eventdir"/rootdev/*; do
-	[ -f "$e" ] && [ ! -e /dev/.initramfs/root ] ||
+	[ -f "$e" ] && [ ! -L /dev/.initramfs/root ] ||
 		break
 
 	( . "$e"; handler; ) ||
