@@ -1,7 +1,15 @@
-#!/bin/sh -efu
+#!/bin/sh -e
 
 . /dev/.initramfs/env
 . /scripts/functions
+
+if [ -z "$IP" ]; then
+	# Special case for nfsroot.
+	if [ -n "$NFSROOT" -o "$ROOT" = '/dev/nfs' ]; then
+		export IP0=dhcp
+		export IP=1
+	fi
+fi
 
 [ -n "$IP" ] ||
 	exit 0
