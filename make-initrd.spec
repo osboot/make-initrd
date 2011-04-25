@@ -1,6 +1,6 @@
 Name: make-initrd
-Version: 0.4.5
-Release: alt3
+Version: 0.4.6
+Release: alt1
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -141,6 +141,10 @@ plymouth module for %name
 %_datadir/%name/features/plymouth
 
 %changelog
+* Tue Apr 26 2011 Alexey Gladkov <legion@altlinux.ru> 0.4.6-alt1
+- scsi-mode: Add new feature (ALT#25388).
+- Fix nfsroot boot scheme.
+
 * Wed Mar 16 2011 Alexey Gladkov <legion@altlinux.ru> 0.4.5-alt3
 - initrd: Fix events moving from udev_eventdir to handler_eventdir (ALT#25243).
 
