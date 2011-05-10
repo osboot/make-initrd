@@ -38,6 +38,12 @@ resolve_modalias() {
 	done
 }
 
+guess_fstype() {
+	for m in ${GUESS_FSTYPE_SCRIPTS-}; do
+		"$m" "$@"
+	done
+}
+
 guess_device() {
 	local device_file
 	device_file="$(readlink -ev "$SYSFS_PATH$1" 2>/dev/null)" ||

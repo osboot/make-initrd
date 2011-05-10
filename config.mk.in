@@ -37,6 +37,7 @@ INITRD_CONFIG		?=
 INITRD_CONFIG_LIST	?= $(wildcard $(SYSCONFDIR)/initrd.mk $(SYSCONFDIR)/initrd.mk.d/*.mk)
 
 # Guess variables
+GUESS_FSTYPE_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/fstype)
 GUESS_DEVICE_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/device)
 GUESS_COMMON_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/common)
 

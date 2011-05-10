@@ -22,7 +22,7 @@ done < "$fstab"
 [ -n "$t_fsname" ] ||
 	fatal "Unable to find name of mounted root file system"
 
-guess_module "$t_fstype"
+guess_fstype "$t_fsname" "$t_fstype"
 
 device_list="$(get_device "$t_fsname")" ||
 	fatal "Unable to find root device"
