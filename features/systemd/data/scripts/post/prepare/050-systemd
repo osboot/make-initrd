@@ -1,0 +1,15 @@
+#!/bin/sh -efu
+
+EXPORT_FS="${EXPORT_FS-} /run"
+
+systemd_script() {
+	mkdir /run
+	mount -n -t tmpfs -o mode=755,size=5m tmpfs /run
+
+	mkdir -p /run/lock/subsys /run/user
+
+	:> /run/utmp
+	chmod 0664 /run/utmp
+}
+
+systemd_script

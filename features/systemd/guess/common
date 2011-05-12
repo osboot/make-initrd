@@ -1,0 +1,6 @@
+#!/bin/sh -efu
+
+. guess-functions
+
+[ ! -f /bin/systemd -a ! -f /sbin/systemd ] ||
+	guess_feature "systemd"
