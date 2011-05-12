@@ -5,7 +5,7 @@ plymouth_script() {
         # Run plymouth here only on vesa framebuffer
 	[ "${vga%x*}" = 0 ] || return 0
 
-	[ -c /dev/fb0 ] || mknod -m 0660 /dev/fb0 c 29 0
+	makenod fb0 c 29 0
 
 	mkdir -pm 0755 /dev/.systemd
 	: > /dev/.systemd/plymouth

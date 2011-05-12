@@ -1,9 +1,5 @@
 #!/bin/sh
 
-makenod() {
-	[ -e /dev/$1 ] || mknod /dev/$1 $2 $3 $4
-}
-
 msg=
 run() {
 	if ! mount -n -t devtmpfs -o mode=755,size=5m udevfs /dev 2>/dev/null; then

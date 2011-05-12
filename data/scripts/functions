@@ -16,6 +16,10 @@ verbose() {
 	[ -n "$QUIET" ] || message "$@"
 }
 
+makenod() {
+	[ -e /dev/$1 ] || mknod /dev/$1 $2 $3 $4
+}
+
 modprobe_check() {
 	local s
 	for s in /scripts/kmodules/*check-"$1"; do
