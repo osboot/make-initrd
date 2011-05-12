@@ -17,4 +17,6 @@ run() {
 	export handler_eventdir='/dev/.initramfs/handler-events'
 	export readonly=1
 	export RESCUE_MODULES=${RESCUE_MODULES-}
+	export EXPORT_FS=${EXPORT_FS-}
+	export UMOUNT_FS=${MOUNT_FS-}
 }

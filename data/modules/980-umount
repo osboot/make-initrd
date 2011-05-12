@@ -2,6 +2,8 @@
 
 msg='Umounting filesystems...'
 run() {
-	umount /sys
-	umount /proc
+	local mp
+	for mp in sys proc $UMOUNT_FS; do
+		umount "/$mp"
+	done
 }

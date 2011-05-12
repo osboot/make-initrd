@@ -1,26 +1,37 @@
 #!/bin/sh
 
+mount_move() {
+	if [ -d "/$1/$2" ]; then
+		/bin/mount --move "/$2" "/$1/$2"
+	else
+		/bin/umount "/$2"
+	fi
+}
+
 msg="Running init ($INIT)..."
 run() {
-	local var newroot prog
+	local var newroot prog mp
 
 	newroot="$rootmnt"
 	prog="$INIT"
 
-	# Clean environment
+	# Move filesystems to real root
+	for mp in $EXPORT_FS; do
+		mount_move "$newroot" "$mp"
+	done
+
+	# Clean initramfs environment
 	showenv > /dev/.initramfs/env
 
 	while read var; do
 		unset "${var%%=*}"
 	done < /dev/.initramfs/env
 
+	# Remove self data
 	/bin/rm -rf /dev/.initramfs
 
-	if [ -d "$newroot/dev" ]; then
-		/bin/mount --move /dev "$newroot/dev"
-	else
-		/bin/umount /dev
-	fi
+	# Move /dev to real root
+	mount_move "$newroot" dev
 
 	# Restore kernel environment
 	while read var; do
