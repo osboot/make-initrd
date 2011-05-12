@@ -1,0 +1,9 @@
+#!/bin/sh -efu
+
+. guess-functions
+
+devname="$1"; shift
+fstype="$1"; shift
+
+[ "$fstype" != 'btrfs' ] ||
+	guess_feature 'btrfs'
