@@ -1,16 +1,22 @@
 #!/bin/sh -efu
 
 plymouth_script() {
+	local args=
 	[ -z "$NOSPLASH" ] || return 0
         # Run plymouth here only on vesa framebuffer
 	[ "${vga%x*}" = 0 ] || return 0
 
 	makenod fb0 c 29 0
 
-	mkdir -pm 0755 /dev/.systemd
+	mkdir -m 0755 /dev/.systemd
 	: > /dev/.systemd/plymouth
 
-	/sbin/plymouthd
+	if [ -d /run ]; then
+		mkdir -m 0755 /run/plymouth
+		args='--pid-file /run/plymouth/pid'
+	fi
+
+	/sbin/plymouthd $args
 	/bin/plymouth --show-splash
 }
 
