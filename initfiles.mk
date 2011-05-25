@@ -29,6 +29,7 @@ PUT_FILES += \
 	/bin/ash \
 	/bin/cat \
 	/bin/cp \
+	/bin/chmod \
 	/bin/dmesg \
 	/bin/kill \
 	/bin/ln \
