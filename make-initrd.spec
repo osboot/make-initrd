@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.4.6
+Version: 0.5.0
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -141,6 +141,16 @@ plymouth module for %name
 %_datadir/%name/features/plymouth
 
 %changelog
+* Fri May 27 2011 Alexey Gladkov <legion@altlinux.ru> 0.5.0-alt1
+- initrd:
+  + Add the ability to export filesystems other than /dev.
+  + Change modules order.
+- plymouth:
+  + Add systemd > v20 support.
+- New:
+  + Add systemd support.
+  + Add btrfs support (ALT#25593).
+
 * Tue Apr 26 2011 Alexey Gladkov <legion@altlinux.ru> 0.4.6-alt1
 - scsi-mode: Add new feature (ALT#25388).
 - Fix nfsroot boot scheme.
