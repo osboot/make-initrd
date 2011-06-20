@@ -6,7 +6,6 @@ run() {
 	# Save the environment, to use it inside udev filters.
 	showenv -q > /dev/.initramfs/env
 
-	mkdir -p /dev/.udev/db/
 	udevd --daemon --resolve-names=never
 
 	udevadm control --property=STARTUP=1

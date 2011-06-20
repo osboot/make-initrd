@@ -18,7 +18,7 @@ Requires: ash libshell make sed module-init-tools coreutils grep glibc-utils
 Requires: kinit-utils >= 1.5.15-alt3
 
 # Move /dev from initrd to the real system.
-Requires: udev >= 164-alt2
+Requires: udev >= 167-alt1
 
 # installkernel
 Requires: bootloader-utils >= 0.4.10-alt1

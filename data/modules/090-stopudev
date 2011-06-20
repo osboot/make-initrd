@@ -6,7 +6,10 @@ run() {
 	udevadm settle
 	udevadm control --stop-exec-queue
 
-	read udevd_pid < /dev/.udev/udevd.pid
+	local udev_db
+	udev_db="$(udevadm info --run)"
+
+	read udevd_pid < $udev_db/udevd.pid
 	kill "$udevd_pid"
 
 	for sig in TERM KILL; do
@@ -19,5 +22,5 @@ run() {
 	done
 
 	# ignore any failed event because the init script will trigger again all events
-	rm -rf /dev/.udev
+	rm -rf $udev_db
 }
