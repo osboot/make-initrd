@@ -33,7 +33,7 @@ resolve_modalias() {
 		cut -d' ' -f2 |
 	while read mod; do
 		mod="${mod##*/}"
-		mod="${mod%.ko}"
+		mod="${mod%.ko*}"
 		printf '%s\n' "$mod"
 	done
 }

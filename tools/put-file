@@ -61,7 +61,7 @@ copy_elffile() {
 		return 0
 
 	# ignore all kernel modules.
-	[ -n "${fn##$kernel_modules_dir/*.ko}" ] ||
+	[ -n "${fn##$kernel_modules_dir/*.ko*}" ] ||
 		return 0
 
 	# avoid subshell incapsulation.
