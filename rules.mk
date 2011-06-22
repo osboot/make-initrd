@@ -1,7 +1,10 @@
 # Features include helper: skip a feature which has already loaded
-require = $(foreach req,$(1), \
-   $(eval include $(filter-out $(MAKEFILE_LIST), \
-      $(realpath $(req:%=$(FEATURESDIR)/%/rules.mk)))))
+# and skip globally disabled features
+require = \
+	$(foreach req,$(1), \
+		$(eval include $(filter-out \
+			$(MAKEFILE_LIST) $(foreach exl,$(DISABLE_FEATURES),$(realpath $(exl:%=$(FEATURESDIR)/%/rules.mk))), \
+			$(realpath $(req:%=$(FEATURESDIR)/%/rules.mk)))))
 
 genimage: install
 	@echo
