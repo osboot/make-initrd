@@ -14,7 +14,7 @@
 @copying
 This manual covers make-initrd, version @value{VERSION}.
 
-Copyright @copyright{} 2009, 2010 Alexey Gladkov.
+Copyright @copyright{} 2009, 2010, 2011 Alexey Gladkov.
 
 @quotation
 Permission is granted to copy, distribute and/or modify this document
@@ -150,6 +150,12 @@ This list can be specified in any order.
 
 @xref{Features}, for more info.
 
+@unnumberedsubsec DISABLE_FEATURES
+@cindex DISABLE_FEATURES
+This parameter lists the features that should NOT present in the image.
+
+@xref{Features}, for more info.
+
 @unnumberedsubsec AUTODETECT
 @cindex AUTODETECT
 This variable contains the list of subsystems which add
@@ -217,6 +223,8 @@ Follow features adds the ability to mount root filesystem:
 
 @itemize @bullet
 @item
+btrfs - from any partition with btrfs filesystem;
+@item
 luks - from LUKS partition;
 @item
 lvm - from LVM partition;
@@ -225,7 +233,9 @@ nfsroot - over NFS;
 @item
 multipath - from multipath devices;
 @item
-raid - from RAID partition.
+raid - from RAID partition;
+@item
+mdadm - from RAID using mdadm tool.
 @end itemize
 
 The Follow features adds the functionality not for to mount root
