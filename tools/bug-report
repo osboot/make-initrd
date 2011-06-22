@@ -11,10 +11,9 @@ mkdir -p -- \
 	"$reportdir"/proc \
 	#
 
-kern="$(uname -r)"
-if [ -f "/boot/config-$kern" ]; then
+if [ -f "${KERNEL_CONFIG-}" ]; then
 	cp -a \
-		"/boot/config-$kern" \
+		"$KERNEL_CONFIG" \
 		"$reportdir"/boot/
 fi
 
