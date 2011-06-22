@@ -96,6 +96,16 @@ AutoReq: noshell, noshebang
 %description plymouth
 plymouth module for %name
 
+%package mdadm
+Summary: mdadm module for %name
+Group: System/Base
+Requires: %name = %version-%release
+Requires: mdadm
+AutoReq: noshell, noshebang
+
+%description mdadm
+Mdadm module for %name
+
 %prep
 %setup -q
 
@@ -120,6 +130,7 @@ plymouth module for %name
 %exclude %_datadir/%name/features/nfsroot
 %exclude %_datadir/%name/features/multipath
 %exclude %_datadir/%name/features/plymouth
+%exclude %_datadir/%name/features/mdadm
 %doc README.ru
 
 %files devmapper
@@ -139,6 +150,9 @@ plymouth module for %name
 
 %files plymouth
 %_datadir/%name/features/plymouth
+
+%files mdadm
+%_datadir/%name/features/mdadm
 
 %changelog
 * Fri May 27 2011 Alexey Gladkov <legion@altlinux.ru> 0.5.0-alt1
