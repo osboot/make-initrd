@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.5.0
+Version: 0.6.0
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -21,6 +21,7 @@ Requires: module-init-tools >= 3.5-alt6
 Requires: kinit-utils >= 1.5.15-alt3
 
 # Move /dev from initrd to the real system.
+# 167: udevadm info --run
 Requires: udev >= 167-alt1
 
 # installkernel
@@ -158,6 +159,16 @@ Mdadm module for %name
 %_datadir/%name/features/mdadm
 
 %changelog
+* Fri Jun 24 2011 Alexey Gladkov <legion@altlinux.org> 0.6.0-alt1
+- bug-report: Add proper kernel config.
+- Dont use alt-specific modprobe option.
+- initrd:
+  + Remove hardcoded udev path.
+- New:
+  + Add mdadm feature.
+  + Add DISABLE_FEATURES variable.
+  + Add support for compressed kernel modules.
+
 * Fri May 27 2011 Alexey Gladkov <legion@altlinux.ru> 0.5.0-alt1
 - initrd:
   + Add the ability to export filesystems other than /dev.
