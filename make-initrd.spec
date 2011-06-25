@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.6.0
+Version: 0.6.1
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -156,6 +156,9 @@ Mdadm module for %name
 %_datadir/%name/features/mdadm
 
 %changelog
+* Sat Jun 25 2011 Alexey Gladkov <legion@altlinux.ru> 0.6.1-alt1
+- Revert "Dont use alt-specific modprobe option"
+
 * Fri Jun 24 2011 Alexey Gladkov <legion@altlinux.org> 0.6.0-alt1
 - bug-report: Add proper kernel config.
 - Dont use alt-specific modprobe option.
