@@ -12,7 +12,7 @@ fi
 list_module_files() {
 	local l f m a
 	for a; do
-		l="$(/sbin/modprobe --set-version="$kernel" --show-depends -i "$a" 2>/dev/null |
+		l="$(/sbin/modprobe --set-version="$kernel" --show-depends --ignore-all-commands "$a" 2>/dev/null |
 			cut -d' ' -f2)"
 
 		for m in ${blacklist-}; do

@@ -12,10 +12,7 @@ BuildRequires: help2man
 
 Provides: mkinitrd = 2:%version-%release
 
-Requires: ash libshell make sed coreutils grep glibc-utils
-
-# modprobe -i works properly
-Requires: module-init-tools >= 3.5-alt6
+Requires: ash libshell make sed module-init-tools coreutils grep glibc-utils
 
 # ipconfig -q
 Requires: kinit-utils >= 1.5.15-alt3
