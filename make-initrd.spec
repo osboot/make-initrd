@@ -1,6 +1,6 @@
 Name: make-initrd
 Version: 0.6.1
-Release: alt1
+Release: alt1.1
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -12,7 +12,7 @@ BuildRequires: help2man
 
 Provides: mkinitrd = 2:%version-%release
 
-Requires: ash libshell make sed module-init-tools coreutils grep glibc-utils
+Requires: ash libshell make sed module-init-tools coreutils grep glibc-utils file
 
 # ipconfig -q
 Requires: kinit-utils >= 1.5.15-alt3
@@ -156,6 +156,9 @@ Mdadm module for %name
 %_datadir/%name/features/mdadm
 
 %changelog
+* Wed Sep 14 2011 Michael Shigorin <mike@altlinux.org> 0.6.1-alt1.1
+- NMU: add file to Requires: (ALT#26134).
+
 * Sat Jun 25 2011 Alexey Gladkov <legion@altlinux.ru> 0.6.1-alt1
 - Revert "Dont use alt-specific modprobe option"
 
