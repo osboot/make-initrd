@@ -9,12 +9,12 @@ PUT_FILES += \
 	/lib/udev/cdrom_id \
 	/lib/udev/edd_id \
 	/lib/udev/firmware \
-	/lib/udev/path_id \
 	/lib/udev/scsi_id \
-	/lib/udev/usb_id
 
 PUT_FILES += \
-	$(shell test -f /lib/udev/vol_id && echo /lib/udev/vol_id)
+	$(shell test -f /lib/udev/vol_id && echo /lib/udev/vol_id) \
+	$(shell test -f /lib/udev/path_id && echo /lib/udev/path_id) \
+	$(shell test -f /lib/udev/usb_id && echo /lib/udev/usb_id)
 
 # System utilities
 PUT_FILES += \
