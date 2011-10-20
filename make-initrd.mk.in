@@ -44,7 +44,7 @@ all: check-for-root
 	rm -f -- $(TEMPDIR)/images; \
 	exit $$rc
 
-guess: check-for-root
+guess: depmod-host check-for-root
 	@mkdir -m 755 -p -- $(GUESSDIR)
 	@cat /dev/null > $(GUESSDIR)/modules
 	@cat /dev/null > $(GUESSDIR)/modalias
