@@ -45,8 +45,9 @@ show_help() {
 	   -N, --no-checks        don't check /dev, /proc and the kernel
 	                          modules directory;
 	   -c, --config=FILE      set custom config file;
-	   -b, --bootdir=DIR      set boot directory (default: $BOOTDIR);
-	   -k, --kernel=VERSION   set kernel version (default: $KERNEL);
+	   -b, --bootdir=DIR      set boot directory (default: @BOOTDIR@);
+	   -k, --kernel=VERSION   set kernel version (default: currently
+	                          running kernel);
 	   -v, --verbose          print a message for each action;
 	   -V, --version          output version information and exit;
 	   -h, --help             display this help and exit.
