@@ -1,6 +1,6 @@
 Name: make-initrd
-Version: 0.6.1
-Release: alt1.1
+Version: 0.6.2
+Release: alt1
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -156,6 +156,11 @@ Mdadm module for %name
 %_datadir/%name/features/mdadm
 
 %changelog
+* Wed Oct 26 2011 Alexey Gladkov <legion@altlinux.ru> 0.6.2-alt1
+- Add support for udev >= 174.
+- Run depmod before guess.
+- Fix man page (ALT#25963).
+
 * Wed Sep 14 2011 Michael Shigorin <mike@altlinux.org> 0.6.1-alt1.1
 - NMU: add file to Requires: (ALT#26134).
 
