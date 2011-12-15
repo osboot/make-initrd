@@ -3,34 +3,48 @@
 . sh-functions
 . guess-functions
 
-fstab="${FSTAB:-/etc/fstab}"
+process_devices() {
+	local rc=1
+
+	for device_file; do
+		majmin="$(get_majmin "$device_file")" ||
+			continue
+
+		# kernel >= 2.6.27
+		guess_device "/dev/block/$majmin"
+		rc=0
+	done
+
+	return $rc
+}
 
 t_fsname=
 t_fstype=
-eof=
-while [ -z "$eof" ]; do
-	read fsname fsdir fstype opts freq passno || eof=1
-	[ -n "${fsname##\#*}" ] ||
+for f in "${FSTAB:-/etc/fstab}" "${PROC_MOUNTS:-/proc/mounts}"; do
+	[ -f "$f" ] ||
 		continue
-	if [ "$fsdir" = "/" ]; then
+
+	eof=
+	while [ -z "$eof" ]; do
+		read fsname fsdir fstype opts freq passno ||
+			eof=1
+
+		[ -n "${fsname##\#*}" -a "$fsdir" = "/" -a "$fstype" != 'rootfs' ] ||
+			continue
+
+		device_list="$(get_device "$fsname")" ||
+			continue
+
+		process_devices $device_list ||
+			continue
+
 		t_fsname="$fsname"
 		t_fstype="$fstype"
-		break
-	fi
-done < "$fstab"
+		break 2
+	done < "$f"
+done
 
 [ -n "$t_fsname" ] ||
-	fatal "Unable to find name of mounted root file system"
-
-guess_fstype "$t_fsname" "$t_fstype"
-
-device_list="$(get_device "$t_fsname")" ||
 	fatal "Unable to find root device"
 
-for device_file in $device_list; do
-	majmin="$(get_majmin "$device_file")" ||
-		continue
-
-	# kernel >= 2.6.27
-	guess_device "/dev/block/$majmin"
-done
+guess_fstype "$t_fsname" "$t_fstype"
