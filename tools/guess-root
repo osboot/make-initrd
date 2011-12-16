@@ -3,6 +3,13 @@
 . sh-functions
 . guess-functions
 
+process_fstype() {
+	local device="$1"
+
+	fstype="$(blkid -o value -s TYPE -c /dev/null "$device")"
+	guess_fstype "$device" "$fstype"
+}
+
 process_devices() {
 	local rc=1
 
@@ -12,6 +19,8 @@ process_devices() {
 
 		# kernel >= 2.6.27
 		guess_device "/dev/block/$majmin"
+
+		process_fstype "$device_file"
 		rc=0
 	done
 
@@ -46,5 +55,3 @@ done
 
 [ -n "$t_fsname" ] ||
 	fatal "Unable to find root device"
-
-guess_fstype "$t_fsname" "$t_fstype"
