@@ -3,6 +3,8 @@
 mkdir /dev/.initramfs
 /bin/showenv > /dev/.initramfs/kern
 
+exec </dev/console >/dev/console 2>&1
+
 . /scripts/functions
 
 for f in /modules/*; do

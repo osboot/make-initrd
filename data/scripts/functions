@@ -45,7 +45,7 @@ shell() {
 
 	[ "$#" -eq 0 ] || message "$@"
 	message "This shell remains here for debug purposes. Press Ctrl-D to continue."
-	PS1='(initramfs) ' /bin/sh -i +m </dev/console >/dev/console 2>&1
+	PS1='(initramfs) ' /bin/sh -i +m
 
 	run_scripts 'post/shell'
 }
