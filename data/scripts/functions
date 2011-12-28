@@ -68,24 +68,33 @@ run_scripts() {
 
 load_modules() {
 	[ ! -e /conf/modules-"$1" ] ||
+	local m
 	while read m; do
 		[ -n "${m##\#*}" ] || continue
 		modprobe_check "$m"
 	done < /conf/modules-"$1"
 }
 
-dir_not_empty() {
-	local f
-	for f in "$1"/*; do
-		[ -e "$f" ] ||
-			return 1
-		return 0
-	done
+glob() {
+	local q=
+	[ "$1" != '-q' ] ||
+		{ q=1; shift; }
+	[ -e "$1" ] ||
+		return 1
+	[ -n "$q" ] ||
+		printf '%s\n' "$@"
 }
 
 mk_event() {
-	mkdir -p -- "$udev_eventdir/$1"
-	mktemp "$udev_eventdir/$1"/event.XXXXXXXXX
+	mktemp "$udev_eventdir/$1.XXXXXXXXX"
+}
+
+done_event() {
+	mv -f "$1" "${1%/*}/done.${1##*/}"
+}
+
+remove_done_events() {
+	rm -f "$1/done."* 2>/dev/null
 }
 
 devlinks_check() {
@@ -99,13 +108,16 @@ devlinks_check() {
 
 get_dev() {
 	local name retval value
-	retval="$1"; shift
+
+	if [ "$#" = 2 ]; then
+		retval="$1"; shift
+	fi
 	name="$1"; shift
 
-	[ -n "$retval" -a -n "$name" ] ||
-		return 1
-
 	case "$name" in
+		'')
+			return 1
+			;;
 		UUID=*)
 			[ "$ID_FS_UUID" = "${name#UUID=}" ] ||
 				return 1
@@ -131,10 +143,11 @@ get_dev() {
 				return 1
 			;;
 		*)
-			local value=$(( 0x$name ))
+			value=$(( 0x$name ))
 			[ "$MAJOR" = "$(( $value / 256 ))" -a "$MINOR" = "$(( $value % 256 ))" ] ||
 				return 1
 			;;
 	esac
-	eval "$retval=\"\$DEVNAME\""
+	[ -z "$retval" ] ||
+		eval "$retval=\"\$DEVNAME\""
 }

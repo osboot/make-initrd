@@ -1,0 +1,25 @@
+#!/bin/sh
+
+. /dev/.initramfs/env
+. /scripts/functions
+
+split() {
+	local IFS=:
+	set -- $1
+	path="$1" keydev="${2-}" luksdev="${3-}"
+}
+
+[ -n "$LUKS_KEY" ] ||
+	exit 0
+i=0
+while [ "$i" -lt "$LUKS_KEY" ]; do
+	path= keydev= luksdev=
+	eval "split \"\$LUKS_KEY$i\""
+	[ -n "$keydev" ] ||
+		continue
+	realdev=
+	get_dev realdev "$keydev" ||
+		continue
+	printf '%s\t%s\t%s\n' "$path" "$realdev" "$luksdev"
+	i=$(( $i + 1 ))
+done >> /etc/luks.keys

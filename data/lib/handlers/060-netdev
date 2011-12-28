@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. /scripts/functions
+
 cfg="ipconfig -q -t ${IPTIMEOUT:-30}"
 
 mcut() {
@@ -56,12 +58,10 @@ handler() {
 }
 
 rc=0
-for e in "$handler_eventdir"/netdev/*; do
-	[ -f "$e" ] ||
-		break
-
+for e in "$handler_eventdir"/netdev.*; do
 	( . "$e"; handler; ) ||
 		rc=1
+	done_event "$e"
 done
 
 exit $rc

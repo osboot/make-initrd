@@ -2,30 +2,89 @@
 
 . /scripts/functions
 
-nameluks=
-password=
+freekey() {
+	local d="/mnt/$1-key"
+	[ -d "$d" ] && umount "$d" && rmdir "$d" ||:
+}
+
+keyfile=
+findkey() {
+	local name="$1"
+	local path keydev luksdev mpoint
+
+	[ -f /etc/luks.keys ] ||
+		exit 2
+
+	while IFS='	' read path keydev luksdev; do
+		if [ -n "$luksdev" ]; then
+			get_dev "$luksdev" ||
+				continue
+		fi
+
+		mpoint=
+		if [ -n "$keydev" ]; then
+			mpoint="/mnt/$name-key"
+			mkdir -p -- "$mpoint"
+			mount -r "$keydev" "$mpoint" ||
+				return 1
+		fi
+
+		if [ ! -f "$mpoint/$path" ]; then
+			error "luks: $path: key file not found."
+			freekey "$name"
+			return 1
+		fi
+
+		keyfile="$mpoint/$path"
+		return 0
+
+	done < /etc/luks.keys
+
+	# Keyfile not found yet.
+	exit 2
+}
+
+readkey() {
+	if [ -n "$keyfile" ]; then
+		cat "$keyfile"
+	fi
+	freekey "$name"
+}
+
 handler() {
-	nameluks="${INIT_LUKS##*/}-luks"
+	nameluks="${LUKS_ROOT##*/}-luks"
 
 	# skip if $nameluks has already exist
-        dmsetup info "$nameluks" >/dev/null 2>&1 &&
-                return 0 ||:
+	! dmsetup info "$nameluks" >/dev/null 2>&1 ||
+		exit 0
 
-	cryptsetup --key-file=- luksOpen "$INIT_LUKS" "$nameluks"
+	if [ -n "${LUKS_KEY-}" ]; then
+		findkey "$nameluks" ||
+			exit 1
+
+		readkey "$nameluks" |
+			cryptsetup -d- luksOpen "$LUKS_ROOT" "$nameluks"
+	else
+		cryptsetup -d- luksOpen "$LUKS_ROOT" "$nameluks"
+	fi
 	retcode="$?"
 
 	if [ "$retcode" != "0" ]; then
 		error "Unable to activate LUKS: $retcode"
-		return 1
+		exit 1
 	fi
 }
 
-rc=0
-for e in "$handler_eventdir"/luks/*; do
-	[ -f "$e" ] || break
 
-	( . "$e"; handler; ) ||
-		rc=1
+rc=0
+for e in "$handler_eventdir"/luks.*; do
+	r=0
+	( . "$e"; handler; ) || r="$?"
+	case "$r" in
+		2) ;;
+		1) rc=1 ;;
+		0) done_event "$e" ;;
+	esac
 done
 
 exit $rc

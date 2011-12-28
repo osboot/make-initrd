@@ -1,0 +1,15 @@
+#!/bin/sh
+
+msg=
+run() {
+	local i LINE
+	[ -n "$LUKS_KEY" ] ||
+		return 0
+	i=0
+	while [ "$i" -lt "$LUKS_KEY" ]; do
+		eval "LINE=\"\$LUKS_KEY$i\""
+		[ -z "${LINE##*:*}" ] ||
+			printf '%s\n' "$LINE"
+		i=$(($i+1))
+	done > /etc/luks.keys
+}

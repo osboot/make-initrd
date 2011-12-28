@@ -3,6 +3,9 @@
 . /scripts/functions
 
 handler() {
+	[ ! -L /dev/.initramfs/root ] ||
+		return 0
+
 	. "/tmp/net-$INTERFACE.conf"
 
 	# get nfs root from dhcp
@@ -29,12 +32,10 @@ handler() {
 }
 
 rc=0
-for e in "$handler_eventdir"/nfsroot/*; do
-	[ -f "$e" ] && [ ! -L /dev/.initramfs/root ] ||
-		break
-
+for e in "$handler_eventdir"/nfsroot.*; do
 	( . "$e"; handler; ) ||
 		rc=1
+	done_event "$e"
 done
 
 exit $rc

@@ -5,6 +5,9 @@
 handler() {
 	local FSTYPE="${ROOTFSTYPE:-$ID_FS_TYPE}"
 
+	[ ! -L /dev/.initramfs/root ] ||
+		return 0
+
 	if ! mount "$roflag" -o ${ROOTFLAGS:-defaults} -t "$FSTYPE" "$INIT_ROOT" "$rootmnt"; then
 		error "Unable to mount $INIT_ROOT as $FSTYPE."
 		return 1
@@ -18,12 +21,10 @@ roflag=-w
 [ -z "$readonly" ] || roflag=-r
 
 rc=0
-for e in "$handler_eventdir"/rootdev/*; do
-	[ -f "$e" ] && [ ! -L /dev/.initramfs/root ] ||
-		break
-
+for e in "$handler_eventdir"/rootdev.*; do
 	( . "$e"; handler; ) ||
 		rc=1
+	done_event "$e"
 done
 
 exit $rc

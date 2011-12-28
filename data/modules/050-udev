@@ -14,7 +14,7 @@ run() {
 	# Load user-defined modules
 	load_modules postudev
 
-	local name eventgroup handler fail=
+	local handler fail=
 
 	# It is not currently limit since the execution of programs
         # takes time, which is not counted. But we do not want to use
@@ -34,15 +34,15 @@ run() {
 			break
 		fi
 
-		mkdir -p -- "$handler_eventdir"
-
-		for eventgroup in "$udev_eventdir"/*; do
-			[ ! -d "$eventgroup" ] ||
-				mv "$eventgroup" "$handler_eventdir"
-		done
+		if ! glob -q "$udev_eventdir"/*; then
+			sleep 0.1
+			sec=$(($sec-1))
+			continue
+		fi
 
 		# Some handler uses udev, so we have to start it before
 		# start queue handlers.
+		mv -- "$udev_eventdir"/* "$handler_eventdir"
 		udevadm control --start-exec-queue
 
 		# Run udev handlers
@@ -50,8 +50,7 @@ run() {
 			name="${handler##*/}"
 			name="${name#*-}"
 
-			[ -x "$handler" ] &&
-				dir_not_empty "$handler_eventdir/$name" ||
+			glob -q "$handler_eventdir/$name"* ||
 				continue
 
 			verbose "Running $name handler ..."
@@ -60,9 +59,7 @@ run() {
 				break 2
 			fi
 		done
-
-		# Remove processed files.
-		rm -rf -- "$handler_eventdir"
+		remove_done_events "$handler_eventdir"
 
 		sleep 0.1
 		sec=$(($sec-1))

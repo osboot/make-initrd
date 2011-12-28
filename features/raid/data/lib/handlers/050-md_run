@@ -1,4 +1,10 @@
 #!/bin/sh
 
+. /scripts/functions
+
 md_run $CMDLINE
 echo add > /sys/block/md0/uevent
+
+for e in "$handler_eventdir"/md_run.*; do
+	done_event "$e"
+done

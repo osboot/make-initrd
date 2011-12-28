@@ -1,4 +1,10 @@
 #!/bin/sh -efu
 
+. /scripts/functions
+
 /sbin/lvm vgscan >/dev/null
 /sbin/lvm vgchange -ay --noudevsync >/dev/null
+
+for e in "$handler_eventdir"/lvm.*; do
+	done_event "$e"
+done

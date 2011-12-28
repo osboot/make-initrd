@@ -13,10 +13,8 @@ handler() {
 	return 0
 }
 
-for e in "$handler_eventdir"/resume/*; do
-	[ -f "$e" ] ||
-		break
-
+for e in "$handler_eventdir"/resume.*; do
 	# Ignore the return code to continue normal boot
 	( . "$e"; handler; ) ||:
+	done_event "$e"
 done

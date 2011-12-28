@@ -19,7 +19,8 @@ run() {
 	makenod console c 5 1
 	makenod ptmx    c 5 2
 
-	mkdir -p /dev/.initramfs/udev-events /dev/pts /dev/shm
+	mkdir -p /dev/pts /dev/shm
+	mkdir -p "$udev_eventdir" "$handler_eventdir"
 
 	mount -n -t sysfs    -o nodev,noexec,nosuid none /sys
 	mount -n -t proc     -o nodev,noexec,nosuid none /proc

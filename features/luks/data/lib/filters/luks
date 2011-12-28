@@ -7,12 +7,13 @@ DEVNAME="/dev/${DEVNAME#/dev}"
 cryptsetup isLuks "$DEVNAME" ||
 	exit 0
 
-[ -n "$LUKSDEV" ] ||
-	LUKSDEV="$DEVNAME"
+[ -n "$LUKS_DEV" ] ||
+	LUKS_DEV="$DEVNAME"
 
 devluks=
-get_dev devluks "$LUKSDEV" ||
+get_dev devluks "$LUKS_DEV" ||
 	exit 0
 
 event="$(mk_event luks)"
-echo "INIT_LUKS='$devluks'" > "$event"
+showenv -q > "$event"
+echo "LUKS_ROOT='$devluks'" >> "$event"
