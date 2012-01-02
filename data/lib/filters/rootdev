@@ -6,9 +6,6 @@
 devroot=
 get_dev devroot "$ROOT" ||
 	exit 0
-
-if [ -n "$devroot" ]; then
-	event="$(mk_event rootdev)"
-	showenv -q > "$event"
-	echo "INIT_ROOT='$devroot'" >> "$event"
-fi
+event="$(mk_event rootdev)"
+showenv -q > "$event"
+echo "INIT_ROOT='$devroot'" >> "$event"
