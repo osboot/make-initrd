@@ -30,13 +30,14 @@ findkey() {
 		fi
 
 		if [ ! -f "$mnt/$path" ]; then
-			error "luks: $path: key file not found."
+			error "luks: $path: keyfile not found."
 			freekey "$name"
 			exit 1
 		fi
 
 		keyfile="$mnt/$path"
-		return
+		verbose "Keyfile '$path' for '${LUKS_ROOT#/dev/}' encrypted partition."
+		return 0
 
 	done < /etc/luks.keys
 
