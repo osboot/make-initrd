@@ -14,8 +14,9 @@ Provides: mkinitrd = 2:%version-%release
 
 Requires: ash libshell make sed module-init-tools coreutils grep glibc-utils file
 
-# ipconfig -q
-Requires: kinit-utils >= 1.5.15-alt3
+# ipconfig -q: kinit-utils-1.5.15-alt3
+# run-init -e: kinit-utils-1.5.17-alt2
+Requires: kinit-utils >= 1.5.17-alt2
 
 # Move /dev from initrd to the real system.
 # 167: udevadm info --run
