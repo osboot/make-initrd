@@ -4,7 +4,12 @@ msg='Starting udevd...'
 
 run() {
 	# Save the environment, to use it inside udev filters.
-	showenv -q > /dev/.initramfs/env
+	showenv -q |
+	while read l; do
+		s="${l%%=*}"
+		[ -z "${s##*[!A-Za-z0-9_]*}" ] ||
+			printf '%s\n' "$l"
+	done > /dev/.initramfs/env
 
 	udevd --daemon --resolve-names=never
 

@@ -10,34 +10,13 @@ mount_move() {
 
 msg="Running init ($INIT)..."
 run() {
-	local var newroot prog mp
-
-	newroot="$rootmnt"
-	prog="$INIT"
+	local mp
 
 	# Move filesystems to real root
-	for mp in $EXPORT_FS; do
-		mount_move "$newroot" "$mp"
+	for mp in dev $EXPORT_FS; do
+		mount_move "$rootmnt" "$mp"
 	done
 
-	# Clean initramfs environment
-	showenv > /dev/.initramfs/env
-
-	while read var; do
-		unset "${var%%=*}"
-	done < /dev/.initramfs/env
-
-	# Remove self data
-	/bin/rm -rf /dev/.initramfs
-
-	# Move /dev to real root
-	mount_move "$newroot" dev
-
-	# Restore kernel environment
-	while read var; do
-		export "$var"
-	done < /dev/.initramfs/kern
-
 	# Chain to real filesystem
-	exec /bin/run-init "$newroot" "$prog" "$@" </dev/console >/dev/console 2>&1
+	exec /bin/run-init -e /dev/.initramfs/kern "$rootmnt" "$INIT" "$@"
 }
