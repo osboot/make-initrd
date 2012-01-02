@@ -10,7 +10,7 @@ freekey() {
 keyfile=
 findkey() {
 	local name="$1"
-	local path keydev luksdev mpoint
+	local path keydev luksdev mnt
 
 	[ -f /etc/luks.keys ] ||
 		exit 2
@@ -21,22 +21,22 @@ findkey() {
 				continue
 		fi
 
-		mpoint=
+		mnt=
 		if [ -n "$keydev" ]; then
-			mpoint="/mnt/$name-key"
-			mkdir -p -- "$mpoint"
-			mount -r "$keydev" "$mpoint" ||
-				return 1
+			mnt="/mnt/$name-key"
+			mkdir -p -- "$mnt"
+			mount -r "$keydev" "$mnt" ||
+				exit 1
 		fi
 
-		if [ ! -f "$mpoint/$path" ]; then
+		if [ ! -f "$mnt/$path" ]; then
 			error "luks: $path: key file not found."
 			freekey "$name"
-			return 1
+			exit 1
 		fi
 
-		keyfile="$mpoint/$path"
-		return 0
+		keyfile="$mnt/$path"
+		return
 
 	done < /etc/luks.keys
 
@@ -48,7 +48,7 @@ readkey() {
 	if [ -n "$keyfile" ]; then
 		cat "$keyfile"
 	fi
-	freekey "$name"
+	freekey "$1"
 }
 
 handler() {
@@ -59,9 +59,7 @@ handler() {
 		exit 0
 
 	if [ -n "${LUKS_KEY-}" ]; then
-		findkey "$nameluks" ||
-			exit 1
-
+		findkey "$nameluks"
 		readkey "$nameluks" |
 			cryptsetup -d- luksOpen "$LUKS_ROOT" "$nameluks"
 	else
@@ -74,7 +72,6 @@ handler() {
 		exit 1
 	fi
 }
-
 
 rc=0
 for e in "$handler_eventdir"/luks.*; do

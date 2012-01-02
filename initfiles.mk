@@ -42,6 +42,7 @@ PUT_FILES += \
 	/bin/umount \
 	/bin/readlink \
 	/bin/rm \
+	/bin/rmdir \
 	/bin/sleep
 
 # initrd specific utilities

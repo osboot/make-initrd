@@ -15,11 +15,11 @@ i=0
 while [ "$i" -lt "$LUKS_KEY" ]; do
 	path= keydev= luksdev=
 	eval "split \"\$LUKS_KEY$i\""
+	i=$(( $i + 1 ))
 	[ -n "$keydev" ] ||
 		continue
 	realdev=
 	get_dev realdev "$keydev" ||
 		continue
 	printf '%s\t%s\t%s\n' "$path" "$realdev" "$luksdev"
-	i=$(( $i + 1 ))
 done >> /etc/luks.keys

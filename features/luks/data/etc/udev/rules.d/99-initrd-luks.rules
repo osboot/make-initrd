@@ -1,1 +1,2 @@
 SUBSYSTEM=="block", ACTION!="remove", RUN+="/lib/filters/luks"
+SUBSYSTEM=="block", ACTION!="remove", RUN+="/lib/filters/lukskeys"
