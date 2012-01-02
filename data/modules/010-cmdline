@@ -1,6 +1,20 @@
 #!/bin/sh
 
 msg=
+
+unquote() {
+	local var="$1" out="$2"
+	if [ -z "${out##*\'}${out%%\'*}" ]; then
+		out="${out#\'}"
+		out="${out%\'}"
+	elif [ -z "${out##*\"}${out%%\"*}" ]; then
+		out="${out#\"}"
+		out="${out%\"}"
+	fi
+	eval "$var=\"\$out\""
+}
+
+
 parse_attrs() {
 	multival=
 	case "$n" in
@@ -10,14 +24,14 @@ parse_attrs() {
 }
 
 export_multi() {
-	local i= n="${1%=*}" v="${1#*=}"
+	local i= n="$1" v="$2"
 	eval "i=\${$n:-0}"
 	eval export "$n$i=\"\$v\""
 	eval export "$n=$(($i+1))"
 }
 
 run() {
-	local x s n l=
+	local x s n v l=
 	local CMDLINE_PARAMS
 
 	read CMDLINE </proc/cmdline
@@ -39,9 +53,11 @@ run() {
 				RO)	readonly=1	;;
 				$n)	export "$s=1"	;;
 				$n=*)
+					v="${s#*=}"
+					unquote v "$v"
 					[ -n "$multival" ] &&
-						export_multi "$s" ||
-						export "$s"
+						export_multi "$n" "$v" ||
+						eval export "$n=\"\$v\""
 					;;
 			esac
 		done
