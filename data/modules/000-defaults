@@ -18,5 +18,5 @@ run() {
 	export readonly=1
 	export RESCUE_MODULES=${RESCUE_MODULES-}
 	export EXPORT_FS=${EXPORT_FS-}
-	export UMOUNT_FS=${MOUNT_FS-}
+	export UMOUNT_FS=${UMOUNT_FS-}
 }
