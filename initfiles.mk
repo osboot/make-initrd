@@ -43,7 +43,8 @@ PUT_FILES += \
 	/bin/readlink \
 	/bin/rm \
 	/bin/rmdir \
-	/bin/sleep
+	/bin/sleep \
+	/usr/bin/logger
 
 # initrd specific utilities
 PUT_DIRS += /lib/initrd
