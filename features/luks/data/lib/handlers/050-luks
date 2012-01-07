@@ -59,17 +59,21 @@ handler() {
 	! dmsetup info "$nameluks" >/dev/null 2>&1 ||
 		exit 0
 
+	local rc=0
 	if [ -n "${LUKS_KEY-}" ]; then
 		findkey "$nameluks"
 		readkey "$nameluks" |
 			cryptsetup -d- luksOpen "$LUKS_ROOT" "$nameluks"
 	else
-		cryptsetup -d- luksOpen "$LUKS_ROOT" "$nameluks"
+		rc=2
+		while [ "$rc" = 2 ]; do
+			cryptsetup -d- luksOpen "$LUKS_ROOT" "$nameluks"
+			rc="$?"
+		done
 	fi
-	retcode="$?"
 
-	if [ "$retcode" != "0" ]; then
-		error "Unable to activate LUKS: $retcode"
+	if [ "$rc" != 0 ]; then
+		error "Unable to activate LUKS: $rc"
 		exit 1
 	fi
 }
