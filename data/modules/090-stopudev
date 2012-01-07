@@ -9,18 +9,6 @@ run() {
 	local udev_db
 	udev_db="$(udevadm info --run)"
 
-	read udevd_pid < $udev_db/udevd.pid
-	kill "$udevd_pid"
-
-	for sig in TERM KILL; do
-		for proc in /proc/[0-9]*; do
-			[ "$proc/exe" -ef "/sbin/udevd" ] ||
-				continue
-			kill -s "$sig" "${proc#/proc/}"
-		done
-		sleep 0.1
-	done
-
 	# ignore any failed event because the init script will trigger again all events
 	rm -rf $udev_db
 }

@@ -21,6 +21,7 @@ PUT_FILES += \
 	/sbin/blkid \
 	/sbin/chroot \
 	/sbin/depmod \
+	/sbin/killall5 \
 	/sbin/lsmod \
 	/sbin/modprobe \
 	/sbin/reboot \

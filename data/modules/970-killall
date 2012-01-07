@@ -1,0 +1,13 @@
+#!/bin/sh
+
+msg='Killing all remaining processes...'
+run() {
+	local seq=5
+	if killall5 -15; then
+		for seq in 1 2 3 4 5; do
+			killall5 -18 || break
+		done
+		sleep 0.1
+	fi
+	[ "$seq" != 5 ] || killall5 -9
+}
