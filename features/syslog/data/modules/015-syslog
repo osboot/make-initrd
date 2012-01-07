@@ -1,0 +1,7 @@
+#!/bin/sh
+
+msg='Starting sysklog...'
+run() {
+	syslogd -m0
+	klogd -s -c1 -x
+}
