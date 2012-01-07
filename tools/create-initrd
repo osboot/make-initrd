@@ -19,6 +19,19 @@ mkdir $verbose -p -- \
 	./var/lock \
 	#
 
+verbose "Copying files from libnss_files.so* ..."
+find /lib -name 'libnss_files.so*' -exec put-file '{}' '+'
+
+echo 'root:x:0:0::/root:/bin/sh' >./etc/passwd
+echo 'root:x:0:' >./etc/group
+echo '' >./etc/services
+
+cat >./etc/nsswitch.conf <<EOF
+passwd: files
+group: files
+services: files
+EOF
+
 [ -z "${PUT_DIRS-}"  ] || put-tree $PUT_DIRS
 [ -z "${PUT_FILES-}" ] || put-file $PUT_FILES
 
