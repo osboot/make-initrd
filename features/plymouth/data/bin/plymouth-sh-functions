@@ -1,0 +1,27 @@
+#!/bin/sh
+
+if [ -z "${__plymouth_sh_functions-}" ]; then
+__plymouth_sh_functions=1
+
+run_plymouth() {
+	[ -z "$NOSPLASH" ] || return 0
+
+	local pid args=
+
+	mkdir -m 0755 /dev/.systemd
+	: > /dev/.systemd/plymouth
+
+	pid=/dev/.initramfs/plymouth.pid
+	if [ -d /run ]; then
+		pid=/run/plymouth/pid
+		mkdir -m 0755 /run/plymouth
+		args="--pid-file $pid"
+	fi
+
+	/sbin/plymouthd $args
+	/bin/plymouth --show-splash
+
+	omit_pid "$(cat "$pid")"
+}
+
+fi

@@ -1,25 +1,11 @@
 #!/bin/sh -efu
 
+. plymouth-sh-functions
+
 plymouth_script() {
-	local pid args=
-	[ -z "$NOSPLASH" ] || return 0
 	# Run plymouth here if it looks like KMS framebuffer
 	[ "${vga%x*}" = "0" ] && return 0
-
-	mkdir -m 0755 /dev/.systemd
-	: > /dev/.systemd/plymouth
-
-	pid=/dev/.initramfs/plymouth.pid
-	if [ -d /run ]; then
-		pid=/run/plymouth/pid
-		mkdir -m 0755 /run/plymouth
-		args="--pid-file $pid"
-	fi
-
-	/sbin/plymouthd $args
-	/bin/plymouth --show-splash
-
-	omit_pid "$(cat "$pid")"
+	run_plymouth
 }
 
 plymouth_script
