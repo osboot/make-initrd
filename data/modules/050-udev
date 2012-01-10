@@ -1,6 +1,12 @@
 #!/bin/sh
 
 msg='Starting udevd...'
+check() {
+	local f
+	for f in "/lib/$1"/*; do
+		"$f" ${2-} || return 1
+	done
+}
 
 run() {
 	# Save the environment, to use it inside udev filters.
@@ -33,11 +39,8 @@ run() {
 		# Stop queue to avoid race
 		udevadm control --stop-exec-queue
 
-		# Our main goal is mounting root.
-		if [ -e "$rootmnt/$INIT" ]; then
-			udevadm control --start-exec-queue
+		! check success -q ||
 			break
-		fi
 
 		if ! glob -q "$udev_eventdir"/*; then
 			sleep 0.1
@@ -75,8 +78,6 @@ run() {
 		return 1
 	fi
 
-	if [ ! -e "$rootmnt/$INIT" ]; then
-		error "Unable to mount root"
+	check success ||
 		return 1
-	fi
 }

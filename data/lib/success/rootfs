@@ -1,0 +1,9 @@
+#!/bin/sh
+
+. /scripts/functions
+
+# Our main goal is mounting root.
+if [ ! -e "$rootmnt/$INIT" ]; then
+	[ "$#" = 1 ] || error "Unable to mount root"
+	exit 1
+fi
