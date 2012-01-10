@@ -13,6 +13,7 @@ run() {
 	export STOP=','
 	export IGNORE=','
 	export rootmnt='/root'
+	export omitproc='/dev/.initramfs/omitproc'
 	export udev_eventdir='/dev/.initramfs/udev-events'
 	export handler_eventdir='/dev/.initramfs/handler-events'
 	export readonly=1

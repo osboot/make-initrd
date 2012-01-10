@@ -21,6 +21,7 @@ run() {
 
 	mkdir -p /dev/pts /dev/shm
 	mkdir -p "$udev_eventdir" "$handler_eventdir"
+	echo > "$omitproc"
 
 	mount -n -t sysfs    -o nodev,noexec,nosuid none /sys
 	mount -n -t proc     -o nodev,noexec,nosuid none /proc

@@ -97,6 +97,10 @@ remove_done_events() {
 	rm -f "$1/done."* 2>/dev/null
 }
 
+omit_pid() {
+	printf '%s\n' "$@" >> "$omitproc"
+}
+
 devlinks_check() {
 	local l
 	for l in $DEVLINKS; do
