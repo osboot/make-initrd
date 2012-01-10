@@ -5,6 +5,7 @@ run() {
 	# Stop udevd, we'll miss a few events while we run init, but we catch up
 	udevadm settle
 	udevadm control --stop-exec-queue
+	udevadm control --exit
 
 	local udev_db
 	udev_db="$(udevadm info --run)"
