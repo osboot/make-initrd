@@ -9,7 +9,7 @@ fi
 
 found=
 if [ -f "$SYSFS_PATH/$1"/uevent ]; then
-	! egrep '^DRIVER=(ub|usb-storage)$' "$SYSFS_PATH/$1"/uevent ||
+	! egrep -qs '^DRIVER=(ub|usb-storage)$' "$SYSFS_PATH/$1"/uevent ||
 		found=1
 fi
 
