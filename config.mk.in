@@ -65,6 +65,7 @@ IMAGE_SUFFIX		?=
 IMAGEFILE		?= $(BOOTDIR)/initrd-$(KERNEL)$(IMAGE_SUFFIX).img
 FIRMWARE_DIRS		?= /lib/firmware/updates /lib/firmware /lib/firmware/$(KERNEL)/updates /lib/firmware/$(KERNEL)
 VERBOSE			?=
+MOUNTPOINTS		?= /
 FSTAB			?= /etc/fstab
 BLACKLIST_MODULES	?=
 

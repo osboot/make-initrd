@@ -27,31 +27,44 @@ process_devices() {
 	return $rc
 }
 
-t_fsname=
-t_fstype=
-for f in "${FSTAB:-/etc/fstab}" "${PROC_MOUNTS:-/proc/mounts}"; do
-	[ -f "$f" ] ||
+process_mpoint() {
+	local mpoint="$1"
+	local t_fsname= t_fstype=
+
+	for f in "${FSTAB:-/etc/fstab}" "${PROC_MOUNTS:-/proc/mounts}"; do
+		[ -f "$f" ] ||
+			continue
+
+		local fsname fsdir fstype opts freq passno
+		local device_list
+		local eof=
+		while [ -z "$eof" ]; do
+			read fsname fsdir fstype opts freq passno ||
+				eof=1
+
+			[ -n "${fsname##\#*}" -a "$fsdir" = "$mpoint" -a "$fstype" != 'rootfs' ] ||
+				continue
+
+			device_list="$(get_device "$fsname")" ||
+				continue
+
+			process_devices $device_list ||
+				continue
+
+			t_fsname="$fsname"
+			t_fstype="$fstype"
+			break 2
+		done < "$f"
+	done
+
+	[ -n "$t_fsname" ] ||
+		fatal "Unable to find device for '$mpoint' mount point"
+}
+
+pass=' '
+for m in ${MOUNTPOINTS-}; do
+	[ -n "${pass##* $m *}" ] ||
 		continue
-
-	eof=
-	while [ -z "$eof" ]; do
-		read fsname fsdir fstype opts freq passno ||
-			eof=1
-
-		[ -n "${fsname##\#*}" -a "$fsdir" = "/" -a "$fstype" != 'rootfs' ] ||
-			continue
-
-		device_list="$(get_device "$fsname")" ||
-			continue
-
-		process_devices $device_list ||
-			continue
-
-		t_fsname="$fsname"
-		t_fstype="$fstype"
-		break 2
-	done < "$f"
+	process_mpoint "$m"
+	pass="$pass$m "
 done
-
-[ -n "$t_fsname" ] ||
-	fatal "Unable to find root device"
