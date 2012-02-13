@@ -9,6 +9,19 @@ if [ "${1-}" = '--optional' ]; then
 	shift
 fi
 
+check_builtin() {
+	local n="$1" builtin
+
+	builtin="$kernel_modules_dir/modules.builtin"
+	[ -f "$builtin" ] ||
+		return 1
+
+	[ -n "${n##*[_-]*}" ] ||
+		n="$(printf '%s\n' "$n" |tr '_-' '.')"
+
+	grep -xqs "^.*/$n\\.ko\$" "$builtin"
+}
+
 list_module_files() {
 	local l f m a
 	for a; do
@@ -78,6 +91,11 @@ add_module() {
 	local blocked_module= m list name="$1"
 	name="${name##*/}"
 	name="${name%.ko*}"
+
+	if check_builtin "$name"; then
+		verbose "Builtin module \"$name.ko\""
+		return 0
+	fi
 
 	list="$(list_module_files "$name")" ||
 		blocked_module=1
