@@ -67,8 +67,8 @@ run_scripts() {
 }
 
 load_modules() {
-	[ ! -e /conf/modules-"$1" ] ||
 	local m
+	[ ! -e /conf/modules-"$1" ] ||
 	while read m; do
 		[ -n "${m##\#*}" ] || continue
 		modprobe_check "$m"
