@@ -57,22 +57,18 @@ if [ -f /etc/modprobe.conf ]; then
 	put-file /etc/modprobe.conf
 fi
 
-if [ -d /etc/modprobe.d ]; then
-	verbose "Copying files from /etc/modprobe.d ..."
-	find -L /etc/modprobe.d \
-		\( \
-			\! -name '*.rpm*' -a \
-			\! -name '*~' \
-		\) \
-		-exec put-file '{}' '+'
-fi
-
 for d in lib etc; do
-	[ -d "/$d/udev/initramfs-rules.d" ] ||
-		continue
-	verbose "Copying files from /$d/udev/initramfs-rules.d ..."
-	find -L "/$d/udev/initramfs-rules.d" \
-			-name '*.rules' \
-		-exec cp -aLt ./etc/udev/rules.d -- '{}' '+'
-	break
+	if [ -d "/$d/modprobe.d" ]; then
+		verbose "Copying files from $d/modprobe.d ..."
+		find -L "/$d/modprobe.d" \
+				-name '*.conf' \
+			-exec cp -aLt ./etc/modprobe.d -- '{}' '+'
+	if
+
+	if [ -d "/$d/udev/initramfs-rules.d" ]; then
+		verbose "Copying files from /$d/udev/initramfs-rules.d ..."
+		find -L "/$d/udev/initramfs-rules.d" \
+				-name '*.rules' \
+			-exec cp -aLt ./etc/udev/rules.d -- '{}' '+'
+	fi
 done
