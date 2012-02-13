@@ -20,7 +20,10 @@ mkdir $verbose -p -- \
 	#
 
 verbose "Copying files from libnss_files.so* ..."
-find /lib -name 'libnss_files.so*' -exec put-file '{}' '+'
+for lib in /lib64 /lib; do
+	[ ! -d "$lib" ] ||
+		find $lib -mindepth 1 -maxdepth 1 -name 'libnss_files.so*' -exec put-file '{}' '+'
+done
 
 echo 'root:x:0:0::/root:/bin/sh' >./etc/passwd
 echo 'root:x:0:' >./etc/group
