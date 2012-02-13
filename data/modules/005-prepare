@@ -23,8 +23,14 @@ run() {
 	mkdir -p "$udev_eventdir" "$handler_eventdir"
 	echo > "$omitproc"
 
-	mount -n -t sysfs    -o nodev,noexec,nosuid none /sys
-	mount -n -t proc     -o nodev,noexec,nosuid none /proc
+	mount -n -t sysfs -o nodev,noexec,nosuid none  /sys
+	mount -n -t proc  -o nodev,noexec,nosuid none  /proc
+	mount -n -t tmpfs -o mode=755,size=5m    runfs /run
+
+	mkdir -p /run/lock/subsys /run/user /run/udev
+
+	:> /run/utmp
+	chmod 0664 /run/utmp
 
 	echo > /proc/sys/kernel/hotplug
 	echo /sbin/modprobe > /proc/sys/kernel/modprobe

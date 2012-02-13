@@ -13,6 +13,7 @@ mkdir $verbose -p -- \
 	./lib/udev \
 	./mnt \
 	./root \
+	./run \
 	./proc \
 	./sys \
 	./tmp \

@@ -1,1 +1,0 @@
-SYSTEMD_DATADIR	= $(FEATURESDIR)/systemd/data

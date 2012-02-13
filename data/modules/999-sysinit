@@ -13,7 +13,7 @@ run() {
 	local mp
 
 	# Move filesystems to real root
-	for mp in dev $EXPORT_FS; do
+	for mp in dev run $EXPORT_FS; do
 		mount_move "$rootmnt" "$mp"
 	done
 
