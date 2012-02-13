@@ -64,7 +64,7 @@ for d in lib etc; do
 		find -L "/$d/modprobe.d" \
 				-name '*.conf' \
 			-exec cp -aLt ./etc/modprobe.d -- '{}' '+'
-	if
+	fi
 
 	if [ -d "/$d/udev/initramfs-rules.d" ]; then
 		verbose "Copying files from /$d/udev/initramfs-rules.d ..."
