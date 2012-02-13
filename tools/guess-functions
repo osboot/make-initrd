@@ -29,7 +29,7 @@ guess_feature() {
 }
 
 resolve_modalias() {
-	/sbin/modprobe -q --set-version="$kernel" --show-depends --ignore-all-commands "$1" |
+	/sbin/modprobe -q --set-version="$kernel" --show-depends -i "$1" |
 		cut -d' ' -f2 |
 	while read mod; do
 		mod="${mod##*/}"
