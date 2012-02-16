@@ -28,16 +28,6 @@ guess_feature() {
 	printf '%s\n' "$1" >> "$guessdir/features"
 }
 
-resolve_modalias() {
-	/sbin/modprobe -q --set-version="$kernel" --show-depends -i "$1" |
-		cut -d' ' -f2 |
-	while read mod; do
-		mod="${mod##*/}"
-		mod="${mod%.ko*}"
-		printf '%s\n' "$mod"
-	done
-}
-
 guess_fstype() {
 	for m in ${GUESS_FSTYPE_SCRIPTS-}; do
 		"$m" "$@"

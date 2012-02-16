@@ -3,9 +3,8 @@
 . guess-functions
 
 if [ -n "${RESOLVE_MODALIAS-}" ]; then
-	while read -r alias; do
-		resolve_modalias "$alias"
-	done < "$guessdir/modalias" >> "$guessdir/modules"
+	xargs -r depinfo --set-version="$kernel" --no-prefix --no-firmware < "$guessdir/modalias" 2>/dev/null |
+		sort -u >> "$guessdir/modules"
 	> "$guessdir/modalias"
 fi
 

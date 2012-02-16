@@ -1,9 +1,11 @@
-CC   = gcc
+CFLAGS = -Wall -Wextra -W -Wshadow -Wcast-align \
+	-Wwrite-strings -Wconversion -Waggregate-return -Wstrict-prototypes \
+	-Wmissing-prototypes -Wmissing-declarations -Wmissing-noreturn \
+	-Wmissing-format-attribute -Wredundant-decls -Wdisabled-optimization \
+	-Wno-pointer-arith
+LIBS   = -lkmod
 
-PROG = gen_init_cpio
-SRCS = gen_init_cpio.c
-
-CFLAGS = -Wall -Wextra
+PROGS = gen_init_cpio depinfo
 
 bindir  ?= /usr/bin
 DESTDIR ?=
@@ -13,14 +15,17 @@ MKDIR_P ?= mkdir -p
 
 .PHONY:	all install clean
 
-all: $(PROG)
+all: $(PROGS)
 
-$(PROG):
-	$(CC) $(CFLAGS) -o $@ $@.c
+gen_init_cpio: gen_init_cpio.c
+	$(CC) $(CFLAGS) -o $@ $<
 
-install: $(PROG)
+depinfo: kmod-depinfo.c
+	$(CC) $(CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $< $(LIBS)
+
+install: $(PROGS)
 	$(MKDIR_P) -- $(DESTDIR)$(bindir)
-	$(INSTALL) -p -m755 $(PROG) $(DESTDIR)$(bindir)/
+	$(INSTALL) -p -m755 $(PROGS) $(DESTDIR)$(bindir)/
 
 clean:
-	rm -f -- $(OBJS) $(PROG)
+	rm -f -- $(PROGS)

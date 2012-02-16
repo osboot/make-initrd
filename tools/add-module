@@ -22,92 +22,60 @@ check_builtin() {
 	grep -xqs "^.*/$n\\.ko\$" "$builtin"
 }
 
-list_module_files() {
-	local l f m a
-	for a; do
-		l="$(/sbin/modprobe --set-version="$kernel" --show-depends -i "$a" 2>/dev/null |
-			cut -d' ' -f2)"
+check_blacklist() {
+	local m f
 
-		for m in ${blacklist-}; do
-			for f in "$@" $l; do
-				f="${f##*/}"
-				f="$(normalize_modname "${f%.ko*}")"
-				[ "$f" = "$m" ] ||
-					continue
-				verbose "Module '$a' is ignored because the '$m' is blacklisted"
-				return 1
-			done
-		done
+	f="${f##*/}"
+	f="$(normalize_modname "${f%.ko*}")"
 
-		printf '%s\n' "$l"
+	for m in ${blacklist-}; do
+		[ "$f" != "$m" ] || return
 	done
-}
-
-add_module_firmware() {
-	local mod_name mod_path list name d fwfile
-
-	mod_name="$1"; shift
-	mod_path="$1"; shift
-
-	list="$(modinfo -F firmware "$mod_path")" ||
-		return 0
-
-	for name in $list; do
-		fwfile=
-		for d in $FIRMWARE_DIRS; do
-			if [ -r "$d/$name" ]; then
-				fwfile="$d/$name"
-				break
-			fi
-		done
-
-		if [ -z "$fwfile" ]; then
-			message "Firmware file \"$name\" for module \"$mod_name\" not found"
-			continue
-		fi
-		[ ! -f "$rootdir/lib/firmware/$name" ] ||
-			continue
-
-		verbose "Adding firmware file \"$fwfile\" for module \"$mod_name\""
-		install -pD -- "$fwfile" "$rootdir/lib/firmware/$name"
-	done
-}
-
-add_module_file() {
-	local path="$1" name="$1"
-	name="${name##*/}"
-	name="${name%.ko*}"
-
-	[ ! -f "$rootdir/$path" ] ||
-		return 0
-
-	verbose "Adding module \"$name.ko\""
-	put-file "$path"
-
-	add_module_firmware "$name" "$path"
+	return 1
 }
 
 add_module() {
-	local blocked_module= m list name="$1"
-	name="${name##*/}"
-	name="${name%.ko*}"
+	local name n v
+	name="$1"
 
 	if check_builtin "$name"; then
-		verbose "Builtin module \"$name.ko\""
+		verbose "Builtin module \"$name\""
 		return 0
 	fi
 
-	list="$(list_module_files "$name")" ||
-		blocked_module=1
+	local modules= firmware=
 
-	[ -n "$list" -o -n "$blocked_module" -o -n "$ignore_missing" ] ||
+	while read n v; do
+		case "$n" in
+			module)   modules="$modules $v"   ;;
+			firmware) firmware="$firmware $v" ;;
+		esac
+	done <<-EOF
+		`depinfo "$name" 2>/dev/null |
+			sort -u`
+	EOF
+
+	if [ -z "$modules" ]; then
+		[ -z "$ignore_missing" ] ||
+			return 0
 		fatal "No module \"$name\" found for kernel $kernel"
+	fi
 
-	printf '%s\n' "$list" |
-	while read m; do
-		[ -n "$m" ] ||
+	for n in $modules; do
+		check_blacklist "$n" ||
 			continue
-		add_module_file "$m"
+		verbose "Module '$name' is ignored because the '$n' is blacklisted"
+		return
+	done
+
+	for n in $modules; do
+		verbose "Adding module \"$n\""
+		put-file "$n"
+	done
+
+	for n in $firmware; do
+		verbose "Adding firmware file \"$n\""
+		put-file "$n"
 	done
 }
 

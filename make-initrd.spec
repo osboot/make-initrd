@@ -8,11 +8,14 @@ Group: System/Base
 
 Packager: Alexey Gladkov <legion@altlinux.ru>
 
-BuildRequires: help2man
+BuildRequires: help2man libkmod-devel
 
 Provides: mkinitrd = 2:%version-%release
 
 Requires: ash libshell make sed module-init-tools coreutils grep glibc-utils file
+
+# depinfo
+Requires: libkmod >= 5
 
 # ipconfig -q: kinit-utils-1.5.15-alt3
 # run-init -e: kinit-utils-1.5.17-alt2
