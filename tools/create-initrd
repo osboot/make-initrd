@@ -73,3 +73,8 @@ for d in lib etc; do
 			-exec cp -aLt ./etc/udev/rules.d -- '{}' '+'
 	fi
 done
+
+for n in builtin order; do
+	[ ! -f "$kernel_modules_dir/modules.$n" ] ||
+		cp -aLt ./"$kernel_modules_dir" -- "$kernel_modules_dir/modules.$n"
+done
