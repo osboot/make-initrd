@@ -28,7 +28,7 @@ depmod-host: check-for-root
 show-guessed:
 	@if [ -s "$(GUESSDIR)/modules" -o -s "$(GUESSDIR)/modalias" ]; then \
 	   printf 'Guessed modules: '; \
-	   tr '\n' ' ' < "$(GUESSDIR)/modules"; \
+	   sed -r 's,^.*/([^/]+)\.ko.*$$,\1,' < "$(GUESSDIR)/modules" | tr '\n' ' '; \
 	   tr '\n' ' ' < "$(GUESSDIR)/modalias"; \
 	   printf '\n'; \
 	fi
