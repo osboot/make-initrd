@@ -39,6 +39,7 @@ all: check-for-root
 		export WORKDIR_SUFFIX="$$wsuffix"; \
 		export INITRD_CONFIG="$$c"; \
 		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @PREFIX@/make-initrd.mk guess    || { rc=1; break; }; \
+		export IGNORE_DEPMOD=1; \
 		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @PREFIX@/make-initrd.mk genimage || { rc=1; break; }; \
 	done; \
 	rm -f -- $(TEMPDIR)/images; \

@@ -18,8 +18,10 @@ check-for-root:
 	fi
 
 depmod-host: check-for-root
-	@echo "Generating module dependencies on host ..."
-	$Qdepmod -a -F "/boot/System.map-$(KERNEL)" "$(KERNEL)"
+	@if [ -z "$$IGNORE_DEPMOD" ]; then \
+	   echo "Generating module dependencies on host ..."; \
+	   depmod -a -F "/boot/System.map-$(KERNEL)" "$(KERNEL)"; \
+	fi
 
 # We should use it here because WORKDIR should be in the same
 # context with create target.
