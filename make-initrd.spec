@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.6.2
+Version: 0.7.0
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -15,11 +15,11 @@ Provides: mkinitrd = 2:%version-%release
 Requires: ash libshell make sed module-init-tools coreutils grep glibc-utils file
 
 # depinfo
-Requires: libkmod >= 5
+Requires: libkmod >= 5-alt1
 
 # ipconfig -q: kinit-utils-1.5.15-alt3
 # run-init -e: kinit-utils-1.5.17-alt2
-Requires: kinit-utils >= 1.5.17-alt2
+Requires: kinit-utils >= 1.5.25-alt1
 
 # Move /dev from initrd to the real system.
 # 167: udevadm info --run
@@ -160,6 +160,24 @@ Mdadm module for %name
 %_datadir/%name/features/mdadm
 
 %changelog
+* Wed Feb 22 2012 Alexey Gladkov <legion@altlinux.ru> 0.7.0-alt1
+- Add syslog feature.
+- Add support for udev >= 180.
+- Add the ability to handle multiple moountpoints.
+- Add support for the key file in the LUKS module.
+- Use /proc/mounts if rootfs not found in /etc/fstab.
+- Use own utility to resolve modules, dependencies and firmware
+  (don't use alt-specific modprobe option).
+- Check builtin modules.
+- Run depmod only once.
+- initrd:
+  + Use logger for messages.
+  + Add libc Name Service Switch subsystem.
+  + Clear and restore environ.
+  + Kill all processes before the start of system init.
+  + Simplify plymouth startup.
+  + Always handle /run and export info real system.
+
 * Wed Oct 26 2011 Alexey Gladkov <legion@altlinux.ru> 0.6.2-alt1
 - Add support for udev >= 174.
 - Run depmod before guess.
