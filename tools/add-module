@@ -51,7 +51,7 @@ add_module() {
 			firmware) firmware="$firmware $v" ;;
 		esac
 	done <<-EOF
-		`depinfo "$name" 2>/dev/null |
+		`depinfo --set-version="$kernel" "$name" 2>/dev/null |
 			sort -u`
 	EOF
 
