@@ -1,6 +1,7 @@
 #!/bin/sh
 
 . /dev/.initramfs/env
+. /scripts/functions
 
-mkdir -p -- "$udev_eventdir"/md_run
-echo > "$udev_eventdir"/md_run/event
+event="$(mk_event md_run)"
+showenv -q > "$event"
