@@ -45,6 +45,7 @@ run() {
 		if ! glob -q "$udev_eventdir"/*; then
 			sleep 0.1
 			sec=$(($sec-1))
+			udevadm control --start-exec-queue
 			continue
 		fi
 
