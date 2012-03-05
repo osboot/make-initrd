@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.7.1
+Version: 0.7.2
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -160,6 +160,9 @@ Mdadm module for %name
 %_datadir/%name/features/mdadm
 
 %changelog
+* Tue Mar 06 2012 Alexey Gladkov <legion@altlinux.ru> 0.7.2-alt1
+- Fix a race condition in queue processing.
+
 * Tue Mar 06 2012 Alexey Gladkov <legion@altlinux.ru> 0.7.1-alt1
 - Add initrd-diff utility (thx Evgenii Terechkov).
 - Fix lvm and raid filters.
