@@ -19,7 +19,7 @@ bindir  = $(CURDIR)
 sbindir = $(CURDIR)
 endif
 
-MAN1PAGES = make-initrd.1
+MAN1PAGES = make-initrd.1 initrd-diff.1
 MANPAGES  = $(MAN1PAGES)
 
 TEXIDOCS  = make-initrd.texi
@@ -38,9 +38,9 @@ CONF = initrd.mk
 
 CONF_EXAMPLES = $(wildcard $(CURDIR)/initrd.mk.d/*.example)
 
-PREPROCESS_TARGET = make-initrd mkinitrd-make-initrd config.mk make-initrd.mk
+PREPROCESS_TARGET = make-initrd mkinitrd-make-initrd config.mk make-initrd.mk initrd-diff
 
-sbin_TARGETS = make-initrd mkinitrd-make-initrd
+sbin_TARGETS = make-initrd mkinitrd-make-initrd initrd-diff
 
 TARGETS = config.mk rules.mk initfiles.mk make-initrd.mk
 

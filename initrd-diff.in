@@ -1,0 +1,129 @@
+#!/bin/sh -efu
+#
+# Copyright (C) 2012  Evgenii Terechkov <evg@altlinux.org>
+# Copyright (C) 2012  Alexey Gladkov <gladkov.alexey@gmail.com>
+#
+# This file is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+#
+
+. shell-error
+. shell-args
+. shell-getopt
+
+[ -z "${DEBUG-}" ] || set -x
+
+show_help()
+{
+	cat <<-EOF
+	Usage: $PROG [options] [diff-options] <from_image> <to_image>
+
+	Perform a diff on the files contained within different initrd images
+	and show the result.
+
+	Most of the options allowable by GNU diff(1) are acceptable.
+	By default -NrU0 is used.
+
+	Options:
+	  -q, --quiet     try to be more quiet;
+	  -v, --verbose   print a message for each action;
+	  -V, --version   print program version and exit;
+	  -h, --help      show this text and exit.
+
+	Report bugs to authors.
+
+	EOF
+	exit
+}
+
+print_version()
+{
+	cat <<-EOF
+	$PROG version @VERSION@
+	Written by Evgenii Terechkov.
+
+	Copyright (C) 2012  Evgenii Terechkov <evg@altlinux.org>
+	Copyright (C) 2012  Alexey Gladkov <gladkov.alexey@gmail.com>
+	This is free software; see the source for copying conditions.  There is NO
+	warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	EOF
+	exit
+}
+
+extract()
+{
+	local cmd= typ=
+
+	typ="$(file -b "$1")"
+	case "$typ" in
+		'bzip2 compressed data'*) cmd='bunzip -c' ;;
+		'gzip compressed data'*)  cmd='gunzip -c' ;;
+		'xz compressed data'*)    cmd='unxz -c'   ;;
+	esac
+
+	${cmd:-cat} "$1" |
+		cpio -vt 2>/dev/null |
+		sed -r -n \
+			-e 's,lib/modules/[^/]+/,lib/modules/<version>/,' \
+			-e 's,^((c|b)([^ ]+[ ]+){6})[^ ]+[ ]+[0-9]+[ ]+[0-9:]+ (([^ ]+).*)$,\5\t\1\4,p' \
+			-e 's,^((-|d|l)([^ ]+[ ]+){5})[^ ]+[ ]+[0-9]+[ ]+[0-9:]+ (([^ ]+).*)$,\5\t\1\4,p' |
+		sort -k1,1 |
+		cut -f2-
+}
+
+GETOPT_ALLOW_UNKNOWN=1
+GETOPT_ALLOW_ABBREV=
+TEMP=`getopt -n $PROG -o "$getopt_common_opts" -l "$getopt_common_longopts" -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
+
+while :; do
+	case "$1" in
+		-h|--help) show_help
+			;;
+		-q|--quiet) quiet=-q; verbose=
+			;;
+		-v|--verbose) verbose=-v; quiet=
+			;;
+		-V|--version) print_version "$PROG"
+			;;
+		--) shift; break
+			;;
+	esac
+	shift
+done
+
+diffopts=
+while [ $# -gt 2 ]; do
+	quote_shell_variable arg "$1"
+	diffopts="$diffopts \"$arg\""
+	shift
+done
+
+[ $# = 2 ] ||
+	show_usage
+
+src="$(opt_check_read "from-image" "$1")"; shift
+dst="$(opt_check_read   "to-image" "$1")"; shift
+
+exec 3<<EOF
+`extract "$src"`
+EOF
+exec 4<<EOF
+`extract "$dst"`
+EOF
+
+eval exec diff $quiet ${diffopts:--NrU0} \
+	--label="${src##*/}" /dev/fd/3 \
+	--label="${dst##*/}" /dev/fd/4
