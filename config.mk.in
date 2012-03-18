@@ -36,10 +36,6 @@ PATH		= $(TOOLSDIR):$(shell echo $$PATH)
 INITRD_CONFIG		?=
 INITRD_CONFIG_LIST	?= $(wildcard $(SYSCONFDIR)/initrd.mk $(SYSCONFDIR)/initrd.mk.d/*.mk)
 
-# Guess variables
-GUESS_FSTYPE_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/fstype)
-GUESS_DEVICE_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/device)
-GUESS_COMMON_SCRIPTS	= $(wildcard $(FEATURESDIR)/*/guess/common)
 
 # Global variables
 RESOLVE_MODALIAS	?= 1
@@ -77,6 +73,17 @@ ifeq "$(feature_configs)" ''
 $(error Cannot find configs for feature. Something goes wrong.)
 endif
 include $(feature_configs)
+
+# This is helper to filter a disabled files.
+wildcard_features = \
+	$(filter-out \
+		$(foreach exl,$(DISABLE_FEATURES),$(realpath $(exl:%=$(FEATURESDIR)/%/$(1)))), \
+		$(realpath $(wildcard $(FEATURESDIR)/*/$(1))))
+
+# Guess variables
+GUESS_FSTYPE_SCRIPTS	= $(call wildcard_features,guess/fstype)
+GUESS_DEVICE_SCRIPTS	= $(call wildcard_features,guess/device)
+GUESS_COMMON_SCRIPTS	= $(call wildcard_features,guess/common)
 
 ifdef VERBOSE
   verbose=-v
