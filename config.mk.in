@@ -67,18 +67,18 @@ BLACKLIST_MODULES	?=
 
 endif # INITRD_CONFIG
 
-# Load extra configs
-feature_configs		 = $(realpath $(wildcard $(FEATURESDIR)/*/config.mk))
-ifeq "$(feature_configs)" ''
-$(error Cannot find configs for feature. Something goes wrong.)
-endif
-include $(feature_configs)
-
 # This is helper to filter a disabled files.
 wildcard_features = \
 	$(filter-out \
 		$(foreach exl,$(DISABLE_FEATURES),$(realpath $(exl:%=$(FEATURESDIR)/%/$(1)))), \
 		$(realpath $(wildcard $(FEATURESDIR)/*/$(1))))
+
+# Load extra configs
+feature_configs		 = $(call wildcard_features,config.mk)
+ifeq "$(feature_configs)" ''
+$(error Cannot find configs for feature. Something goes wrong.)
+endif
+include $(feature_configs)
 
 # Guess variables
 GUESS_FSTYPE_SCRIPTS	= $(call wildcard_features,guess/fstype)
