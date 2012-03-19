@@ -20,6 +20,8 @@ mkdir $verbose -p -- \
 	./var/lock \
 	#
 
+printf '%s\n' "${VERSION-}" > ./.version
+
 verbose "Copying files from libnss_files.so* ..."
 for lib in /lib64 /lib; do
 	[ ! -d "$lib" ] ||
