@@ -23,13 +23,13 @@ check_builtin() {
 }
 
 check_blacklist() {
-	local m f
+	local m f="$1"
 
 	f="${f##*/}"
 	f="$(normalize_modname "${f%.ko*}")"
 
 	for m in ${blacklist-}; do
-		[ "$f" != "$m" ] || return
+		[ "$f" != "$m" ] || return 0
 	done
 	return 1
 }
