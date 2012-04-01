@@ -25,17 +25,39 @@ printf '%s\n' "${VERSION-}" > ./.version
 verbose "Copying files from libnss_files.so* ..."
 for lib in /lib64 /lib; do
 	[ ! -d "$lib" ] ||
-		find $lib -mindepth 1 -maxdepth 1 -name 'libnss_files.so*' -exec put-file '{}' '+'
+		find $lib -mindepth 1 -maxdepth 1 \
+			\( \
+				-name 'libnss_files.so*' -o \
+				-name 'libnss_dns.so*' \
+			\) \
+			-exec put-file '{}' '+'
 done
 
-echo 'root:x:0:0::/root:/bin/sh' >./etc/passwd
-echo 'root:x:0:' >./etc/group
-echo '' >./etc/services
+echo 'root:x:0:0::/root:/bin/sh'                 >./etc/passwd
+echo 'root:x:13957::::::'                        >./etc/shadow
+echo 'root:*::'                                  >./etc/gshadow
+echo 'root:x:0:'                                 >./etc/group
+echo '127.0.0.1 localhost.localdomain localhost' >./etc/hosts
+echo ''                                          >./etc/resolv.conf
+
+for n in protocols rpc services; do
+	egrep -v '^[[:space:]]*(#.*)?$' /etc/$n > ./etc/$n ||:
+done
+
+cat >./etc/host.conf <<EOF
+order hosts,bind
+multi on
+EOF
 
 cat >./etc/nsswitch.conf <<EOF
-passwd: files
-group: files
-services: files
+passwd:    files
+group:     files
+shadow:    files
+hosts:     files dns
+networks:  files
+rpc:       files
+services:  files
+protocols: files
 EOF
 
 [ -z "${PUT_DIRS-}"  ] || put-tree $PUT_DIRS
