@@ -65,7 +65,11 @@ MOUNTPOINTS		?= /
 FSTAB			?= /etc/fstab
 BLACKLIST_MODULES	?=
 
-endif # INITRD_CONFIG
+# Load system configuration
+include @PREFIX@/initfiles.mk
+
+# Load user configuration
+include $(INITRD_CONFIG)
 
 # This is helper to filter a disabled files.
 wildcard_features = \
@@ -84,6 +88,8 @@ include $(feature_configs)
 GUESS_FSTYPE_SCRIPTS	= $(call wildcard_features,guess/fstype)
 GUESS_DEVICE_SCRIPTS	= $(call wildcard_features,guess/device)
 GUESS_COMMON_SCRIPTS	= $(call wildcard_features,guess/common)
+
+endif # INITRD_CONFIG
 
 ifdef VERBOSE
   verbose=-v

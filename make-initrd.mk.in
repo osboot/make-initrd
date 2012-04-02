@@ -2,13 +2,9 @@
 .DEFAULT_GOAL := all
 
 include @PREFIX@/config.mk
-include @PREFIX@/initfiles.mk
 include @PREFIX@/rules.mk
 
 ifneq "$(strip $(INITRD_CONFIG))" ''
-
-# Load user configuration
-include $(INITRD_CONFIG)
 
 # Load guessed parameters
 ifeq ($(MAKECMDGOALS),genimage)
