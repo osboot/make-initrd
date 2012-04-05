@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.7.2
+Version: 0.7.3
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -160,6 +160,10 @@ Mdadm module for %name
 %_datadir/%name/features/mdadm
 
 %changelog
+* Fri Apr 06 2012 Alexey Gladkov <legion@altlinux.ru> 0.7.3-alt1
+- lvm: Fix glob in the event handler (ALT#27120) (thx Evgenii Terechkov, GalaxyMaster).
+- raid, mdadm: Remove autodetection modules until do not known how to do it right.
+
 * Tue Mar 06 2012 Alexey Gladkov <legion@altlinux.ru> 0.7.2-alt1
 - Fix a race condition in queue processing.
 
