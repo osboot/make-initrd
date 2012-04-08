@@ -20,7 +20,8 @@ run() {
 	udevd --daemon --resolve-names=never
 
 	udevadm control --property=STARTUP=1
-	udevadm trigger
+	udevadm trigger --type=subsystems --action=add >/dev/null 2>&1
+	udevadm trigger --type=devices    --action=add >/dev/null 2>&1
 
 	# Load user-defined modules
 	load_modules postudev
