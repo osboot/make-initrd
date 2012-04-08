@@ -33,12 +33,22 @@ for lib in /lib64 /lib; do
 			-exec put-file '{}' '+'
 done
 
-echo 'root:x:0:0::/root:/bin/sh'                 >./etc/passwd
 echo 'root:x:13957::::::'                        >./etc/shadow
 echo 'root:*::'                                  >./etc/gshadow
-echo 'root:x:0:'                                 >./etc/group
 echo '127.0.0.1 localhost.localdomain localhost' >./etc/hosts
 echo ''                                          >./etc/resolv.conf
+
+while IFS=: read name pass gid dummy; do
+	[ -n "$name" ] && [ "$gid" -lt 500 ] ||
+		continue
+	printf '%s\n' "$name:$pass:$gid:$dummy"
+done < /etc/group > ./etc/group
+
+while IFS=: read name pass uid gid dummy; do
+	[ -n "$name" ] && [ "$uid" -lt 500 ] ||
+		continue
+	printf '%s\n' "$name:$pass:$uid:$gid:$dummy"
+done < /etc/passwd > ./etc/passwd
 
 for n in protocols rpc services; do
 	egrep -v '^[[:space:]]*(#.*)?$' /etc/$n > ./etc/$n ||:
