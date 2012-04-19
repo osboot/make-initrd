@@ -5,7 +5,7 @@
 get_device() {
 	case "$1" in
 		UUID=*|LABEL=*)
-			/sbin/blkid -t "$1" -o device
+			/sbin/blkid -c /dev/null -t "$1" -o device
 			return 0
 			;;
 		/*)
