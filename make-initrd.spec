@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.7.4
+Version: 0.7.5
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -160,6 +160,9 @@ Mdadm module for %name
 %_datadir/%name/features/mdadm
 
 %changelog
+* Thu Apr 19 2012 Alexey Gladkov <legion@altlinux.ru> 0.7.5-alt1
+- Ignore cachefile when running blkid (ALT#27229).
+
 * Wed Apr 11 2012 Alexey Gladkov <legion@altlinux.org> 0.7.4-alt1
 - Replay all events at system (ALT#27063).
 - Add system groups/users to the image.
