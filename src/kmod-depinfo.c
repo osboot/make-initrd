@@ -14,10 +14,11 @@ enum show_flags {
 	SHOW_MODULES  = 0x00001,
 	SHOW_FIRMWARE = 0x00002,
 	SHOW_PREFIX   = 0x00004,
+	SHOW_BUILTIN  = 0x00008
 };
 
 static int show_tree = 0;
-static int opts = SHOW_MODULES | SHOW_FIRMWARE | SHOW_PREFIX;
+static int opts = SHOW_MODULES | SHOW_FIRMWARE | SHOW_PREFIX | SHOW_BUILTIN;
 
 static char *firmware_dir;
 static char firmware_defaultdir[] = "/lib/firmware/updates:/lib/firmware";
@@ -72,7 +73,12 @@ static void
 depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 {
 	struct kmod_list *l, *list = NULL;
-	int ret;
+	int builtin, ret;
+
+	builtin = (kmod_module_get_initstate(mod) == KMOD_MODULE_BUILTIN);
+
+	if (builtin && !(opts & SHOW_BUILTIN))
+		return;
 
 	if (opts & SHOW_MODULES) {
 		int i = show_tree;
@@ -84,29 +90,37 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 		}
 
 		if (opts & SHOW_PREFIX)
-			printf("module ");
-		printf("%s\n", kmod_module_get_path(mod));
+			printf("%s ",
+				(builtin
+					? "builtin"
+					: "module"));
+		printf("%s\n",
+			(builtin
+				? kmod_module_get_name(mod)
+				: kmod_module_get_path(mod)));
 
 		if (show_tree)
 			show_tree++;
 	}
 
-	if ((ret = kmod_module_get_info(mod, &list)) < 0)
-		error(EXIT_FAILURE, ret, "ERROR: Could not get information from '%s'",
-			kmod_module_get_name(mod));
+	if (!builtin) {
+		if ((ret = kmod_module_get_info(mod, &list)) < 0)
+			error(EXIT_FAILURE, ret, "ERROR: Could not get information from '%s'",
+				kmod_module_get_name(mod));
 
-	kmod_list_foreach(l, list) {
-		const char *key = kmod_module_info_get_key(l);
-		const char *val = kmod_module_info_get_value(l);
+		kmod_list_foreach(l, list) {
+			const char *key = kmod_module_info_get_key(l);
+			const char *val = kmod_module_info_get_value(l);
 
-		if ((opts & SHOW_MODULES) && !strcmp("depends", key))
-			process_depends(ctx, val);
+			if ((opts & SHOW_MODULES) && !strcmp("depends", key))
+				process_depends(ctx, val);
 
-		else if ((opts & SHOW_FIRMWARE) && !strcmp("firmware", key))
-			process_firmware(val);
+			else if ((opts & SHOW_FIRMWARE) && !strcmp("firmware", key))
+				process_firmware(val);
+		}
+
+		kmod_module_info_free_list(list);
 	}
-
-	kmod_module_info_free_list(list);
 
 	if (show_tree > 1)
 		show_tree--;
@@ -145,12 +159,13 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 	kmod_module_unref_list(list);
 }
 
-static const char cmdopts_s[] = "k:b:f:tMFPVh";
+static const char cmdopts_s[] = "k:b:f:tMFPBVh";
 static const struct option cmdopts[] = {
 	{"tree",          no_argument,       0, 't'},
 	{"no-modules",    no_argument,       0, 'M'},
 	{"no-firmware",   no_argument,       0, 'F'},
 	{"no-prefix",     no_argument,       0, 'P'},
+	{"no-builtin",    no_argument,       0, 'B'},
 	{"set-version",   required_argument, 0, 'k'},
 	{"base-dir",      required_argument, 0, 'b'},
 	{"firmware-dir",  required_argument, 0, 'f'},
@@ -172,6 +187,7 @@ print_help(const char *progname)
 		"   -P, --no-prefix             Omit the prefix describing the type of file;\n"
 		"   -M, --no-modules            Omit modules from the output;\n"
 		"   -F, --no-firmware           Omit firmware from the output;\n"
+		"   -B, --no-builtin            Omit builtin modules from the output;\n"
 		"   -k, --set-version=VERSION   Use VERSION instead of `uname -r`;\n"
 		"   -b, --base-dir=DIR          Use DIR as filesystem root for /lib/modules;\n"
 		"   -f, --firmware-dir=DIR      Use DIR as colon-separated list of firmware directories\n"
@@ -217,6 +233,9 @@ main(int argc, char **argv)
 				break;
 			case 'P':
 				opts ^= SHOW_PREFIX;
+				break;
+			case 'B':
+				opts ^= SHOW_BUILTIN;
 				break;
 			case 't':
 				show_tree = 1;

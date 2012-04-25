@@ -3,7 +3,12 @@
 . guess-functions
 
 if [ -n "${RESOLVE_MODALIAS-}" ]; then
-	xargs -r depinfo --set-version="$kernel" --no-prefix --no-firmware < "$guessdir/modalias" 2>/dev/null |
+	xargs -r depinfo \
+			--set-version="$kernel" \
+			--no-prefix \
+			--no-firmware \
+			--no-builtin \
+			<  "$guessdir/modalias" 2>/dev/null |
 		sort -u >> "$guessdir/modules"
 	> "$guessdir/modalias"
 fi
