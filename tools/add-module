@@ -24,7 +24,6 @@ check_blacklist() {
 add_module() {
 	local name n v
 	name="$1"
-	name="$(normalize_modname "$name")"
 
 	local builtin=' ' modules= firmware=
 
@@ -71,6 +70,7 @@ add_module() {
 
 for n; do
 	if [ -n "${n##*[/\[\].*&^\$\\\\/]*}" ]; then
+		n="$(normalize_modname "$n")"
 		add_module "$n"
 
 	elif [ -n "${KERNEL_MODULES-}" ]; then
