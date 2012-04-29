@@ -5,4 +5,17 @@
 [ -d "$SYSFS_PATH$1"/md ] ||
 	exit 0
 
+read level < "$SYSFS_PATH$1"/md/level
+
+depinfo \
+		--set-version="$kernel" \
+		--no-builtin \
+		--no-prefix \
+		--no-firmware \
+		"md-$level" 2>/dev/null |
+	sort -u |
+while read mod; do
+	guess_module "$mod"
+done
+
 guess_feature raid
