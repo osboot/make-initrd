@@ -75,5 +75,5 @@ install: pack
 
 clean:
 	@echo "Removing work directory ..."
-	$Qrm -rf -- "$(ROOTDIR)" "$(GUESSDIR)"
+	$Qrm -rf -- "$(ROOTDIR)" "$(GUESSDIR)" "$(WORKDIR)/initcpio"
 	$Qrmdir -- "$(WORKDIR)"
