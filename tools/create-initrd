@@ -30,7 +30,7 @@ for lib in /lib64 /lib; do
 				-name 'libnss_files.so*' -o \
 				-name 'libnss_dns.so*' \
 			\) \
-			-exec put-file '{}' '+'
+			-exec put-file . '{}' '+'
 done
 
 echo 'root:x:13957::::::'                        >./etc/shadow
@@ -70,11 +70,8 @@ services:  files
 protocols: files
 EOF
 
-[ -z "${PUT_DIRS-}"  ] || put-tree $PUT_DIRS
-[ -z "${PUT_FILES-}" ] || put-file $PUT_FILES
-
-# initrd specific files
-put-tree "$datadir"
+[ -z "${PUT_DIRS-}"  ] || put-tree . $PUT_DIRS
+[ -z "${PUT_FILES-}" ] || put-file . $PUT_FILES
 
 :>>./etc/fstab
 
@@ -89,7 +86,7 @@ fi
 
 if [ -f /etc/modprobe.conf ]; then
 	verbose "Copying /etc/modprobe.conf ..."
-	put-file /etc/modprobe.conf
+	put-file . /etc/modprobe.conf
 fi
 
 for d in lib etc; do

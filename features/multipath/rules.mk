@@ -5,8 +5,8 @@ $(call require,devmapper)
 
 multipath: devmapper
 	@echo "Adding multipath support ..."
-	@$(TOOLSDIR)/put-file $(MULTIPATH_BIN)
-	@$(TOOLSDIR)/put-file $(MULTIPATH_CONF)
-	@$(TOOLSDIR)/put-file $(MULTIPATH_DATA)
+	@put-file "$(ROOTDIR)" $(MULTIPATH_BIN)
+	@put-file "$(ROOTDIR)" $(MULTIPATH_CONF)
+	@put-file "$(ROOTDIR)" $(MULTIPATH_DATA)
 
 pack: multipath

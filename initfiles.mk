@@ -46,4 +46,4 @@ PUT_FILES += \
 	/usr/bin/logger
 
 # initrd specific utilities
-PUT_DIRS += /lib/initrd
+PUT_DIRS += /lib/initrd $(DATADIR)

@@ -3,7 +3,7 @@ MODULES_ADD     += $(BTRFS_MODULES)
 
 btrfs:
 	@echo "Adding btrfs support ..."
-	@$(TOOLSDIR)/put-file $(BTRFS_FILES)
-	@$(TOOLSDIR)/put-tree $(BTRFS_DATADIR)
+	@put-file "$(ROOTDIR)" $(BTRFS_FILES)
+	@put-tree "$(ROOTDIR)" $(BTRFS_DATADIR)
 
 pack: btrfs

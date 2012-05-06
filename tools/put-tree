@@ -1,8 +1,11 @@
-#!/bin/sh -eu
+#!/bin/sh -efu
 
 . sh-functions
 
+destdir="$1"
+shift
+
 for tree in "$@"; do
 	verbose "Copying '$tree' recursively ..."
-	cp -aPt "$rootdir" "$tree"/*
+	put-file -r "$tree" "$destdir" "$tree"
 done

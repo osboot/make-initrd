@@ -1,6 +1,6 @@
 syslog:
 	@echo "Adding syslog support ..."
-	@$(TOOLSDIR)/put-tree $(SYSLOG_DATADIR)
-	@$(TOOLSDIR)/put-file $(SYSLOG_FILES)
+	@put-tree "$(ROOTDIR)" $(SYSLOG_DATADIR)
+	@put-file "$(ROOTDIR)" $(SYSLOG_FILES)
 
 pack: syslog

@@ -1,108 +1,131 @@
 #!/bin/sh -efu
 
-. sh-functions
 . shell-error
+. shell-signal
 
-canonicalize_file() {
-	local __canonicalize_file_name="$1" __canonicalize_file_result
-	__canonicalize_file() {
-		local fn="$1" r= t=
-		while [ "$fn" != "$r" ]; do
-			r="$fn"
-			if [ -z "${fn##*//*}" ]; then
-				fn="${fn%%//*}/${fn#*//}"
-			elif [ -z "${fn##*/./*}" ]; then
-				fn="${fn%%/./*}/${fn#*/./}"
-			elif [ -z "${fn##*/../*}" ]; then
-				t="${fn%%/../*}"
-				t="${t%/*}"
-				fn="$t/${fn#*/../}"
-			elif [ -z "${fn##./*}" -o -n "${fn##/*}" ]; then
-				fn="$PWD/${fn##./}"
-			elif [ -z "${fn##*/}" ]; then
-				fn="${fn%%/}"
-			fi
-		done
-		__canonicalize_file_result="$fn"
-	}
-	__canonicalize_file "$2"
-	eval "$__canonicalize_file_name=\$__canonicalize_file_result"
+prefix=
+destdir=
+
+print_version()
+{
+	cat <<-EOF
+	put-file version 1.0
+	Written by Alexey Gladkov.
+
+	Copyright (C) 2012  Alexey Gladkov <gladkov.alexey@gmail.com>
+	This is free software; see the source for copying conditions.  There is NO
+	warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	EOF
+	exit
 }
 
-copy_regfile() {
-	local fn="$1" dir
+show_help()
+{
+	cat <<-EOF
 
-	canonicalize_file 'fn' "$fn"
+	Usage: put-file [<option>] <destdir> [directory|filename]...
 
-	[ ! -e "$rootdir/$fn" ] ||
-		return 1
+	Options:
+	   -r, --remove-prefix=STR   ignore prefix in path;
+	   -v, --verbose             print a message for each action;
+	   -V, --version             output version information and exit;
+	   -h, --help                display this help and exit.
 
-	dir="$rootdir/${fn%/*}"
-	[ -d "$dir" ] ||
-		mkdir -p -- "$dir"
+	Report bugs to authors.
 
-	cp -ad -- "$fn" "$dir/"
+	EOF
+	exit
 }
 
-copy_symlink() {
-	local fn="$1" l
-
-	copy_regfile "$fn" ||
-		return 0
-
-	l="$(readlink -m -- "$fn")"
-	copy "$l"
+show_usage()
+{
+	[ -z "$*" ] || message "$*"
+	echo "Try \`$PROG --help' for more information." >&2
+	exit 1
 }
 
-copy_elffile() {
-	local fn="$1" libs
-
-	copy_regfile "$fn" ||
-		return 0
-
-	# ignore all kernel modules.
-	[ -n "${fn##$kernel_modules_dir/*.ko*}" ] ||
-		return 0
-
-	# avoid subshell incapsulation.
-	libs="$(ldd -- "$fn" |sed -n 's/.*[[:space:]]\([^ ]\+\) (0x.*/\1/p')"
-
-	for lib in $libs; do
-		copy "$lib"
-	done
+workdir=
+exit_handler()
+{
+	[ -z "$workdir" ] || rm -rf -- "$workdir"
 }
 
-copy() {
-	local fn="$1" otype=
+TEMP=`getopt -n $PROG -o 'r:,h,v,V' -l 'remove-prefix:,help,verbose,version' -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
 
-	[ ! -e "$fn" ] ||
-		otype="$(file -b -- "$fn" 2>/dev/null)"
-
-	case "$otype" in
-		'')		# ignore nonexistent file
-				error "$fn: No such file or directory"
-				;;
-		'broken symbolic link to '*)
-				# ignore broken symlink
-				error "$fn: Broken symlink"
-				;;
-		'symbolic link to '*)
-				copy_symlink "$fn"
-				;;
-		'ELF '*|*' ELF '*)
-				[ -n "${otype##* statically linked*}" ] &&
-					copy_elffile "$fn" ||
-					copy_regfile "$fn"
-				;;
+while :; do
+	case "$1" in
+		-r|--remove-prefix) shift
+			prefix="$1"
+			;;
+		-h|--help)
+			show_help
+			;;
+		-v|--verbose)
+			verbose=-v
+			;;
+		-V|--version)
+			print_version
+			;;
+		--) shift
+			break
+			;;
 		*)
-				copy_regfile "$fn"
-				;;
-	esac ||:
-}
+			fatal "Unknown option: $1"
+			;;
+	esac
+	shift
+done
 
-for fn; do
-	[ -e "$fn" ] ||
-		fatal "$fn: No such file or directory"
+[ "$#" -gt 0 ] ||
+	show_usage "More arguments required"
 
-	copy "$fn"
+destdir="$1"
+shift
+
+[ -d "$destdir" ] ||
+	mkdir -p -- "$destdir"
+
+set_cleanup_handler exit_handler
+workdir="$(mktemp -dt "$PROG.XXXXXXXXX")"
+
+printf '%s\n' "$@" > "$workdir"/fn
+
+while [ -s "$workdir"/fn ]; do
+	while read fn; do
+		[ -e "$fn" ] ||
+			continue
+
+		if [ ! -L "$fn" -a -d "$fn" ]; then
+			find "$fn" -mindepth 1 -maxdepth 1
+			continue
+		fi
+
+		cd "${fn%/*}"
+		fn="$PWD/${fn##*/}"
+		cd - >/dev/null
+
+		new="${fn#$prefix}"
+
+		[ ! -e "$destdir/$new" ] ||
+			continue
+
+		d="$destdir/${new%/*}"
+		[ -d "$d" ] ||
+			mkdir $verbose -p -- "$d" >&2
+
+		cp $verbose -aud "$fn" "$destdir/$new" >&2
+
+		[ ! -L "$fn" ] ||
+			readlink -ev "$fn"
+	done < "$workdir"/fn > "$workdir"/fn.new
+
+	elfcheck -f - < "$workdir"/fn > "$workdir"/fn.elf
+
+	[ ! -s "$workdir"/fn.elf ] ||
+		xargs -r ldd < "$workdir"/fn.elf |
+			sed -r -n 's,^\t(.* => )?([^ ]+) \(0x[0-9a-f]+\)$,\2,p' >> "$workdir"/fn.new
+
+	mv -f "$workdir"/fn.new "$workdir"/fn
 done

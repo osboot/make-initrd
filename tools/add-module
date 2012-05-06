@@ -59,12 +59,12 @@ add_module() {
 
 	for n in $modules; do
 		verbose "Adding module \"$n\""
-		put-file "$n"
+		put-file "$rootdir" "$n"
 	done
 
 	for n in $firmware; do
 		verbose "Adding firmware file \"$n\""
-		put-file "$n"
+		put-file "$rootdir" "$n"
 	done
 }
 

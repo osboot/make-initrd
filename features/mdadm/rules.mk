@@ -1,5 +1,5 @@
 mdadm:
 	@echo "Adding mdadm support ..."
-	@$(TOOLSDIR)/put-file $(MDADM_FILES)
+	@put-file "$(ROOTDIR)" $(MDADM_FILES)
 
 pack: mdadm
