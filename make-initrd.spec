@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.7.5
+Version: 0.7.6
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -12,10 +12,10 @@ BuildRequires: help2man libkmod-devel
 
 Provides: mkinitrd = 2:%version-%release
 
-Requires: ash libshell make sed module-init-tools coreutils grep glibc-utils file
+Requires: ash libshell make sed module-init-tools coreutils findutils grep glibc-utils
 
 # depinfo
-Requires: libkmod >= 5-alt1
+Requires: libkmod >= 8-alt1
 
 # ipconfig -q: kinit-utils-1.5.15-alt3
 # run-init -e: kinit-utils-1.5.17-alt2
@@ -160,6 +160,12 @@ Mdadm module for %name
 %_datadir/%name/features/mdadm
 
 %changelog
+* Sun May 06 2012 Alexey Gladkov <legion@altlinux.ru> 0.7.6-alt1
+- Rewrite put-file.
+- Add support for libkmod >= 8.
+- Add autodetection for raid modules (ALT#27248).
+- Better handle builtin modules.
+
 * Thu Apr 19 2012 Alexey Gladkov <legion@altlinux.ru> 0.7.5-alt1
 - Ignore cachefile when running blkid (ALT#27229).
 
