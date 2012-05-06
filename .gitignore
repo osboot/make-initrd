@@ -1,5 +1,6 @@
 config.mk
 initrd-diff
+initrd-diff.1
 make-initrd
 make-initrd.1
 make-initrd.info
@@ -7,3 +8,4 @@ make-initrd.mk
 mkinitrd-make-initrd
 src/gen_init_cpio
 src/depinfo
+src/elfcheck

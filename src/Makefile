@@ -3,9 +3,10 @@ CFLAGS = -Wall -Wextra -W -Wshadow -Wcast-align \
 	-Wmissing-prototypes -Wmissing-declarations -Wmissing-noreturn \
 	-Wmissing-format-attribute -Wredundant-decls -Wdisabled-optimization \
 	-Wno-pointer-arith
-LIBS   = -lkmod
 
-PROGS = gen_init_cpio depinfo
+depinfo_LIBS   = -lkmod
+
+PROGS = gen_init_cpio depinfo elfcheck
 
 bindir  ?= /usr/bin
 DESTDIR ?=
@@ -21,7 +22,10 @@ gen_init_cpio: gen_init_cpio.c
 	$(CC) $(CFLAGS) -o $@ $<
 
 depinfo: kmod-depinfo.c
-	$(CC) $(CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $< $(LIBS)
+	$(CC) $(CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $< $(depinfo_LIBS)
+
+elfcheck: elfcheck.c
+	$(CC) $(CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $<
 
 install: $(PROGS)
 	$(MKDIR_P) -- $(DESTDIR)$(bindir)
