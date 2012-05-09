@@ -92,13 +92,16 @@ workdir="$(mktemp -dt "$PROG.XXXXXXXXX")"
 
 printf '%s\n' "$@" > "$workdir"/fn
 
-while [ -s "$workdir"/fn ]; do
+while :; do
+	do_break=1
+
 	while read fn; do
 		[ -e "$fn" ] ||
 			continue
 
 		if [ ! -L "$fn" -a -d "$fn" ]; then
 			find "$fn" -mindepth 1 -maxdepth 1
+			do_break=
 			continue
 		fi
 
@@ -111,6 +114,8 @@ while [ -s "$workdir"/fn ]; do
 		[ ! -e "$destdir/$new" ] ||
 			continue
 
+		do_break=
+
 		d="$destdir/${new%/*}"
 		[ -d "$d" ] ||
 			mkdir $verbose -p -- "$d" >&2
@@ -120,6 +125,9 @@ while [ -s "$workdir"/fn ]; do
 		[ ! -L "$fn" ] ||
 			readlink -ev "$fn"
 	done < "$workdir"/fn > "$workdir"/fn.new
+
+	[ -z "$do_break" ] ||
+		break
 
 	elfcheck -f - < "$workdir"/fn > "$workdir"/fn.elf
 
