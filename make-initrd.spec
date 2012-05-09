@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.7.6
+Version: 0.7.7
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -160,6 +160,9 @@ Mdadm module for %name
 %_datadir/%name/features/mdadm
 
 %changelog
+* Thu May 10 2012 Alexey Gladkov <legion@altlinux.ru> 0.7.7-alt1
+- Fix behaviour in hasher environment (thx Michael Shigorin).
+
 * Sun May 06 2012 Alexey Gladkov <legion@altlinux.ru> 0.7.6-alt1
 - Rewrite put-file.
 - Add support for libkmod >= 8.
