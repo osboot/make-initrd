@@ -96,7 +96,7 @@ while :; do
 	do_break=1
 
 	while read fn; do
-		[ -e "$fn" ] ||
+		[ -L "$fn" -o -e "$fn" ] ||
 			continue
 
 		if [ ! -L "$fn" -a -d "$fn" ]; then
@@ -111,7 +111,7 @@ while :; do
 
 		new="${fn#$prefix}"
 
-		[ ! -e "$destdir/$new" ] ||
+		[ ! -L "$destdir/$new" -a ! -e "$destdir/$new" ] ||
 			continue
 
 		do_break=
@@ -123,7 +123,8 @@ while :; do
 		cp $verbose -aud "$fn" "$destdir/$new" >&2
 
 		[ ! -L "$fn" ] ||
-			readlink -ev "$fn"
+			readlink -ev "$fn" 2>/dev/null ||:
+
 	done < "$workdir"/fn > "$workdir"/fn.new
 
 	[ -z "$do_break" ] ||
