@@ -65,8 +65,12 @@ elfcheck(const char *fn)
 	if (S_ISDIR(st.st_mode))
 		return; // Ignore directories
 
-	if ((fd = open(fn, O_RDONLY, 0)) < 0)
+	if ((fd = open(fn, O_RDONLY, 0)) < 0) {
+		if (S_ISLNK(st.st_mode))
+			return; // Ignore broken symlinks
+
 		err(EXIT_FAILURE, "open `%s\" failed", fn);
+	}
 
 	if (read(fd, &buf, sizeof(buf)) < 0)
 		err(EXIT_FAILURE, "read `%s\" failed", fn);
