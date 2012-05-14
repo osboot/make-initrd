@@ -210,7 +210,7 @@ unset MAKELEVEL
 
 
 rc=0
-make -r -f @PREFIX@/make-initrd.mk -- "$1" || rc=$?
+make -r -f @PREFIX@/make-initrd.mk -- "$@" || rc=$?
 
 [ -z "$TEMPDIR" ] ||
 	rmdir -- "$TEMPDIR" 2>/dev/null ||:
