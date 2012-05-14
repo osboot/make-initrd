@@ -10,6 +10,7 @@ BOOTDIR="@BOOTDIR@"
 SYSFS_PATH="${SYSFS_PATH:-/sys}"
 KERNEL="$(uname -r)"
 VERBOSE=
+no_depmod=
 no_checks=
 config=
 
@@ -30,6 +31,9 @@ show_help() {
 	cat <<-EOF
 
 	Usage: make-initrd [<option>]
+	   or: make-initrd guess-modules [<device>|<directory>]
+	   or: make-initrd guess-config
+	   or: make-initrd bug-report
 
 	make-initrd is a new, uevent-driven initramfs
 	infrastructure based around udev.
@@ -37,11 +41,20 @@ show_help() {
 	Without options, the program generates images
 	for all the configuration files.
 
+	bug-report
+	               makes the archive for developers
+	               when bug happens;
+
+	guess-config
+	               guesses the current configuration
+	               and generates the config file;
+
+	guess-modules [<device>|<directory>]
+	               shows kernel module needed to mount
+	               specified mountpoint or block device;
+
 	Options:
-	   guess-config           guesses the current configuration
-	                          and generates the config file;
-	   bug-report             makes the archive for developers
-	                          when bug happens;
+	   -D, --no-depmod        don't recreate a list of module dependencies;
 	   -N, --no-checks        don't check /dev, /proc and the kernel
 	                          modules directory;
 	   -c, --config=FILE      set custom config file;
@@ -86,7 +99,7 @@ check_noexec() {
 	return $rc
 }
 
-TEMP=`getopt -n $PROG -o 'b:,c:,k:,N,h,v,V' -l 'bootdir:,config:,kernel:,no-checks,help,verbose,version' -- "$@"` ||
+TEMP=`getopt -n $PROG -o 'b:,c:,k:,D,N,h,v,V' -l 'bootdir:,config:,kernel:,no-depmod,no-checks,help,verbose,version' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -100,6 +113,9 @@ while :; do
 			;;
 		-k|--kernel) shift
 			[ -z "$1" ] || KERNEL="$1"
+			;;
+		-D|--no-depmod)
+			no_depmod=1
 			;;
 		-N|--no-checks)
 			no_checks=1
@@ -122,6 +138,33 @@ while :; do
 	esac
 	shift
 done
+
+case "${1-}" in
+	guess-config|bug-report)
+		;;
+	guess-modules)
+		[ "$#" -eq 2 ] ||
+			fatal "More arguments required"
+
+		INITRD_CONFIG=/dev/null
+		MOUNTPOINTS=
+		DEVICES=
+
+		if [ -d "$2" ]; then
+			mountpoint -q "$2" ||
+				fatal "$2: Not mountpoint"
+			MOUNTPOINTS="$2"
+		elif [ -b "$2" ]; then
+			DEVICES="$2"
+		else
+			fatal "$2: argument type unsupported"
+		fi
+
+		export MOUNTPOINTS DEVICES INITRD_CONFIG
+
+		set -- "$1"
+		;;
+esac
 
 if [ -z "$no_checks" ]; then
 	[ -r "/lib/modules/$KERNEL" ] ||
@@ -159,11 +202,15 @@ fi
 [ -z "$config" ] ||
 	export INITRD_CONFIG_LIST="$config"
 
+[ -z "$no_depmod" ] ||
+	export IGNORE_DEPMOD=1
+
 export TEMPDIR KERNEL BOOTDIR VERBOSE
 unset MAKELEVEL
 
+
 rc=0
-make -r -f @PREFIX@/make-initrd.mk -- "$@" || rc=$?
+make -r -f @PREFIX@/make-initrd.mk -- "$1" || rc=$?
 
 [ -z "$TEMPDIR" ] ||
 	rmdir -- "$TEMPDIR" 2>/dev/null ||:

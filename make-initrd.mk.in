@@ -18,7 +18,7 @@ endif # FEATURES
 
 else # !INITRD_CONFIG
 
-public_goals  = all guess-config bug-report
+public_goals  = all guess-config guess-modules bug-report
 private_goals = $(filter-out $(public_goals),$(MAKECMDGOALS))
 
 ifneq "$(private_goals)" ''
@@ -64,6 +64,19 @@ guess: depmod-host check-for-root
 guess-config: AUTODETECT ?= common root resume
 guess-config: check-for-root guess
 	@cat $(GUESSDIR)/guessed.mk
+	$Qrm -rf -- "$(GUESSDIR)"
+	$Qrmdir -- "$(WORKDIR)"
+
+guess-modules: AUTODETECT = root device
+guess-modules: check-for-root guess
+	@cat $(GUESSDIR)/modules $(GUESSDIR)/modalias | \
+	   xargs -r depinfo \
+	      --set-version="$(KERNEL)" \
+	      --no-prefix \
+	      --no-firmware \
+	      --no-builtin \
+	      2>/dev/null | \
+	   sort -u
 	$Qrm -rf -- "$(GUESSDIR)"
 	$Qrmdir -- "$(WORKDIR)"
 

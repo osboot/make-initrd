@@ -1,0 +1,38 @@
+#!/bin/sh -efu
+
+. sh-functions
+. guess-functions
+
+process_fstype() {
+	local device="$1"
+
+	fstype="$(blkid -o value -s TYPE -c /dev/null "$device")" ||
+		return 0
+	guess_fstype "$device" "$fstype"
+}
+
+process_devices() {
+	local rc=1
+
+	for device_file; do
+		majmin="$(get_majmin "$device_file")" ||
+			continue
+
+		# kernel >= 2.6.27
+		guess_device "/dev/block/$majmin"
+
+		[ ! -b "$device_file" ] ||
+			process_fstype "$device_file"
+		rc=0
+	done
+
+	return $rc
+}
+
+pass=' '
+for d in ${DEVICES-}; do
+	[ -n "${pass##* $d *}" ] ||
+		continue
+	process_devices "$d"
+	pass="$pass$d "
+done
