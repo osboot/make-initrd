@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.7.7
+Version: 0.7.8
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -160,6 +160,11 @@ Mdadm module for %name
 %_datadir/%name/features/mdadm
 
 %changelog
+* Mon May 14 2012 Alexey Gladkov <legion@altlinux.ru> 0.7.8-alt1
+- Fix detection of builtin modules (ALT#27321).
+- Add guess-modules option.
+- Add --no-depmod option.
+
 * Thu May 10 2012 Alexey Gladkov <legion@altlinux.ru> 0.7.7-alt1
 - Fix behaviour in hasher environment (thx Michael Shigorin).
 
