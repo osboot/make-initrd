@@ -73,12 +73,7 @@ static void
 depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 {
 	struct kmod_list *l, *list = NULL;
-	int builtin, ret;
-
-	builtin = (kmod_module_get_initstate(mod) == KMOD_MODULE_BUILTIN);
-
-	if (builtin && !(opts & SHOW_BUILTIN))
-		return;
+	int ret;
 
 	if (opts & SHOW_MODULES) {
 		int i = show_tree;
@@ -90,37 +85,30 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 		}
 
 		if (opts & SHOW_PREFIX)
-			printf("%s ",
-				(builtin
-					? "builtin"
-					: "module"));
-		printf("%s\n",
-			(builtin
-				? kmod_module_get_name(mod)
-				: kmod_module_get_path(mod)));
+			printf("module ");
+
+		printf("%s\n", kmod_module_get_path(mod));
 
 		if (show_tree)
 			show_tree++;
 	}
 
-	if (!builtin) {
-		if ((ret = kmod_module_get_info(mod, &list)) < 0)
-			error(EXIT_FAILURE, ret, "ERROR: Could not get information from '%s'",
-				kmod_module_get_name(mod));
+	if ((ret = kmod_module_get_info(mod, &list)) < 0)
+		error(EXIT_FAILURE, ret, "ERROR: Could not get information from '%s'",
+			kmod_module_get_name(mod));
 
-		kmod_list_foreach(l, list) {
-			const char *key = kmod_module_info_get_key(l);
-			const char *val = kmod_module_info_get_value(l);
+	kmod_list_foreach(l, list) {
+		const char *key = kmod_module_info_get_key(l);
+		const char *val = kmod_module_info_get_value(l);
 
-			if ((opts & SHOW_MODULES) && !strcmp("depends", key))
-				process_depends(ctx, val);
+		if ((opts & SHOW_MODULES) && !strcmp("depends", key))
+			process_depends(ctx, val);
 
-			else if ((opts & SHOW_FIRMWARE) && !strcmp("firmware", key))
-				process_firmware(val);
-		}
-
-		kmod_module_info_free_list(list);
+		else if ((opts & SHOW_FIRMWARE) && !strcmp("firmware", key))
+			process_firmware(val);
 	}
+
+	kmod_module_info_free_list(list);
 
 	if (show_tree > 1)
 		show_tree--;
@@ -142,7 +130,7 @@ static void
 depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 {
 	struct kmod_module *mod;
-	struct kmod_list *l, *list = NULL;
+	struct kmod_list *l, *filtered, *list = NULL;
 
 	if (kmod_module_new_from_lookup(ctx, alias, &list) < 0)
 		error(EXIT_FAILURE, 0, "ERROR: Module alias %s not found.", alias);
@@ -150,7 +138,28 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 	if (!list)
 		error(EXIT_FAILURE, 0, "ERROR: Module %s not found.", alias);
 
-	kmod_list_foreach(l, list) {
+	if (kmod_module_apply_filter(ctx, KMOD_FILTER_BUILTIN, list, &filtered) < 0)
+		error(EXIT_FAILURE, 0, "ERROR: Failed to filter list: %m");
+
+	if (!filtered) {
+		if (opts & SHOW_BUILTIN) {
+			kmod_list_foreach(l, list) {
+				mod = kmod_module_get_module(l);
+
+				if (opts & SHOW_PREFIX)
+					printf("builtin ");
+
+				printf("%s\n", kmod_module_get_name(mod));
+
+				kmod_module_unref(mod);
+			}
+		}
+
+		kmod_module_unref_list(list);
+		return;
+	}
+
+	kmod_list_foreach(l, filtered) {
 		mod = kmod_module_get_module(l);
 		depinfo(ctx, mod);
 		kmod_module_unref(mod);
