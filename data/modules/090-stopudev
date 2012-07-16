@@ -7,8 +7,10 @@ run() {
 	udevadm control --stop-exec-queue
 	udevadm control --exit
 
-	local udev_db
-	udev_db="$(udevadm info --run)"
+	local udev_db='/run/udev'
+
+	[ "${UDEV_VERSION:-0}" -gt 185 ] ||
+		udev_db="$(udevadm info --run)"
 
 	# ignore any failed event because the init script will trigger again all events
 	rm -rf $udev_db

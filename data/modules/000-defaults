@@ -20,4 +20,5 @@ run() {
 	export RESCUE_MODULES=${RESCUE_MODULES-}
 	export EXPORT_FS=${EXPORT_FS-}
 	export UMOUNT_FS=${UMOUNT_FS-}
+	export UDEV_VERSION="$(udevd --version)" ||:
 }
