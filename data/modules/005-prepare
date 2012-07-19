@@ -27,7 +27,7 @@ run() {
 	mount -n -t proc  -o nodev,noexec,nosuid none  /proc
 	mount -n -t tmpfs -o mode=755,size=5m    runfs /run
 
-	mkdir -p /run/lock/subsys /run/user /run/udev
+	mkdir -p /run/lock/subsys /run/user /run/udev /run/systemd
 
 	:> /run/utmp
 	chmod 0664 /run/utmp
