@@ -8,8 +8,8 @@ run_plymouth() {
 
 	local pid=/run/plymouth/pid
 
-	mkdir -m 0755 /dev/.systemd /run/plymouth
-	: > /dev/.systemd/plymouth
+	mkdir -m 0755 /run/plymouth
+	: > /run/systemd/plymouth
 
 	/sbin/plymouthd --pid-file $pid
 	/bin/plymouth --show-splash
