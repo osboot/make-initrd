@@ -1,4 +1,5 @@
 MODULES_PRELOAD += dm_mod
+MODULES_ADD     += dm_snapshot
 
 $(call require,depmod-image)
 
