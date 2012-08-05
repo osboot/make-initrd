@@ -4,5 +4,12 @@
 
 [ "$#" -gt 0 ] || return 0
 
+l=
+for m; do
+	m="${m##*/}"
+	m="${m%.ko*}"
+	l="${l:+$l }$m"
+done
+
 add-module "$@"
-printf 'RESCUE_MODULES="%s"\n' "$*" >> "$rootdir"/conf/initramfs.conf
+printf 'RESCUE_MODULES="%s"\n' "$l" >> "$rootdir"/conf/initramfs.conf

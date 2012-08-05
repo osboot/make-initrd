@@ -1,0 +1,25 @@
+#!/bin/sh -eu
+
+. guess-functions
+
+for i in /sys/class/input/*; do
+	[ -f "$i/name" -a -f "$i/modalias" ] ||
+		continue
+
+	read led < "$i/capabilities/led"
+
+	[ "$led" != '0' ] ||
+		continue
+
+	p="$(readlink -ev "$i")"
+
+	while [ "$p" != "/sys/devices" ]; do
+		if [ -f "$p/modalias" ]; then
+			read alias < "$p/modalias"
+			depinfo -PBF --set-version="$kernel" "$alias" 2>/dev/null ||:
+		fi
+		p="${p%/*}"
+	done
+done > "$guessdir/kbdmodules"
+
+guess_feature keyboard

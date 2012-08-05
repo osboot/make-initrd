@@ -1,5 +1,11 @@
 $(call require,depmod-image)
 
+rescue-modules: create
+	@if [ -n "$(RESCUE_MODULES)" ]; then \
+		echo "Adding resue modules ..."; \
+		$(TOOLSDIR)/add-rescue-modules $(RESCUE_MODULES); \
+	fi
+
 add-modules: create
 	@if [ -n "$(MODULES_ADD)" ]; then \
 		echo "Adding modules ..."; \
@@ -20,3 +26,4 @@ load-modules: create
 	fi
 
 depmod-image: add-modules preload-modules load-modules
+pack: rescue-modules

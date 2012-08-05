@@ -43,13 +43,7 @@ create: depmod-host show-guessed
 	@mkdir -m 755 -p $(verbose) -- $(ROOTDIR)
 	@$(TOOLSDIR)/create-initrd
 
-rescue-modules: create
-	@if [ -n "$(RESCUE_MODULES)" ]; then \
-	    echo "Installing resue modules ..."; \
-	    $(TOOLSDIR)/add-rescue-modules $(RESCUE_MODULES); \
-	fi
-
-pack: create rescue-modules
+pack: create
 	@printf 'Packed modules: '
 	@find $(ROOTDIR)/lib/modules/$(KERNEL) -type f \( -name '*.ko'  -o -name '*.ko.*' \) -printf '%f\n' 2>/dev/null | \
 	    sed -e 's/\.ko\(\.[^\.]\+\)\?$$//' | sort | tr '\n' ' '
