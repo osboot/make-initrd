@@ -51,19 +51,29 @@ else
 LIBNAME			= lib
 endif
 
+FSTAB			?= /etc/fstab
+PROC_MOUNTS		?= /proc/mounts
+MOUNTPOINTS		?= /
+DEVICES			?=
+DISABLE_FEATURES	?= systemd
+
+
+# This is helper to filter a disabled files.
+wildcard_features = \
+	$(filter-out \
+		$(foreach exl,$(DISABLE_FEATURES),$(realpath $(exl:%=$(FEATURESDIR)/%/$(1)))), \
+		$(realpath $(wildcard $(FEATURESDIR)/*/$(1))))
+
+
 # This user's preferences are make sence only if user's config file is loaded.
 ifneq "$(INITRD_CONFIG)" ''
 
 # User defaults
 FEATURES		?=
-DISABLE_FEATURES	?= systemd
 IMAGE_SUFFIX		?=
 IMAGEFILE		?= $(BOOTDIR)/initrd-$(KERNEL)$(IMAGE_SUFFIX).img
 FIRMWARE_DIRS		?= /lib/firmware/updates /lib/firmware /lib/firmware/$(KERNEL)/updates /lib/firmware/$(KERNEL)
 VERBOSE			?=
-DEVICES			?=
-MOUNTPOINTS		?= /
-FSTAB			?= /etc/fstab
 BLACKLIST_MODULES	?=
 
 # Load system configuration
@@ -72,12 +82,6 @@ include @PREFIX@/initfiles.mk
 # Load user configuration
 include $(INITRD_CONFIG)
 
-# This is helper to filter a disabled files.
-wildcard_features = \
-	$(filter-out \
-		$(foreach exl,$(DISABLE_FEATURES),$(realpath $(exl:%=$(FEATURESDIR)/%/$(1)))), \
-		$(realpath $(wildcard $(FEATURESDIR)/*/$(1))))
-
 # Load extra configs
 feature_configs		 = $(call wildcard_features,config.mk)
 ifeq "$(feature_configs)" ''
@@ -85,12 +89,12 @@ $(error Cannot find configs for feature. Something goes wrong.)
 endif
 include $(feature_configs)
 
+endif # INITRD_CONFIG
+
 # Guess variables
 GUESS_FSTYPE_SCRIPTS	= $(call wildcard_features,guess/fstype)
 GUESS_DEVICE_SCRIPTS	= $(call wildcard_features,guess/device)
 GUESS_COMMON_SCRIPTS	= $(call wildcard_features,guess/common)
-
-endif # INITRD_CONFIG
 
 ifdef VERBOSE
   verbose=-v
