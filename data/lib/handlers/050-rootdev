@@ -3,18 +3,9 @@
 . /scripts/functions
 
 handler() {
-	local FSTYPE="${ROOTFSTYPE:-$ID_FS_TYPE}"
-
-	[ ! -L /dev/.initramfs/root ] ||
-		return 0
-
-	if ! mount "$roflag" -o ${ROOTFLAGS:-defaults} -t "$FSTYPE" "$INIT_ROOT" "$rootmnt"; then
-		error "Unable to mount $INIT_ROOT as $FSTYPE."
+	mountpoint -q "$rootmnt" ||
+		mount ${DEBUG:+-v} "$roflag" "$rootmnt" ||
 		return 1
-	fi
-
-	message "Mount '$INIT_ROOT' as $rootmnt"
-	ln -s "$INIT_ROOT" /dev/.initramfs/root
 }
 
 roflag=-w

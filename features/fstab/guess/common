@@ -1,0 +1,6 @@
+#!/bin/sh -efu
+
+. guess-functions
+
+[ ! -f /etc/fstab -a ! -f /proc/mounts ] ||
+	guess_feature "fstab"

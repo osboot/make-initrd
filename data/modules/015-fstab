@@ -1,0 +1,32 @@
+#!/bin/sh
+
+msg='Generation fstab...'
+run() {
+	local i=1 n dev path str
+
+	[ ! -s /etc/fstab ] ||
+		while read dev path str; do
+			[ -n "${dev##\#*}" ] && [ -z "${path##/*}" ] ||
+				continue
+			n=$i
+			[ "$path" = / ] && n=0 || i=$(($i+1))
+
+			eval "local s$n=\"\$dev \$rootmnt\$path \$str\""
+		done < /etc/fstab
+
+	[ -z "${ROOT-}" ] ||
+		s0="$ROOT $rootmnt ${ROOTFSTYPE:-auto} ${ROOTFLAGS:-defaults} 1 1"
+
+	if [ -z "${s0-}" ]; then
+		error "Root device unspecified."
+		return 1
+	fi
+
+	n=0
+	while [ $n -lt $i ]; do
+		eval "printf '%s\n' \"\$s$n\""
+		n=$(($n+1))
+	done > /etc/fstab
+}
+
+run
