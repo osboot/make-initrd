@@ -1,0 +1,63 @@
+#!/bin/sh
+
+msg='Processing kernel events...'
+check() {
+	local f
+	for f in "/lib/$1"/*; do
+		"$f" ${2-} || return 1
+	done
+}
+
+run() {
+	local handler
+
+	# It is not currently limit since the execution of programs
+        # takes time, which is not counted. But we do not want to use
+        # additional utilities to calculate the time limit.
+	local sec=$((${ROOTDELAY:-180}*10))
+
+	while [ "$sec" -gt 0 ]; do
+		# Wait udev event queue
+		udevadm settle
+
+		# Stop queue to avoid race
+		udevadm control --stop-exec-queue
+
+		! check success -q ||
+			break
+
+		if ! glob -q "$udev_eventdir"/*; then
+			sleep 0.1
+			sec=$(($sec-1))
+			udevadm control --start-exec-queue
+			continue
+		fi
+
+		# Some handler uses udev, so we have to start it before
+		# start queue handlers.
+		mv -- "$udev_eventdir"/* "$handler_eventdir"
+		udevadm control --start-exec-queue
+
+		# Run udev handlers
+		for handler in /lib/handlers/*; do
+			name="${handler##*/}"
+			name="${name#*-}"
+
+			glob -q "$handler_eventdir/$name"* ||
+				continue
+
+			verbose "Running $name handler ..."
+			if ! "$handler"; then
+				error "event handler failed: $name"
+				return 1
+			fi
+		done
+		remove_done_events "$handler_eventdir"
+
+		sleep 0.1
+		sec=$(($sec-1))
+	done
+
+	check success ||
+		return 1
+}
