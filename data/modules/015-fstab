@@ -2,7 +2,7 @@
 
 msg='Generation fstab...'
 run() {
-	local i=1 n dev path str
+	local i=1 n dev path str s0
 
 	[ ! -s /etc/fstab ] ||
 		while read dev path str; do
@@ -28,5 +28,3 @@ run() {
 		n=$(($n+1))
 	done > /etc/fstab
 }
-
-run

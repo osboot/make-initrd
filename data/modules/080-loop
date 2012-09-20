@@ -5,6 +5,7 @@ check() {
 	local f
 	for f in "/lib/$1"/*; do
 		"$f" ${2-} || return 1
+		[ -n "${2-}" ] || verbose "Check '${f##*/}' success!"
 	done
 }
 
@@ -18,7 +19,7 @@ run() {
 
 	while [ "$sec" -gt 0 ]; do
 		# Wait udev event queue
-		udevadm settle
+		udevadm settle --timeout=5
 
 		# Stop queue to avoid race
 		udevadm control --stop-exec-queue
@@ -26,16 +27,23 @@ run() {
 		! check success -q ||
 			break
 
-		if ! glob -q "$udev_eventdir"/*; then
+		local ev_udev= ev_hdlr=
+
+		! glob -q "$udev_eventdir"/*    || ev_udev=1
+		! glob -q "$handler_eventdir"/* || ev_hdlr=1
+
+		if [ -z "$ev_udev$ev_hdlr" ]; then
 			sleep 0.1
 			sec=$(($sec-1))
 			udevadm control --start-exec-queue
 			continue
 		fi
 
+		[ -z "$ev_udev" ] ||
+			mv -- "$udev_eventdir"/* "$handler_eventdir"
+
 		# Some handler uses udev, so we have to start it before
 		# start queue handlers.
-		mv -- "$udev_eventdir"/* "$handler_eventdir"
 		udevadm control --start-exec-queue
 
 		# Run udev handlers
