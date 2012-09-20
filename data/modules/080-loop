@@ -19,7 +19,7 @@ run() {
 
 	while [ "$sec" -gt 0 ]; do
 		# Wait udev event queue
-		udevadm settle --timeout=5
+		udevadm settle --quiet --timeout=5
 
 		# Stop queue to avoid race
 		udevadm control --stop-exec-queue
