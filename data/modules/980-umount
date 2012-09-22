@@ -3,7 +3,17 @@
 msg='Umounting filesystems...'
 run() {
 	local mp
-	for mp in sys proc $UMOUNT_FS; do
-		umount "/$mp"
+
+	# Move filesystems to real root
+	for mp in dev run ${EXPORT_FS-} do
+		if [ -d "$rootmnt/$mp" ]; then
+			mount --move ${DEBUG:+-v} "/$mp" "$rootmnt/$mp"
+		else
+			umount ${DEBUG:+-v} "/$mp"
+		fi
+	done
+
+	for mp in ${UMOUNT_FS-} sys proc; do
+		umount ${DEBUG:+-v} "/$mp"
 	done
 }

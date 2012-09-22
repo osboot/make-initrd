@@ -1,22 +1,7 @@
 #!/bin/sh
 
-mount_move() {
-	if [ -d "/$1/$2" ]; then
-		/bin/mount --move "/$2" "/$1/$2"
-	else
-		/bin/umount "/$2"
-	fi
-}
-
 msg="Running init ($INIT)..."
 run() {
-	local mp
-
-	# Move filesystems to real root
-	for mp in dev run $EXPORT_FS; do
-		mount_move "$rootmnt" "$mp"
-	done
-
 	# Chain to real filesystem
 	exec /bin/run-init -e /dev/.initramfs/kern "$rootmnt" "$INIT" "$@"
 }
