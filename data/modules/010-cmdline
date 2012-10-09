@@ -37,7 +37,7 @@ run() {
 	read CMDLINE </proc/cmdline
 	export CMDLINE
 
-	for x in /etc/initrd/*; do
+	for x in /etc/initrd/cmdline.d/*; do
 		if [ -s "$x" ]; then
 			. "$x"
 			l="$l ${CMDLINE_PARAMS-}"
