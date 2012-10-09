@@ -2,7 +2,7 @@
 
 msg=
 run() {
-	[ ! -s /conf/initramfs.conf ] || . /conf/initramfs.conf
+	[ ! -s /etc/initrd/initramfs.conf ] || . /etc/initrd/initramfs.conf
 
 	export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 	export RUN_INITRD=1

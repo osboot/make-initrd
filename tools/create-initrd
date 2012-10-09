@@ -5,7 +5,7 @@
 cd "$rootdir"
 
 mkdir $verbose -p -- \
-	./conf \
+	./etc/initrd \
 	./dev \
 	./etc/modprobe.d \
 	./etc/udev/rules.d \

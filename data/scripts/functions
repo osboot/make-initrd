@@ -68,11 +68,11 @@ run_scripts() {
 
 load_modules() {
 	local m
-	[ ! -e /conf/modules-"$1" ] ||
+	[ ! -e /etc/initrd/modules-"$1" ] ||
 	while read m; do
 		[ -n "${m##\#*}" ] || continue
 		modprobe_check "$m"
-	done < /conf/modules-"$1"
+	done < /etc/initrd/modules-"$1"
 }
 
 glob() {
