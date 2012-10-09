@@ -1,1 +1,1 @@
-SUBSYSTEM=="block", ACTION!="remove", ENV{ID_FS_USAGE}=="filesystem", RUN+="/lib/filters/mountdev"
+SUBSYSTEM=="block", ACTION!="remove", ENV{ID_FS_USAGE}=="filesystem", RUN+="/lib/initrd/filters/mountdev"

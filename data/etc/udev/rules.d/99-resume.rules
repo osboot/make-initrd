@@ -1,1 +1,1 @@
-SUBSYSTEM=="block", ACTION!="remove", RUN+="/lib/filters/resume"
+SUBSYSTEM=="block", ACTION!="remove", RUN+="/lib/initrd/filters/resume"

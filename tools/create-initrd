@@ -5,11 +5,12 @@
 cd "$rootdir"
 
 mkdir $verbose -p -- \
-	./etc/initrd \
 	./dev \
+	./etc/initrd \
 	./etc/modprobe.d \
 	./etc/udev/rules.d \
 	./"$kernel_modules_dir" \
+	./lib/initrd \
 	./lib/udev \
 	./mnt \
 	./root \

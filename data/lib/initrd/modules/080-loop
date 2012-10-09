@@ -47,7 +47,7 @@ run() {
 		udevadm control --start-exec-queue
 
 		# Run udev handlers
-		for handler in /lib/handlers/*; do
+		for handler in /lib/initrd/handlers/*; do
 			name="${handler##*/}"
 			name="${name#*-}"
 
