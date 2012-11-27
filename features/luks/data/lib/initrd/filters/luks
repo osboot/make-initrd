@@ -4,6 +4,10 @@
 . /scripts/functions
 
 DEVNAME="/dev/${DEVNAME#/dev}"
+
+[ $ID_FS_TYPE = "crypto_LUKS" ] ||
+	exit 0
+
 cryptsetup isLuks "$DEVNAME" ||
 	exit 0
 
