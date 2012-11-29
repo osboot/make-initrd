@@ -5,6 +5,9 @@
 
 DEVNAME="/dev/${DEVNAME#/dev}"
 
+[ -z "${NO_LUKS-}" ] ||
+	exit 0
+
 [ $ID_FS_TYPE = "crypto_LUKS" ] ||
 	exit 0
 

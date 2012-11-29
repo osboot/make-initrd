@@ -9,6 +9,9 @@ split() {
 	path="$1" keydev="${2-}" luksdev="${3-}"
 }
 
+[ -z "${NO_LUKS-}" ] ||
+	exit 0
+
 [ -n "$LUKS_KEY" ] ||
 	exit 0
 i=0
