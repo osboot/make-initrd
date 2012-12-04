@@ -3,7 +3,7 @@
 msg='Processing kernel events...'
 check() {
 	local f
-	for f in "/lib/$1"/*; do
+	for f in "/lib/initrd/$1"/*; do
 		"$f" ${2-} || return 1
 		[ -n "${2-}" ] || verbose "Check '${f##*/}' success!"
 	done
