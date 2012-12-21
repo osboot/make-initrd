@@ -21,9 +21,6 @@ run() {
 		# Wait udev event queue
 		udevadm settle --quiet --timeout=5
 
-		# Stop queue to avoid race
-		udevadm control --stop-exec-queue
-
 		! check success -q ||
 			break
 
@@ -35,16 +32,11 @@ run() {
 		if [ -z "$ev_udev$ev_hdlr" ]; then
 			sleep 0.1
 			sec=$(($sec-1))
-			udevadm control --start-exec-queue
 			continue
 		fi
 
 		[ -z "$ev_udev" ] ||
 			mv -- "$udev_eventdir"/* "$handler_eventdir"
-
-		# Some handler uses udev, so we have to start it before
-		# start queue handlers.
-		udevadm control --start-exec-queue
 
 		# Run udev handlers
 		for handler in /lib/initrd/handlers/*; do
