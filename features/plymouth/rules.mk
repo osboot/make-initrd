@@ -7,3 +7,4 @@ plymouth: create
 	   $(TOOLSDIR)/add-module $$modlist;
 
 pack: plymouth
+depmod-image: plymouth
