@@ -11,8 +11,9 @@ for i in /sys/class/input/*; do
 	[ "$led" != '0' ] ||
 		continue
 
-	p="$(readlink -ev "$i")"
+	input="$(readlink -ev "$i")"
 
+	p="$input"
 	while [ "$p" != "/sys/devices" ]; do
 		if [ -f "$p/modalias" ]; then
 			read alias < "$p/modalias"
@@ -20,6 +21,26 @@ for i in /sys/class/input/*; do
 		fi
 		p="${p%/*}"
 	done
+
+	# Hardcode hid-generic
+	depinfo -PBF --set-version="$kernel" hid:b0000g0001v00000000p00000000 2>/dev/null ||:
+
 done > "$guessdir/kbdmodules"
+
+for h in /sys/class/hidraw/*; do
+	hid="$(readlink -ev "$h" 2>/dev/null)" ||
+		continue
+
+	p="$hid"
+	while [ "$p" != "/sys/devices" ]; do
+		if [ -f "$p/modalias" ]; then
+			read alias < "$p/modalias"
+			depinfo -PBF --set-version="$kernel" "$alias" 2>/dev/null ||:
+		fi
+		p="${p%/*}"
+	done
+done >> "$guessdir/kbdmodules"
+
+sort -uo "$guessdir/kbdmodules" "$guessdir/kbdmodules"
 
 guess_feature keyboard
