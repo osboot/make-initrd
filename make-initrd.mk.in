@@ -3,6 +3,7 @@
 
 include @PREFIX@/config.mk
 include @PREFIX@/rules.mk
+include $(GUESS_CONFIGS)
 
 ifneq "$(strip $(INITRD_CONFIG))" ''
 

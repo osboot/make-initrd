@@ -95,6 +95,7 @@ endif # INITRD_CONFIG
 GUESS_FSTYPE_SCRIPTS	= $(call wildcard_features,guess/fstype)
 GUESS_DEVICE_SCRIPTS	= $(call wildcard_features,guess/device)
 GUESS_COMMON_SCRIPTS	= $(call wildcard_features,guess/common)
+GUESS_CONFIGS		= $(call wildcard_features,guess/config.mk)
 
 ifdef VERBOSE
   verbose=-v
