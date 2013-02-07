@@ -26,6 +26,7 @@ TOOLSDIR	 = @PREFIX@/tools
 DATADIR		?= @PREFIX@/data
 SCRIPTDIR	?= @PREFIX@/scripts.d
 FEATURESDIR	?= @PREFIX@/features
+DETECTDIR	?= @PREFIX@/guess
 BOOTDIR		?= /boot
 SYSCONFDIR	?= /etc
 SYSFS_PATH	?= /sys
@@ -56,6 +57,7 @@ PROC_MOUNTS		?= /proc/mounts
 MOUNTPOINTS		?= /
 DEVICES			?=
 DISABLE_FEATURES	?= systemd
+DISABLE_GUESS		?=
 
 
 # This is helper to filter a disabled files.
@@ -91,16 +93,12 @@ include $(feature_configs)
 
 endif # INITRD_CONFIG
 
-# Guess variables
-GUESS_FSTYPE_SCRIPTS	= $(call wildcard_features,guess/fstype)
-GUESS_DEVICE_SCRIPTS	= $(call wildcard_features,guess/device)
-GUESS_COMMON_SCRIPTS	= $(call wildcard_features,guess/common)
-GUESS_CONFIGS		= $(call wildcard_features,guess/config.mk)
-
 ifdef VERBOSE
-  verbose=-v
-  Q=
+  verbose = -v
+  Q =
+  V = @
 else
   Q = @
+  V = @\#
 endif
 

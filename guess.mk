@@ -1,0 +1,46 @@
+.EXPORT_ALL_VARIABLES:
+.DEFAULT_GOAL := all
+
+#AUTODETECT ?= common root resume
+AUTODETECT ?= all
+
+GUESS_MODULES = \
+	$(if $(findstring all,$(AUTODETECT)), \
+		$(realpath $(wildcard $(DETECTDIR)/*)), \
+		$(foreach mod,$(AUTODETECT),$(realpath $(DETECTDIR)/$(mod))))
+
+GUESS_CONFIGS = \
+	$(wildcard $(foreach mod,$(GUESS_MODULES),$(mod)/config.mk))
+
+include $(GUESS_CONFIGS)
+
+wildcard_guess = \
+	$(filter-out \
+		$(foreach exl,$(DISABLE_GUESS),$(realpath $(exl:%=$(DETECTDIR)/%/$(1)))), \
+		$(foreach mod,$(GUESS_MODULES),$(realpath $(mod)/$(1))))
+
+GUESS_RULES = \
+	$(call wildcard_guess,rules.mk)
+
+include $(GUESS_RULES)
+
+GUESS_DEVICE_SCRIPTS = $(call wildcard_features,guess/device)
+GUESS_FSTYPE_SCRIPTS = $(call wildcard_features,guess/fstype)
+
+ifneq "$(strip $(INITRD_CONFIG))" ''
+# Load guessed parameters
+ifeq ($(MAKECMDGOALS),genimage)
+include $(GUESSDIR)/guessed.mk
+endif
+endif
+
+pre-guess: depmod-host check-for-root
+	@mkdir -m 755 -p -- $(GUESSDIR)
+	@for n in modules:rescue modules:add modalias:rescue modalias:add features; do \
+	   :> "$(GUESSDIR)/guess:$$n"; \
+	done
+
+guess: pre-guess
+	$V printf '============================================================\n\n' >&2
+	@$(TOOLSDIR)/guess-config > $(GUESSDIR)/guessed.mk
+	$V printf '============================================================\n\n' >&2

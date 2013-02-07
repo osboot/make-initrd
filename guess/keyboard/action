@@ -1,0 +1,66 @@
+#!/bin/sh -eu
+
+. guess-functions
+
+detect()
+{
+	hid_required=
+
+	for i in "$SYSFS_PATH/class/input"/*; do
+		[ -f "$i/name" -a -f "$i/modalias" ] ||
+			continue
+
+		read led < "$i/capabilities/led"
+
+		[ "$led" != '0' ] ||
+			continue
+
+		input="$(readlink -ev "$i")"
+
+		p="$input"
+		while [ "$p" != "$SYSFS_PATH/devices" ]; do
+			if [ -f "$p/modalias" ]; then
+				read alias < "$p/modalias"
+				guess_modalias "$alias"
+
+				# Detect usbhid
+				[ -n "${alias##usb:v*p*d*dc*dsc*dp*ic03isc*ip*in*}" ] ||
+					hid_required=1
+			fi
+			p="${p%/*}"
+		done
+	done
+
+	# Hardcode hid-generic
+	guess_modalias "hid:b0000g0001v00000000p00000000"
+
+	[ -n "$hid_required" ] ||
+		return 0
+
+	for h in "$SYSFS_PATH/class/hidraw"/*; do
+		hid="$(readlink -ev "$h" 2>/dev/null)" ||
+			continue
+
+		p="$hid"
+		while [ "$p" != "$SYSFS_PATH/devices" ]; do
+			if [ -f "$p/modalias" ]; then
+				read alias < "$p/modalias"
+				guess_modalias "$alias"
+			fi
+			p="${p%/*}"
+		done
+	done
+} 
+
+detect
+
+if [ ! -s "$guessdir/guess:modalias${GUESS_SUFFIX:+:$GUESS_SUFFIX}" ]; then
+	[ -n "${KEYBOARD_DEFAULT_MODULES-}" ] ||
+		exit 0
+	printf '%s\n' ${KEYBOARD_DEFAULT_MODULES-} |
+	while read m; do
+		[ -z "$m" ] || guess_module "$m"
+	done
+fi
+
+guess_feature keyboard

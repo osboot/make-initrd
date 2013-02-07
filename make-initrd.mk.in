@@ -3,14 +3,9 @@
 
 include @PREFIX@/config.mk
 include @PREFIX@/rules.mk
-include $(GUESS_CONFIGS)
+include @PREFIX@/guess.mk
 
 ifneq "$(strip $(INITRD_CONFIG))" ''
-
-# Load guessed parameters
-ifeq ($(MAKECMDGOALS),genimage)
-include $(GUESSDIR)/guessed.mk
-endif
 
 # Load requested features
 ifneq "$(strip $(FEATURES))" ''
@@ -41,26 +36,6 @@ all: check-for-root
 	done; \
 	rm -f -- $(TEMPDIR)/images; \
 	exit $$rc
-
-guess: depmod-host check-for-root
-	@mkdir -m 755 -p -- $(GUESSDIR)
-	@cat /dev/null > $(GUESSDIR)/modules
-	@cat /dev/null > $(GUESSDIR)/modalias
-	@cat /dev/null > $(GUESSDIR)/features
-	@for i in $(AUTODETECT); do \
-		mod="$$i"; \
-		arg=""; \
-		if [ -z "$${i##*:*}" ]; then \
-			mod="$${i%%:*}"; \
-			arg="$${i#*:}"; \
-		fi; \
-		if [ -x "$(TOOLSDIR)/guess-$$mod" ]; then \
-			"$(TOOLSDIR)/guess-$$mod" "$$arg"; \
-		else \
-			echo "Warning: Unknown guessing module: $$mod" >&2; \
-		fi; \
-	done
-	@$(TOOLSDIR)/guess-config > $(GUESSDIR)/guessed.mk
 
 guess-config: AUTODETECT ?= common root resume
 guess-config: check-for-root guess

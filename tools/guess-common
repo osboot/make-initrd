@@ -1,8 +1,0 @@
-#!/bin/sh -eu
-
-. sh-functions
-. guess-functions
-
-for module in ${GUESS_COMMON_SCRIPTS-}; do
-	[ ! -x "$module" ] || $module
-done

@@ -17,15 +17,15 @@ get_device() {
 }
 
 guess_modalias() {
-	printf '%s\n' "$1" >> "$guessdir/modalias"
+	printf '%s\n' "$1" >> "$guessdir/guess:modalias${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
 }
 
 guess_module() {
-	printf '%s\n' "$1" >> "$guessdir/modules"
+	printf '%s\n' "$1" >> "$guessdir/guess:modules:${GUESS_SUFFIX:+:$GUESS_SUFFIX:}"
 }
 
 guess_feature() {
-	printf '%s\n' "$1" >> "$guessdir/features"
+	printf '%s\n' "$1" >> "$guessdir/guess:features${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
 }
 
 guess_fstype() {

@@ -1,38 +1,74 @@
-#!/bin/sh -efu
+#!/bin/sh -eu
 
 . guess-functions
 
+modules_fmt() {
+	while read m; do
+		m="${m##*/}"
+		m="${m%.ko*}"
+		printf '%s ' "$m"
+	done |
+		fmt -u -w60
+}
+
+print_list() {
+	f="$guessdir/guess:$2"
+
+	[ "$(cat "$f"* |wc -l)" != "0" ] ||
+		return 0
+
+	printf '%s += \\\n' "$1"
+
+	for m in "$f:"* "$f"; do
+		[ -s "$m" ] ||
+			continue
+
+		fn="${m##*/guess:}"
+		name="${fn##*:}"
+		type="${fn%%:*}"
+
+		[ "$type" = 'features' ] ||
+			guess_feature add-modules
+
+		if [ -n "${verbose-}" ]; then
+			{
+				printf 'Module "%s" propose %s:\n' "$name" "$type"
+				sort -u "$m" | modules_fmt
+				printf '\n'
+			} >&2
+		fi
+
+		cat "$m"
+	done |
+		sort -u |
+		modules_fmt |
+		sed -e 's/^/\t/; $ ! s/$/ \\/'
+	printf '\n'
+}
+
 if [ -n "${RESOLVE_MODALIAS-}" ]; then
-	xargs -r depinfo \
-			--set-version="$kernel" \
-			--no-prefix \
-			--no-firmware \
-			--no-builtin \
-			<  "$guessdir/modalias" 2>/dev/null |
-		sort -u >> "$guessdir/modules"
-	> "$guessdir/modalias"
+	for m in "$guessdir"/guess:modalias*; do
+		[ -s "$m" ] ||
+			continue
+
+		suffix=
+		[ -z "${m##*/guess:modalias}" ] ||
+			suffix=":${m##*/guess:modalias:}"
+
+		xargs -r depinfo \
+				--set-version="$kernel" \
+				--no-prefix \
+				--no-firmware \
+				--no-builtin \
+				<  "$m" 2>/dev/null |
+			sort -u >> "$guessdir/guess:modules$suffix"
+
+		rm -f "$m"
+	done
 fi
 
-if [ -s "$guessdir/modules" -o -s "$guessdir/modalias" ]; then
-	printf '%s\n' 'add-modules' >> "$guessdir/features"
-fi
-
-sort -uo "$guessdir/modules"  "$guessdir/modules"
-sort -uo "$guessdir/modalias" "$guessdir/modalias"
-sort -uo "$guessdir/features" "$guessdir/features"
-
-printf 'MODULES_ADD\t+= '
-while read n; do
-	printf '%s ' "$n"
-done < "$guessdir/modules"
-
-while read n; do
-	printf '%s ' "$n"
-done < "$guessdir/modalias"
-printf '\n'
-
-printf 'FEATURES\t+= '
-while read n; do
-	printf '%s ' "$n"
-done < "$guessdir/features"
-printf '\n'
+print_list RESCUE_MODULES modules:rescue
+print_list RESCUE_MODULES modalias:rescue
+print_list MODULES_ADD    modules:add
+print_list MODULES_ADD    modalias:add
+print_list FEATURES       features

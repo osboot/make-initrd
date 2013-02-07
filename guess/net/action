@@ -3,12 +3,7 @@
 . sh-functions
 . guess-functions
 
-iface=
-if [ -n "$1" ]; then
-	[ -n ${1##iface=?*} ] ||
-		exit 1
-	iface=${1#iface=}
-fi
+iface="${GUESS_NET_IFACE-}"
 
 if [ -n "$iface" ]; then
 	guess_device "/class/net/$iface"
