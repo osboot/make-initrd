@@ -37,15 +37,15 @@ all: check-for-root
 	rm -f -- $(TEMPDIR)/images; \
 	exit $$rc
 
-guess-config: AUTODETECT ?= common root resume
 guess-config: check-for-root guess
 	@cat $(GUESSDIR)/guessed.mk
 	$Qrm -rf -- "$(GUESSDIR)"
 	$Qrmdir -- "$(WORKDIR)"
 
-guess-modules: AUTODETECT = root device
 guess-modules: check-for-root guess
-	@cat $(GUESSDIR)/modules $(GUESSDIR)/modalias | \
+	@for f in $(GUESSDIR)/guess:modules* $(GUESSDIR)/guess:modalias*; do \
+		[ ! -s "$$f" ] || cat "$$f"; \
+	done | \
 	   xargs -r depinfo \
 	      --set-version="$(KERNEL)" \
 	      --no-prefix \

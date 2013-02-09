@@ -1,8 +1,9 @@
-.EXPORT_ALL_VARIABLES:
-.DEFAULT_GOAL := all
 
-#AUTODETECT ?= common root resume
+ifeq ($(MAKECMDGOALS),guess-modules)
+AUTODETECT := root device
+else
 AUTODETECT ?= all
+endif
 
 GUESS_MODULES = \
 	$(if $(findstring all,$(AUTODETECT)), \
