@@ -21,7 +21,7 @@ guess_modalias() {
 }
 
 guess_module() {
-	printf '%s\n' "$1" >> "$guessdir/guess:modules:${GUESS_SUFFIX:+:$GUESS_SUFFIX:}"
+	printf '%s\n' "$1" >> "$guessdir/guess:modules${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
 }
 
 guess_feature() {
