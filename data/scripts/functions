@@ -138,6 +138,10 @@ get_dev() {
 			[ "/dev/disk/by-label/$ID_FS_LABEL_ENC" = "$name" ] ||
 				return 1
 			;;
+		/dev/block/[0-9]*:[0-9]*)
+			[ "/dev/block/$MAJOR:$MINOR" = "$name" ] ||
+				return 1
+			;;
 		/*)
 			[ "$DEVNAME" = "$name" ] || devlinks_check "$name" ||
 				return 1

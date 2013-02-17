@@ -1,8 +1,30 @@
 #!/bin/sh
 
+convert_dev() {
+	local retval dev value major minor
+	retval="$1"
+	dev="$2"
+
+	case "$dev" in
+		[0-9]*:[0-9]*)
+			value="/dev/block/$dev"
+			;;
+		[0-9]*)
+			value=$(( 0x$dev ))
+			major=$(( $value / 256 ))
+			minor=$(( $value % 256 ))
+			value="/dev/block/$major:$minor"
+			;;
+		*)
+			value="$dev"
+			;;
+	esac
+	eval "$retval=\"\$value\""
+}
+
 msg='Generation fstab...'
 run() {
-	local i=1 n dev path str s0
+	local i=1 n dev path str s0 ndev
 
 	[ ! -s /etc/fstab ] ||
 		while read dev path str; do
@@ -11,11 +33,15 @@ run() {
 			n=$i
 			[ "$path" = / ] && n=0 || i=$(($i+1))
 
-			eval "local s$n=\"\$dev \$rootmnt\$path \$str\""
+			convert_dev ndev "$dev"
+
+			eval "local s$n=\"\$ndev \$rootmnt\$path \$str\""
 		done < /etc/fstab
 
-	[ -z "${ROOT-}" ] ||
-		s0="$ROOT $rootmnt ${ROOTFSTYPE:-auto} ${ROOTFLAGS:-defaults} 1 1"
+	if [ -n "${ROOT-}" ]; then
+		convert_dev ndev "$ROOT"
+		s0="$ndev $rootmnt ${ROOTFSTYPE:-auto} ${ROOTFLAGS:-defaults} 1 1"
+	fi
 
 	if [ -z "${s0-}" ]; then
 		error "Root device unspecified."
