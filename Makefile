@@ -32,7 +32,7 @@ TOUCH_R = touch -r
 HELP2MAN = env -i help2man -N
 MAKEINFO_FLAGS = -D "VERSION $(VERSION)"
 
-DIRS = data features tools
+DIRS = data guess features tools
 
 CONF = initrd.mk
 
