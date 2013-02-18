@@ -2,6 +2,11 @@
 
 msg="Running init ($INIT)..."
 run() {
+	# Export custom variable
+	{
+		printf 'RD_TIMESTAMP="%s"\n' "$RD_TIMESTAMP"
+	} >> /dev/.initramfs/kern
+
 	# Chain to real filesystem
 	exec /bin/run-init -e /dev/.initramfs/kern "$rootmnt" "$INIT" "$@"
 }

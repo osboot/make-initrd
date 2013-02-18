@@ -34,4 +34,7 @@ run() {
 
 	echo > /proc/sys/kernel/hotplug
 	echo /sbin/modprobe > /proc/sys/kernel/modprobe
+
+	local dummy
+	read RD_TIMESTAMP dummy < /proc/uptime ||:
 }
