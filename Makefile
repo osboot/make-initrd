@@ -42,7 +42,7 @@ PREPROCESS_TARGET = make-initrd mkinitrd-make-initrd config.mk make-initrd.mk in
 
 sbin_TARGETS = make-initrd mkinitrd-make-initrd initrd-diff
 
-TARGETS = config.mk rules.mk initfiles.mk make-initrd.mk
+TARGETS = config.mk guess.mk rules.mk initfiles.mk make-initrd.mk
 
 SUBDIRS = src
 
