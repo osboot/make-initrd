@@ -1,0 +1,6 @@
+#!/bin/sh
+
+msg=
+run() {
+	rm -rf /dev/.initramfs
+}
