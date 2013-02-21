@@ -5,11 +5,15 @@
 
 iface="${GUESS_NET_IFACE-}"
 
-if [ -n "$iface" ]; then
-	guess_device "/class/net/$iface"
-	exit 0
-fi
-
-for iface in "$SYSFS_PATH"/class/net/*; do
-	guess_device "${iface#$SYSFS_PATH}"
-done
+case "$iface" in
+	'')
+		;;
+	all)
+		for iface in "$SYSFS_PATH"/class/net/*; do
+			guess_device "${iface#$SYSFS_PATH}"
+		done
+		;;
+	*)
+		guess_device "/class/net/${iface##*/}"
+		;;
+esac
