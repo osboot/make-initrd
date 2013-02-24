@@ -1,0 +1,30 @@
+#!/bin/sh -efu
+#
+# See http://www.freedesktop.org/software/systemd/man/os-release.html
+#
+
+. sh-functions
+
+cd "$rootdir"
+
+readonly version="${VERSION:-0}"
+VERSION=
+
+[ ! -s /etc/os-release ] || . /etc/os-release
+
+if [ -z "${PRETTY_NAME-}" ]; then
+	[ ! -s /etc/system-release ] ||
+		read PRETTY_NAME < /etc/system-release
+fi
+
+mkdir -p -- ./etc
+cat > ./etc/initrd-release <<EOF
+ID=make-initrd
+VERSION_ID=$version
+NAME="make-initrd"
+VERSION="${VERSION:+$VERSION }make-initrd-$version"
+PRETTY_NAME="${PRETTY_NAME:+$PRETTY_NAME }make-initrd-$version (Initramfs)"
+ANSI_COLOR="0;34"
+EOF
+
+ln -sf initrd-release ./etc/os-release
