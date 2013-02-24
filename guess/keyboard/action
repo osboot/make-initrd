@@ -62,5 +62,3 @@ if [ ! -s "$guessdir/guess:modalias${GUESS_SUFFIX:+:$GUESS_SUFFIX}" ]; then
 		[ -z "$m" ] || guess_module "$m"
 	done
 fi
-
-guess_feature keyboard
