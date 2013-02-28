@@ -10,7 +10,11 @@ cd "$rootdir"
 readonly version="${VERSION:-0}"
 VERSION=
 
-[ ! -s /etc/os-release ] || . /etc/os-release
+if [ -s /etc/os-release ]; then
+	( . /etc/os-release ) >/dev/null 2>&1 &&
+		. /etc/os-release ||
+		message 'Error: /etc/os-release is completely broken.'
+fi
 
 if [ -z "${PRETTY_NAME-}" ]; then
 	[ ! -s /etc/system-release ] ||
