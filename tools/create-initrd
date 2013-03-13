@@ -23,53 +23,61 @@ mkdir $verbose -p -- \
 
 initrd-release
 
-verbose "Copying files from libnss_files.so* ..."
-for lib in /lib64 /lib; do
-	[ ! -d "$lib" ] ||
-		find $lib -mindepth 1 -maxdepth 1 \
-			\( \
-				-name 'libnss_files.so*' -o \
-				-name 'libnss_dns.so*' \
-			\) \
-			-exec put-file . '{}' '+'
-done
+if [ -z "${INITRD_NO_LIBNSS-}" ]; then
+	verbose "Copying files from libnss_files.so* ..."
 
-echo 'root:x:13957::::::'                        >./etc/shadow
-echo 'root:*::'                                  >./etc/gshadow
-echo '127.0.0.1 localhost.localdomain localhost' >./etc/hosts
-echo ''                                          >./etc/resolv.conf
+	for lib in /lib64 /lib; do
+		[ ! -d "$lib" ] ||
+			find $lib -mindepth 1 -maxdepth 1 \
+				\( \
+					-name 'libnss_files.so*' -o \
+					-name 'libnss_dns.so*' \
+				\) \
+				-exec put-file . '{}' '+'
+	done
 
-while IFS=: read name pass gid dummy; do
-	[ -n "$name" ] && [ "$gid" -lt 500 ] ||
-		continue
-	printf '%s\n' "$name:$pass:$gid:$dummy"
-done < /etc/group > ./etc/group
+	cat >./etc/nsswitch.conf <<-EOF
+		passwd:    files
+		group:     files
+		shadow:    files
+		hosts:     files dns
+		networks:  files
+		rpc:       files
+		services:  files
+		protocols: files
+	EOF
+fi
 
-while IFS=: read name pass uid gid dummy; do
-	[ -n "$name" ] && [ "$uid" -lt 500 ] ||
-		continue
-	printf '%s\n' "$name:$pass:$uid:$gid:$dummy"
-done < /etc/passwd > ./etc/passwd
+if [ -z "${INITRD_NO_PWGR-}" ]; then
+	echo 'root:x:13957::::::' >./etc/shadow
+	echo 'root:*::'           >./etc/gshadow
 
-for n in protocols rpc services; do
-	egrep -v '^[[:space:]]*(#.*)?$' /etc/$n > ./etc/$n ||:
-done
+	while IFS=: read name pass gid dummy; do
+		[ -n "$name" ] && [ "$gid" -lt 500 ] ||
+			continue
+		printf '%s\n' "$name:$pass:$gid:$dummy"
+	done < /etc/group > ./etc/group
 
-cat >./etc/host.conf <<EOF
-order hosts,bind
-multi on
-EOF
+	while IFS=: read name pass uid gid dummy; do
+		[ -n "$name" ] && [ "$uid" -lt 500 ] ||
+			continue
+		printf '%s\n' "$name:$pass:$uid:$gid:$dummy"
+	done < /etc/passwd > ./etc/passwd
+fi
 
-cat >./etc/nsswitch.conf <<EOF
-passwd:    files
-group:     files
-shadow:    files
-hosts:     files dns
-networks:  files
-rpc:       files
-services:  files
-protocols: files
-EOF
+if [ -z "${INITRD_NO_NETWORK-}" ]; then
+	echo '127.0.0.1 localhost.localdomain localhost' >./etc/hosts
+	echo ''                                          >./etc/resolv.conf
+
+	for n in protocols rpc services; do
+		egrep -v '^[[:space:]]*(#.*)?$' /etc/$n > ./etc/$n ||:
+	done
+
+	cat >./etc/host.conf <<-EOF
+		order hosts,bind
+		multi on
+	EOF
+fi
 
 [ -z "${PUT_DIRS-}"  ] || put-tree . $PUT_DIRS
 [ -z "${PUT_FILES-}" ] || put-file . $PUT_FILES
