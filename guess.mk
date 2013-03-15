@@ -6,9 +6,9 @@ AUTODETECT ?= all
 endif
 
 GUESS_MODULES = \
-	$(if $(findstring all,$(AUTODETECT)), \
+	$(sort $(if $(findstring all,$(AUTODETECT)), \
 		$(realpath $(wildcard $(DETECTDIR)/*)), \
-		$(foreach mod,$(AUTODETECT),$(realpath $(DETECTDIR)/$(mod))))
+		$(foreach mod,$(AUTODETECT),$(realpath $(DETECTDIR)/$(mod)))))
 
 GUESS_CONFIGS = \
 	$(wildcard $(foreach mod,$(GUESS_MODULES),$(mod)/config.mk))
@@ -16,9 +16,9 @@ GUESS_CONFIGS = \
 include $(GUESS_CONFIGS)
 
 wildcard_guess = \
-	$(filter-out \
+	$(sort $(filter-out \
 		$(foreach exl,$(DISABLE_GUESS),$(realpath $(exl:%=$(DETECTDIR)/%/$(1)))), \
-		$(foreach mod,$(GUESS_MODULES),$(realpath $(mod)/$(1))))
+		$(foreach mod,$(GUESS_MODULES),$(realpath $(mod)/$(1)))))
 
 GUESS_RULES = \
 	$(call wildcard_guess,rules.mk)
