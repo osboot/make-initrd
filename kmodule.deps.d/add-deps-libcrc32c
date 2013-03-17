@@ -1,0 +1,22 @@
+#!/bin/sh -eu
+
+. sh-functions
+
+kmodules_list="$1"
+shift
+
+LIBCRC32C="$(depinfo -D "libcrc32c" 2>/dev/null |cut -f1 -d\ )"
+
+case "$LIBCRC32C" in
+	builtin) pattern='^(xfs|btrfs) ' ;;
+	module)  pattern='^libcrc32c '   ;;
+	*) exit 0 ;;
+esac
+
+egrep -qs "$pattern" "$kmodules_list" ||
+	exit 0
+
+egrep '^alias crc32c ' "$kernel_modules_dir"/modules.alias |
+while read prefix alias module; do
+	add-module "$module"
+done

@@ -25,5 +25,9 @@ load-modules: create
 		$(TOOLSDIR)/load-module --post-udev $(MODULES_LOAD); \
 	fi
 
-depmod-image: add-modules preload-modules load-modules
+add-deps: add-modules preload-modules load-modules rescue-modules
+	@echo "Adding module dependencies ..."
+	@$(TOOLSDIR)/add-module-deps
+
+depmod-image: add-modules preload-modules load-modules rescue-modules add-deps
 pack: rescue-modules
