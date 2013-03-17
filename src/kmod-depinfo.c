@@ -11,14 +11,15 @@
 #include <libkmod.h>
 
 enum show_flags {
-	SHOW_MODULES  = 0x00001,
-	SHOW_FIRMWARE = 0x00002,
-	SHOW_PREFIX   = 0x00004,
-	SHOW_BUILTIN  = 0x00008
+	SHOW_DEPS     = (1 << 1),
+	SHOW_MODULES  = (1 << 2),
+	SHOW_FIRMWARE = (1 << 3),
+	SHOW_PREFIX   = (1 << 4),
+	SHOW_BUILTIN  = (1 << 5),
 };
 
 static int show_tree = 0;
-static int opts = SHOW_MODULES | SHOW_FIRMWARE | SHOW_PREFIX | SHOW_BUILTIN;
+static int opts = SHOW_DEPS | SHOW_MODULES | SHOW_FIRMWARE | SHOW_PREFIX | SHOW_BUILTIN;
 
 static char *firmware_dir;
 static char firmware_defaultdir[] = "/lib/firmware/updates:/lib/firmware";
@@ -101,7 +102,7 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 		const char *key = kmod_module_info_get_key(l);
 		const char *val = kmod_module_info_get_value(l);
 
-		if ((opts & SHOW_MODULES) && !strcmp("depends", key))
+		if ((opts & SHOW_DEPS) && (opts & SHOW_MODULES) && !strcmp("depends", key))
 			process_depends(ctx, val);
 
 		else if ((opts & SHOW_FIRMWARE) && !strcmp("firmware", key))
@@ -168,9 +169,10 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 	kmod_module_unref_list(list);
 }
 
-static const char cmdopts_s[] = "k:b:f:tMFPBVh";
+static const char cmdopts_s[] = "k:b:f:tDMFPBVh";
 static const struct option cmdopts[] = {
 	{"tree",          no_argument,       0, 't'},
+	{"no-deps",       no_argument,       0, 'D'},
 	{"no-modules",    no_argument,       0, 'M'},
 	{"no-firmware",   no_argument,       0, 'F'},
 	{"no-prefix",     no_argument,       0, 'P'},
@@ -193,6 +195,7 @@ print_help(const char *progname)
 		"\n"
 		"Options:\n"
 		"   -t, --tree                  Show dependencies between modules hierarchically;\n"
+		"   -D, --no-deps               Don't show dependence;\n"
 		"   -P, --no-prefix             Omit the prefix describing the type of file;\n"
 		"   -M, --no-modules            Omit modules from the output;\n"
 		"   -F, --no-firmware           Omit firmware from the output;\n"
@@ -234,6 +237,9 @@ main(int argc, char **argv)
 
 	while ((c = getopt_long(argc, argv, cmdopts_s, cmdopts, NULL)) != -1) {
 		switch (c) {
+			case 'D':
+				opts ^= SHOW_DEPS;
+				break;
 			case 'M':
 				opts ^= SHOW_MODULES;
 				break;
