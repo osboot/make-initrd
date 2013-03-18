@@ -12,6 +12,7 @@ run_plymouth() {
 	: > /run/systemd/plymouth
 
 	/sbin/plymouthd --pid-file $pid
+	udevadm settle
 	/bin/plymouth --show-splash
 
 	[ ! -f "$pid" ] || omit_pid "$(cat "$pid")"
