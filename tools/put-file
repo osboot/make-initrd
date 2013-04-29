@@ -100,6 +100,9 @@ while :; do
 			continue
 
 		if [ ! -L "$fn" -a -d "$fn" ]; then
+			d="$destdir/${fn#$prefix}"
+			[ -d "$d" ] ||
+				mkdir $verbose -p -- "$d" >&2
 			find "$fn" -mindepth 1 -maxdepth 1
 			do_break=
 			continue
