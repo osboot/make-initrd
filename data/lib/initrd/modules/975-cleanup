@@ -3,4 +3,7 @@
 msg=
 run() {
 	rm -rf /dev/.initramfs
+
+	[ ! -f /tmp/net-lo.conf ] ||
+		ipconfig -D lo
 }

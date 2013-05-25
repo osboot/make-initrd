@@ -19,7 +19,8 @@ Requires: libkmod >= 8-alt1
 
 # ipconfig -q: kinit-utils-1.5.15-alt3
 # run-init -e: kinit-utils-1.5.17-alt2
-Requires: kinit-utils >= 1.5.25-alt1
+# ipconfig -D: kinit-utils-1.5.25-alt2
+Requires: kinit-utils >= 1.5.25-alt2
 
 # Move /dev from initrd to the real system.
 # 167: udevadm info --run
