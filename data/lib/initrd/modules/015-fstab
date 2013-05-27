@@ -22,7 +22,7 @@ convert_dev() {
 	eval "$retval=\"\$value\""
 }
 
-msg='Generation fstab...'
+msg='Generating fstab...'
 run() {
 	local i=1 n dev path str s0 ndev
 
