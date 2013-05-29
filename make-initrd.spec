@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.8.4
+Version: 0.8.5
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -168,6 +168,11 @@ fi
 %_datadir/%name/features/mdadm
 
 %changelog
+* Wed May 29 2013 Alexey Gladkov <legion@altlinux.ru> 0.8.5-alt1
+- initrd:
+  + Fix runtime message.
+  + Remove lo interface before real init execution.
+
 * Wed Mar 20 2013 Alexey Gladkov <legion@altlinux.ru> 0.8.4-alt1
 - Add simple syntax check for /etc/os-release.
 - Add /dev/{stdin,stdout,stderr,core,fd} to initrd.
