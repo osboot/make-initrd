@@ -59,16 +59,11 @@ elfcheck(const char *fn)
 	unsigned char buf[32];
 	struct stat st;
 
-	if (lstat(fn, &st) < 0)
-		return; // Ignore nonexistent file
-
-	if (S_ISDIR(st.st_mode))
-		return; // Ignore directories
+	// Ignore nonexistent file and not regular file
+	if (stat(fn, &st) < 0 || !S_ISREG(st.st_mode))
+		return;
 
 	if ((fd = open(fn, O_RDONLY, 0)) < 0) {
-		if (S_ISLNK(st.st_mode))
-			return; // Ignore broken symlinks
-
 		err(EXIT_FAILURE, "open `%s\" failed", fn);
 	}
 
