@@ -1,0 +1,84 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            $local_fs
+# Required-Start:      mountvirtfs
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Creates /etc/fstab.
+# Description:         Creates /etc/fstab.
+### END INIT INFO
+
+if [ "$1" != start ]; then
+	exit 0
+fi
+
+. /.initrd/initenv
+. /etc/init.d/functions
+
+convert_dev()
+{
+	local retval dev value major minor
+	retval="$1"
+	dev="$2"
+
+	case "$dev" in
+		[0-9]*:[0-9]*)
+			value="/dev/block/$dev"
+			;;
+		[0-9]*)
+			value=$(( 0x$dev ))
+			major=$(( $value / 256 ))
+			minor=$(( $value % 256 ))
+			value="/dev/block/$major:$minor"
+			;;
+		*)
+			value="$dev"
+			;;
+	esac
+	eval "$retval=\"\$value\""
+}
+
+gen_fstab()
+{
+	local i=1 n dev path str s0 ndev
+
+	[ ! -s /etc/fstab ] ||
+		while read dev path str; do
+			[ -n "${dev##\#*}" ] && [ -z "${path##/*}" ] ||
+				continue
+
+			case "$dev" in
+				cgroup|proc|sysfs|tmpfs|devfs|devtmpfs|usbfs|rpc_pipefs|nfsd)
+					continue
+					;;
+			esac
+
+			n=$i
+			[ "$path" = / ] && n=0 || i=$(($i+1))
+
+			convert_dev ndev "$dev"
+
+			eval "local s$n=\"\$ndev \$rootmnt\$path \$str\""
+		done < /etc/fstab
+
+	if [ -n "${ROOT-}" ]; then
+		convert_dev ndev "$ROOT"
+		s0="$ndev $rootmnt ${ROOTFSTYPE:-auto} ${ROOTFLAGS:-defaults} 1 1"
+	fi
+
+	if [ -z "${s0-}" ]; then
+		error "Root device unspecified."
+		return 1
+	fi
+
+	n=0
+	while [ $n -lt $i ]; do
+		eval "printf '%s\n' \"\$s$n\""
+		n=$(($n+1))
+	done > /etc/fstab
+}
+
+action_shell 'Creating /etc/fstab:' gen_fstab

@@ -1,0 +1,27 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            runinit
+# Required-Start:      halt
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       2
+# Default-Stop:
+# Short-Description:   Tells init to start real init.
+# Description:         Tells init to start real init.
+### END INIT INFO
+
+if [ "$1" != start ]; then
+	exit 0
+fi
+
+. /.initrd/initenv
+. /etc/init.d/functions
+
+echo "Running init ($INIT)"
+
+# Chain to real filesystem
+printf 'exec /bin/run-init -e /.initrd/kernenv "%s" "%s" %s\n' "$rootmnt" "$INIT" "$*" \
+	>> /sbin/init
+
+exec /sbin/telinit u

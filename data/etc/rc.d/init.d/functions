@@ -1,0 +1,688 @@
+#!/bin/sh
+#
+# Functions defined in this file are used by many rc scripts.
+# 
+# Author:	Miquel van Smoorenburg, <miquels@drinkel.nl.mugnet.org>
+# Hacked by:	Greg Galloway and Marc Ewing
+# Changed by:	Dmitry V. Levin
+
+# Set the initial default search path for use by startup scripts.
+export PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:/usr/X11R6/bin"
+
+SourceIfExists()     { [ -f "$1" ] && . "$@"; }
+SourceIfExecutable() { [ -x "$1" ] && . "$@"; }
+SourceIfNotEmpty()   { [ -s "$1" ] && . "$@"; }
+ExecIfExecutable()   { [ -x "$1" ] && "$@"; }
+
+if [ "$UID" = 0 ]; then
+	LANG=POSIX
+	LANGUAGE=POSIX
+	LC_ALL=POSIX
+fi
+
+# Read in our configuration
+if [ -z "${BOOTUP-}" ]; then
+	SourceIfNotEmpty /etc/sysconfig/init
+	[ -n "${BOOTUP-}" ] || BOOTUP=color
+fi
+
+if [ -x /sbin/consoletype ] && [ "$(consoletype)" = serial ]; then
+	BOOTUP=serial
+fi
+
+MOVE_TO_COL()     { :; }
+SETCOLOR_BANNER() { :; }
+SETCOLOR_FAILURE(){ :; }
+SETCOLOR_INFO()   { :; }
+SETCOLOR_NORMAL() { :; }
+SETCOLOR_SUCCESS(){ :; }
+SETCOLOR_WARNING(){ :; }
+
+[ "${BOOTUP-}" != color ] ||
+	SourceIfNotEmpty /etc/init.d/outformat
+
+INITLOG_ARGS=
+[ "${BOOTUP-}" = verbose ] || INITLOG_ARGS="-q"
+
+[ -n "${LOGLEVEL-}" ] && [ "${LOGLEVEL-}" -ge 0 ] 2>/dev/null || LOGLEVEL=1
+
+absolute() { which "$@"; }
+
+start_daemon()
+{
+	local ANNOUNCE BACKGROUND BASENAME CHECK CMDNAME DISPNAME EXPECT FLAGS LOCKFILE MAKE_PIDFILE NICE PIDFILE STATUS SU WHICH
+
+# Process options.
+	ANNOUNCE=1
+	BACKGROUND=
+	CHECK=
+	CMDNAME=
+	DISPNAME=
+	EXPECT=
+	LOCKFILE=
+	MAKE_PIDFILE=
+	NICE=0
+	PIDFILE=
+	SU=
+	while [ "$1" != "${1##-}" -o "$1" != "${1##+}" ]; do
+		case "$1" in
+		--)
+			shift
+			break
+			;;
+		--announce)
+			shift
+			ANNOUNCE=1
+			;;
+		--no-announce)
+			shift
+			ANNOUNCE=
+			;;
+		--background)
+			shift
+			BACKGROUND='--background'
+			;;
+		--check)
+			shift
+			CHECK="$1"
+			shift
+			;;
+		--displayname)
+			shift
+			DISPNAME="$1"
+			shift
+			;;
+		--expect-user)
+			shift 2
+			;;
+		--lockfile)
+			shift
+			LOCKFILE="$1"
+			shift
+			;;
+		--make-pidfile)
+			shift
+			BACKGROUND='--background'
+			MAKE_PIDFILE='--make-pidfile'
+			;;
+		--name)
+			shift
+			CMDNAME="$1"
+			shift
+			;;
+		--pidfile)
+			shift
+			PIDFILE="$1"
+			shift
+			;;
+		--user|--set-user)
+			shift 2
+			;;
+		[-+][0-9]*)
+			NICE="$1"
+			shift
+			;;
+		*)
+			echo "start_daemon: unrecognized option: $1" >&2
+			return 1
+			;;
+		esac
+	done
+
+# We need the absolute pathname.
+	if [ -z "$1" ]; then
+		msg_usage "start_daemon [options]... {program}..."
+		return 1
+	fi
+	if [ -n "$CHECK" -a -n "$CMDNAME" ]; then
+		echo >&2 "start_daemon: --check and --name are mutually exclusive options"
+		return 1
+	fi
+	if [ -n "$CMDNAME" -a -z "$PIDFILE" ]; then
+		echo >&2 "start_daemon: --name is set but --pidfile is not set"
+		return 1
+	fi
+
+	[ -z "$CHECK" ] || CHECK="$(absolute "$CHECK")" || return 1
+	WHICH="$(absolute "$1")" || return 1
+	if [ -n "$CMDNAME" ]; then
+		BASENAME="${CMDNAME##*/}"
+	elif [ -n "$CHECK" ]; then
+		BASENAME="${CHECK##*/}"
+	else
+		BASENAME="${1##*/}"
+	fi
+	shift
+	[ -n "$BASENAME" ] || return 1
+	[ -n "$DISPNAME" ] || DISPNAME="$BASENAME"
+
+# Use a safe umask
+	#umask 077
+
+# Don't export these because they may be invalid under another UID and the
+# directories may be gone while the daemon is still running.
+	local HOME= TMP= TMPDIR=
+
+	FLAGS="--start -N $NICE"
+	if [ -n "$CMDNAME" ]; then
+		FLAGS="$FLAGS --startas $WHICH --name $CMDNAME"
+	elif [ -n "$CHECK" ]; then
+		FLAGS="$FLAGS --exec $CHECK --startas $WHICH"
+	else
+		FLAGS="$FLAGS --exec $WHICH"
+	fi
+	[ -z "$PIDFILE" ] || FLAGS="$FLAGS --pidfile $PIDFILE"
+	[ -z "$BACKGROUND" ] || FLAGS="$FLAGS $BACKGROUND"
+	[ -z "$MAKE_PIDFILE" ] || FLAGS="$FLAGS $MAKE_PIDFILE"
+
+# Is it running at all?
+	if ! start-stop-daemon $FLAGS --test > /dev/null; then
+		msg_already_running "$DISPNAME"
+		passed "$BASENAME startup"
+		STATUS=$?
+		echo
+		return $STATUS
+	fi
+
+# Announce the action.
+	[ -z "$ANNOUNCE" ] || msg_starting "$DISPNAME"
+
+# Actually start the daemon.
+	initlog $INITLOG_ARGS -n "$BASENAME" -c "limited -n $BASENAME -- start-stop-daemon $FLAGS -- $*"
+	STATUS=$?
+
+	if [ $STATUS = 0 ]; then
+		[ -z "$LOCKFILE" ] || touch "$LOCKFILE"
+		[ "$BOOTUP" != verbose ] || echo -n " $DISPNAME "
+		success "$BASENAME startup"
+	else
+		failure "$BASENAME startup"
+	fi
+	echo
+
+	return $STATUS
+}
+
+stop_daemon()
+{
+	local ANNOUNCE BASENAME CMDNAME DEFAULT DISPNAME EXPECT FLAGS HUPSIG LOCKFILE MESSAGE NAME PIDFILE RETRY SIGNAL STATUS WHICH
+
+# Process options.
+	ANNOUNCE=1
+	CMDNAME=
+	DEFAULT=true
+	DISPNAME=
+	EXPECT=
+	LOCKFILE=
+	NAME=
+	PIDFILE=
+	RETRY=
+# start-stop-daemon wants a signal number.
+	SIGNAL="$(kill -l TERM)" || SIGNAL=15
+	HUPSIG="$(kill -l HUP)" || HUPSIG=1
+	while [ $# -ge 1 ]; do
+		case "$1" in
+		--)
+			shift
+			[ -z "$NAME" ] || return 1
+			NAME="$1"
+			break
+			;;
+		--announce)
+			shift
+			ANNOUNCE=1
+			;;
+		--no-announce)
+			shift
+			ANNOUNCE=
+			;;
+		--displayname)
+			shift
+			DISPNAME="$1"
+			shift
+			;;
+		--expect-user)
+			shift 2
+			;;
+		--lockfile)
+			shift
+			LOCKFILE="$1"
+			shift
+			;;
+		--name)
+			shift
+			CMDNAME="$1"
+			shift
+			;;
+		--pidfile)
+			shift
+			PIDFILE="$1"
+			shift
+			;;
+		--retry)
+			shift
+			RETRY="$1"
+			shift
+			;;
+		-[0-9]*)
+			SIGNAL="${1##-}"
+			DEFAULT=false
+			shift
+			;;
+		-*)
+			SIGNAL="${1##-}"
+			SIGNAL="$(kill -l -- "$SIGNAL")" || return 1
+			DEFAULT=false
+			ANNOUNCE=
+			shift
+			;;
+# Allow the process name to be in any argument for Red Hat compatibility.
+		*)
+			[ -z "$NAME" ] || return 1
+			NAME="$1"
+			shift
+			;;
+		esac
+	done
+
+# We need the absolute pathname for /proc/*/exe checks.
+	if [ -z "$NAME" ]; then
+		msg_usage "stop_daemon [options]... {program}..."
+		return 1
+	fi
+	WHICH="$(absolute "$NAME")" || return 1
+	[ -n "$CMDNAME" ] &&
+		BASENAME="${CMDNAME##*/}" ||
+		BASENAME="${NAME##*/}" || return 1
+
+	[ -n "$DISPNAME" ] || DISPNAME="$BASENAME"
+
+# Try to guess the PID file if one isn't specified manually.
+	if [ -z "$PIDFILE" ]; then
+		PIDFILE="/var/run/$BASENAME.pid"
+		[ -f "$PIDFILE" ] || PIDFILE=
+	elif [ "$PIDFILE" = none ]; then
+		PIDFILE=
+	fi
+
+	if [ -n "$CMDNAME" -a -z "$PIDFILE" ]; then
+		echo "stop_daemon: --name is set but --pidfile is not set" >&2
+		return 1
+	fi
+
+	FLAGS="--stop"
+	[ -z "$CMDNAME" ] &&
+		FLAGS="$FLAGS --exec $WHICH" ||
+		FLAGS="$FLAGS --name $CMDNAME"
+	[ -z "$PIDFILE" ] || FLAGS="$FLAGS --pidfile $PIDFILE"
+	[ -z "$RETRY" ] || FLAGS="$FLAGS --retry $RETRY"
+
+	if [ "$DEFAULT" = true ]; then
+		MESSAGE="$BASENAME shutdown"
+	else
+		MESSAGE="sending signal $SIGNAL to $BASENAME"
+	fi
+
+# Is it running at all?
+	if ! start-stop-daemon $FLAGS --test > /dev/null; then
+		msg_not_running "$DISPNAME"
+		[ -z "$LOCKFILE" ] || rm -f "$LOCKFILE"
+		passed "$MESSAGE"
+		STATUS=$?
+		echo
+		return $STATUS
+	fi
+
+# Announce the action.
+	[ -z "$ANNOUNCE" ] || msg_stopping "$DISPNAME"
+
+# Actually tell the daemon to stop.
+	start-stop-daemon $FLAGS --signal "$SIGNAL"
+	STATUS=$?
+
+# We really want to be sure the daemon is dead, unless we're sending a
+# custom signal.
+	if [ "$DEFAULT" = true -a $STATUS -eq 0 ]; then
+		sleep 0.1
+		if start-stop-daemon $FLAGS --test > /dev/null; then
+			sleep 1
+			SIGNAL="$(kill -l KILL)" || SIGNAL=9
+			start-stop-daemon $FLAGS --signal "$SIGNAL" > /dev/null
+		fi
+		[ -z "$PIDFILE" ] || rm -f "$PIDFILE"
+	fi
+
+	if [ $STATUS = 0 ]; then
+		[ -z "$LOCKFILE" -o "$SIGNAL" = "$HUPSIG" ] || rm -f "$LOCKFILE"
+		[ "$BOOTUP" != verbose ] || echo -n " $DISPNAME "
+		success "$MESSAGE"
+	else
+		failure "$MESSAGE"
+	fi
+	echo
+
+	return $STATUS
+}
+
+status()
+{
+	# Test syntax.
+	if [ $# = 0 ]; then
+		msg_usage "status [options]... {program}"
+		return 1
+	fi
+
+	local BASENAME CMDNAME DISPNAME EXPECT FLAGS LOCKFILE PIDFILE WHICH
+
+# Process options.
+	CMDNAME=
+	DISPNAME=
+	EXPECT=
+	LOCKFILE=
+	PIDFILE=
+	while [ "$1" != "${1##-}" ]; do
+		case "$1" in
+		--)
+			shift
+			break
+			;;
+		--displayname)
+			shift
+			DISPNAME="$1"
+			shift
+			;;
+		--expect-user)
+			shift 2
+			;;
+		--lockfile)
+			shift
+			LOCKFILE="$1"
+			shift
+			;;
+		--name)
+			shift
+			CMDNAME="$1"
+			shift
+			;;
+		--pidfile)
+			shift
+			PIDFILE="$1"
+			shift
+			;;
+		*)
+			echo "status: unrecognized option: $1" >&2
+			return 1
+			;;
+		esac
+	done
+
+# We need the absolute pathname for /proc/*/exe checks.
+	if [ -z "$1" ]; then
+		msg_usage "status [options]... {program}"
+		return 1
+	fi
+	WHICH="$(absolute "$1")" || return 1
+	[ -n "$CMDNAME" ] &&
+		BASENAME="${CMDNAME##*/}" ||
+		BASENAME="${1##*/}" || return 1
+
+	[ -n "$DISPNAME" ] || DISPNAME="$BASENAME"
+
+# Try to guess the PID file if one isn't specified manually.
+	if [ -z "$PIDFILE" ]; then
+		PIDFILE="/var/run/$BASENAME.pid"
+		test -f "$PIDFILE" || PIDFILE=
+	elif [ "$PIDFILE" = none ]; then
+		PIDFILE=
+	fi
+
+	if [ -n "$CMDNAME" -a -z "$PIDFILE" ]; then
+		echo "status: --name is set but --pidfile is not set" >&2
+		return 1
+	fi
+
+# Actually determine the status.
+	FLAGS="--stop --test"
+	[ -z "$CMDNAME" ] &&
+		FLAGS="$FLAGS --exec $WHICH --user-fallback-to-name" ||
+		FLAGS="$FLAGS --name $CMDNAME"
+	[ -z "$PIDFILE" ] || FLAGS="$FLAGS --pidfile $PIDFILE"
+	start-stop-daemon $FLAGS >/dev/null
+
+# Report it.
+	if [ $? -eq 0 ]; then
+		echo "$DISPNAME is running"
+		return 0
+	fi
+
+	if [ -n "$PIDFILE" -a -f "$PIDFILE" ]; then
+		echo "$DISPNAME is dead, but stale PID file exists"
+		return 1
+	fi
+
+	[ -n "$LOCKFILE" ] || LOCKFILE="/var/lock/subsys/$BASENAME"
+	if [ -f "$LOCKFILE" ]; then
+		echo "$DISPNAME is dead, but subsystem is locked"
+		return 2
+	fi
+
+	echo "$DISPNAME is stopped"
+	return 3
+}
+
+echo_success()
+{
+	MOVE_TO_COL
+	echo -n '[ '
+	SETCOLOR_SUCCESS
+	echo -n 'DONE'
+	SETCOLOR_NORMAL
+	echo -ne ' ]\r'
+	return 0
+}
+
+echo_failure()
+{
+	MOVE_TO_COL
+	echo -n '['
+	SETCOLOR_FAILURE
+	echo -n 'FAILED'
+	SETCOLOR_NORMAL
+	echo -ne ']\r'
+	return 1
+}
+
+echo_passed()
+{
+	MOVE_TO_COL
+	echo -n '['
+	SETCOLOR_WARNING
+	echo -n 'PASSED'
+	SETCOLOR_NORMAL
+	echo -ne ']\r'
+	return 1
+}
+
+# Log that something succeeded
+success()
+{
+	if [ -z "${IN_INITLOG-}" ]; then
+		initlog $INITLOG_ARGS -n $0 -s "$1" -e 1
+	else
+		local opipe
+		opipe="$(trap -p PIPE)"
+		trap '' PIPE
+		echo "$INITLOG_ARGS -n $0 -s \"$1\" -e 1" >&21
+		$opipe
+	fi
+	echo_success
+	return 0
+}
+
+# Log that something failed
+failure()
+{
+	local rc=$?
+	if [ -z "${IN_INITLOG-}" ]; then
+		initlog $INITLOG_ARGS -n $0 -s "$1" -e 2
+	else
+		local opipe
+		opipe="$(trap -p PIPE)"
+		trap '' PIPE
+		echo "$INITLOG_ARGS -n $0 -s \"$1\" -e 2" >&21
+		$opipe
+	fi
+	echo_failure
+	return $rc
+}
+
+# Log that something passed, but may have had errors. Useful for fsck
+passed()
+{
+	local rc=$?
+	if [ -z "${IN_INITLOG-}" ]; then
+		initlog $INITLOG_ARGS -n $0 -s "$1" -e 1
+	else
+		local opipe
+		opipe="$(trap -p PIPE)"
+		trap '' PIPE
+		echo "$INITLOG_ARGS -n $0 -s \"$1\" -e 1" >&21
+		$opipe
+	fi
+	echo_passed
+	return $rc
+}
+
+# Run some action. Log its output.
+action()
+{
+	local STRING
+	STRING="$1"
+	shift
+	echo -n "$STRING "
+	initlog $INITLOG_ARGS -c "$*"
+	local rc=$?
+	[ $rc -eq 0 ] && success "$STRING" || failure "$STRING"
+	echo
+	return $rc
+}
+
+action_shell()
+{
+	local STRING
+	STRING="$1"
+	shift
+	echo -n "$STRING "
+	"$@"
+	local rc=$?
+	[ $rc -eq 0 ] && success "$STRING" || failure "$STRING"
+	echo
+	return $rc
+}
+
+msg_starting()
+{
+	local a
+	a="$1"
+	shift
+	printf "Starting %s service: " "$a"
+}
+
+msg_already_running()
+{
+	local a
+	a="$1"
+	shift
+	printf "Service %s is already running." "$a"
+}
+
+msg_stopping()
+{
+	local a
+	a="$1"
+	shift
+	printf "Stopping %s service: " "$a"
+}
+
+msg_not_running()
+{
+	local a
+	a="$1"
+	shift
+	printf "Service %s is not running." "$a"
+}
+
+msg_reloading()
+{
+	local a
+	a="$1"
+	shift
+	printf "Reloading %s service: " "$a"
+}
+
+msg_usage()
+{
+	printf "Usage: %s\n" "$*" >&2
+}
+
+is_yes()
+{
+	# Test syntax	
+	if [ $# = 0 ]; then
+		msg_usage "is_yes {value}"
+		return 2
+	fi
+
+	# Check value
+	case "$1" in
+		yes|Yes|YES|true|True|TRUE|on|On|ON|Y|y|1)
+			# true returns zero
+			return 0
+		;;
+		*)
+			# false returns one
+			return 1
+		;;
+	esac
+}
+
+is_no()
+{
+	# Test syntax
+	if [ $# = 0 ] ; then
+		msg_usage "is_no {value}"
+		return 2
+	fi
+
+	case "$1" in
+		no|No|NO|false|False|FALSE|off|Off|OFF|N|n|0)
+			# true returns zero
+			return 0
+			;;
+		*)
+			# false returns one
+			return 1
+		;;
+	esac
+}
+
+# Confirm whether we really want to run this service.
+confirm()
+{
+	while :; do
+		local answer
+		echo -n "Start service $1 (Y)es/(N)o/(C)ontinue? [Y] "
+		read answer
+		case "$answer" in
+			y|Y|yes|Yes|YES|'')
+				return 0
+				;;
+			n|N|no|No|NO)
+				return 1
+				;;
+			c|C|continue|Continue|CONTINUE)
+				return 2
+				;;
+		esac
+	done
+}

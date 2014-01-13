@@ -1,1 +1,1 @@
-SUBSYSTEM=="net", ACTION!="remove", RUN+="/lib/initrd/filters/netdev"
+SUBSYSTEM=="net", ACTION!="remove", RUN+="/lib/uevent/filters/netdev"

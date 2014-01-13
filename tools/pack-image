@@ -32,4 +32,8 @@ printf >> "$workdir"/initcpio 'nod ./dev/%s\n' \
 	"console 0600 0 0 c 5 1" \
 	"ptmx    0666 0 0 c 5 2"
 
+# Hack
+printf >> "$workdir"/initcpio 'file ./init /sbin/init 700 0 0\n'
+printf >> "$workdir"/initcpio 'pipe ./.initrd/shell 666 0 0\n'
+
 gen_init_cpio "$workdir"/initcpio > "$outfile"

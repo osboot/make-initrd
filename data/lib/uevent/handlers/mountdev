@@ -1,0 +1,19 @@
+#!/bin/sh
+
+. /.initrd/initenv
+. uevent-sh-functions
+
+handler() {
+	[ -d "$MOUNTPOINT" ] ||
+		return 1
+	mountpoint -q "$MOUNTPOINT" ||
+		mount ${DEBUG:+-v} "$roflag" "$MOUNTPOINT" ||
+		return 1
+}
+
+roflag=-w
+[ -z "$readonly" ] || roflag=-r
+
+for e in "$eventdir"/mountdev.*; do
+	( . "$e"; handler; ) && done_event "$e" ||:
+done

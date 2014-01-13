@@ -1,0 +1,27 @@
+#!/bin/sh
+
+. /etc/init.d/functions
+
+PIDFILE=
+LOCKFILE=
+RETVAL=0
+
+start()   { :; }
+stop()    { :; }
+status()  { :; }
+restart() { stop; start; }
+reload()  { restart; }
+
+switch()
+{
+	case "$1" in
+		start|stop|status|reload|restart) "$1"       ;;
+		condstop)    [ ! -e "$LOCKFILE" ] || stop    ;;
+		condrestart) [ ! -e "$LOCKFILE" ] || restart ;;
+		condreload)  [ ! -e "$LOCKFILE" ] || reload  ;;
+		*)
+			msg_usage "${0##*/} {start|stop|reload|restart|condstop|condrestart|condreload|status}"
+			RETVAL=1
+	esac
+	exit $RETVAL
+}

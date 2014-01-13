@@ -1,0 +1,65 @@
+#!/bin/sh -eu
+
+. shell-error
+. shell-process
+
+daemon_log_file="/var/log/$PROG.log"
+daemon_err_file="/var/log/$PROG.err.log"
+daemon_pid_file="/var/run/$PROG.pid"
+
+if [ "$#" = 0 ]; then
+	daemon ||
+		exit 1
+	message_syslog=1
+fi
+
+. /.initrd/initenv
+. uevent-sh-functions
+
+is_success()
+{
+	local f
+	for f in $successdir/*; do
+		"$f" ${1-} ||
+			return 1
+		[ -n "${1-}" ] ||
+			verbose "Check '${f##*/}' success!"
+	done
+}
+
+mkdir -p -- "$eventdir"
+
+message "STARTING ..."
+
+while :; do
+	# Wait udev event queue
+	udevadm settle --quiet --timeout=5
+
+	! is_success quiet ||
+		break
+
+	mv -- "$filterdir"/* "$eventdir" 2>/dev/null ||:
+
+	for event in "$eventdir"/*; do
+		name="${event##*/}"
+		name="${name%%.*}"
+
+		handler="$handlerdir/$name"
+
+		[ -s "$event" -a -x "$handler" ] ||
+			continue
+
+		verbose "Running $name handler ..."
+		! "$handler" ||
+			continue
+
+		error "event handler failed: $name"
+		return 1
+	done
+
+	# Remove done events
+	rm -f "$eventdir"/done.* 2>/dev/null
+done
+
+telinit 2
+

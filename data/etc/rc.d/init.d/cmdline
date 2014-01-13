@@ -1,0 +1,113 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            cmdline
+# Required-Start:      mountvirtfs
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Parse cmdline arguments.
+# Description:         Parse cmdline arguments.
+### END INIT INFO
+
+if [ "$1" != start ]; then
+	exit 0
+fi
+
+. /etc/init.d/functions
+
+defaults() {
+	[ ! -s /etc/initrd/initramfs.conf ] || . /etc/initrd/initramfs.conf
+
+	export PATH=/bin:/sbin:/usr/bin:/usr/sbin:/lib/initrd/bin
+	export RUN_INITRD=1
+	export INIT='/sbin/init'
+	export DEBUG=
+	export QUIET=
+	export PANIC=
+	export rootmnt='/root'
+	export readonly=1
+	export RESCUE_MODULES="${RESCUE_MODULES-}"
+	export UDEV_VERSION="$(udevd --version)" ||:
+}
+
+unquote() {
+	local var="$1" out="$2"
+	if [ -z "${out##*\'}${out%%\'*}" ]; then
+		out="${out#\'}"
+		out="${out%\'}"
+	elif [ -z "${out##*\"}${out%%\"*}" ]; then
+		out="${out#\"}"
+		out="${out%\"}"
+	fi
+	eval "$var=\"\$out\""
+}
+
+
+parse_attrs() {
+	multival=
+	case "$n" in
+		*:m) multival=1 ;;
+	esac
+	n="${n%:*}"
+}
+
+export_multi() {
+	local i= n="$1" v="$2"
+	eval "i=\${$n:-0}"
+	eval export "$n$i=\"\$v\""
+	eval export "$n=$(($i+1))"
+}
+
+parse_cmdline() {
+	local x s n v l=
+	local CMDLINE_PARAMS
+
+	read CMDLINE </proc/cmdline
+	export CMDLINE
+
+	for x in /etc/initrd/cmdline.d/*; do
+		if [ -s "$x" ]; then
+			. "$x"
+			l="$l ${CMDLINE_PARAMS-}"
+		fi
+	done
+
+	for x in $CMDLINE; do
+		s="$(replace -s= "[a-z]-." "[A-Z]__" "$x")"
+		for n in $l; do
+			parse_attrs
+			case "$s" in
+				RW)	readonly=	;;
+				RO)	readonly=1	;;
+				$n)	export "$s=1"	;;
+				$n=*)
+					v="${s#*=}"
+					unquote v "$v"
+					[ -n "$multival" ] &&
+						export_multi "$n" "$v" ||
+						eval export "$n=\"\$v\""
+					;;
+			esac
+		done
+	done
+
+	[ -z "$DEBUG" ] || QUIET=
+	STOP=",$STOP,"
+	IGNORE=",$IGNORE,"
+}
+
+parse() {
+	defaults
+	parse_cmdline
+
+	showenv -q |
+	while read l; do
+		s="${l%%=*}"
+		[ -z "${s##*[!A-Za-z0-9_]*}" ] ||
+			printf 'export %s\n' "$l"
+	done > /.initrd/initenv
+}
+
+action_shell 'Parsing cmdline arguments:' parse

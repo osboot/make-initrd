@@ -1,0 +1,30 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            uevent
+# Required-Start:      udev
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Process kernel events.
+# Description:         Processing kernel events.
+### END INIT INFO
+
+. /etc/init.d/template
+
+PIDFILE=/var/run/ueventd.pid
+LOCKFILE=/var/lock/subsys/ueventd
+ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE"
+
+start() {
+	start_daemon $ARGS -- ueventd || RETVAL=$?
+	return $RETVAL
+}
+
+stop() {
+	stop_daemon $ARGS -- ueventd || RETVAL=$?
+	return $RETVAL
+}
+
+switch "${1-}"

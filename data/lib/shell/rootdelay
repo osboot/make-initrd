@@ -1,0 +1,22 @@
+#!/bin/sh -efu
+
+. /.initrd/initenv
+
+# It is not currently limit since the execution of programs
+# takes time, which is not counted. But we do not want to use
+# additional utilities to calculate the time limit.
+{
+	sec=$(( ${ROOTDELAY:-180} * 10 ))
+
+	while [ "$sec" -gt 0 ]; do
+		sleep 0.1 ||
+			return 1
+		sec=$(( $sec - 1 ))
+	done
+} 2>/dev/null ||
+	exit 0
+
+[ ! -x "$rootmnt/$INIT" ] ||
+	exit 0
+
+echo "The waiting time expired!" > /.initrd/shell

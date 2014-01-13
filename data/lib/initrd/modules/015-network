@@ -1,6 +1,0 @@
-#!/bin/sh -efu
-
-msg='Initialize lo interface...'
-run() {
-	ipconfig -q 127.0.0.1:::::lo:none
-}

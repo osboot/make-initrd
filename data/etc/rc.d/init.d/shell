@@ -1,0 +1,21 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            shell
+# Required-Start:      cmdline
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Prepare emergency shell.
+# Description:         Prepare emergency shell.
+### END INIT INFO
+
+if [ "$1" != start ]; then
+	exit 0
+fi
+
+for f in /lib/shell/*; do
+	[ -x "$f" ] || break
+	"$f" &
+done

@@ -1,0 +1,16 @@
+#!/bin/sh -efu
+
+. /.initrd/initenv
+. shell-error
+
+msg=
+[ -n "${RDSHELL-}" ] ||
+	read msg < /.initrd/shell
+
+# Disallow console access
+[ "$PANIC" != 0 ] || reboot
+
+[ -z "${RESCUE_MODULES-}" ] || modprobe $RESCUE_MODULES
+
+[ -z "$msg" ] || message "$msg"
+PS1='(initramfs)$ ' exec /bin/sh -i +m

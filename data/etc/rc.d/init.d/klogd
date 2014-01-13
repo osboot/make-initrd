@@ -1,0 +1,97 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            klogd
+# Required-Start:      $syslog
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Starts klogd.
+# Description:         klogd is kernel message trapping daemon.
+### END INIT INFO
+
+WITHOUT_RC_COMPAT=1
+
+# Source function library.
+. /etc/init.d/functions
+
+SourceIfNotEmpty /etc/sysconfig/klogd
+
+PIDFILE=/var/run/klogd.pid
+LOCKFILE=/var/lock/subsys/klogd
+RETVAL=0
+
+start()
+{
+	msg_starting $"kernel logger"
+	start_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --no-announce -- klogd $KLOGD_OPTIONS
+	RETVAL=$?
+	return $RETVAL
+}
+
+stop()
+{
+	msg_stopping $"kernel logger"
+	stop_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --no-announce klogd
+	RETVAL=$?
+	return $RETVAL
+}
+
+restart()
+{
+	stop
+	start
+}
+
+reload()
+{
+	action $"Reloading kernel logger:" klogd -I
+	RETVAL=$?
+	return $RETVAL
+}
+
+# See how we were called.
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	status)
+		status --pidfile "$PIDFILE" klogd
+		RETVAL=$?
+		;;
+	restart)
+		restart
+		;;
+	reload)
+		reload
+		;;
+	condstart)
+		if [ ! -e "$LOCKFILE" ]; then
+			start
+		fi
+		;;
+	condstop)
+		if [ -e "$LOCKFILE" ]; then
+			stop
+		fi
+		;;
+	condrestart)
+		if [ -e "$LOCKFILE" ]; then
+			restart
+		fi
+		;;
+	condreload)
+		if [ -e "$LOCKFILE" ]; then
+			reload
+		fi
+		;;
+	*)
+		msg_usage "${0##*/} {start|stop|status|restart|reload|condstart|condstop|condrestart|condreload}"
+		RETVAL=1
+esac
+
+exit $RETVAL

@@ -1,0 +1,16 @@
+#!/bin/sh
+
+filterdir='/.initrd/uevent-udev'
+eventdir='/.initrd/uevent-events'
+handlerdir='/lib/uevent/handlers'
+successdir='/lib/uevent/success'
+
+mk_event() {
+	mkdir -p -- "$filterdir"
+	mktemp "$filterdir/$1.XXXXXXXXX"
+}
+
+done_event() {
+	mv -f "$1" "${1%/*}/done.${1##*/}"
+}
+

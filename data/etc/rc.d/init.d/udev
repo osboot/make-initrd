@@ -1,0 +1,74 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            udev
+# Required-Start:      mountvirtfs
+# Should-Start:        modules
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Populates /dev with device nodes.
+# Description:         Mounts a tempfs on /dev and starts the udevd daemon.
+#                      Device nodes are created as defined by udev.
+### END INIT INFO
+
+. /etc/init.d/template
+. initrd-sh-functions
+
+load_modules() {
+	local m
+	[ ! -e /etc/initrd/modules-"$1" ] ||
+	while read m; do
+		[ -z "${m##\#*}" ] || modprobe "$m"
+	done < /etc/initrd/modules-"$1"
+}
+
+pre_start() {
+	action_shell "Loading modules before udev:" load_modules preudev
+}
+
+post_start() {
+	action_shell "Loading modules after udev:" load_modules postudev
+}
+
+start() {
+	pre_start
+
+	action "Starting udev:" udevd --daemon --resolve-names=never ||
+		RETVAL=$?
+
+	[ "$RETVAL" = 0 ] ||
+		return $RETVAL
+
+	udevadm control --log-priority=info
+	[ -z "${DEBUG-}" ] || udevadm control --log-priority=debug
+
+	udevadm control --property=STARTUP=1
+	udevadm control --reload >/dev/null 2>&1 ||:
+
+	udevadm trigger --type=subsystems --action=add >/dev/null 2>&1
+	udevadm trigger --type=devices    --action=add >/dev/null 2>&1
+
+	post_start
+}
+
+stop() {
+	# Stop udevd, we'll miss a few events while we run init, but we catch up
+	udevadm settle
+	udevadm control --stop-exec-queue
+
+	action "Stoping udev:" udevadm control --exit ||
+		RETVAL=$?
+
+	local udev_db='/run/udev'
+
+	[ "${UDEV_VERSION:-0}" -gt 185 ] ||
+		udev_db="$(udevadm info --run)"
+
+	# ignore any failed event because the init script will trigger again all events
+	rm -rf $udev_db
+
+	return $RETVAL
+}
+
+switch "${1-}"

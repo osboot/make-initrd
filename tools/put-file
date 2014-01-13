@@ -125,8 +125,9 @@ while :; do
 
 		cp $verbose -aud "$fn" "$destdir/$new" >&2
 
-		[ ! -L "$fn" ] ||
+		if [ -L "$fn" ]; then
 			readlink -ev "$fn" 2>/dev/null ||:
+		fi
 
 	done < "$workdir"/fn > "$workdir"/fn.new
 

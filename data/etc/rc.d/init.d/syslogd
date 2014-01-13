@@ -1,0 +1,107 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            $syslog
+# Required-Start:      localnet
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Starts syslogd.
+# Description:         Syslog is the facility by which many daemons use to log
+#                      messages to various system log files. It is a good idea to always
+#                      run syslog.
+### END INIT INFO
+
+WITHOUT_RC_COMPAT=1
+
+# Source function library.
+. /etc/init.d/functions
+
+SourceIfNotEmpty /etc/sysconfig/syslogd
+
+SYSLOGD=/sbin/syslogd
+[ -x "$SYSLOGD" ] || exit
+
+PIDFILE=/var/run/syslogd.pid
+LOCKFILE=/var/lock/subsys/syslogd
+RETVAL=0
+
+start()
+{
+	msg_starting $"system logger"
+	start_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --no-announce -- syslogd $SYSLOGD_OPTIONS
+	RETVAL=$?
+	return $RETVAL
+}
+
+stop()
+{
+	msg_stopping $"system logger"
+	stop_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --no-announce syslogd
+	RETVAL=$?
+	return $RETVAL
+}
+
+restart()
+{
+	stop
+	start
+}
+
+reload()
+{
+	if echo -E "$SYSLOGD_OPTIONS" |grep -Eqs '(^|[[:space:]]+)-j[[:space:]]+'; then
+		restart
+	else
+		msg_reloading $"system logger"
+		stop_daemon --pidfile "$PIDFILE" -HUP syslogd
+		RETVAL=$?
+	fi
+	return $RETVAL
+}
+
+# See how we were called.
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	status)
+		status --pidfile "$PIDFILE" syslogd
+		RETVAL=$?
+		;;
+	restart)
+		restart
+		;;
+	reload)
+		reload
+		;;
+	condstart)
+		if [ ! -e "$LOCKFILE" ]; then
+			start
+		fi
+		;;
+	condstop)
+		if [ -e "$LOCKFILE" ]; then
+			stop
+		fi
+		;;
+	condrestart)
+		if [ -e "$LOCKFILE" ]; then
+			restart
+		fi
+		;;
+	condreload)
+		if [ -e "$LOCKFILE" ]; then
+			reload
+		fi
+		;;
+	*)
+		msg_usage "${0##*/} {start|stop|status|restart|reload|condstart|condstop|condrestart|condreload}"
+		RETVAL=1
+esac
+
+exit $RETVAL
