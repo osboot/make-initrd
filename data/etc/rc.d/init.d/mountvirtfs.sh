@@ -47,6 +47,7 @@ start() {
 	chmod 0664 /run/utmp
 
 	mkdir -p /
+	touch "$LOCKFILE"
 }
 
 stop() {
@@ -61,6 +62,7 @@ stop() {
 			umount ${DEBUG:+-v} "/$mp"
 		fi
 	done
+	rm -f "$LOCKFILE"
 }
 
 switch "${1-}"
