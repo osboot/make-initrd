@@ -15,14 +15,20 @@
 
 . /etc/init.d/template
 
-LOCKFILE=/var/lock/subsys/network
+lo()
+{
+	ip addr $1 127.0.0.1/8 label lo dev lo
+	ip link set lo $2
+}
 
 start() {
-	action 'Starting lo interface:' ipconfig -q 127.0.0.1:::::lo:none
+	action_shell 'Starting lo interface:' lo add up
+	touch "$LOCKFILE"
 }
 
 stop() {
-	action 'Stoping lo interface:' ipconfig -D lo
+	action_shell 'Stoping lo interface:' lo del down
+	rm -f "$LOCKFILE"
 }
 
 switch "${1-}"
