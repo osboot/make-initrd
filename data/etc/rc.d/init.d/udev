@@ -34,7 +34,7 @@ post_start() {
 start() {
 	pre_start
 
-	action "Starting udev:" udevd --daemon --resolve-names=never ||
+	start_daemon --lockfile "$LOCKFILE" -- udevd --daemon --resolve-names=never ||
 		RETVAL=$?
 
 	[ "$RETVAL" = 0 ] ||
@@ -57,7 +57,7 @@ stop() {
 	udevadm settle
 	udevadm control --stop-exec-queue
 
-	action "Stoping udev:" udevadm control --exit ||
+	stop_daemon --lockfile "$LOCKFILE" udevd ||
 		RETVAL=$?
 
 	local udev_db='/run/udev'
