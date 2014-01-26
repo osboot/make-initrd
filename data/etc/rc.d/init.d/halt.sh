@@ -155,7 +155,7 @@ all_rest()
 	findmnt -mno SOURCE,TARGET |
 	while read s t; do
 		case "$s:$t" in
-			none:*|*:/|*:/dev|*:/proc|*:/sys|*:/dev/*|*:/proc/*|*:/sys/*) ;;
+			none:*|*:/|*:$mntroot|*:/dev|*:/proc|*:/sys|*:/dev/*|*:/proc/*|*:/sys/*) ;;
 			*) printf '%s\n' "$t" ;;
 		esac
 	done
