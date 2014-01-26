@@ -2,8 +2,12 @@
 
 . /etc/init.d/functions
 
+PROG="${0##*/}"
+PROG="${PROG#[SK][0-9][0-9]}"
+PROG="${PROG%.sh}"
+
 PIDFILE=
-LOCKFILE=
+LOCKFILE=/var/lock/subsys/$PROG
 RETVAL=0
 
 start()   { :; }
