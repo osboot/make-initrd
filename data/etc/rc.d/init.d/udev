@@ -3,7 +3,7 @@
 # Provides:            udev
 # Required-Start:      mountvirtfs
 # Should-Start:        modules
-# Required-Stop:
+# Required-Stop:       mountfs mountvirtfs
 # Should-Stop:
 # Default-Start:       3 4 5
 # Default-Stop:
@@ -62,8 +62,8 @@ stop() {
 
 	local udev_db='/run/udev'
 
-	[ "${UDEV_VERSION:-0}" -gt 185 ] ||
-		udev_db="$(udevadm info --run)"
+	#[ "${UDEV_VERSION:-0}" -gt 185 ] ||
+	#	udev_db="$(udevadm info --run)"
 
 	# ignore any failed event because the init script will trigger again all events
 	rm -rf $udev_db

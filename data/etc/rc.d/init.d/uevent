@@ -14,7 +14,6 @@
 . /etc/init.d/template
 
 PIDFILE=/var/run/ueventd.pid
-LOCKFILE=/var/lock/subsys/ueventd
 ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE"
 
 start() {
@@ -23,7 +22,7 @@ start() {
 }
 
 stop() {
-	stop_daemon $ARGS -- ueventd || RETVAL=$?
+	#stop_daemon $ARGS -- ueventd || RETVAL=$?
 	return $RETVAL
 }
 

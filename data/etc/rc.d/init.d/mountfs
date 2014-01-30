@@ -1,37 +1,33 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides:            halt
-# Required-Start:      killall
+# Provides:            mountfs
+# Required-Start:
 # Should-Start:
 # Required-Stop:
 # Should-Stop:
-# Default-Start:       0 2 6
+# Default-Start:       3 4 5
 # Default-Stop:
-# Short-Description:   It kills all processes.
-# Description:         It kills all processes and unmounts file systems.
+# Short-Description:   Unmounts file systems.
+# Description:         Unmounts file systems.
 # X-LFS-Provided-By:   LFS
 ### END INIT INFO
 
-if [ -n "$1" -a "$1" != start ]; then
-	exit 0
-fi
+LOCKFILE=/var/lock/subsys/mountfs
 
-WITHOUT_RC_COMPAT=1
+case "$1" in
+	start)
+		touch "$LOCKFILE"
+		exit 0
+		;;
+	stop)
+		rm -f "$LOCKFILE"
+		;;
+esac
 
 # Source function library.
 . /etc/init.d/functions
 . /etc/init.d/functions-addon
-
-HALTCMD=
-SourceIfNotEmpty /etc/sysconfig/halt
-[ -x "$HALTCMD" ] || HALTCMD=/sbin/poweroff
-
-case "${INIT_HALT-}" in
-	HALT) HALTCMD=/sbin/halt ;;
-	POWEROFF) HALTCMD=/sbin/poweroff ;;
-esac
-
-unset action
+. /.initrd/initenv
 
 action_begin_msg()
 {
@@ -62,37 +58,6 @@ action()
 	local rc=$?
 	action_end_msg "$rc"
 	return $rc
-}
-
-sendsigs()
-{
-	action_begin_msg 'Asking all remaining processes to terminate'
-	killall5 -15
-	local rc=$?
-	if [ "$rc" = 2 ]; then
-		action_passed_msg
-		return
-	else
-		action_end_msg "$rc"
-	fi
-
-	local seq=5
-	if [ "$rc" = 0 ]; then
-		for seq in 1 2 3 4 5; do
-			killall5 -18 || break
-			sleep 1
-		done
-	fi
-
-	[ "$seq" = 5 ] || return 0
-	action_begin_msg 'Killing all remaining processes'
-	killall5 -9
-	rc=$?
-	if [ "$rc" = 2 ]; then
-		action_passed_msg
-	else
-		action_end_msg "$rc"
-	fi
 }
 
 # Unmount file systems, killing processes if we have to.
@@ -128,26 +93,18 @@ UnmountFilesystems()
 	done
 }
 
-# Kill all processes
-sendsigs
-
 # Unmount non-/dev tmpfs.
 non_dev_tmpfs()
 {
 	findmnt -mno TARGET -t tmpfs |
-	while read point; do
-		[ "$point" = '/dev' ] || printf '%s ' "$point"
+	while read t; do
+		case "$t" in
+			/dev|$rootmnt|$rootmnt/*) ;;
+			*) printf '%s ' "$t" ;;
+		esac
 	done
 }
 UnmountFilesystems 3 5 non_dev_tmpfs
-
-# Turn off swap, then unmount file systems.
-while read d x; do
-	case "$d" in
-		Filename) ;;
-		*) swapoff "$d" ;;
-	esac
-done < /proc/swaps
 
 # Unmount all the rest.
 all_rest()
@@ -155,8 +112,8 @@ all_rest()
 	findmnt -mno SOURCE,TARGET |
 	while read s t; do
 		case "$s:$t" in
-			none:*|*:/|*:$mntroot|*:/dev|*:/proc|*:/sys|*:/dev/*|*:/proc/*|*:/sys/*) ;;
-			*) printf '%s\n' "$t" ;;
+			none:*|*:/|*:$rootmnt|*:$rootmnt/*|*:/proc|*:/proc/*) ;;
+			*) printf '%s ' "$t" ;;
 		esac
 	done
 }

@@ -1,14 +1,14 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides:            killall
+# Provides:            finish
 # Required-Start:
 # Should-Start:
-# Required-Stop:       localnet
+# Required-Stop:
 # Should-Stop:
 # Default-Start:       0 2 6
 # Default-Stop:
-# Short-Description:   Attempts to kill remaining processes.
-# Description:         Attempts to kill remaining processes.
+# Short-Description:   Stop all remaining subsystems.
+# Description:         Stop all remaining subsystems.
 # X-LFS-Provided-By:   LFS
 ### END INIT INFO
 
@@ -18,7 +18,8 @@ fi
 
 # Bring down all unneeded services that are still running (there shouldn't 
 # be any, so this is just a sanity check)
-for i in /var/lock/subsys/*; do
+sys=/var/lock/subsys
+for i in "$sys"/*; do
 	# Check if the script is there.
 	[ -f "$i" ] || continue
 
@@ -26,11 +27,12 @@ for i in /var/lock/subsys/*; do
 	[ "${i%.rpm*}" = "$i" -a "${i%\~}" = "$i" ] || continue
 
 	# Get the subsystem name.
-	subsys="${i#/var/lock/subsys/}"
+	subsys="${i#$sys/}"
 
 	# Bring the subsystem down.
-	if [ -x "/etc/init.d/$subsys" ]; then
-		"/etc/init.d/$subsys" stop
+	x="/etc/init.d/$subsys"
+	if [ -x "$x" ]; then
+		"$x" stop
 	else
 		rm -f "$i"
 	fi

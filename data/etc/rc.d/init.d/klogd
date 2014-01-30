@@ -3,7 +3,7 @@
 # Provides:            klogd
 # Required-Start:      $syslog
 # Should-Start:
-# Required-Stop:
+# Required-Stop:       mountfs localnet
 # Should-Stop:
 # Default-Start:       3 4 5
 # Default-Stop:

@@ -1,0 +1,86 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            killall
+# Required-Start:      stopsys
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       0 2 6
+# Default-Stop:
+# Short-Description:   It kills all processes.
+# Description:         It kills all processes.
+# X-LFS-Provided-By:   LFS
+### END INIT INFO
+
+if [ -n "$1" -a "$1" != start ]; then
+	exit 0
+fi
+
+# Source function library.
+. /etc/init.d/functions
+. /etc/init.d/functions-addon
+
+action_begin_msg()
+{
+	[ -z "$*" ] || printf '%s ' "$*"
+}
+
+action_end_msg()
+{
+	local rc=$1
+	if [ "$BOOTUP" = color ]; then
+		[ $rc = 0 ] && echo_success || echo_failure
+	fi
+	echo
+}
+
+action_passed_msg()
+{
+	[ "$BOOTUP" != color ] ||
+		echo_passed
+	echo
+}
+
+action()
+{
+	action_begin_msg "$1"
+	shift
+	$*
+	local rc=$?
+	action_end_msg "$rc"
+	return $rc
+}
+
+sendsigs()
+{
+	action_begin_msg 'Asking all remaining processes to terminate:'
+	killall5 -15
+	local rc=$?
+	if [ "$rc" = 2 ]; then
+		action_passed_msg
+		return
+	else
+		action_end_msg "$rc"
+	fi
+
+	local seq=5
+	if [ "$rc" = 0 ]; then
+		for seq in 1 2 3 4 5; do
+			killall5 -18 || break
+			sleep 1
+		done
+	fi
+
+	[ "$seq" = 5 ] || return 0
+	action_begin_msg 'Killing all remaining processes:'
+	killall5 -9
+	rc=$?
+	if [ "$rc" = 2 ]; then
+		action_passed_msg
+	else
+		action_end_msg "$rc"
+	fi
+}
+
+# Kill all processes
+sendsigs

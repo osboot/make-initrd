@@ -569,12 +569,12 @@ action()
 
 action_shell()
 {
-	local STRING
+	local STRING rc
 	STRING="$1"
 	shift
 	echo -n "$STRING "
 	"$@"
-	local rc=$?
+	rc=$?
 	[ $rc -eq 0 ] && success "$STRING" || failure "$STRING"
 	echo
 	return $rc
@@ -582,42 +582,27 @@ action_shell()
 
 msg_starting()
 {
-	local a
-	a="$1"
-	shift
-	printf "Starting %s service: " "$a"
+	printf "Starting %s service: " "$1"
 }
 
 msg_already_running()
 {
-	local a
-	a="$1"
-	shift
-	printf "Service %s is already running." "$a"
+	printf "Service %s is already running." "$1"
 }
 
 msg_stopping()
 {
-	local a
-	a="$1"
-	shift
-	printf "Stopping %s service: " "$a"
+	printf "Stopping %s service: " "$1"
 }
 
 msg_not_running()
 {
-	local a
-	a="$1"
-	shift
-	printf "Service %s is not running." "$a"
+	printf "Service %s is not running." "$1"
 }
 
 msg_reloading()
 {
-	local a
-	a="$1"
-	shift
-	printf "Reloading %s service: " "$a"
+	printf "Reloading %s service: " "$1"
 }
 
 msg_usage()

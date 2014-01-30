@@ -3,7 +3,7 @@
 # Provides:            mountvirtfs
 # Required-Start:
 # Should-Start:
-# Required-Stop:
+# Required-Stop:       mountfs
 # Should-Stop:
 # Default-Start:       3 4 5
 # Default-Stop:
@@ -19,7 +19,7 @@ makenod() {
 	[ -e /dev/$1 ] || mknod /dev/$1 $2 $3 $4
 }
 
-start() {
+mount_virt() {
 	if ! mount -n -t devtmpfs -o mode=755,size=5m udevfs /dev 2>/dev/null; then
 		mount -n -t tmpfs -o mode=755,size=5m udevfs /dev
 	fi
@@ -37,7 +37,7 @@ start() {
 	makenod console c 5 1
 	makenod ptmx    c 5 2
 
-	mount -n -t sysfs -o nodev,noexec,nosuid none  /sys
+	mount -n -t sysfs -o nodev,noexec,nosuid sysfs  /sys
 	mount -n -t proc  -o nodev,noexec,nosuid none  /proc
 	mount -n -t tmpfs -o mode=755,size=5m    runfs /run
 
@@ -50,6 +50,10 @@ start() {
 	touch "$LOCKFILE"
 }
 
+start() {
+	action_shell 'Mouting virtual filesystems:' mount_virt
+}
+
 stop() {
 	. /.initrd/initenv
 
@@ -57,9 +61,9 @@ stop() {
 	# Move filesystems to real root
 	for mp in dev run ${EXPORT_FS-}; do
 		if [ -d "$rootmnt/$mp" ]; then
-			mount --move ${DEBUG:+-v} "/$mp" "$rootmnt/$mp"
+			action "Moving filesystem [/$mp]:" mount --move "/$mp" "$rootmnt/$mp"
 		else
-			umount ${DEBUG:+-v} "/$mp"
+			action "Unmounting filesystem (/$mp):" umount -flt noproc "/$mp"
 		fi
 	done
 	rm -f "$LOCKFILE"

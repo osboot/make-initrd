@@ -3,7 +3,7 @@
 # Provides:            $syslog
 # Required-Start:      localnet
 # Should-Start:
-# Required-Stop:
+# Required-Stop:       mountfs localnet
 # Should-Stop:
 # Default-Start:       3 4 5
 # Default-Stop:

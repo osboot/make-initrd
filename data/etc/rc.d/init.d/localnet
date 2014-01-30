@@ -3,7 +3,7 @@
 # Provides:            localnet
 # Required-Start:
 # Should-Start:
-# Required-Stop:
+# Required-Stop:       mountfs
 # Should-Stop:
 # Default-Start:       3 4 5
 # Default-Stop:
@@ -27,7 +27,7 @@ start() {
 }
 
 stop() {
-	action_shell 'Stoping lo interface:' lo del down
+	action_shell 'Stopping lo interface:' lo del down
 	rm -f "$LOCKFILE"
 }
 
