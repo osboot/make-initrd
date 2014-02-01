@@ -11,9 +11,7 @@
 # Description:         Loads modules for PRELOAD.
 ### END INIT INFO
 
-if [ "$1" != start ]; then
-	exit 0
-fi
+[ "$1" = start ] || exit 0
 
 . /.initrd/initenv
 

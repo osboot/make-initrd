@@ -11,9 +11,7 @@
 # Description:         Prepare emergency shell.
 ### END INIT INFO
 
-if [ "$1" != start ]; then
-	exit 0
-fi
+[ "$1" = start ] || exit 0
 
 for f in /lib/shell/*; do
 	[ -x "$f" ] || break

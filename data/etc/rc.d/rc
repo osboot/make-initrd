@@ -10,7 +10,8 @@
 . /etc/init.d/functions
 
 # Get first argument. Set new runlevel to this argument.
-export runlevel="$1"
+[ $# -eq 0 ] ||
+	export runlevel="$1"
 
 locksys="/var/lock/subsys"
 rcd="/etc/rc.d/rc$runlevel.d"
@@ -18,6 +19,11 @@ rcd="/etc/rc.d/rc$runlevel.d"
 # Is there an rc directory for this new runlevel?
 [ -d "$rcd" ] ||
 	exit 0
+
+# Rerun ourselves through initlog
+if [ -z "${IN_INITLOG-}" -a -x /sbin/initlog ]; then
+	exec initlog -r "$0"
+fi
 
 # First, run the KILL scripts.
 for i in "$rcd"/K*; do

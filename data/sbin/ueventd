@@ -53,8 +53,7 @@ while :; do
 		! "$handler" ||
 			continue
 
-		error "event handler failed: $name"
-		return 1
+		fatal "event handler failed: $name"
 	done
 
 	# Remove done events

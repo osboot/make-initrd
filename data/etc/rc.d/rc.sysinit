@@ -4,14 +4,13 @@ trap '' PIPE
 
 # Rerun ourselves through initlog
 if [ -z "$IN_INITLOG" -a -x /sbin/initlog ]; then
-	exec /sbin/initlog $INITLOG_ARGS -r /etc/rc.d/rc.sysinit
+	exec initlog -r "$0"
 fi
 
-INITLOG_ARGS=
 LOGLEVEL=1
 
 # Fix console loglevel
 dmesg -n "$LOGLEVEL"
 
 # Save kernel environ
-/bin/showenv > /.initrd/kernenv
+showenv > /.initrd/kernenv

@@ -11,9 +11,7 @@
 # Description:         Tells init to start real init.
 ### END INIT INFO
 
-if [ "$1" != start ]; then
-	exit 0
-fi
+[ "$1" = start ] || exit 0
 
 . /.initrd/initenv
 . /etc/init.d/functions
@@ -24,4 +22,5 @@ echo "Running init ($INIT)"
 printf 'exec /bin/run-init -e /.initrd/kernenv "%s" "%s" %s\n' "$rootmnt" "$INIT" "$*" \
 	>> /sbin/init
 
+bash
 exec /sbin/telinit u

@@ -12,9 +12,7 @@
 # X-LFS-Provided-By:   LFS
 ### END INIT INFO
 
-if [ "$1" != start ]; then
-	exit 0
-fi
+[ "$1" = start ] || exit 0
 
 # Bring down all unneeded services that are still running (there shouldn't 
 # be any, so this is just a sanity check)

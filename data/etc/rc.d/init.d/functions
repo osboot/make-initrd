@@ -14,11 +14,20 @@ SourceIfExecutable() { [ -x "$1" ] && . "$@"; }
 SourceIfNotEmpty()   { [ -s "$1" ] && . "$@"; }
 ExecIfExecutable()   { [ -x "$1" ] && "$@"; }
 
-if [ "$UID" = 0 ]; then
-	LANG=POSIX
-	LANGUAGE=POSIX
-	LC_ALL=POSIX
-fi
+LANG=POSIX
+LANGUAGE=POSIX
+LC_ALL=POSIX
+
+TO_COL=
+COLOR_BANNER=
+COLOR_FAILURE=
+COLOR_INFO=
+COLOR_NORMAL=
+COLOR_SUCCESS=
+COLOR_WARNING=
+
+[ -x /sbin/consoletype ] && [ "$(consoletype)" = serial ] &&
+	BOOTUP=serial
 
 # Read in our configuration
 if [ -z "${BOOTUP-}" ]; then
@@ -26,107 +35,69 @@ if [ -z "${BOOTUP-}" ]; then
 	[ -n "${BOOTUP-}" ] || BOOTUP=color
 fi
 
-if [ -x /sbin/consoletype ] && [ "$(consoletype)" = serial ]; then
-	BOOTUP=serial
-fi
-
-MOVE_TO_COL()     { :; }
-SETCOLOR_BANNER() { :; }
-SETCOLOR_FAILURE(){ :; }
-SETCOLOR_INFO()   { :; }
-SETCOLOR_NORMAL() { :; }
-SETCOLOR_SUCCESS(){ :; }
-SETCOLOR_WARNING(){ :; }
-
 [ "${BOOTUP-}" != color ] ||
 	SourceIfNotEmpty /etc/init.d/outformat
 
+INITLOG=initlog
 INITLOG_ARGS=
 [ "${BOOTUP-}" = verbose ] || INITLOG_ARGS="-q"
 
-[ -n "${LOGLEVEL-}" ] && [ "${LOGLEVEL-}" -ge 0 ] 2>/dev/null || LOGLEVEL=1
+[ -n "${LOGLEVEL-}" ] && [ "${LOGLEVEL-}" -ge 0 ] 2>/dev/null ||
+	LOGLEVEL=1
 
 absolute() { which "$@"; }
 
 start_daemon()
 {
-	local ANNOUNCE BACKGROUND BASENAME CHECK CMDNAME DISPNAME EXPECT FLAGS LOCKFILE MAKE_PIDFILE NICE PIDFILE STATUS SU WHICH
-
 # Process options.
-	ANNOUNCE=1
-	BACKGROUND=
-	CHECK=
-	CMDNAME=
-	DISPNAME=
-	EXPECT=
-	LOCKFILE=
-	MAKE_PIDFILE=
-	NICE=0
-	PIDFILE=
-	SU=
+	local ANNOUNCE=1 BACKGROUND= BASENAME= CHECK= CMDNAME= DISPNAME= EXPECT= FLAGS= LOCKFILE= MAKE_PIDFILE= NICE=0 PIDFILE= STATUS= SU= WHICH=
+
 	while [ "$1" != "${1##-}" -o "$1" != "${1##+}" ]; do
 		case "$1" in
-		--)
-			shift
+		--) shift
 			break
 			;;
 		--announce)
-			shift
 			ANNOUNCE=1
 			;;
 		--no-announce)
-			shift
 			ANNOUNCE=
 			;;
 		--background)
-			shift
 			BACKGROUND='--background'
 			;;
-		--check)
-			shift
+		--check) shift
 			CHECK="$1"
-			shift
 			;;
-		--displayname)
-			shift
+		--displayname) shift
 			DISPNAME="$1"
-			shift
 			;;
-		--expect-user)
-			shift 2
+		--expect-user) shift
 			;;
-		--lockfile)
-			shift
+		--lockfile) shift
 			LOCKFILE="$1"
-			shift
 			;;
 		--make-pidfile)
-			shift
 			BACKGROUND='--background'
 			MAKE_PIDFILE='--make-pidfile'
 			;;
-		--name)
-			shift
+		--name) shift
 			CMDNAME="$1"
-			shift
 			;;
-		--pidfile)
-			shift
+		--pidfile) shift
 			PIDFILE="$1"
-			shift
 			;;
-		--user|--set-user)
-			shift 2
+		--user|--set-user) shift
 			;;
 		[-+][0-9]*)
 			NICE="$1"
-			shift
 			;;
 		*)
 			echo "start_daemon: unrecognized option: $1" >&2
 			return 1
 			;;
 		esac
+		shift
 	done
 
 # We need the absolute pathname.
@@ -188,7 +159,7 @@ start_daemon()
 	[ -z "$ANNOUNCE" ] || msg_starting "$DISPNAME"
 
 # Actually start the daemon.
-	initlog $INITLOG_ARGS -n "$BASENAME" -c "limited -n $BASENAME -- start-stop-daemon $FLAGS -- $*"
+	$INITLOG $INITLOG_ARGS -n "$BASENAME" -c "start-stop-daemon $FLAGS -- $*"
 	STATUS=$?
 
 	if [ $STATUS = 0 ]; then
@@ -205,84 +176,59 @@ start_daemon()
 
 stop_daemon()
 {
-	local ANNOUNCE BASENAME CMDNAME DEFAULT DISPNAME EXPECT FLAGS HUPSIG LOCKFILE MESSAGE NAME PIDFILE RETRY SIGNAL STATUS WHICH
-
 # Process options.
-	ANNOUNCE=1
-	CMDNAME=
-	DEFAULT=true
-	DISPNAME=
-	EXPECT=
-	LOCKFILE=
-	NAME=
-	PIDFILE=
-	RETRY=
+	local ANNOUNCE=1 BASENAME= CMDNAME= DEFAULT=true DISPNAME= EXPECT= FLAGS= HUPSIG= LOCKFILE= MESSAGE= NAME= PIDFILE= RETRY= SIGNAL= STATUS= WHICH=
+
 # start-stop-daemon wants a signal number.
 	SIGNAL="$(kill -l TERM)" || SIGNAL=15
 	HUPSIG="$(kill -l HUP)" || HUPSIG=1
 	while [ $# -ge 1 ]; do
 		case "$1" in
-		--)
-			shift
+		--) shift
 			[ -z "$NAME" ] || return 1
 			NAME="$1"
 			break
 			;;
 		--announce)
-			shift
 			ANNOUNCE=1
 			;;
 		--no-announce)
-			shift
 			ANNOUNCE=
 			;;
-		--displayname)
-			shift
+		--displayname) shift
 			DISPNAME="$1"
-			shift
 			;;
-		--expect-user)
-			shift 2
+		--expect-user) shift
 			;;
-		--lockfile)
-			shift
+		--lockfile) shift
 			LOCKFILE="$1"
-			shift
 			;;
-		--name)
-			shift
+		--name) shift
 			CMDNAME="$1"
-			shift
 			;;
-		--pidfile)
-			shift
+		--pidfile) shift
 			PIDFILE="$1"
-			shift
 			;;
-		--retry)
-			shift
+		--retry) shift
 			RETRY="$1"
-			shift
 			;;
 		-[0-9]*)
 			SIGNAL="${1##-}"
 			DEFAULT=false
-			shift
 			;;
 		-*)
 			SIGNAL="${1##-}"
 			SIGNAL="$(kill -l -- "$SIGNAL")" || return 1
 			DEFAULT=false
 			ANNOUNCE=
-			shift
 			;;
 # Allow the process name to be in any argument for Red Hat compatibility.
 		*)
 			[ -z "$NAME" ] || return 1
 			NAME="$1"
-			shift
 			;;
 		esac
+		shift
 	done
 
 # We need the absolute pathname for /proc/*/exe checks.
@@ -372,48 +318,34 @@ status()
 		return 1
 	fi
 
-	local BASENAME CMDNAME DISPNAME EXPECT FLAGS LOCKFILE PIDFILE WHICH
-
 # Process options.
-	CMDNAME=
-	DISPNAME=
-	EXPECT=
-	LOCKFILE=
-	PIDFILE=
+	local BASENAME= CMDNAME= DISPNAME= EXPECT= FLAGS= LOCKFILE= PIDFILE= WHICH=
+
 	while [ "$1" != "${1##-}" ]; do
 		case "$1" in
-		--)
-			shift
+		--) shift
 			break
 			;;
-		--displayname)
-			shift
+		--displayname) shift
 			DISPNAME="$1"
-			shift
 			;;
-		--expect-user)
-			shift 2
+		--expect-user) shift
 			;;
-		--lockfile)
-			shift
+		--lockfile) shift
 			LOCKFILE="$1"
-			shift
 			;;
-		--name)
-			shift
+		--name) shift
 			CMDNAME="$1"
-			shift
 			;;
-		--pidfile)
-			shift
+		--pidfile) shift
 			PIDFILE="$1"
-			shift
 			;;
 		*)
 			echo "status: unrecognized option: $1" >&2
 			return 1
 			;;
 		esac
+		shift
 	done
 
 # We need the absolute pathname for /proc/*/exe checks.
@@ -472,34 +404,18 @@ status()
 
 echo_success()
 {
-	MOVE_TO_COL
-	echo -n '[ '
-	SETCOLOR_SUCCESS
-	echo -n 'DONE'
-	SETCOLOR_NORMAL
-	echo -ne ' ]\r'
-	return 0
+	printf '%s[ %sDONE%s ]\r' "$TO_COL" "$COLOR_SUCCESS" "$COLOR_NORMAL"
 }
 
 echo_failure()
 {
-	MOVE_TO_COL
-	echo -n '['
-	SETCOLOR_FAILURE
-	echo -n 'FAILED'
-	SETCOLOR_NORMAL
-	echo -ne ']\r'
+	printf '%s[%sFAILED%s]\r' "$TO_COL" "$COLOR_FAILURE" "$COLOR_NORMAL"
 	return 1
 }
 
 echo_passed()
 {
-	MOVE_TO_COL
-	echo -n '['
-	SETCOLOR_WARNING
-	echo -n 'PASSED'
-	SETCOLOR_NORMAL
-	echo -ne ']\r'
+	printf '%s[%sPASSED%s]\r' "$TO_COL" "$COLOR_WARNING" "$COLOR_NORMAL"
 	return 1
 }
 
@@ -507,7 +423,7 @@ echo_passed()
 success()
 {
 	if [ -z "${IN_INITLOG-}" ]; then
-		initlog $INITLOG_ARGS -n $0 -s "$1" -e 1
+		$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 1
 	else
 		local opipe
 		opipe="$(trap -p PIPE)"
@@ -524,13 +440,9 @@ failure()
 {
 	local rc=$?
 	if [ -z "${IN_INITLOG-}" ]; then
-		initlog $INITLOG_ARGS -n $0 -s "$1" -e 2
+		$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 2
 	else
-		local opipe
-		opipe="$(trap -p PIPE)"
-		trap '' PIPE
-		echo "$INITLOG_ARGS -n $0 -s \"$1\" -e 2" >&21
-		$opipe
+		(trap '' PIPE; echo "$INITLOG_ARGS -n $0 -s \"$1\" -e 2" >&21;)
 	fi
 	echo_failure
 	return $rc
@@ -541,13 +453,9 @@ passed()
 {
 	local rc=$?
 	if [ -z "${IN_INITLOG-}" ]; then
-		initlog $INITLOG_ARGS -n $0 -s "$1" -e 1
+		$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 1
 	else
-		local opipe
-		opipe="$(trap -p PIPE)"
-		trap '' PIPE
-		echo "$INITLOG_ARGS -n $0 -s \"$1\" -e 1" >&21
-		$opipe
+		(trap '' PIPE; echo "$INITLOG_ARGS -n $0 -s \"$1\" -e 1" >&21;)
 	fi
 	echo_passed
 	return $rc
@@ -560,7 +468,7 @@ action()
 	STRING="$1"
 	shift
 	echo -n "$STRING "
-	initlog $INITLOG_ARGS -c "$*"
+	$INITLOG $INITLOG_ARGS -c "$*"
 	local rc=$?
 	[ $rc -eq 0 ] && success "$STRING" || failure "$STRING"
 	echo
@@ -670,4 +578,47 @@ confirm()
 				;;
 		esac
 	done
+}
+
+dsort()
+{
+	local __list=
+	__cmp()
+	{
+		local a="$1" b="$2"
+		[ -z "${a##$b/*}" -o ${#a} -ge ${#b} ]
+	}
+	__sort()
+	{
+		local n=$# i j a b
+		shift
+
+		i=0
+		while [ $# -gt 0 ]; do
+			eval "local a$i=\"\$1\""
+			i=$(($i+1))
+			shift
+		done
+
+		j=0
+		while [ $j -lt $(($n-2)) ]; do
+			i=0
+			while [ $i -lt $(($n-1-$j)) ]; do
+				eval "a=\"\$a$i\"; b=\"\$a$(($i+1))\""
+				__cmp "$a" "$b" ||
+					eval "a$i=\"\$b\"; a$(($i+1))=\"\$a\""
+				i=$(($i+1))
+			done
+			j=$(($j+1))
+		done
+
+		i=0
+		while [ $i -lt $n ]; do
+			eval "__list=\"\$__list\$a$i \""
+			i=$(($i+1))
+		done
+		unset __sort __cmp
+	}
+	__sort "$@"
+	eval "$1=\"\$__list\""
 }
