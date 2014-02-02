@@ -31,20 +31,12 @@ for i in "$rcd"/K*; do
 		continue
 
 	subsys=${i#$rcd/K??}
-	s="${subsys##*.sh}"
-
-	[ -n "$s" ] || subsys="${subsys%.sh}"
 
 	# Check if the subsystem is already up.
 	[ -f "$locksys/$subsys" ] ||
 		continue
 
-	# Bring the subsystem down.
-	if [ -z "$s" ]; then
-		action "Stopping $subsys:" "$i" stop
-	else
-		"$i" stop
-	fi
+	"$i" stop
 done
 
 # Now run the START scripts.
@@ -53,17 +45,10 @@ for i in "$rcd"/S*; do
 		continue
 
 	subsys="${i#$rcd/S??}"
-	s="${subsys##*.sh}"
-
-	[ -n "$s" ] || subsys="${subsys%.sh}"
 
 	# Check if the subsystem is already up.
 	[ ! -f "$locksys/$subsys" ] ||
 		continue
 
-	if [ -z "$s" ]; then
-		action "Starting $subsys:" "$i" start
-	else
-		"$i" start
-	fi
+	"$i" start
 done
