@@ -61,18 +61,16 @@ PUT_FILES += \
 	/bin/ps \
 	/bin/sleep \
 	/bin/getopt \
+	/bin/findmnt \
+	/bin/hostname \
 	/usr/bin/flock \
 	/usr/bin/ip \
 	/usr/bin/which \
-	/sbin/limited \
+	/sbin/killall5 \
 	/sbin/chkconfig \
 	/sbin/initlog \
 	/sbin/runlevel \
 	/sbin/service \
 	/sbin/start-stop-daemon \
 	/etc/initlog.conf \
-	/etc/sysconfig/limits \
-	/etc/sysconfig/klogd \
-	/etc/sysconfig/syslogd \
-	/var/lib/klogd \
 	/var/resolv
