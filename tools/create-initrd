@@ -118,10 +118,3 @@ for n in builtin order; do
 	[ ! -f "$kernel_modules_dir/modules.$n" ] ||
 		cp -aLt ./"$kernel_modules_dir" -- "$kernel_modules_dir/modules.$n"
 done
-
-# Hack
-grep -l 'BEGIN INIT INFO' ./etc/init.d/* |
-while read f; do
-	name="${f##*/}"
-	chroot . chkconfig --add "$name"
-done

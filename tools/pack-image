@@ -1,8 +1,15 @@
-#!/bin/sh -efu
+#!/bin/sh -eu
 
 . sh-functions
 
 cd "$rootdir"
+
+# Hack
+grep -l 'BEGIN INIT INFO' ./etc/rc.d/init.d/* |
+while read f; do
+	name="${f##*/}"
+	chroot . chkconfig --add "$name"
+done
 
 find -O2 -mindepth 1 \
 	   \( -type f -a -printf 'file %p %p %#m 0 0\n'  \) \
