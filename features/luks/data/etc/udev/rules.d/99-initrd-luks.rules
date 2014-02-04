@@ -1,2 +1,2 @@
-SUBSYSTEM=="block", ACTION!="remove", RUN+="/lib/initrd/filters/luks"
-SUBSYSTEM=="block", ACTION!="remove", RUN+="/lib/initrd/filters/lukskeys"
+SUBSYSTEM=="block", ACTION!="remove", RUN+="/lib/uevent/filters/luks"
+SUBSYSTEM=="block", ACTION!="remove", RUN+="/lib/uevent/filters/lukskeys"

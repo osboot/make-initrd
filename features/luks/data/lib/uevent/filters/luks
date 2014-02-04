@@ -1,7 +1,8 @@
 #!/bin/sh
 
-. /dev/.initramfs/env
-. /scripts/functions
+. /.initrd/initenv
+. uevent-sh-functions
+. initrd-sh-functions
 
 DEVNAME="/dev/${DEVNAME#/dev}"
 

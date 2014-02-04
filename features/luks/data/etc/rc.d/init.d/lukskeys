@@ -1,0 +1,24 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            lukskeys
+# Required-Start:      sysctl cmdline
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+### END INIT INFO
+
+[ "$1" = start ] || exit 0
+
+. /.initrd/initenv
+
+[ -n "$LUKS_KEY" ] || exit 0
+
+i=0
+while [ "$i" -lt "$LUKS_KEY" ]; do
+	eval "LINE=\"\$LUKS_KEY$i\""
+	[ -z "${LINE##*:*}" ] ||
+		printf '%s\n' "$LINE"
+	i=$(($i+1))
+done > /etc/luks.keys

@@ -1,6 +1,8 @@
 #!/bin/sh
 
-. /scripts/functions
+. /.initrd/initenv
+. uevent-sh-functions
+. initrd-sh-functions
 
 freekey() {
 	local d="/mnt/$1-key"
@@ -79,7 +81,7 @@ handler() {
 }
 
 rc=0
-for e in "$handler_eventdir"/luks.*; do
+for e in "$eventdir"/luks.*; do
 	r=0
 	( . "$e"; handler; ) || r="$?"
 	case "$r" in
