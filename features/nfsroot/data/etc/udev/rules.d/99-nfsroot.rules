@@ -1,1 +1,1 @@
-SUBSYSTEM=="net", ACTION=="online", RUN+="/lib/initrd/filters/nfsroot"
+SUBSYSTEM=="net", ACTION=="online", RUN+="/lib/uevent/filters/nfsroot"

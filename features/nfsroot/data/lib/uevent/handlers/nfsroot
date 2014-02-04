@@ -1,11 +1,9 @@
 #!/bin/sh
 
-. /scripts/functions
+. /.initrd/initenv
+. uevent-sh-functions
 
 handler() {
-	[ ! -L /dev/.initramfs/root ] ||
-		return 0
-
 	. "/tmp/net-$INTERFACE.conf"
 
 	# get nfs root from dhcp
@@ -25,14 +23,13 @@ handler() {
 	local roflag='-o rw'
 	[ -z "$readonly" ] || roflag='-o ro'
 
-	nfsmount -o nolock $roflag $NFSOPTS "$NFSROOT" "$rootmnt" ||
-		return 0
-	message "Mount '$NFSROOT' as $rootmnt"
-	ln -s /dev/nfs /dev/.initramfs/root
+	mountpoint -q "$rootmnt" ||
+		nfsmount -o nolock $roflag $NFSOPTS "$NFSROOT" "$rootmnt" ||
+		return 1
 }
 
 rc=0
-for e in "$handler_eventdir"/nfsroot.*; do
+for e in "$eventdir"/nfsroot.*; do
 	( . "$e"; handler; ) ||
 		rc=1
 	done_event "$e"
