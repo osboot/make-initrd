@@ -1,7 +1,7 @@
 #!/bin/sh -efu
 
-. /dev/.initramfs/env
-. /scripts/functions
+. /.initrd/initenv
+. uevent-sh-functions
 
 event="$(mk_event lvm)"
 showenv -q > "$event"
