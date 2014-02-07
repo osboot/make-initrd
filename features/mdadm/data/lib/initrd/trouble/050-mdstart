@@ -1,0 +1,10 @@
+#!/bin/sh
+# inactive mdraid salvation (#28879)
+
+inactive=
+for md in /sys/block/md*/md/array_state; do
+	read state < "$md"
+	[ "$state" != "inactive" ] || inactive=1
+done
+
+[ -z "$inactive" ] || mdadm -IRs

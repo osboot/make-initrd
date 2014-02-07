@@ -16,6 +16,7 @@ run() {
         # takes time, which is not counted. But we do not want to use
         # additional utilities to calculate the time limit.
 	local sec=$((${ROOTDELAY:-180}*10))
+	local force=$(($sec-${RAIDDELAY:-$(($sec/30))}*10))
 
 	while [ "$sec" -gt 0 ]; do
 		# Wait udev event queue
@@ -23,6 +24,18 @@ run() {
 
 		! check success -q ||
 			break
+
+		# Run hooks to repair non-fatal boot-blocking problems once
+		if [ "$sec" = "$force" ]; then
+			verbose "Taking too long, forcing ..."
+			for handler in /lib/initrd/trouble/*; do
+				name="${handler##*/}"
+				if ! "$handler"; then
+					error "trouble with handler: ${name#*-}"
+					return 1
+				fi
+			done
+		fi
 
 		local ev_udev= ev_hdlr=
 
