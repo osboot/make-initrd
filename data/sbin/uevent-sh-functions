@@ -2,6 +2,7 @@
 
 filterdir='/.initrd/uevent-udev'
 eventdir='/.initrd/uevent-events'
+extendir='/lib/uevent/extenders'
 handlerdir='/lib/uevent/handlers'
 successdir='/lib/uevent/success'
 

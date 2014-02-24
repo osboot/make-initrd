@@ -3,7 +3,7 @@
 . shell-error
 . shell-process
 
-daemon_log_file="/var/log/$PROG.log"
+daemon_log_file="/var/log/$PROG.out.log"
 daemon_err_file="/var/log/$PROG.err.log"
 daemon_pid_file="/var/run/$PROG.pid"
 
@@ -16,18 +16,7 @@ fi
 . /.initrd/initenv
 . uevent-sh-functions
 
-is_success()
-{
-	local f
-	for f in $successdir/*; do
-		"$f" ${1-} ||
-			return 1
-		[ -n "${1-}" ] ||
-			verbose "Check '${f##*/}' success!"
-	done
-}
-
-mkdir -p -- "$eventdir"
+glob() { [ -e "$1" ]; }
 
 message "STARTING ..."
 
@@ -35,30 +24,29 @@ while :; do
 	# Wait udev event queue
 	udevadm settle --quiet --timeout=5
 
-	! is_success quiet ||
-		break
+	mv -f -- "$filterdir"/* "$eventdir"/ 2>/dev/null ||:
 
-	mv -- "$filterdir"/* "$eventdir" 2>/dev/null ||:
+	for handler in "$handlerdir"/*; do
+		[ -x "$handler" ] ||
+			break
 
-	for event in "$eventdir"/*; do
-		name="${event##*/}"
-		name="${name%%.*}"
+		name="${handler##*/}"
+		name="${name#[0-9][0-9][0-9]-}"
 
-		handler="$handlerdir/$name"
-
-		[ -s "$event" -a -x "$handler" ] ||
+		glob "$eventdir/$name".* ||
 			continue
 
 		verbose "Running $name handler ..."
-		! "$handler" ||
-			continue
-
-		fatal "event handler failed: $name"
+		"$handler" || fatal "Event handler failed: $name"
 	done
 
-	# Remove done events
-	rm -f "$eventdir"/done.* 2>/dev/null
+	for ext in "$extendir"/*; do
+		[ -x "$ext" ] ||
+			break
+		name="${ext##*/}"
+		name="${name#[0-9][0-9][0-9]-}"
+
+		verbose "Running $name extender ..."
+		"$ext" || fatal "Extender failed: $name"
+	done
 done
-
-telinit 2
-

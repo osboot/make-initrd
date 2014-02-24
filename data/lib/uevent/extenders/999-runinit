@@ -1,0 +1,44 @@
+#!/bin/sh
+
+. /.initrd/initenv
+. uevent-sh-functions
+
+rootfs()
+{
+	if [ ! -e "$rootmnt/$INIT" ]; then
+		error "Unable to mount root"
+		return 1
+	fi
+}
+
+mountfs()
+{
+	local eof fsdev fsdir dummy
+	eof=
+	while [ -z "$eof" ]; do
+		read fsdev fsdir dummy ||
+			eof=1
+
+		[ -n "$fsdev" ] ||
+			continue
+
+		if [ -n "${ROOTONLY-}" ]; then
+			[ "$fsdir" = "$rootmnt/" ] ||
+				continue
+		fi
+
+		if [ ! -d "$fsdir" ]; then
+			error "$fsdir: Does not exist"
+			return 1
+		fi
+
+		if ! mountpoint -q "$fsdir"; then
+			error "$fsdir: Not mounted"
+			return 1
+		fi
+	done < /etc/fstab
+}
+
+mountfs && rootfs ||
+	exit 0
+telinit 2

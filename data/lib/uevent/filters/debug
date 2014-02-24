@@ -1,4 +1,0 @@
-#!/bin/sh -efu
-
-mkdir -p -- /.initrd/uevents
-showenv > "/.initrd/uevents/$$"
