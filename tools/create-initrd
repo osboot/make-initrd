@@ -5,6 +5,9 @@
 cd "$rootdir"
 
 mkdir $verbose -p -- \
+	./.initrd/killall \
+	./.initrd/uevent-events \
+	./.initrd/uevent-udev \
 	./dev \
 	./etc/initrd \
 	./etc/modprobe.d \
@@ -19,6 +22,8 @@ mkdir $verbose -p -- \
 	./sys \
 	./tmp \
 	./var/lock \
+	./var/log \
+	./var/run \
 	#
 
 initrd-release

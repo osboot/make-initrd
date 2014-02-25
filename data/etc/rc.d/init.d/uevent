@@ -3,7 +3,7 @@
 # Provides:            uevent
 # Required-Start:      udev
 # Should-Start:
-# Required-Stop:
+# Required-Stop:       udev
 # Should-Stop:
 # Default-Start:       3 4 5
 # Default-Stop:
@@ -13,16 +13,17 @@
 
 . /etc/init.d/template
 
-PIDFILE=/var/run/ueventd.pid
-ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE"
+NAME=ueventd
+PIDFILE=/var/run/$NAME.pid
+ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --displayname $NAME"
 
 start() {
-	start_daemon $ARGS -- ueventd || RETVAL=$?
+	start_daemon $ARGS -- $NAME || RETVAL=$?
 	return $RETVAL
 }
 
 stop() {
-	#stop_daemon $ARGS -- ueventd || RETVAL=$?
+	stop_daemon $ARGS -- /bin/sh -eu /sbin/$NAME || RETVAL=$?
 	return $RETVAL
 }
 
