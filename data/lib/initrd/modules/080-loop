@@ -26,7 +26,7 @@ run() {
 			break
 
 		# Run hooks to repair non-fatal boot-blocking problems once
-		if [ "$sec" = "$force" ]; then
+		if [ "$sec" = "$force" -a -d /lib/initrd/trouble ]; then
 			verbose "Taking too long, forcing ..."
 			for handler in /lib/initrd/trouble/*; do
 				name="${handler##*/}"
