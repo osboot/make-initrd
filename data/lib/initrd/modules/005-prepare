@@ -25,7 +25,7 @@ run() {
 
 	mount -n -t sysfs -o nodev,noexec,nosuid none  /sys
 	mount -n -t proc  -o nodev,noexec,nosuid none  /proc
-	mount -n -t tmpfs -o mode=755,size=5m    runfs /run
+	mount -n -t tmpfs -o mode=755,nosuid     runfs /run
 
 	mkdir -p /run/lock/subsys /run/user /run/udev /run/systemd
 
