@@ -19,6 +19,12 @@ fi
 # Source function library.
 . /etc/init.d/functions
 
+echo_end()
+{
+	[ $1 = 0 ] && echo_success || echo_failure
+	echo
+}
+
 omitpid=
 for pid in /.initrd/killall/[0-9]*; do
 	[ ! -f "$pid" ] ||
@@ -26,10 +32,16 @@ for pid in /.initrd/killall/[0-9]*; do
 done
 omitpid="${omitpid:+-o $omitpid}"
 
-action 'Asking all remaining processes to terminate:' killall5 -15 $omitpid
+echo_msg 'Asking all remaining processes to terminate:'
+killall5 -15 $omitpid
 rc=$?
 
-[ "$rc" != 2 ] || exit 0
+if [ $rc = 2 ]; then
+	echo_success
+	echo
+	exit 0
+fi
+echo_end "$rc"
 
 seq=5
 if [ "$rc" = 0 ]; then
@@ -40,4 +52,13 @@ if [ "$rc" = 0 ]; then
 fi
 [ "$seq" = 5 ] || exit 0
 
-action 'Killing all remaining processes:' killall5 -9 $omitpid
+echo_msg 'Killing all remaining processes:'
+killall5 -9 $omitpid
+rc=$?
+
+if [ $rc = 2 ]; then
+	echo_success
+	echo
+	exit 0
+fi
+echo_end "$rc"

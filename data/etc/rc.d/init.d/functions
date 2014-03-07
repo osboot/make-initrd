@@ -402,6 +402,12 @@ status()
 	return 3
 }
 
+echo_msg()
+{
+	[ -z "$*" ] || printf '%s ' "$*"
+}
+
+
 echo_success()
 {
 	printf '%s[ %sDONE%s ]\r' "$TO_COL" "$COLOR_SUCCESS" "$COLOR_NORMAL"
@@ -467,7 +473,7 @@ action()
 	local STRING
 	STRING="$1"
 	shift
-	echo -n "$STRING "
+	echo_msg "$STRING"
 	$INITLOG $INITLOG_ARGS -c "$*"
 	local rc=$?
 	[ $rc -eq 0 ] && success "$STRING" || failure "$STRING"
@@ -480,7 +486,7 @@ action_shell()
 	local STRING rc
 	STRING="$1"
 	shift
-	echo -n "$STRING "
+	echo_msg "$STRING"
 	"$@"
 	rc=$?
 	[ $rc -eq 0 ] && success "$STRING" || failure "$STRING"
@@ -564,7 +570,7 @@ confirm()
 {
 	while :; do
 		local answer
-		echo -n "Start service $1 (Y)es/(N)o/(C)ontinue? [Y] "
+		echo_msg "Start service $1 (Y)es/(N)o/(C)ontinue? [Y]"
 		read answer
 		case "$answer" in
 			y|Y|yes|Yes|YES|'')
