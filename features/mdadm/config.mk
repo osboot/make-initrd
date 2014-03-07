@@ -12,3 +12,6 @@ MDADM_FILES = \
 	/sbin/mdadm \
 	$(wildcard $(MDAMD_RULES) $(MDAMD_RULES_OLD)) \
 	/etc/mdadm.conf
+
+MDADM_DATADIR = \
+	$(FEATURESDIR)/mdadm/data
