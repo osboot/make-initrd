@@ -1,0 +1,64 @@
+#!/bin/sh -eu
+
+. shell-error
+. shell-process
+
+daemon_log_file="/var/log/$PROG.out.log"
+daemon_err_file="/var/log/$PROG.err.log"
+daemon_pid_file="/var/run/$PROG.pid"
+
+if [ "$#" = 0 ]; then
+	daemon ||
+		exit 1
+	message_syslog=1
+fi
+
+rule=0
+for conf in /etc/timer.d/*.conf; do
+	while IFS='	' read -r params command; do
+		[ -n "${params##\#*}" ] ||
+			continue
+		period=0
+		repeat=-1
+
+		for p in $params; do
+			case "$p" in
+				period=*) period="${p#*=}" ;;
+				repeat=*) repeat="${p#*=}" ;;
+			esac
+		done
+
+		eval "rule_period_$rule=$period"
+		eval "rule_sec_$rule=$period"
+		eval "rule_num_$rule=$repeat"
+		eval "rule_cmd_$rule=\"\$command\""
+
+		rule=$(($rule+1))
+	done < "$conf"
+done
+
+while :; do
+	i=0
+	while [ "$i" -lt $rule ]; do
+		eval "repeat=\"\$rule_num_$i\""
+
+		if [ $repeat -ne 0 ]; then
+			eval "period=\"\$rule_sec_$i\""
+
+			if [ $period -eq 1 ]; then
+				eval "rule_num_$i=$(($repeat-1))"
+				eval "rule_sec_$i=\"\$rule_period_$i\""
+				eval "command=\"\$rule_cmd_$i\""
+				{
+					eval $command
+				} &
+			else
+				eval "rule_sec_$i=$(($period-1))"
+			fi
+		fi
+
+		i=$(($i+1))
+	done
+
+	sleep 1
+done
