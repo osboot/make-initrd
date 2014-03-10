@@ -10,7 +10,10 @@ msg=
 # Disallow console access
 [ "$PANIC" != 0 ] || reboot
 
-[ -z "${RESCUE_MODULES-}" ] || modprobe $RESCUE_MODULES
+for f in /lib/shell/*; do
+	[ -x "$f" ] || break
+	"$f"
+done
 
 [ -z "$msg" ] || message "$msg"
 PS1='(initramfs)$ ' exec /bin/sh -i +m
