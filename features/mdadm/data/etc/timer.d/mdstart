@@ -1,1 +1,1 @@
-period=30 repeat=1	/lib/shell/mdstart
+period=30 repeat=1	/lib/initrd/mdstart

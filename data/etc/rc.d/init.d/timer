@@ -21,7 +21,7 @@ pre_start()
 {
 	(
 		. /.initrd/initenv
-		printf 'period=%s repeat=1\t/lib/shell/rootdelay\n' "${ROOTDELAY:-180}" 
+		printf 'period=%s repeat=1\t/lib/initrd/rootdelay\n' "${ROOTDELAY:-180}"
 	) > /etc/timer.d/rootdelay.conf
 }
 
