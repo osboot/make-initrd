@@ -1,0 +1,52 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            plymouth
+# Required-Start:      cmdline
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Show Plymouth Boot Screen
+### END INIT INFO
+
+. /.initrd/initenv
+. /etc/init.d/template
+. initrd-sh-functions
+
+show_splash() {
+	udevadm settle --timeout=30 --exit-if-exists=/sys/class/drm/card0/dev
+	udevadm settle --timeout=30 --exit-if-exists=/sys/class/graphics/fb0/dev
+	plymouth show-splash
+}
+
+start() {
+	[ -z "${NOSPLASH-}" ] ||
+		return 0
+
+	local pid=/run/plymouth/pid
+
+	mkdir -m 0755 /run/plymouth 2>/dev/null ||:
+	: > /run/systemd/plymouth
+
+	start_daemon --lockfile "$LOCKFILE" -- plymouthd --mode=boot --pid-file=$pid ||
+		RETVAL=$?
+
+	[ "$RETVAL" = 0 ] ||
+		return $RETVAL
+
+	omit_pid "$(cat "$pid")"
+	show_splash &
+}
+
+stop() {
+	[ -z "${NOSPLASH-}" ] ||
+		return 0
+
+	plymouth --newroot="$rootmnt" ||
+		RETVAL=$?
+
+	return $RETVAL
+}
+
+switch "${1-}"

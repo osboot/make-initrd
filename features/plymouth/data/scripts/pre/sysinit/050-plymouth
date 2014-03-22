@@ -1,8 +1,0 @@
-#!/bin/sh -efu
-
-plymouth_script() {
-	[ -z "$NOSPLASH" ] || return 0
-	/bin/plymouth --newroot=/root
-}
-
-plymouth_script
