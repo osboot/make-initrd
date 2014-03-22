@@ -1,4 +1,4 @@
-#!/bin/sh -efu
+#!/bin/sh -eu
 
 . /.initrd/initenv
 . shell-error
@@ -8,7 +8,7 @@ msg=
 	read msg < /.initrd/shell
 
 # Disallow console access
-[ "$PANIC" != 0 ] || reboot
+[ "${PANIC-}" != 0 ] || reboot
 
 for f in /lib/shell/*; do
 	[ -x "$f" ] || break
