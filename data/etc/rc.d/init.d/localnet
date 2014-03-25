@@ -1,7 +1,7 @@
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:            localnet
-# Required-Start:
+# Required-Start:      cmdline
 # Should-Start:
 # Required-Stop:       mountfs
 # Should-Stop:
