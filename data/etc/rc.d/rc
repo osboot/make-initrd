@@ -46,6 +46,30 @@ for i in "$rcd"/S*; do
 
 	subsys="${i#$rcd/S??}"
 
+	SourceIfExists /.initrd/initenv
+	if [ -n "${STOP-}" ] && [ -z "${STOP##*,all,*}" -o -z "${STOP##*,$subsys,*}" ]; then
+		while :; do
+			printf 'Start service %s (Y)es/(N)o/(C)ontinue/(S)hell? [Y] ' "$subsys"
+			read answer
+			case "$(replace '[A-Z]' '[a-z]' "$answer")" in
+				c*)
+					printf 'STOP=,,\n' >> /.initrd/initenv
+					break
+					;;
+				s*)
+					printf 'This shell remains here for debug purposes. Press Ctrl-D to continue.\n'
+					PS1="(initramfs $subsys)\$ " /bin/sh -i +m
+					;;
+				n*)
+					continue 2
+					;;
+				y*|'')
+					break
+					;;
+			esac
+		done
+	fi
+
 	# Check if the subsystem is already up.
 	[ ! -f "$locksys/$subsys" ] ||
 		continue

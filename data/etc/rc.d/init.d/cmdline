@@ -24,6 +24,7 @@ defaults() {
 	export DEBUG=
 	export QUIET=
 	export PANIC=
+	export STOP=
 	export rootmnt='/root'
 	export readonly=1
 	export RESCUE_MODULES="${RESCUE_MODULES-}"
@@ -93,7 +94,6 @@ parse_cmdline() {
 
 	[ -z "$DEBUG" ] || QUIET=
 	STOP=",$STOP,"
-	IGNORE=",$IGNORE,"
 }
 
 parse() {
