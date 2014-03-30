@@ -22,5 +22,4 @@ echo "Running init ($INIT)"
 printf 'exec /bin/run-init -e /.initrd/kernenv "%s" "%s" %s\n' "$rootmnt" "$INIT" "$*" \
 	>> /sbin/init
 
-bash
 exec /sbin/telinit u
