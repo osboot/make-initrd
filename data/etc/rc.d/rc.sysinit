@@ -7,10 +7,6 @@ if [ -z "$IN_INITLOG" -a -x /sbin/initlog ]; then
 	exec initlog -r "$0"
 fi
 
-LOGLEVEL=1
-
 # Fix console loglevel
+LOGLEVEL=1
 dmesg -n "$LOGLEVEL"
-
-# Save kernel environ
-showenv > /.initrd/kernenv

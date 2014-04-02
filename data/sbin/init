@@ -1,3 +1,3 @@
 #!/bin/sh
 
-exec </dev/console >/dev/console 2>&1
+exec </dev/console >/dev/console 2>&1 run-init -e /.initrd/kernenv \

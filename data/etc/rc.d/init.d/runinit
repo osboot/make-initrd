@@ -18,8 +18,6 @@
 
 echo "Running init ($INIT)"
 
-# Chain to real filesystem
-printf 'exec /bin/run-init -e /.initrd/kernenv "%s" "%s" %s\n' "$rootmnt" "$INIT" "$*" \
-	>> /sbin/init
-
-exec /sbin/telinit u
+read initargs </.initrd/initargs
+printf '"%s" "%s" %s\n' "$rootmnt" "$INIT" "$initargs" >> /sbin/init
+exec telinit u

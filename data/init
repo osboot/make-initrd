@@ -1,0 +1,5 @@
+#!/bin/sh
+
+/bin/showenv > /.initrd/kernenv
+echo "$*" > /.initrd/initargs
+exec /sbin/init-bin
