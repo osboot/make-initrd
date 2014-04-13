@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# Save kernel environment and init arguments
 /bin/showenv > /.initrd/kernenv
 echo "$*" > /.initrd/initargs
+
+# Don't initialize SELinux
+export SELINUX_INIT=1
+
 exec /sbin/init-bin
