@@ -50,20 +50,20 @@ for i in "$rcd"/S*; do
 	if [ -n "${STOP-}" ] && [ -z "${STOP##*,all,*}" -o -z "${STOP##*,$subsys,*}" ]; then
 		while :; do
 			printf 'Start service %s (Y)es/(N)o/(C)ontinue/(S)hell? [Y] ' "$subsys"
-			read answer
+			read answer < /dev/console
 			case "$(replace '[A-Z]' '[a-z]' "$answer")" in
-				c*)
+				c|continue)
 					printf 'STOP=,,\n' >> /.initrd/initenv
 					break
 					;;
-				s*)
+				s|shell)
 					printf 'This shell remains here for debug purposes. Press Ctrl-D to continue.\n'
 					PS1="(initramfs $subsys)\$ " /bin/sh -i +m
 					;;
-				n*)
+				n|no)
 					continue 2
 					;;
-				y*|'')
+				y|yes|'')
 					break
 					;;
 			esac
