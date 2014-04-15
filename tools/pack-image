@@ -5,11 +5,28 @@
 cd "$rootdir"
 
 # Hack
-grep -l 'BEGIN INIT INFO' ./etc/rc.d/init.d/* |
-while read f; do
-	name="${f##*/}"
-	chroot . chkconfig --add "$name"
-done
+{
+	mkfifo .initrd/shell
+
+	for init in /sbin/init.initrd /sbin/init; do
+		[ -f "$init" ] || continue
+		cp -a "$init" ./sbin/init-bin
+		break
+	done
+
+	for i in 0 1 2 3 4 5 6; do
+		mkdir -p -- etc/rc.d/rc$i.d
+		ln -s rc.d/rc$i.d etc/rc$i.d
+	done
+	ln -s rc.d/init.d etc/init.d
+	ln -s init-bin sbin/telinit
+
+	grep -l 'BEGIN INIT INFO' ./etc/rc.d/init.d/* |
+	while read f; do
+		name="${f##*/}"
+		chroot . chkconfig --add "$name"
+	done
+}
 
 find -O2 -mindepth 1 \
 	   \( -type f -a -printf 'file %p %p %#m 0 0\n'  \) \
@@ -38,13 +55,5 @@ printf >> "$workdir"/initcpio 'nod ./dev/%s\n' \
 	"tty     0666 0 0 c 5 0" \
 	"console 0600 0 0 c 5 1" \
 	"ptmx    0666 0 0 c 5 2"
-
-# Hack
-for init in /sbin/init.initrd /sbin/init; do
-	[ -f "$init" ] || continue
-	printf >> "$workdir"/initcpio 'file ./sbin/init-bin %s 700 0 0\n' "$init"
-	break
-done
-printf >> "$workdir"/initcpio 'pipe ./.initrd/shell 666 0 0\n'
 
 gen_init_cpio "$workdir"/initcpio > "$outfile"
