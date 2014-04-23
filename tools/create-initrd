@@ -10,10 +10,15 @@ mkdir $verbose -p -- \
 	./.initrd/uevent-udev \
 	./dev \
 	./etc/initrd \
+	./etc/fstab.d \
 	./etc/modprobe.d \
 	./etc/udev/rules.d \
 	./"$kernel_modules_dir" \
 	./lib/initrd \
+	./lib/initrd/all \
+	./lib/initrd/kmodules \
+	./lib/initrd/post \
+	./lib/initrd/pre \
 	./lib/udev \
 	./mnt \
 	./root \
@@ -21,7 +26,7 @@ mkdir $verbose -p -- \
 	./proc \
 	./sys \
 	./tmp \
-	./var/lock \
+	./var/lock/subsys \
 	./var/log \
 	./var/run \
 	#
