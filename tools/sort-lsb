@@ -1,0 +1,418 @@
+#!/bin/sh -eu
+
+. shell-error
+. shell-args
+. shell-getopt
+
+system_provides=
+runlevels='0 1 2 3 4 5 6'
+result='print'
+rcdir='/etc/rc.d'
+rootdir='/'
+rc_names=' '
+
+show_help()
+{
+	cat <<-EOF
+	Usage: $PROG [options]
+
+	The utility sorts services on the basis of LSB headers.
+
+	Options:
+	  --runlevels=LIST         sets list of runlevels (default: $runlevels);
+	  --rootdir=DIR            defines root directory (default: '$rootdir');
+	  --rcdir=DIR              defines initscripts base directory (default: '$rcdir');
+	  -r, --result=TYPE        defines that need to be done (default: '$result')
+	                           valid options: 'print','gencpio','symlink','none';
+	  -P,--sys-provides=LIST   defines list of system services;
+	  -q, --quiet              try to be more quiet;
+	  -v, --verbose            print a message for each action;
+	  -V, --version            print program version and exit;
+	  -h, --help               show this text and exit.
+
+	Report bugs to authors.
+
+	EOF
+	exit
+}
+
+print_version()
+{
+	cat <<-EOF
+	$PROG version $PROG_VERSION
+	Written by Alexey Gladkov <gladkov.alexey@gmail.com>
+
+	Copyright (C) 2014  Alexey Gladkov <gladkov.alexey@gmail.com>
+	This is free software; see the source for copying conditions.  There is NO
+	warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	EOF
+	exit
+}
+
+result()
+{
+	local ltarget lfile
+
+	lfile="${rootdir%/}${rcdir%/}/rc$2.d/$3$1"
+	ltarget="../init.d/$1"
+
+	case "$result" in
+		'print')
+			printf '%s\n' \
+				"$lfile"
+			;;
+		'gencpio')
+			printf 'slink %s %s 0777 0 0\n' \
+				"$ltarget" ".${lfile#$rootdir}"
+			;;
+		'symlink')
+			mkdir -p -- "${lfile%/*}"
+			ln -s -- \
+				"$ltarget" "$lfile"
+			;;
+		'none')
+			;;
+	esac
+}
+
+append()
+{
+	local name var n
+	var="$1"; shift
+	eval "name=\" \${$var:-}\""
+	for n; do
+		[ "$n" = '@mark' -o -n "${name##* $n *}" ] ||
+			continue
+		name="$name $n "
+	done
+	set -- $name
+	eval "$var=\" \$* \""
+}
+
+reverse()
+{
+	local n res=
+	for n; do
+		res="$n $res"
+	done
+	printf '%s' "$res"
+}
+
+parse_services()
+{
+	local f name l block value level vname
+	local provides S_requires S_suggests S_level K_requires K_suggests K_level
+
+	while :; do
+		for f in "${rootdir%/}${rcdir%/}/init.d"/*; do
+			[ -x "$f" ] ||
+				continue
+
+			block=0
+			service="${f##*/}"
+			provides=
+
+			S_requires= S_suggests= S_level=
+			K_requires= K_suggests= K_level=
+
+			while read l; do
+				vname=
+				case "$l" in
+					'### BEGIN INIT INFO')
+						[ "$block" = 0 ] || break
+						block=1
+						;;
+					'### END INIT INFO')
+	    					[ "$block" = 1 ] || continue
+		    				block=2
+	    					break
+						;;
+					'# Provides:'*)       vname='provides'   ;;
+					'# Default-Start:'*)  vname='S_level'    ;;
+					'# Required-Start:'*) vname='S_requires' ;;
+					'# Should-Start:'*)   vname='S_suggests' ;;
+					'# Required-Stop:'*)  vname='K_requires' ;;
+					'# Should-Stop:'*)    vname='K_suggests' ;;
+					'# Default-Stop:'*)   vname=             ;;
+				esac
+
+				[ "$block" != 1 -o -z "$vname" ] ||
+					append $vname ${l#*:}
+			done < "$f"
+
+			if [ "$block" != 2 ]; then
+				verbose "Service without LSB header (ignored): $f"
+				continue
+			else
+				verbose "Service with LSB header: $f"
+				verbose "   Provides        : $provides"
+				verbose "   Requires (start): $S_requires"
+				verbose "   Requires (stop ): $K_requires"
+				verbose "   Suggests (start): $S_suggests"
+				verbose "   Suggests (stop ): $K_suggests"
+			fi
+
+			name="$(printf '%s' "$name" | sha1sum)"
+			name="${name%% *}"
+			eval "rc_${name}=\"\$service\""
+
+			[ -n "$K_requires" ] || K_requires="$S_requires"
+			[ -n "$K_suggests" ] || K_suggests="$S_suggests"
+
+			append rc_names $name
+
+			eval "rc_${name}_provides=\"\$provides\""
+
+			eval "rc_${name}_S_requires=\"\$S_requires\""
+			eval "rc_${name}_S_suggests=\"\$S_suggests\""
+
+			eval "rc_${name}_K_requires=\"\$K_requires\""
+			eval "rc_${name}_K_suggests=\"\$K_suggests\""
+
+			for level in $runlevels; do
+				if [ -z "${S_level##* $level *}" ]; then
+					append "rc${level}_deps" $provides
+					append "rc${level}_S_names" $name
+				else
+					append "rc${level}_K_names" $name
+				fi
+			done
+		done
+		break
+	done
+}
+
+process_suggests()
+{
+	local level names deps requires suggests name req
+	level="$1"; shift
+	type="$1"; shift
+
+	eval "deps=\"\$rc${level}_deps\""
+	eval "names=\"\$rc${level}_${type}_names\""
+
+	for name in $names; do
+		eval "requires=\"\$rc_${name}_${type}_requires\""
+		eval "suggests=\"\$rc_${name}_${type}_suggests\""
+
+		for req in $suggests; do
+			[ -n "${deps##* $req *}" ] ||
+				append requires $req
+		done
+
+		eval "rc_${name}_${type}_requires=\"\$requires\""
+	done
+}
+
+sort_services()
+{
+	local level type
+	level="$1"; shift
+	type="$1"; shift
+
+	local names name services deps=' ' found
+	local req requires provides new_serv= new_prov=
+
+	eval "names=\"\$rc${level}_${type}_names\""
+	eval "unset rc${level}_${type}_names"
+
+	[ -z "$system_provides" ] ||
+		append deps $system_provides
+
+	# First: filter names withoout requires
+	for name in $names; do
+		eval "provides=\"\$rc_${name}_provides\""
+		eval "requires=\"\$rc_${name}_${type}_requires\""
+
+		[ -n "${requires##*[! ]*}" ] ||
+			continue
+
+		append new_serv $name
+		append new_prov $provides
+
+		names="${names% $name *} ${names#* $name }"
+	done
+
+	if [ -n "$new_serv" ]; then
+		append deps $new_prov
+		append services '@mark' $new_serv
+	fi
+
+	# Second: order others by requires
+	while :; do
+		new_serv=
+		new_prov=
+
+		for name in $names; do
+			eval "provides=\"\$rc_${name}_provides\""
+			eval "requires=\"\$rc_${name}_${type}_requires\""
+
+			found=1
+			for req in $requires; do
+				[ -n "${deps##* $req *}" ] ||
+					continue
+				found=
+				break
+			done
+
+			[ -n "$found" ] ||
+				continue
+
+			append new_serv $name
+			append new_prov $provides
+
+			names="${names% $name *} ${names#* $name }"
+		done
+
+		if [ -n "$new_serv" ]; then
+			append deps $new_prov
+			append services '@mark' $new_serv
+		else
+			break
+		fi
+	done
+
+	if [ -z "${names##*[! ]*}" ]; then
+		services=
+		for name in $names; do
+			eval "services=\"\$services \$rc_${name}\""
+		done
+		fatal "Unmet found at runlevel $level in services:$services"
+	fi
+
+	[ -n "${services##*[! ]*}" ] ||
+		append services '@mark'
+
+	eval "rc${level}_${type}_order=\"\$services\""
+}
+
+make_start_links()
+{
+	local level order serv name rank=10
+	level="$1"
+
+	eval "order=\"\$rc${level}_S_order\""
+
+	for serv in $order; do
+		if [ "$serv" != '@mark' ]; then
+			eval "name=\"\$rc_${serv}\""
+			result "$name" "$level" "S$rank"
+		else
+			rank=$(($rank + 10))
+		fi
+	done
+}
+
+make_stop_links()
+{
+	local level order serv name rank=10
+	level="$1"
+
+	eval "order=\"\$rc${level}_K_order\""
+
+	for serv in $order; do
+		[ "$serv" != '@mark' ] ||
+			rank=$(($rank + 10))
+	done
+
+	for serv in $order; do
+		if [ "$serv" != '@mark' ]; then
+			eval "name=\"\$rc_${serv}\""
+			result "$name" "$level" "K$rank"
+		else
+			rank=$(($rank - 10))
+		fi
+	done
+}
+
+TEMP=`getopt -n $PROG -o "$getopt_common_opts,P:,r:" -l "$getopt_common_longopts,rcdir:,result:,rootdir:,runlevels:,sys-provides:" -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
+
+while :; do
+	case "$1" in
+		--sys-provides) shift
+			system_provides="$1"
+			;;
+		--rootdir)
+			rootdir="$(opt_check_dir "$1" "$2")"
+			shift
+			;;
+		--rcdir)
+			rcdir="$(opt_check_dir "$1" "$2")"
+			shift
+			;;
+		--runlevels) shift
+			runlevels="$1"
+			;;
+		-r|--result) shift
+			case "$1" in
+				'gencpio'|'print'|'symlink'|'none') result="$1" ;;
+				*)
+					fatal "Unknown argument: $1"
+					;;
+			esac
+			;;
+		-h|--help) show_help
+			;;
+		-q|--quiet) quiet=-q; verbose=
+			;;
+		-v|--verbose) verbose=-v; quiet=
+			;;
+		-V|--version) print_version "$PROG"
+			;;
+		--) shift; break
+			;;
+		*) fatal "Unrecognized option: $1"
+			;;
+	esac
+	shift
+done
+
+# Prepare
+for level in $runlevels; do
+	eval "rc${level}_deps=' '"
+	eval "rc${level}_S_names=' '"
+	eval "rc${level}_K_names=' '"
+done
+
+# Global parsing
+parse_services
+
+for level in $runlevels; do
+	process_suggests "$level" S
+	process_suggests "$level" K
+done
+
+# Cleanup
+for name in $rc_names; do
+	eval "unset rc_${name}_S_suggests"
+	eval "unset rc_${name}_K_suggests"
+done
+for level in $runlevels; do
+	eval "unset rc${level}_deps"
+done
+
+# Process runlevels
+for level in $runlevels; do
+	sort_services "$level" S
+	sort_services "$level" K
+
+	eval "rc${level}_K_order=\" \$(reverse \$rc${level}_K_order)\""
+done
+
+for level in $runlevels; do
+	[ "$result" = 'none' ] ||
+		verbose "Runlevel: $level"
+
+	make_stop_links  $level
+	make_start_links $level
+done
+
+# Cleanup
+for name in $rc_names; do
+	eval "unset rc_${name}_provides"
+	eval "unset rc_${name}_S_requires"
+	eval "unset rc_${name}_K_requires"
+done
+unset rc_names

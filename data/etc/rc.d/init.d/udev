@@ -1,9 +1,9 @@
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:            udev
-# Required-Start:      mountvirtfs
-# Should-Start:        modules
-# Required-Stop:       mountfs mountvirtfs
+# Required-Start:      cmdline modules mountvirtfs
+# Should-Start:        $syslog
+# Required-Stop:
 # Should-Stop:
 # Default-Start:       3 4 5
 # Default-Stop:

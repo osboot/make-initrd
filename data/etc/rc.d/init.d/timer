@@ -2,8 +2,8 @@
 ### BEGIN INIT INFO
 # Provides:            timer
 # Required-Start:      cmdline
-# Should-Start:
-# Required-Stop:       uevent
+# Should-Start:        $syslog
+# Required-Stop:
 # Should-Stop:
 # Default-Start:       3 4 5
 # Default-Stop:

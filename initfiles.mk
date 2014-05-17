@@ -67,7 +67,6 @@ PUT_FILES += \
 	/usr/bin/ip \
 	/usr/bin/which \
 	/sbin/killall5 \
-	/sbin/chkconfig \
 	/sbin/initlog \
 	/sbin/runlevel \
 	/sbin/service \

@@ -3,7 +3,7 @@
 # Provides:            mountvirtfs
 # Required-Start:
 # Should-Start:
-# Required-Stop:       mountfs
+# Required-Stop:
 # Should-Stop:
 # Default-Start:       3 4 5
 # Default-Stop:

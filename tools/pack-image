@@ -8,23 +8,17 @@ cd "$rootdir"
 {
 	mkfifo .initrd/shell
 
+	sort-lsb --rootdir="$rootdir" --result=symlink
+
 	for init in /sbin/init.initrd /sbin/init; do
 		[ -f "$init" ] || continue
 		cp -a "$init" ./sbin/init-bin
 		break
 	done
-
-	for i in 0 1 2 3 4 5 6; do
-		mkdir -p -- etc/rc.d/rc$i.d
-		ln -s rc.d/rc$i.d etc/rc$i.d
-	done
-	ln -s rc.d/init.d etc/init.d
 	ln -s init-bin sbin/telinit
 
-	grep -l 'BEGIN INIT INFO' ./etc/rc.d/init.d/* |
-	while read f; do
-		name="${f##*/}"
-		chroot . chkconfig --add "$name"
+	for i in rc0 rc1 rc2 rc3 rc4 rc5 rc6 init; do
+		ln -s rc.d/$i.d etc/$i.d
 	done
 }
 

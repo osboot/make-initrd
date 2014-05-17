@@ -3,7 +3,7 @@
 # Provides:            localnet
 # Required-Start:      cmdline
 # Should-Start:
-# Required-Stop:       mountfs
+# Required-Stop:
 # Should-Stop:
 # Default-Start:       3 4 5
 # Default-Stop:

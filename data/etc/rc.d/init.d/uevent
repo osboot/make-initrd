@@ -1,9 +1,9 @@
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:            uevent
-# Required-Start:      udev
-# Should-Start:
-# Required-Stop:       udev
+# Required-Start:      udev timer
+# Should-Start:        $syslog
+# Required-Stop:
 # Should-Stop:
 # Default-Start:       3 4 5
 # Default-Stop:
