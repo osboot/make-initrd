@@ -431,11 +431,7 @@ success()
 	if [ -z "${IN_INITLOG-}" ]; then
 		$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 1
 	else
-		local opipe
-		opipe="$(trap -p PIPE)"
-		trap '' PIPE
-		echo "$INITLOG_ARGS -n $0 -s \"$1\" -e 1" >&21
-		$opipe
+		(trap '' PIPE; echo "$INITLOG_ARGS -n $0 -s \"$1\" -e 1" >&21;)
 	fi
 	echo_success
 	return 0
