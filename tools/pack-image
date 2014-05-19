@@ -4,24 +4,6 @@
 
 cd "$rootdir"
 
-# Hack
-{
-	mkfifo .initrd/shell
-
-	sort-lsb --rootdir="$rootdir" --result=symlink
-
-	for init in /sbin/init.initrd /sbin/init; do
-		[ -f "$init" ] || continue
-		cp -a "$init" ./sbin/init-bin
-		break
-	done
-	ln -s init-bin sbin/telinit
-
-	for i in rc0 rc1 rc2 rc3 rc4 rc5 rc6 init; do
-		ln -s rc.d/$i.d etc/$i.d
-	done
-}
-
 find -O2 -mindepth 1 \
 	   \( -type f -a -printf 'file %p %p %#m 0 0\n'  \) \
 	-o \( -type l -a -printf 'slink %p %l %#m 0 0\n' \) \

@@ -50,26 +50,3 @@ PUT_FILES += \
 
 # initrd specific utilities
 PUT_DIRS += /lib/initrd $(DATADIR)
-
-# Add libshell
-PUT_FILES += $(wildcard /bin/shell-*)
-
-PUT_FILES += \
-	/bin/bash \
-	/bin/dmesg \
-	/bin/touch \
-	/bin/ps \
-	/bin/sleep \
-	/bin/getopt \
-	/bin/findmnt \
-	/bin/hostname \
-	/usr/bin/flock \
-	/usr/bin/ip \
-	/usr/bin/which \
-	/sbin/killall5 \
-	/sbin/initlog \
-	/sbin/runlevel \
-	/sbin/service \
-	/sbin/start-stop-daemon \
-	/etc/initlog.conf \
-	/var/resolv

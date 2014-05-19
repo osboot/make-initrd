@@ -1,0 +1,6 @@
+#!/bin/sh -efu
+
+. guess-functions
+
+[ ! -x /sbin/init.initrd ] ||
+	guess_feature sysvinit

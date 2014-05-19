@@ -1,3 +1,4 @@
+.NOTPARALLEL:
 .EXPORT_ALL_VARIABLES:
 .DEFAULT_GOAL := all
 
@@ -21,6 +22,8 @@ ifneq "$(private_goals)" ''
     $(error You MUST NOT call private goals directly: $(private_goals))
 endif
 endif # INITRD_CONFIG
+
+pack: pre-pack
 
 all: check-for-root
 	@rc=0; \
