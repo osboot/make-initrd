@@ -4,6 +4,9 @@
 
 cd "$rootdir"
 
+[ -x "./sbin/init-bin" ] ||
+	fatal "/sbin/init-bin: Not found in the image."
+
 find -O2 -mindepth 1 \
 	   \( -type f -a -printf 'file %p %p %#m 0 0\n'  \) \
 	-o \( -type l -a -printf 'slink %p %l %#m 0 0\n' \) \
