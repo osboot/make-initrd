@@ -180,8 +180,8 @@ stop_daemon()
 	local ANNOUNCE=1 BASENAME= CMDNAME= DEFAULT=true DISPNAME= EXPECT= FLAGS= HUPSIG= LOCKFILE= MESSAGE= NAME= PIDFILE= RETRY= SIGNAL= STATUS= WHICH=
 
 # start-stop-daemon wants a signal number.
-	SIGNAL="$(kill -l TERM)" || SIGNAL=15
-	HUPSIG="$(kill -l HUP)" || HUPSIG=1
+	SIGNAL="$(/bin/kill -l TERM)" || SIGNAL=15
+	HUPSIG="$(/bin/kill -l HUP)" || HUPSIG=1
 	while [ $# -ge 1 ]; do
 		case "$1" in
 		--) shift
@@ -218,7 +218,7 @@ stop_daemon()
 			;;
 		-*)
 			SIGNAL="${1##-}"
-			SIGNAL="$(kill -l -- "$SIGNAL")" || return 1
+			SIGNAL="$(/bin/kill -l -- "$SIGNAL")" || return 1
 			DEFAULT=false
 			ANNOUNCE=
 			;;
@@ -292,7 +292,7 @@ stop_daemon()
 		sleep 0.1
 		if start-stop-daemon $FLAGS --test > /dev/null; then
 			sleep 1
-			SIGNAL="$(kill -l KILL)" || SIGNAL=9
+			SIGNAL="$(/bin/kill -l KILL)" || SIGNAL=9
 			start-stop-daemon $FLAGS --signal "$SIGNAL" > /dev/null
 		fi
 		[ -z "$PIDFILE" ] || rm -f "$PIDFILE"
@@ -428,11 +428,7 @@ echo_passed()
 # Log that something succeeded
 success()
 {
-	if [ -z "${IN_INITLOG-}" ]; then
-		$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 1
-	else
-		(trap '' PIPE; echo "$INITLOG_ARGS -n $0 -s \"$1\" -e 1" >&21;)
-	fi
+	$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 1
 	echo_success
 	return 0
 }
@@ -441,11 +437,7 @@ success()
 failure()
 {
 	local rc=$?
-	if [ -z "${IN_INITLOG-}" ]; then
-		$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 2
-	else
-		(trap '' PIPE; echo "$INITLOG_ARGS -n $0 -s \"$1\" -e 2" >&21;)
-	fi
+	$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 2
 	echo_failure
 	return $rc
 }
@@ -454,11 +446,7 @@ failure()
 passed()
 {
 	local rc=$?
-	if [ -z "${IN_INITLOG-}" ]; then
-		$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 1
-	else
-		(trap '' PIPE; echo "$INITLOG_ARGS -n $0 -s \"$1\" -e 1" >&21;)
-	fi
+	$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 1
 	echo_passed
 	return $rc
 }
