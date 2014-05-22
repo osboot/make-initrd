@@ -13,9 +13,6 @@
 #                      run syslog.
 ### END INIT INFO
 
-WITHOUT_RC_COMPAT=1
-
-# Source function library.
 . /etc/init.d/functions
 
 SourceIfNotEmpty /etc/sysconfig/syslogd
@@ -29,7 +26,7 @@ RETVAL=0
 
 start()
 {
-	msg_starting $"system logger"
+	msg_starting "system logger"
 	start_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --no-announce -- syslogd $SYSLOGD_OPTIONS
 	RETVAL=$?
 	return $RETVAL
@@ -37,7 +34,7 @@ start()
 
 stop()
 {
-	msg_stopping $"system logger"
+	msg_stopping "system logger"
 	stop_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --no-announce syslogd
 	RETVAL=$?
 	return $RETVAL
@@ -54,7 +51,7 @@ reload()
 	if echo -E "$SYSLOGD_OPTIONS" |grep -Eqs '(^|[[:space:]]+)-j[[:space:]]+'; then
 		restart
 	else
-		msg_reloading $"system logger"
+		msg_reloading "system logger"
 		stop_daemon --pidfile "$PIDFILE" -HUP syslogd
 		RETVAL=$?
 	fi
@@ -80,24 +77,20 @@ case "$1" in
 		reload
 		;;
 	condstart)
-		if [ ! -e "$LOCKFILE" ]; then
+		[ -e "$LOCKFILE" ] ||
 			start
-		fi
 		;;
 	condstop)
-		if [ -e "$LOCKFILE" ]; then
+		[ ! -e "$LOCKFILE" ] ||
 			stop
-		fi
 		;;
 	condrestart)
-		if [ -e "$LOCKFILE" ]; then
+		[ ! -e "$LOCKFILE" ] ||
 			restart
-		fi
 		;;
 	condreload)
-		if [ -e "$LOCKFILE" ]; then
+		[ ! -e "$LOCKFILE" ] ||
 			reload
-		fi
 		;;
 	*)
 		msg_usage "${0##*/} {start|stop|status|restart|reload|condstart|condstop|condrestart|condreload}"
