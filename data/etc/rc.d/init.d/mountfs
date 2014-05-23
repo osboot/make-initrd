@@ -14,8 +14,13 @@
 
 LOCKFILE=/var/lock/subsys/mountfs
 
+. /.initrd/initenv
+
 case "$1" in
 	start)
+		[ ! -d /etc/timer.d ] ||
+			printf 'period=%s repeat=1\t/lib/initrd/rootdelay\n' "${ROOTDELAY:-180}" \
+				> /etc/timer.d/rootdelay.conf
 		touch "$LOCKFILE"
 		exit 0
 		;;
@@ -26,7 +31,6 @@ esac
 
 # Source function library.
 . /etc/init.d/functions
-. /.initrd/initenv
 
 # Unmount file systems, killing processes if we have to.
 UnmountFilesystems()

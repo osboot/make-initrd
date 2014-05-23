@@ -17,16 +17,7 @@ NAME=timerd
 PIDFILE=/var/run/$NAME.pid
 ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --displayname $NAME"
 
-pre_start()
-{
-	(
-		. /.initrd/initenv
-		printf 'period=%s repeat=1\t/lib/initrd/rootdelay\n' "${ROOTDELAY:-180}"
-	) > /etc/timer.d/rootdelay.conf
-}
-
 start() {
-	pre_start
 	start_daemon $ARGS -- $NAME || RETVAL=$?
 	return $RETVAL
 }
