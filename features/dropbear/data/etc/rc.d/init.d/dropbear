@@ -1,0 +1,44 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          dropbear
+# Required-Start:    $syslog localnet
+# Required-Stop:
+# Default-Start:     3 4 5
+# Default-Stop:
+### END INIT INFO
+
+. /etc/init.d/template
+
+NAME=dropbear
+PIDFILE=/var/run/$NAME.pid
+ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --displayname $NAME"
+DROPBEAR_EXTRA_ARGS=
+
+SourceIfNotEmpty /etc/$NAME/$NAME.conf
+
+start() {
+	local t n m
+	for t in rsa dss ecdsa; do
+		n="/etc/dropbear/dropbear_${t}_host_key"
+		[ ! -f "$n" ] ||
+			continue
+		m="Creating $n:"
+		echo_msg "$m"
+		dropbearkey -t $t -f $n >/dev/null 2>&1 &&
+			success "$m" ||
+			failure "$m"
+		echo
+	done
+
+	start_daemon $ARGS -- $NAME $DROPBEAR_EXTRA_ARGS
+	RETVAL=$?
+	return $RETVAL
+}
+
+stop() {
+	stop_daemon $ARGS -- $NAME
+	RETVAL=$?
+	return $RETVAL
+}
+
+switch "${1-}"
