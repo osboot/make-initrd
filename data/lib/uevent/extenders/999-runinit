@@ -3,6 +3,13 @@
 . /.initrd/initenv
 . uevent-sh-functions
 
+[ "${RDMODE-}" != 'live' ] ||
+	exit 0
+
+shell_inactive() {
+	[ ! -d /.initrd/shell.lock ]
+}
+
 rootfs()
 {
 	if [ ! -e "$rootmnt/$INIT" ]; then
@@ -39,6 +46,6 @@ mountfs()
 	done < /etc/fstab
 }
 
-mountfs && rootfs ||
+shell_inactive && mountfs && rootfs ||
 	exit 0
 telinit 2

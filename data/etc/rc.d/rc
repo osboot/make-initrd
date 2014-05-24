@@ -58,7 +58,7 @@ for i in "$rcd"/S*; do
 					;;
 				s|shell)
 					printf 'This shell remains here for debug purposes. Press Ctrl-D to continue.\n'
-					PS1="(initramfs $subsys)\$ " /bin/sh -i +m
+					RDSHELL=1 /bin/emergency-shell
 					;;
 				n|no)
 					continue 2

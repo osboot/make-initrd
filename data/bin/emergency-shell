@@ -7,6 +7,9 @@ msg=
 [ -n "${RDSHELL-}" ] ||
 	read msg < /.initrd/shell
 
+mkdir /.initrd/shell.lock >/dev/null 2>&1 ||
+	exit 0
+
 # Disallow console access
 [ "${PANIC-}" != 0 ] || reboot
 
@@ -16,4 +19,10 @@ for f in /lib/shell/*; do
 done
 
 [ -z "$msg" ] || message "$msg"
-PS1='(initramfs)$ ' exec /bin/sh -i +m
+
+rc=0
+PS1='(initramfs)$ ' /bin/sh -i +m || rc=$?
+echo
+
+rmdir /.initrd/shell.lock
+exit $rc
