@@ -1,4 +1,4 @@
-config.mk
+/config.mk
 initrd-diff
 initrd-diff.1
 make-initrd
