@@ -1,4 +1,5 @@
 SYSVINIT_FILES = \
+	/bin/bash \
 	/bin/kill \
 	/bin/dmesg \
 	/bin/touch \
@@ -11,7 +12,8 @@ SYSVINIT_FILES = \
 	/sbin/initlog \
 	/sbin/start-stop-daemon \
 	/etc/initlog.conf \
-	/var/resolv
+	/var/resolv \
+	/usr/share/terminfo/l
 
 # Add libshell
 SYSVINIT_FILES += $(wildcard /bin/shell-*)
