@@ -1,3 +1,21 @@
-#!/bin/sh
+#!/bin/sh -eu
 
-exec </dev/console >/dev/console 2>&1 run-init -e /.initrd/kernenv \
+# Reopen std. streams
+exec </dev/console >/dev/console 2>&1
+
+# Read initramfs env
+. /.initrd/initenv
+
+# Read init incoming arguments
+read initargs </.initrd/initargs
+
+# Close all descriptors
+for i in /proc/self/fd/[0-9]*; do
+	[ -e "$i" ] || break
+	i="${i##*/}"
+	[ $i -ge 3 ] || continue
+	eval "exec $i>&-" ||:
+done
+
+# Run system init with arguments. Goodbye!
+exec run-init -e /.initrd/kernenv "$rootmnt" "$INIT" $initargs

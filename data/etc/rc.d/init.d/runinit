@@ -14,10 +14,6 @@
 [ "$1" = start ] || exit 0
 
 . /.initrd/initenv
-. /etc/init.d/functions
-
 echo "Running init ($INIT)"
 
-read initargs </.initrd/initargs
-printf '"%s" "%s" %s\n' "$rootmnt" "$INIT" "$initargs" >> /sbin/init
 exec telinit u
