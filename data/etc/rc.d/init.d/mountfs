@@ -1,36 +1,67 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides:            mountfs $local_fs
-# Required-Start:      fstab mountvirtfs
+# Provides:            mountfs mountvirtfs $local_fs
+# Required-Start:
 # Should-Start:
 # Required-Stop:
 # Should-Stop:
 # Default-Start:       3 4 5
 # Default-Stop:
-# Short-Description:   Unmounts file systems.
-# Description:         Unmounts file systems.
+# Short-Description:   Mounts file systems.
+# Description:         Mounts file systems.
 # X-LFS-Provided-By:   LFS
 ### END INIT INFO
 
-LOCKFILE=/var/lock/subsys/mountfs
-
 . /.initrd/initenv
+. /etc/init.d/template
 
-case "$1" in
-	start)
-		[ ! -d /etc/timer.d ] ||
-			printf 'period=%s repeat=1\t/lib/initrd/rootdelay\n' "${ROOTDELAY:-180}" \
-				> /etc/timer.d/rootdelay.conf
-		touch "$LOCKFILE"
-		exit 0
-		;;
-	stop)
-		rm -f "$LOCKFILE"
-		;;
-esac
+MountDev()
+{
+	if ! mount -t devtmpfs -o mode=755,size=5m udevfs /dev 2>/dev/null; then
+		mount -t tmpfs -o mode=755,size=5m udevfs /dev ||
+			return 1
+	fi
+}
 
-# Source function library.
-. /etc/init.d/functions
+MountVirtualFs()
+{
+	local msg="Mounting filesystem"
+
+	action_shell "$msg [/dev]:" MountDev
+	action "$msg [/proc]:" mount -t proc  -o nodev,noexec,nosuid proc  /proc
+	action "$msg [/sys]:"  mount -t sysfs -o nodev,noexec,nosuid sysfs /sys
+	action "$msg [/run]:"  mount -t tmpfs -o mode=755            runfs /run
+
+	makenod() { [ -e /dev/$1 ] || mknod /dev/$1 $2 $3 $4; }
+	makenod ram     b 1 1
+	makenod null    c 1 3
+	makenod zero    c 1 5
+	makenod full    c 1 7
+	makenod random  c 1 8
+	makenod kmsg    c 1 11
+	makenod systty  c 4 0
+	makenod tty0    c 4 0
+	makenod tty1    c 4 1
+	makenod tty     c 5 0
+	makenod console c 5 1
+	makenod ptmx    c 5 2
+
+	mkdir -p /dev/pts /dev/shm /run/lock/subsys /run/user /run/udev /run/systemd
+
+	:> /run/utmp
+	chmod 0664 /run/utmp
+
+	touch "$LOCKFILE"
+}
+
+MoveFilesystems()
+{
+	local n
+	for n in dev run ${EXPORT_FS-}; do
+		[ ! -d "$rootmnt/$n" ] ||
+			action "Moving filesystem [/$n]:" mount --move "/$n" "$rootmnt/$n"
+	done
+}
 
 # Unmount file systems, killing processes if we have to.
 UnmountFilesystems()
@@ -65,28 +96,49 @@ UnmountFilesystems()
 	done
 }
 
-# Unmount non-/dev tmpfs.
-non_dev_tmpfs()
+start()
 {
-	findmnt -mno TARGET -t tmpfs |
-	while read t; do
-		case "$t" in
-			/dev|$rootmnt|$rootmnt/*) ;;
-			*) printf '%s ' "$t" ;;
-		esac
-	done
-}
-UnmountFilesystems 3 5 non_dev_tmpfs
+	MountVirtualFs
 
-# Unmount all the rest.
-all_rest()
-{
-	findmnt -mno SOURCE,TARGET |
-	while read s t; do
-		case "$s:$t" in
-			none:*|*:/|*:$rootmnt|*:$rootmnt/*|*:/proc|*:/proc/*) ;;
-			*) printf '%s ' "$t" ;;
-		esac
-	done
+	[ ! -d /etc/timer.d ] ||
+		printf 'period=%s repeat=1\t/lib/initrd/rootdelay\n' "${ROOTDELAY:-180}" \
+			> /etc/timer.d/rootdelay.conf
+
+	touch "$LOCKFILE"
 }
-UnmountFilesystems 3 5 all_rest
+
+stop()
+{
+	# Move some filesystems to real root.
+	MoveFilesystems
+
+	# Unmount non-/dev tmpfs.
+	non_dev_tmpfs()
+	{
+		findmnt -mno TARGET -t tmpfs |
+		while read t; do
+			case "$t" in
+				/dev|$rootmnt|$rootmnt/*) ;;
+				*) printf '%s ' "$t" ;;
+			esac
+		done
+	}
+	UnmountFilesystems 3 5 non_dev_tmpfs
+
+	# Unmount all the rest.
+	all_rest()
+	{
+		findmnt -mno SOURCE,TARGET |
+		while read s t; do
+			case "$s:$t" in
+				*:/|*:$rootmnt|*:$rootmnt/*) ;;
+				*) printf '%s ' "$t" ;;
+			esac
+		done
+	}
+	UnmountFilesystems 3 5 all_rest
+
+	rm -f "$LOCKFILE"
+}
+
+switch "${1-}"
