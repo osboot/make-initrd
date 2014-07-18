@@ -4,6 +4,9 @@
 /bin/showenv > /.initrd/kernenv
 echo "$*" > /.initrd/initargs
 
+# Create storage for init environment
+:> /.initrd/initenv
+
 # Don't initialize SELinux
 export SELINUX_INIT=1
 
