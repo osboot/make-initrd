@@ -1,8 +1,8 @@
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:            runinit
-# Required-Start:      killall
-# Should-Start:
+# Required-Start:
+# Should-Start:        killall
 # Required-Stop:
 # Should-Stop:
 # Default-Start:       2
