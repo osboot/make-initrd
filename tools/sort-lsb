@@ -75,6 +75,11 @@ result()
 	esac
 }
 
+empty()
+{
+	[ "$#" -eq 0 ] || return 1
+}
+
 append()
 {
 	local name var n
@@ -100,8 +105,10 @@ reverse()
 
 parse_services()
 {
-	local f name l block value level vname
+	local f name l block value level type vname
 	local provides S_requires S_suggests S_level K_requires K_suggests K_level
+
+	verbose "Parsing services"
 
 	while :; do
 		for f in "${rootdir%/}${rcdir%/}/init.d"/*; do
@@ -143,43 +150,63 @@ parse_services()
 			if [ "$block" != 2 ]; then
 				verbose "Service without LSB header (ignored): $f"
 				continue
-			else
-				verbose "Service with LSB header: $f"
-				verbose "   Provides        : $provides"
-				verbose "   Requires (start): $S_requires"
-				verbose "   Requires (stop ): $K_requires"
-				verbose "   Suggests (start): $S_suggests"
-				verbose "   Suggests (stop ): $K_suggests"
 			fi
+
+			! empty $K_requires || K_requires="$S_requires"
+			! empty $K_suggests || K_suggests="$S_suggests"
+
+			verbose "Service with LSB header: $f"
+			verbose "   Levels   (S):$S_level"
+			verbose "   Provides    :$provides"
+			verbose "   Requires (S):$S_requires"
+			verbose "   Requires (K):$K_requires"
+			verbose "   Suggests (S):$S_suggests"
+			verbose "   Suggests (K):$K_suggests"
 
 			name="$(printf '%s' "$name" | sha1sum)"
 			name="${name%% *}"
 			eval "rc_${name}=\"\$service\""
 
-			[ -n "$K_requires" ] || K_requires="$S_requires"
-			[ -n "$K_suggests" ] || K_suggests="$S_suggests"
-
 			append rc_names $name
 
 			eval "rc_${name}_provides=\"\$provides\""
 
-			eval "rc_${name}_S_requires=\"\$S_requires\""
-			eval "rc_${name}_S_suggests=\"\$S_suggests\""
-
-			eval "rc_${name}_K_requires=\"\$K_requires\""
-			eval "rc_${name}_K_suggests=\"\$K_suggests\""
+			for type in S K; do
+				eval "rc_${name}_${type}_requires=\"\$${type}_requires\""
+				eval "rc_${name}_${type}_suggests=\"\$${type}_suggests\""
+			done
 
 			for level in $runlevels; do
-				if [ -z "${S_level##* $level *}" ]; then
-					append "rc${level}_deps" $provides
-					append "rc${level}_S_names" $name
-				else
-					append "rc${level}_K_names" $name
-				fi
+				[ -z "${S_level##* $level *}" ] &&
+					type='S' ||
+					type='K'
+				append "rc${level}_${type}_names" $name
 			done
 		done
 		break
 	done
+}
+
+print_name()
+{
+	local service
+	eval "service=\"\$rc_$1\""
+	printf '%s' "$service"
+}
+
+print_list()
+{
+	local name service
+
+	for name; do
+		if [ "$name" = '@mark' ]; then
+			printf '%s ' "$name"
+			continue
+		fi
+		eval "service=\"\$rc_${name}\""
+		printf '%s ' "$service"
+	done
+	printf '\n'
 }
 
 process_suggests()
@@ -188,8 +215,11 @@ process_suggests()
 	level="$1"; shift
 	type="$1"; shift
 
-	eval "deps=\"\$rc${level}_deps\""
 	eval "names=\"\$rc${level}_${type}_names\""
+
+	for name in $names; do
+		eval "append deps \$rc_${name}_provides"
+	done
 
 	for name in $names; do
 		eval "requires=\"\$rc_${name}_${type}_requires\""
@@ -212,6 +242,9 @@ sort_services()
 
 	local names name services deps=' ' found
 	local req requires provides new_serv= new_prov=
+	local unmet_name= unmet_req=
+
+	verbose "Ordering services ($type$level)"
 
 	eval "names=\"\$rc${level}_${type}_names\""
 	eval "unset rc${level}_${type}_names"
@@ -224,7 +257,7 @@ sort_services()
 		eval "provides=\"\$rc_${name}_provides\""
 		eval "requires=\"\$rc_${name}_${type}_requires\""
 
-		[ -n "${requires##*[! ]*}" ] ||
+		empty $requires ||
 			continue
 
 		append new_serv $name
@@ -243,6 +276,8 @@ sort_services()
 		new_serv=
 		new_prov=
 
+		verbose "   ($type$level) order: $(print_list $services)"
+
 		for name in $names; do
 			eval "provides=\"\$rc_${name}_provides\""
 			eval "requires=\"\$rc_${name}_${type}_requires\""
@@ -252,6 +287,8 @@ sort_services()
 				[ -n "${deps##* $req *}" ] ||
 					continue
 				found=
+				unmet_name="$name"
+				unmet_req="$req"
 				break
 			done
 
@@ -272,15 +309,16 @@ sort_services()
 		fi
 	done
 
-	if [ -z "${names##*[! ]*}" ]; then
+	if ! empty $names; then
 		services=
 		for name in $names; do
 			eval "services=\"\$services \$rc_${name}\""
 		done
-		fatal "Unmet found at runlevel $level in services:$services"
+		message "Error: Unable to find dependency for '$(print_name $unmet_name)' on $type$level: $unmet_req"
+		fatal "Error: Unmet found at runlevel $type$level in services:$services"
 	fi
 
-	[ -n "${services##*[! ]*}" ] ||
+	empty $services ||
 		append services '@mark'
 
 	eval "rc${level}_${type}_order=\"\$services\""
@@ -323,6 +361,32 @@ make_stop_links()
 			rank=$(($rank - 10))
 		fi
 	done
+}
+
+process_runlevel()
+{
+	local level="$1"
+
+	if [ -n "$verbose" ]; then
+		printf '\n' >&2
+		verbose "Services per runlevel $level"
+		verbose "   (S$level) services: $(eval "print_list \$rc${level}_S_names")"
+		verbose "   (K$level) services: $(eval "print_list \$rc${level}_K_names")"
+	fi
+
+	process_suggests "$level" S
+	process_suggests "$level" K
+
+	sort_services "$level" S
+	sort_services "$level" K
+
+	eval "rc${level}_K_order=\" \$(reverse \$rc${level}_K_order)\""
+
+	[ "$result" = 'none' ] ||
+		verbose "Runlevel: $level"
+
+	make_stop_links  $level
+	make_start_links $level
 }
 
 TEMP=`getopt -n $PROG -o "$getopt_common_opts,P:,r:" -l "$getopt_common_longopts,rcdir:,result:,rootdir:,runlevels:,sys-provides:" -- "$@"` ||
@@ -371,7 +435,6 @@ done
 
 # Prepare
 for level in $runlevels; do
-	eval "rc${level}_deps=' '"
 	eval "rc${level}_S_names=' '"
 	eval "rc${level}_K_names=' '"
 done
@@ -379,40 +442,7 @@ done
 # Global parsing
 parse_services
 
-for level in $runlevels; do
-	process_suggests "$level" S
-	process_suggests "$level" K
-done
-
-# Cleanup
-for name in $rc_names; do
-	eval "unset rc_${name}_S_suggests"
-	eval "unset rc_${name}_K_suggests"
-done
-for level in $runlevels; do
-	eval "unset rc${level}_deps"
-done
-
 # Process runlevels
 for level in $runlevels; do
-	sort_services "$level" S
-	sort_services "$level" K
-
-	eval "rc${level}_K_order=\" \$(reverse \$rc${level}_K_order)\""
+    (process_runlevel "$level")
 done
-
-for level in $runlevels; do
-	[ "$result" = 'none' ] ||
-		verbose "Runlevel: $level"
-
-	make_stop_links  $level
-	make_start_links $level
-done
-
-# Cleanup
-for name in $rc_names; do
-	eval "unset rc_${name}_provides"
-	eval "unset rc_${name}_S_requires"
-	eval "unset rc_${name}_K_requires"
-done
-unset rc_names
