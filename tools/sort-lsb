@@ -94,15 +94,6 @@ append()
 	eval "$var=\" \$* \""
 }
 
-reverse()
-{
-	local n res=
-	for n; do
-		res="$n $res"
-	done
-	printf '%s' "$res"
-}
-
 parse_services()
 {
 	local f name l block value level type vname
@@ -379,8 +370,6 @@ process_runlevel()
 
 	sort_services "$level" S
 	sort_services "$level" K
-
-	eval "rc${level}_K_order=\" \$(reverse \$rc${level}_K_order)\""
 
 	[ "$result" = 'none' ] ||
 		verbose "Runlevel: $level"
