@@ -1,7 +1,7 @@
 #!/bin/sh -eu
 
-# Reopen std. streams
-exec </dev/console >/dev/console 2>&1
+# Umount procfs
+umount -fl /proc
 
 # Read initramfs env
 . /.initrd/initenv
