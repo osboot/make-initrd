@@ -1,12 +1,5 @@
 #!/bin/sh
 
-trap '' PIPE
-
-# Rerun ourselves through initlog
-if [ -z "$IN_INITLOG" -a -x /sbin/initlog ]; then
-	exec initlog -r "$0"
-fi
-
 # Fix console loglevel
 LOGLEVEL=1
 dmesg -n "$LOGLEVEL"

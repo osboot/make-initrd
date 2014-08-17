@@ -20,10 +20,7 @@ rcd="/etc/rc.d/rc$runlevel.d"
 [ -d "$rcd" ] ||
 	exit 0
 
-# Rerun ourselves through initlog
-if [ -z "${IN_INITLOG-}" -a -x /sbin/initlog ]; then
-	exec initlog -r "$0"
-fi
+export INITLOG_FILE='/var/log/boot.log'
 
 # First, run the KILL scripts.
 for i in "$rcd"/K*; do

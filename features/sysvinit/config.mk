@@ -9,9 +9,7 @@ SYSVINIT_FILES = \
 	/usr/bin/ip \
 	/usr/bin/which \
 	/sbin/killall5 \
-	/sbin/initlog \
 	/sbin/start-stop-daemon \
-	/etc/initlog.conf \
 	/var/resolv \
 	/usr/share/terminfo/l
 

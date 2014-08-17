@@ -1,0 +1,129 @@
+#!/bin/sh -eu
+
+. shell-error
+. shell-getopt
+. shell-signal
+
+show_help() {
+	cat <<EOF
+Usage: $PROG [OPTION...]
+
+Logs messages and events to the logfile.
+
+Options:
+   -n, --name=STRING         name of service being logged;
+   -s, --string=STRING       string to log;
+   -c, --cmd=STRING          command to run, logging output;
+   -e, --event=INT           event being logged (see man page);
+   -f, --facility=STRING     facility to log at (default: 'local7');
+   -p, --priority=STRING     priority to log at (default: 'notice');
+   -h, --help                show this text and exit.
+
+Report bugs to http://bugzilla.altlinux.org/
+
+EOF
+	exit
+}
+
+workdir=
+cleanup_handler() {
+	[ -z "$workdir" ] || rm -rf -- "$workdir"
+}
+
+logEvent() {
+	local fmt cmdname cmdevent logstring
+
+	cmdname="$1"; shift
+	cmdevent="$1"; shift
+	logstring="$1"; shift
+
+	case "$cmdevent" in
+		0) fmt="%s babbles incoherently" ;;
+		1) fmt="%s succeeded" ;;
+		2) fmt="%s failed" ;;
+		3) fmt="%s cancelled at user request" ;;
+		4) fmt="%s failed due to a failed dependency" ;;
+		*) fmt="%s" ;;
+	esac
+	printf "$fmt\\n" "$cmdname: $logstring"
+	exit
+}
+
+logString() {
+	printf '%s\n' "$1: $2"
+	exit
+}
+
+runCommand() {
+	local line ret cmdname cmd
+
+	cmdname="$1"; shift
+	cmd="$1"; shift
+	{
+		$cmd || ret=$?
+		echo "$ret" >"$workdir/ret"
+	} 2>&1 |
+	while read line; do
+		printf '%s: %s\n' "$cmdname" "$line"
+	done
+	read ret < "$workdir/ret"
+	exit $ret
+}
+
+TEMP=`getopt -n $PROG -o 'c:,e:,f:,l:,n:,p:,s:,h,q' -l 'cmd:,event:,facility:,log:,name:,priority:,string:,help,quiet' -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
+
+logfile="${INITLOG_FILE:-/tmp/$PROG.log}"
+cmd=
+cmdevent=
+cmdname=
+logstring=
+facility='local7'
+priority='notice'
+while :; do
+	case "$1" in
+		-l|--log)       shift; logfile="$1";   ;;
+		-c|--cmd)       shift; cmd="$1";       ;;
+		-n|--name)      shift; cmdname="$1";   ;;
+		-e|--event)     shift; cmdevent="$1";  ;;
+		-f|--facility)  shift; facility="$1";  ;;
+		-p| --priority) shift; priority="$1";  ;;
+		-s|--string)    shift; logstring="$1"; ;;
+		-h|--help)
+			show_help
+			;;
+		-q|--quiet)
+			;;
+		--) shift; break
+			;;
+	esac
+	shift
+done
+
+[ -n "$cmd" -a -n "$logstring" ] &&
+	fatal "--cmd and --run are incompatible with --string"
+
+[ -n "$cmdname" -a -z "$logstring" -a -z "$cmdevent" -a -z "$cmd" ] &&
+	fatal "--name requires one of --event, --string or --cmd"
+
+[ -n "$cmdevent" -a -z "$cmdname" -a -z "$logstring" ] &&
+	fatal "--event requires one of --cmdname or --logstring"
+
+cmdname="${cmdname##*/}"
+[ -n "$cmdname" ] ||
+	cmdname='(none)'
+
+[ -n "$cmdevent" ] &&
+	logEvent "$cmdname" "$cmdevent" "$logstring" >>"$logfile" 2>&1
+
+[ -n "$logstring" ] &&
+	logString "$cmdname" "$logstring" >>"$logfile" 2>&1
+
+[ -n "$cmd" ] && {
+	set_cleanup_handler cleanup_handler
+	workdir="$(mktemp -dt "$PROG.XXXXXXXXXX")"
+	runCommand "$cmdname" "$cmd" >>"$logfile" 2>&1
+}
+
+message "nothing to do"
