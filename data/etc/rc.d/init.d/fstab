@@ -16,6 +16,8 @@
 . /.initrd/initenv
 . /etc/init.d/functions
 
+. /bin/shell-error
+
 convert_dev()
 {
 	local retval dev value major minor
