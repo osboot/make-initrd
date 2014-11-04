@@ -2,6 +2,7 @@ SYSVINIT_FILES = \
 	/bin/bash \
 	/bin/kill \
 	/bin/dmesg \
+	/bin/runas \
 	/bin/touch \
 	/bin/sleep \
 	/bin/findmnt \

@@ -10,4 +10,4 @@ umount -fl /proc
 read initargs </.initrd/initargs
 
 # Run system init with arguments. Goodbye!
-exec run-init -e /.initrd/kernenv "$rootmnt" "$INIT" $initargs
+exec runas /sbin/init /bin/run-init -e /.initrd/kernenv "$rootmnt" "$INIT" $initargs
