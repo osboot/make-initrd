@@ -1,0 +1,12 @@
+#!/bin/sh
+
+. /.initrd/initenv
+. uevent-sh-functions
+
+[ "${RDMODE-}" = 'live' ] ||
+	exit 0
+
+[ -n "${RDLXC-}" ] ||
+	exit 0
+
+lxc-start -n system -d

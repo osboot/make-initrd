@@ -1,0 +1,14 @@
+lxc.rootfs = /root
+lxc.utsname = localhost
+
+lxc.mount.entry = udevfs dev devtmpfs mode=755,size=5m 0 0
+lxc.mount.entry = proc proc proc nodev,noexec,nosuid 0 0
+lxc.mount.entry = sysfs sys sysfs defaults 0 0
+lxc.mount.entry = /run run none bind 0 0
+
+lxc.network.type = empty
+
+#lxc.cap.drop = sys_module mknod mac_override sys_boot
+lxc.cap.drop = sys_boot
+
+lxc.cgroup.devices.allow = a
