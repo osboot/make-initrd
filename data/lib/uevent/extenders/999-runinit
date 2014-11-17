@@ -3,6 +3,8 @@
 . /.initrd/initenv
 . uevent-sh-functions
 
+. shell-error
+
 [ "${RDMODE-}" != 'live' ] ||
 	exit 0
 
@@ -13,7 +15,7 @@ shell_inactive() {
 rootfs()
 {
 	if [ ! -e "$rootmnt/$INIT" ]; then
-		error "Unable to mount root"
+		message "Unable to mount root"
 		return 1
 	fi
 }
@@ -35,12 +37,12 @@ mountfs()
 		fi
 
 		if [ ! -d "$fsdir" ]; then
-			error "$fsdir: Does not exist"
+			message "$fsdir: Does not exist"
 			return 1
 		fi
 
 		if ! mountpoint -q "$fsdir"; then
-			error "$fsdir: Not mounted"
+			message "$fsdir: Not mounted"
 			return 1
 		fi
 	done < /etc/fstab

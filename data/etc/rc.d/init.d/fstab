@@ -70,7 +70,7 @@ gen_fstab()
 	fi
 
 	if [ -z "${s0-}" ]; then
-		error "Root device unspecified."
+		message "Root device unspecified."
 		return 1
 	fi
 
