@@ -60,13 +60,8 @@ stop() {
 	stop_daemon --lockfile "$LOCKFILE" udevd ||
 		RETVAL=$?
 
-	local udev_db='/run/udev'
-
-	#[ "${UDEV_VERSION:-0}" -gt 185 ] ||
-	#	udev_db="$(udevadm info --run)"
-
 	# ignore any failed event because the init script will trigger again all events
-	rm -rf $udev_db
+	udevadm info --cleanup-db
 
 	return $RETVAL
 }
