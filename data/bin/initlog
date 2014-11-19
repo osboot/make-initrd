@@ -60,11 +60,16 @@ runCommand() {
 	cmdname="$1"; shift
 	cmd="$1"; shift
 	{
+		ret=0
 		$cmd || ret=$?
 		echo "$ret" >"$workdir/ret"
+		echo
 	} 2>&1 |
-	while read line; do
-		printf '%s: %s\n' "$cmdname" "$line"
+	while [ ! -f "$workdir/ret" ]; do
+		eof=
+		read -r line || eof=1
+		[ -z "$line" ] || printf '%s: %s\n' "$cmdname" "$line"
+		[ -z "$eof" ] || break
 	done
 	read ret < "$workdir/ret"
 	exit $ret
