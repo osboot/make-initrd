@@ -16,8 +16,6 @@
 . /.initrd/initenv
 . /etc/init.d/functions
 
-. /bin/shell-error
-
 convert_dev()
 {
 	local retval dev value major minor
@@ -70,7 +68,7 @@ gen_fstab()
 	fi
 
 	if [ -z "${s0-}" ]; then
-		message "Root device unspecified."
+		echo "Root device unspecified." >&2
 		return 1
 	fi
 
@@ -81,4 +79,9 @@ gen_fstab()
 	done > /etc/fstab
 }
 
-action_shell 'Creating /etc/fstab:' gen_fstab
+msg='Creating /etc/fstab:'
+if [ ! -s /etc/fstab -a -z "${ROOT-}" ]; then
+	echo_msg "$msg"; passed "$msg"; echo
+else
+	action_shell "$msg" gen_fstab
+fi
