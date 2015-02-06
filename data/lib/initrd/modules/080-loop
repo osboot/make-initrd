@@ -19,7 +19,7 @@ run() {
 
 	while [ "$sec" -gt 0 ]; do
 		# Wait udev event queue
-		udevadm settle --quiet --timeout=5
+		udevadm settle --timeout=5
 
 		! check success -q ||
 			break
