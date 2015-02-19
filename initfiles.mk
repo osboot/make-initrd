@@ -28,7 +28,7 @@ PUT_FILES += \
 	/sbin/reboot \
 	/sbin/poweroff \
 	/sbin/halt \
-	/bin/ash \
+	/bin/sh \
 	/bin/cat \
 	/bin/cp \
 	/bin/chmod \
