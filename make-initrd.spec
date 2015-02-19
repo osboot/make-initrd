@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.8.8
+Version: 0.9.0
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -12,7 +12,9 @@ BuildRequires: help2man libkmod-devel
 
 Provides: mkinitrd = 2:%version-%release
 
-Requires: ash libshell make sed module-init-tools coreutils findutils grep glibc-utils
+Requires: sh libshell make sed module-init-tools coreutils findutils grep glibc-utils
+Requires: chrooted-resolv service util-linux
+Requires: make-initrd-busybox
 
 # depinfo
 Requires: libkmod >= 8-alt1
@@ -31,6 +33,9 @@ Requires: bootloader-utils >= 0.4.10-alt1
 
 # blkid
 Requires: util-linux >= 2.17.2-alt1
+
+# /sbin/init.initrd
+Requires: sysvinit-initramfs
 
 # This avoids getting a dependency on sh from "#!/bin/sh".
 #AutoReq: yes, nopam, noperl, nopython, noshell, notcl
@@ -168,6 +173,15 @@ fi
 %_datadir/%name/features/mdadm
 
 %changelog
+* Thu Feb 19 2015 Alexey Gladkov <legion@altlinux.ru> 0.9.0-alt1
+- Test build.
+
+* Fri Feb 06 2015 Anton Farygin <rider@altlinux.ru> 0.8.8-alt3
+- fixed plymouth rules requires (closes: #30704)
+
+* Fri Feb 06 2015 Anton Farygin <rider@altlinux.ru> 0.8.8-alt2
+- removed `--quiet' option for `udevadm settle' (closes: #30156)
+
 * Wed Mar 05 2014 Alexey Gladkov <legion@altlinux.ru> 0.8.8-alt1
 - initrd: Remove /run size restriction.
 
