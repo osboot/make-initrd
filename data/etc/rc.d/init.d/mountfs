@@ -48,7 +48,7 @@ MountVirtualFs()
 
 	mkdir -p /dev/pts /dev/shm /run/lock/subsys /run/user /run/udev /run/systemd
 
-	action "$msg [/dev/pts]:" mount -t devpts -o nosuid,noexec,gid=0,mode=620 devpts /dev/pts
+	#action "$msg [/dev/pts]:" mount -t devpts -o nosuid,noexec,gid=0,mode=620 devpts /dev/pts
 
 	:> /run/utmp
 	chmod 0664 /run/utmp
