@@ -1,0 +1,47 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            console
+# Required-Start:
+# Should-Start:        $local_fs
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Sets up a localised console.
+# Description:         Sets up fonts and language settings for the user's
+#                      local as defined by /etc/sysconfig/console.
+# X-LFS-Provided-By:   LFS
+### END INIT INFO
+
+[ "$1" = start ] || exit 0
+
+. /etc/init.d/functions
+
+[ ! -r /etc/sysconfig/console ] ||
+	. /etc/sysconfig/console
+
+# Set the keyboard driver in Unicode mode
+kbd_mode -u
+
+# Tell the console output driver that the bytes arriving are UTF-8
+# encoded multibyte sequences.
+printf '\033%%G'
+
+[ -z "${SYSFONT-}" ] ||
+	action "Loading font: $SYSFONT" setfont "$SYSFONT" ${UNIMAP:+-u "$UNIMAP"}
+
+[ "${KEYTABLE-}" = "bogus" ] ||
+	action "Loading keymap: $KEYTABLE" loadkeys "$KEYTABLE"
+
+KEY="^?"
+FILE="delete.inc"
+
+if [ "${BACKSPACE-}" = "BackSpace" ]; then
+	KEY="^H"
+	FILE="backspace.inc"
+fi
+
+action "The BackSpace key sends: $KEY loading $FILE" loadkeys "$FILE"
+
+[ -z "${GRP_TOGGLE-}" ] ||
+	action "Loading toggle definition: $GRP_TOGGLE.inc" loadkeys "$GRP_TOGGLE.inc"
