@@ -1,0 +1,6 @@
+#!/bin/sh -efu
+
+export PS1='(initramfs)$ '
+for n in bash mksh dash ash sh; do
+	[ ! -x "/bin/$n" ] || exec "/bin/$n"
+done

@@ -1,0 +1,1 @@
+TELNET_DATADIR = $(FEATURESDIR)/telnetd/data
