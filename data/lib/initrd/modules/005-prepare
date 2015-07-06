@@ -32,9 +32,6 @@ run() {
 	:> /run/utmp
 	chmod 0664 /run/utmp
 
-	echo > /proc/sys/kernel/hotplug
-	echo /sbin/modprobe > /proc/sys/kernel/modprobe
-
 	local dummy
 	read RD_TIMESTAMP dummy < /proc/uptime ||:
 }
