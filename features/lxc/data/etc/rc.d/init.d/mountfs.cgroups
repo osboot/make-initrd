@@ -1,0 +1,87 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            mountsysfs
+# Required-Start:      mountvirtfs
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Mounts sysfs filesystem.
+# Description:         Mounts sysfs filesystem.
+# X-LFS-Provided-By:   LFS
+### END INIT INFO
+
+. /.initrd/initenv
+. /etc/init.d/template
+
+UnmountFilesystems()
+{
+	local sig= retry delay findmnt msg= points
+
+	retry="$1"; shift
+	delay="$1"; shift
+	findmnt="$1"; shift
+
+	points="$($findmnt)"
+
+	while [ -n "$points" -a "$retry" -gt 0 ]; do
+		dsort points $points
+
+		[ "$retry" -eq 3 ] || msg='(retry) '
+
+		for point in $points; do
+			action "Unmounting filesystem $msg[$point]:" umount -flt noproc "$point"
+		done
+
+		points="$($findmnt)"
+		[ -n "$points" ] || break
+
+		[ "${BOOTUP-}" != verbose ] || fuser -mv $points
+		fuser -km $sig $points >/dev/null
+
+		sleep $delay
+
+		sig=-9
+		retry=$(($retry-1))
+	done
+}
+
+start()
+{
+	local msg="Mounting filesystem"
+
+	mountpoint -q /sys ||
+		action "$msg [/sys]:" mount -t sysfs -o nodev,noexec,nosuid sysfs /sys
+
+	action "$msg [/sys/fs/cgroup]:" mount -t tmpfs -o mode=755 cgroupfs /sys/fs/cgroup
+
+	for n in cpuset memory devices; do
+		p="/sys/fs/cgroup/$n"
+
+		mkdir -p -- "$p"
+		action "$msg [$p]:" mount -t cgroup -o $n cgroup "$p"
+	done
+	touch "$LOCKFILE"
+}
+
+stop()
+{
+	dev_sysfs()
+	{
+		findmnt -mno TARGET -t cgroup,cgroupfs |
+		while read t; do
+			[ -d "$t" ] &&
+				mountpoint -q "$t" ||
+				continue
+			case "$t" in
+				$rootmnt|$rootmnt/*) ;;
+				*) printf '%s ' "$t" ;;
+			esac
+		done
+	}
+	UnmountFilesystems 3 5 dev_sysfs
+	rm -f "$LOCKFILE"
+}
+
+switch "${1-}"

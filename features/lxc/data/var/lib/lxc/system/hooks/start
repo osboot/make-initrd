@@ -1,0 +1,17 @@
+#!/bin/sh -efu
+
+kver="$(uname -r)"
+
+path="/lib/modules/$kver"
+rootfs="/root"
+
+[ -d "$path" ] && [ -d "$rootfs/$path" ] ||
+	exit 0
+
+if ! mountpoint -q "$path"; then
+	mount --bind "$rootfs/$path" "$path"
+fi
+
+if ! mountpoint -q "/lib/firmware"; then
+	mount --bind "$rootfs/lib/firmware" "/lib/firmware"
+fi

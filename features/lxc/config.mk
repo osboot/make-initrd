@@ -1,8 +1,6 @@
 LXC_DATADIR = $(FEATURESDIR)/lxc/data
 LXC_FILES = \
-	/usr/bin/ne \
-	/bin/awk \
-	/usr/bin/lxc-* \
+	/sbin/shutdown \
 	/usr/sbin/init.lxc \
 	/etc/lxc/default.conf \
 	/usr/lib/lxc/lxc-init \

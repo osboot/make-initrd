@@ -1,14 +1,20 @@
 lxc.rootfs = /root
 lxc.utsname = localhost
 
-lxc.mount.entry = udevfs dev devtmpfs mode=755,size=5m 0 0
-lxc.mount.entry = proc proc proc nodev,noexec,nosuid 0 0
-lxc.mount.entry = sysfs sys sysfs defaults 0 0
-lxc.mount.entry = /run run none bind 0 0
+lxc.init_cmd = /run/initramfs/init
 
-lxc.network.type = empty
+lxc.mount.entry = udevfs dev devtmpfs defaults 0 0
+lxc.mount.entry = /run run none rw,bind 0 0
 
-#lxc.cap.drop = sys_module mknod mac_override sys_boot
-lxc.cap.drop = sys_boot
+lxc.network.type = none
+
+lxc.console = /dev/console
+
+lxc.autodev = 1
+lxc.mount.auto = proc sys
+
+lxc.cap.drop = sys_module sys_rawio mknod mac_override
 
 lxc.cgroup.devices.allow = a
+
+lxc.hook.pre-start = /var/lib/lxc/system/hooks/start
