@@ -1,7 +1,7 @@
 #!/bin/sh
 
 message() {
-	logger -s -t "initrd${stage:+: $stage}" "$*"
+	logger --socket-errors=off -s -t "initrd${stage:+: $stage}" "$*"
 }
 
 error() {
