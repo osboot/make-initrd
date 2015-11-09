@@ -2,7 +2,7 @@ $(call require,depmod-image)
 
 rescue-modules: create
 	@if [ -n "$(RESCUE_MODULES)" ]; then \
-		echo "Adding resue modules ..."; \
+		echo "Adding rescue modules ..."; \
 		$(TOOLSDIR)/add-rescue-modules $(RESCUE_MODULES); \
 	fi
 
