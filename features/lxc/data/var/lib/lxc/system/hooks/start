@@ -1,17 +1,9 @@
 #!/bin/sh -efu
 
+rootfs="${LXC_ROOTFS_MOUNT:-/root}"
 kver="$(uname -r)"
 
-path="/lib/modules/$kver"
-rootfs="/root"
-
-[ -d "$path" ] && [ -d "$rootfs/$path" ] ||
-	exit 0
-
-if ! mountpoint -q "$path"; then
-	mount --bind "$rootfs/$path" "$path"
-fi
-
-if ! mountpoint -q "/lib/firmware"; then
-	mount --bind "$rootfs/lib/firmware" "/lib/firmware"
-fi
+for d in "/lib/modules/$kver" "/lib/firmware"; do
+	[ ! -d "$d" -o ! -d "$rootfs/$d" ] || mountpoint -q "$d" ||
+		mount --bind "$rootfs/$d" "$d"
+done

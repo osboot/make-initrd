@@ -1,20 +1,16 @@
 lxc.rootfs = /root
 lxc.utsname = localhost
-
-lxc.init_cmd = /run/initramfs/init
-
-lxc.mount.entry = udevfs dev devtmpfs defaults 0 0
-lxc.mount.entry = /run run none rw,bind 0 0
-
 lxc.network.type = none
-
 lxc.console = /dev/console
 
-lxc.autodev = 1
-lxc.mount.auto = proc sys
-
-lxc.cap.drop = sys_module sys_rawio mknod mac_override
-
-lxc.cgroup.devices.allow = a
-
+lxc.init_cmd = /run/initramfs/init
 lxc.hook.pre-start = /var/lib/lxc/system/hooks/start
+
+lxc.autodev = 1
+lxc.mount.auto  = proc sys
+lxc.mount.entry = udevfs dev devtmpfs defaults 0 0
+lxc.mount.entry = runfs run tmpfs defaults 0 0
+#lxc.mount.entry = /run run none rw,bind 0 0
+
+lxc.cap.drop = sys_module sys_boot
+lxc.cgroup.devices.allow = a
