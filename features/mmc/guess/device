@@ -1,0 +1,13 @@
+#!/bin/sh -efu
+
+. guess-functions
+
+[ -f "$SYSFS_PATH$1"/type ] ||
+        exit 0
+
+type="$(cat "$SYSFS_PATH$1"/type)"
+
+[ "$type" == "MMC" ] ||
+        exit 0
+
+guess_module mmc_block
