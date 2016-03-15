@@ -1,6 +1,6 @@
 Name: make-initrd
 Version: 0.8.9
-Release: alt1
+Release: alt2
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -8,7 +8,7 @@ Group: System/Base
 
 Packager: Alexey Gladkov <legion@altlinux.ru>
 
-BuildRequires: help2man libkmod-devel
+BuildRequires: makeinfo help2man libkmod-devel
 
 Provides: mkinitrd = 2:%version-%release
 
@@ -168,6 +168,9 @@ fi
 %_datadir/%name/features/mdadm
 
 %changelog
+* Tue Mar 15 2016 Alexey Gladkov <legion@altlinux.ru> 0.8.9-alt2
+- Add makeinfo to buildrequires.
+
 * Fri Nov 13 2015 Anton Farygin <rider@altlinux.ru> 0.8.9-alt1
 - added mmc feature with mmc_block detection logic (closes: #30240)
 
