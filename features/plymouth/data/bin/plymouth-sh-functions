@@ -11,7 +11,7 @@ run_plymouth() {
 	mkdir -m 0755 /run/plymouth
 	: > /run/systemd/plymouth
 
-	/sbin/plymouthd --pid-file $pid
+	/sbin/plymouthd --pid-file $pid --tty=/dev/tty1
 	udevadm settle
 	/bin/plymouth --show-splash
 
