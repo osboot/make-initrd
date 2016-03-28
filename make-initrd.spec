@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.8.9
+Version: 0.8.10
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -168,6 +168,9 @@ fi
 %_datadir/%name/features/mdadm
 
 %changelog
+* Mon Mar 28 2016 Anton V. Boyarshinov <boyarsh@altlinux.org> 0.8.10-alt1
+- fix plyouth by explicitly set tty
+
 * Fri Nov 13 2015 Anton Farygin <rider@altlinux.ru> 0.8.9-alt1
 - added mmc feature with mmc_block detection logic (closes: #30240)
 
