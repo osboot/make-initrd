@@ -8,7 +8,7 @@ Group: System/Base
 
 Packager: Alexey Gladkov <legion@altlinux.ru>
 
-BuildRequires: help2man libkmod-devel
+BuildRequires: help2man libkmod-devel makeinfo
 
 Provides: mkinitrd = 2:%version-%release
 
@@ -169,7 +169,8 @@ fi
 
 %changelog
 * Mon Mar 28 2016 Anton V. Boyarshinov <boyarsh@altlinux.org> 0.8.10-alt1
-- fix plyouth by explicitly set tty
+- fix plymouth by explicitly set tty
+- build fixed
 
 * Fri Nov 13 2015 Anton Farygin <rider@altlinux.ru> 0.8.9-alt1
 - added mmc feature with mmc_block detection logic (closes: #30240)
