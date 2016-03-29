@@ -120,43 +120,43 @@ extension is regarded as a configuration file.
 @chapter Variables
 @cindex Chapter
 
-@unnumberedsubsec KERNEL
+@unnumberedsec KERNEL
 @cindex KERNEL
 Specifies kernel version for corresponding modules in the image.
 
 Default: $(uname -r)
 
-@unnumberedsubsec IMAGE_SUFFIX
+@unnumberedsec IMAGE_SUFFIX
 @cindex IMAGE_SUFFIX
 Specifies suffix for the image. This parameter is useful
 if multiple initrd images are generated for one kernel version.
 
-@unnumberedsubsec IMAGEFILE
+@unnumberedsec IMAGEFILE
 @cindex IMAGEFILE
 Specifies output filename for the image.
 
 Default: $(BOOTDIR)/initrd-$(KERNEL)$(IMAGE_SUFFIX).img
 
-@unnumberedsubsec COMPRESS
+@unnumberedsec COMPRESS
 @cindex COMPRESS
 Determines compress method for the image.
 
 Valid values are: gzip, bzip2, lzma, lzo.
 
-@unnumberedsubsec FEATURES
+@unnumberedsec FEATURES
 @cindex FEATURES
 This parameter lists the features of the image.
 This list can be specified in any order.
 
 @xref{Features}, for more info.
 
-@unnumberedsubsec DISABLE_FEATURES
+@unnumberedsec DISABLE_FEATURES
 @cindex DISABLE_FEATURES
 This parameter lists the features that should NOT present in the image.
 
 @xref{Features}, for more info.
 
-@unnumberedsubsec AUTODETECT
+@unnumberedsec AUTODETECT
 @cindex AUTODETECT
 This variable contains the list of subsystems which add
 appropriate kernel modules and features automatically.
@@ -177,36 +177,36 @@ net - adds kernel modules for network devices (netboot).
 kbd - adds modules for the keyboard.
 @end itemize
 
-@unnumberedsubsec MODULES_ADD
+@unnumberedsec MODULES_ADD
 @cindex MODULES_ADD
 The parameter contains the names of modules to be added to the image.
 Thay can be loaded by udev if needed when it starts.
 
-@unnumberedsubsec MODULES_PRELOAD
+@unnumberedsec MODULES_PRELOAD
 @cindex MODULES_PRELOAD
 The parameter contains the names of modules to be added to the image
 and unconditionally loaded before udev start.
 
-@unnumberedsubsec MODULES_LOAD
+@unnumberedsec MODULES_LOAD
 @cindex MODULES_LOAD
 The parameter contains the names of modules to be added to the image
 and unconditionally loaded after udev start.
 
-@unnumberedsubsec VERBOSE
+@unnumberedsec VERBOSE
 @cindex VERBOSE
 Print a message for each action.
 
-@unnumberedsubsec FIRMWARE_DIRS
+@unnumberedsec FIRMWARE_DIRS
 @cindex FIRMWARE_DIRS
 This parameter describes the list of directories with firmware.
 
-@unnumberedsubsec PUT_FILES
+@unnumberedsec PUT_FILES
 @cindex PUT_FILES
 This parameter describes the list of files that need
 to be put in the image initrd. The files are copied
 with the same path as the original file.
 
-@unnumberedsubsec PUT_DIRS
+@unnumberedsec PUT_DIRS
 @cindex PUT_DIRS
 This parameter describes the list of directories to be
 copied into the image.
@@ -266,13 +266,13 @@ Most features are automatically determined and shouldn't be set manually.
 There is a number of specific goals which are very useful
 in the generation of the image.
 
-@unnumberedsubsec guess-config
+@unnumberedsec guess-config
 @cindex guess-config
 This goal prints the intended configuration on stdout.
 It is compiled based on your current configuration and
 the feature list from AUTODETECT variable.
 
-@unnumberedsubsec @anchor{bug-report}bug-report
+@unnumberedsec @anchor{bug-report}bug-report
 @cindex bug-report
 This goal collects system configuration data and puts those
 into an archive. If you have any problems with make-initrd
