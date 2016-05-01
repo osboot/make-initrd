@@ -6,7 +6,7 @@ CFLAGS = -Wall -Wextra -W -Wshadow -Wcast-align \
 
 depinfo_LIBS   = -lkmod
 
-PROGS = gen_init_cpio depinfo elfcheck
+PROGS = gen_init_cpio depinfo
 
 bindir  ?= /usr/bin
 DESTDIR ?=
@@ -23,9 +23,6 @@ gen_init_cpio: gen_init_cpio.c
 
 depinfo: kmod-depinfo.c
 	$(CC) $(CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $< $(depinfo_LIBS)
-
-elfcheck: elfcheck.c
-	$(CC) $(CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $<
 
 install: $(PROGS)
 	$(MKDIR_P) -- $(DESTDIR)$(bindir)

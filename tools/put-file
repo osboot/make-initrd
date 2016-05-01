@@ -101,8 +101,9 @@ while :; do
 
 		if [ ! -L "$fn" -a -d "$fn" ]; then
 			d="$destdir/${fn#$prefix}"
-			[ -d "$d" ] ||
+			if [ ! -d "$d" ]; then
 				mkdir $verbose -p -- "$d" >&2
+			fi
 			find "$fn" -mindepth 1 -maxdepth 1
 			do_break=
 			continue
@@ -120,8 +121,9 @@ while :; do
 		do_break=
 
 		d="$destdir/${new%/*}"
-		[ -d "$d" ] ||
+		if [ ! -d "$d" ]; then
 			mkdir $verbose -p -- "$d" >&2
+		fi
 
 		cp $verbose -aud "$fn" "$destdir/$new" >&2
 
@@ -134,11 +136,10 @@ while :; do
 	[ -z "$do_break" ] ||
 		break
 
-	elfcheck -f - < "$workdir"/fn > "$workdir"/fn.elf
-
-	[ ! -s "$workdir"/fn.elf ] ||
-		xargs -r ldd < "$workdir"/fn.elf |
-			sed -r -n 's,^\t(.* => )?([^ ]+) \(0x[0-9a-f]+\)$,\2,p' >> "$workdir"/fn.new
+	file -h -F '	' -f "$workdir"/fn |
+		sed -r -n 's,^([^\t]+).*[[:space:]]ELF[[:space:]].*,\1,p' |
+		xargs -r ldd |
+		sed -r -n 's,^\t(.* => )?([^ ]+) \(0x[0-9a-f]+\)$,\2,p' >> "$workdir"/fn.new
 
 	mv -f "$workdir"/fn.new "$workdir"/fn
 done
