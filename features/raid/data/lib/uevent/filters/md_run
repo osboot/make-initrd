@@ -3,5 +3,6 @@
 . /.initrd/initenv
 . uevent-sh-functions
 
-event="$(mk_event md_run)"
+event="$(make_event)"
 showenv -q > "$event"
+release_event md_run "$event"

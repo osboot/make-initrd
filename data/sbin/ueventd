@@ -22,10 +22,9 @@ message "STARTING ..."
 
 while :; do
 	# Wait udev event queue
-	if ! udevadm settle --timeout=0 >/dev/null 2>&1; then
-		udevadm settle --timeout=1 ||:
-	else
-		sleep 1
+	if ! glob "$filterdir"/*; then
+		sleep 0.5
+		continue
 	fi
 
 	mv -f -- "$filterdir"/* "$eventdir"/ 2>/dev/null ||:

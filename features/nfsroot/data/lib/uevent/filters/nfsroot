@@ -9,5 +9,6 @@
 [ -n "$NFSROOT" ] ||
 	exit 0
 
-event="$(mk_event nfsroot)"
+event="$(make_event)"
 showenv -q > "$event"
+release_event nfsroot "$event"

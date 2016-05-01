@@ -20,10 +20,12 @@ while [ -z "$eof" ]; do
 	get_dev dev "$fsdev" ||
 		continue
 
-	event="$(mk_event mountdev)"
+	event="$(make_event)"
 
 	cat > "$event" <<-EOF
 		MOUNTDEV="$dev"
 		MOUNTPOINT="$fsdir"
 	EOF
+
+	release_event mountdev "$event"
 done < /etc/fstab

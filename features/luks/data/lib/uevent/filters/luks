@@ -22,6 +22,7 @@ devluks=
 get_dev devluks "$LUKS_DEV" ||
 	exit 0
 
-event="$(mk_event luks)"
+event="$(make_event)"
 showenv -q > "$event"
 echo "LUKS_ROOT='$devluks'" >> "$event"
+release_event luks "$event"

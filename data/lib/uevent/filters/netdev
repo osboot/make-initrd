@@ -31,5 +31,6 @@ if [ "$INTERFACE" = 'lo' ]; then
 fi
 
 
-event="$(mk_event netdev)"
+event="$(make_event)"
 showenv -q > "$event"
+release_event netdev "$event"

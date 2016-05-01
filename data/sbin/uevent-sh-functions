@@ -6,12 +6,17 @@ extendir='/lib/uevent/extenders'
 handlerdir='/lib/uevent/handlers'
 successdir='/lib/uevent/success'
 
-mk_event() {
+make_event() {
 	mkdir -p -- "$filterdir"
-	mktemp "$filterdir/$1.XXXXXXXXX"
+	mktemp "$filterdir/.XXXXXXXXX"
+}
+
+release_event() {
+	local num= dummy
+	[ ! -e /proc/uptime ] || read num dummy < /proc/uptime ||:
+	mv -f "$2" "${2%/*}/$1.${num:-0.0}${2##*/}"
 }
 
 done_event() {
 	mv -f "$1" "${1%/*}/done.${1##*/}"
 }
-
