@@ -1,14 +1,17 @@
 #!/bin/sh -eu
 
-if [ -z "${NOMESSAGE-}" ]; then
-	if [ -z "${SHELL_MESSAGE-}" ]; then
+[ ! -f /.initrd/initenv ] ||
+	. /.initrd/initenv
+
+if [ -z "${ESHELL_NOMESSAGE-}" ]; then
+	if [ -z "${ESHELL_MESSAGE-}" ]; then
 		fifo=/.initrd/shell
 		if [ -e "$fifo" ]; then
 			read msg < "$fifo" ||:
 			[ -z "${msg-}" ] || printf '%s: %s\n' "${0##*/}" "$msg"
 		fi
 	else
-		printf '%s: %s\n' "${0##*/}" "$SHELL_MESSAGE"
+		printf '%s: %s\n' "${0##*/}" "$ESHELL_MESSAGE"
 	fi
 fi
 
