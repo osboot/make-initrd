@@ -1,5 +1,7 @@
-Name: make-initrd
-Version: 0.9.0
+%global myname make-initrd
+
+Name: make-initrd2
+Version: 2.0.0
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -8,8 +10,11 @@ Group: System/Base
 
 Packager: Alexey Gladkov <legion@altlinux.ru>
 
-BuildRequires: help2man libkmod-devel
+BuildRequires: help2man
+BuildRequires: makeinfo
+BuildRequires: libkmod-devel
 
+Conflicts: make-initrd <= 2.0.0
 Provides: mkinitrd = 2:%version-%release
 
 Requires: sh libshell make sed module-init-tools coreutils findutils grep glibc-utils
@@ -29,7 +34,7 @@ Requires: kinit-utils >= 1.5.25-alt2
 Requires: udev >= 167-alt1
 
 # installkernel
-Requires: bootloader-utils >= 0.4.10-alt1
+#Requires: bootloader-utils >= 0.4.10-alt1
 
 # blkid
 Requires: util-linux >= 2.17.2-alt1
@@ -139,42 +144,44 @@ fi
 %config(noreplace) %_sysconfdir/initrd.mk
 %_bindir/*
 %_sbindir/*
-%_datadir/%name
+%_datadir/%myname
 %_man1dir/*
 %_infodir/*
-%exclude %_datadir/%name/features/devmapper
-%exclude %_datadir/%name/features/lvm
-%exclude %_datadir/%name/features/luks
-%exclude %_datadir/%name/features/nfsroot
-%exclude %_datadir/%name/features/multipath
-%exclude %_datadir/%name/features/plymouth
-%exclude %_datadir/%name/features/mdadm
+%exclude %_datadir/%myname/features/devmapper
+%exclude %_datadir/%myname/features/lvm
+%exclude %_datadir/%myname/features/luks
+%exclude %_datadir/%myname/features/nfsroot
+%exclude %_datadir/%myname/features/multipath
+%exclude %_datadir/%myname/features/plymouth
+%exclude %_datadir/%myname/features/mdadm
 %doc README.ru
 
 %files devmapper
-%_datadir/%name/features/devmapper
+%_datadir/%myname/features/devmapper
 
 %files lvm
-%_datadir/%name/features/lvm
+%_datadir/%myname/features/lvm
 
 %files luks
-%_datadir/%name/features/luks
+%_datadir/%myname/features/luks
 
 %files nfs
-%_datadir/%name/features/nfsroot
+%_datadir/%myname/features/nfsroot
 
 %files multipath
-%_datadir/%name/features/multipath
+%_datadir/%myname/features/multipath
 
 %files plymouth
-%_datadir/%name/features/plymouth
+%_datadir/%myname/features/plymouth
 
 %files mdadm
-%_datadir/%name/features/mdadm
+%_datadir/%myname/features/mdadm
 
 %changelog
-* Thu Feb 19 2015 Alexey Gladkov <legion@altlinux.ru> 0.9.0-alt1
-- Test build.
+* Mon May 02 2016 Alexey Gladkov <legion@altlinux.ru> 2.0.0-alt1
+- New major release (2.0.0).
+- Use sysv init in the initramfs.
+- Use busybox by default.
 
 * Fri Feb 06 2015 Anton Farygin <rider@altlinux.ru> 0.8.8-alt3
 - fixed plymouth rules requires (closes: #30704)
