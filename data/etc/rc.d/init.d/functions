@@ -508,68 +508,6 @@ msg_usage()
 	printf "Usage: %s\n" "$*" >&2
 }
 
-is_yes()
-{
-	# Test syntax	
-	if [ $# = 0 ]; then
-		msg_usage "is_yes {value}"
-		return 2
-	fi
-
-	# Check value
-	case "$1" in
-		yes|Yes|YES|true|True|TRUE|on|On|ON|Y|y|1)
-			# true returns zero
-			return 0
-		;;
-		*)
-			# false returns one
-			return 1
-		;;
-	esac
-}
-
-is_no()
-{
-	# Test syntax
-	if [ $# = 0 ] ; then
-		msg_usage "is_no {value}"
-		return 2
-	fi
-
-	case "$1" in
-		no|No|NO|false|False|FALSE|off|Off|OFF|N|n|0)
-			# true returns zero
-			return 0
-			;;
-		*)
-			# false returns one
-			return 1
-		;;
-	esac
-}
-
-# Confirm whether we really want to run this service.
-confirm()
-{
-	while :; do
-		local answer
-		echo_msg "Start service $1 (Y)es/(N)o/(C)ontinue? [Y]"
-		read answer
-		case "$answer" in
-			y|Y|yes|Yes|YES|'')
-				return 0
-				;;
-			n|N|no|No|NO)
-				return 1
-				;;
-			c|C|continue|Continue|CONTINUE)
-				return 2
-				;;
-		esac
-	done
-}
-
 dsort()
 {
 	local __list=
