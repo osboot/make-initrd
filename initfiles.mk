@@ -46,7 +46,8 @@ PUT_FILES += \
 	/bin/rm \
 	/bin/rmdir \
 	/bin/sleep \
-	/usr/bin/logger
+	/usr/bin/logger \
+	/usr/bin/setsid
 
 # initrd specific utilities
 PUT_DIRS += /lib/initrd $(DATADIR)

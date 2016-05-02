@@ -1,9 +1,5 @@
 #!/bin/sh
 
-shell() {
-	echo "$*" > /.initrd/shell
-}
-
 omit_pid() {
 	: > "/.initrd/killall/$1"
 }

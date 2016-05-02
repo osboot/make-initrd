@@ -1,28 +1,25 @@
 #!/bin/sh -eu
 
-. /.initrd/initenv
-. shell-error
+if [ -z "${NOMESSAGE-}" ]; then
+	if [ -z "${SHELL_MESSAGE-}" ]; then
+		fifo=/.initrd/shell
+		if [ -e "$fifo" ]; then
+			read msg < "$fifo" ||:
+			[ -z "${msg-}" ] || printf '%s: %s\n' "${0##*/}" "$msg"
+		fi
+	else
+		printf '%s: %s\n' "${0##*/}" "$SHELL_MESSAGE"
+	fi
+fi
 
-msg=
-[ -n "${RDSHELL-}" ] ||
-	read msg < /.initrd/shell
-
-mkdir /.initrd/shell.lock >/dev/null 2>&1 ||
+lock=/.initrd/shell.lock
+/bin/mkdir "$lock" >/dev/null 2>&1 ||
 	exit 0
-
-# Disallow console access
-[ "${PANIC-}" != 0 ] || reboot
 
 for f in /lib/shell/*; do
 	[ -x "$f" ] || break
-	"$f"
+	"$f" ||:
 done
 
-[ -z "$msg" ] || message "$msg"
-
-rc=0
-PS1='(initramfs)$ ' /bin/sh -i +m || rc=$?
-echo
-
-rmdir /.initrd/shell.lock
-exit $rc
+PS1='(initramfs)$ ' setsid -cw /bin/sh
+/bin/rmdir "$lock"

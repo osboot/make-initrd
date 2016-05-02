@@ -54,8 +54,8 @@ for i in "$rcd"/S*; do
 					break
 					;;
 				s|shell)
-					printf 'This shell remains here for debug purposes. Press Ctrl-D to continue.\n'
-					RDSHELL=1 /bin/emergency-shell
+					SHELL_MESSAGE='This shell remains here for debug purposes. Press Ctrl-D to continue.' \
+					/bin/emergency-shell
 					;;
 				n|no)
 					continue 2
