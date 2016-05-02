@@ -2,7 +2,11 @@
 
 . /.initrd/initenv
 
-exec 2>/dev/null
+delay=${ROOTDELAY:-180}
+while [ "$delay" -gt 0 ]; do
+	delay=$(($delay - 1))
+	sleep 1
+done
 
 [ ! -x "$rootmnt/$INIT" ] ||
 	exit 0

@@ -101,11 +101,6 @@ UnmountFilesystems()
 start()
 {
 	MountVirtualFs
-
-	[ ! -d /etc/timer.d ] ||
-		printf 'period=%s repeat=1\t/lib/initrd/rootdelay\n' "${ROOTDELAY:-180}" \
-			> /etc/timer.d/rootdelay.conf
-
 	touch "$LOCKFILE"
 }
 

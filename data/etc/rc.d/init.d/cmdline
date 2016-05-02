@@ -96,6 +96,14 @@ parse_cmdline() {
 	STOP=",$STOP,"
 }
 
+post() {
+	if [ -n "${RDSHELL-}" ]; then
+		echo > /.initrd/shell &
+		return
+	fi
+	/lib/initrd/rootdelay &
+}
+
 parse() {
 	defaults
 	parse_cmdline
@@ -106,6 +114,7 @@ parse() {
 		[ -z "${s##*[!A-Za-z0-9_]*}" ] ||
 			printf 'export %s\n' "$l"
 	done > /.initrd/initenv
+	post
 }
 
 action_shell 'Parsing cmdline arguments:' parse
