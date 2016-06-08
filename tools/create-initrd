@@ -36,7 +36,10 @@ initrd-release
 if [ -z "${INITRD_NO_LIBNSS-}" ]; then
 	verbose "Copying files from libnss_files.so* ..."
 
-	for lib in /lib64 /lib; do
+	libdirs='/lib64 /lib'
+	slib="$(getconf SLIB 2>/dev/null)" &&
+		libdirs="/$slib" ||:
+	for lib in $libdirs; do
 		[ ! -d "$lib" ] ||
 			find $lib -mindepth 1 -maxdepth 1 \
 				\( \
