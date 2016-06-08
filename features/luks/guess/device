@@ -9,6 +9,4 @@ uuid="$(cat "$SYSFS_PATH$1"/dm/uuid)"
 
 if [ -z "${uuid##CRYPT-*}" ]; then
 	guess_feature luks
-	# We need keyboard to enter password
-	guess-kbd
 fi
