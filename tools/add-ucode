@@ -3,7 +3,7 @@
 . sh-functions
 
 IUCODE_BIN=/usr/sbin/iucode_tool
-fw_path="/lib/firmware"
+
 cpu="$(sed -r -n -e '1,/^processor[[:cntrl:]]\:.*/ d' -e '/^model[[:space:]]+[[:cntrl:]]\:.*/,$ d' -e 's/.*[[:cntrl:]]\:[[:space:]](.*)/\1/ip' /proc/cpuinfo)"
 if [ -n "$cpu" ]; then
 	cpu_vendor="${cpu%%
@@ -14,12 +14,22 @@ fi
 
 prep_early_firmware()
 {
-	local fw="$1"
+	local fw_path fw_file= fw="$1"
 	shift
+
+	for fw_path in ${FIRMWARE_DIRS:-/lib/firmware}; do
+		if [ -f "$fw_path/$fw" ]; then
+			fw_file="$fw_path/$fw"
+			break
+		fi
+	done
+
+	[ -n "$fw_file" ] ||
+		fatal "$fw not found"
 
 	cd "$workdir"
 	mkdir -p kernel/x86/microcode
-	cp "$fw_path"/"$fw" kernel/x86/microcode/"$cpu_vendor".bin
+	cp ${VERBOSE:+-v} -- "$fw_file" kernel/x86/microcode/"$cpu_vendor".bin
 	find ./kernel | cpio -o -H newc >"$workdir"/ucode.cpio && \
 	    rm -rf -- kernel
 
@@ -30,7 +40,7 @@ prep_amd_ucode()
 {
 	local family ucode_file=
 
-	[ -n "$cpu_family" ] && family=$(printf '%x\n' "$cpu_family")
+	[ -z "$cpu_family" ] || family="$(printf '%x' "$cpu_family")"
 	[ "$family" -ge 15 ] && \
 		ucode_file=amd-ucode/microcode_amd_fam"$family"h.bin || \
 		ucode_file=amd-ucode/microcode_amd.bin
@@ -45,10 +55,20 @@ prep_intel_ucode()
 	# microcode loading supported only for CPUs >= PentiumPro
 	[ -n "$cpu_family" -a "$cpu_family" -ge 6 ] || return 1
 
-	if [ -x "$IUCODE_BIN" ]; then
-		$IUCODE_BIN --scan-system --write-earlyfw="$workdir"/ucode.cpio \
-			"$fw_path"/intel-ucode && return 0
-	fi
+	[ -x "$IUCODE_BIN" ] ||
+		return 1
+
+	local fw_path
+	for fw_path in ${FIRMWARE_DIRS:-/lib/firmware}; do
+		if [ -d "$fw_path"/intel-ucode ]; then
+			$IUCODE_BIN \
+					--quiet \
+					--scan-system \
+					--write-earlyfw="$workdir"/ucode.cpio \
+					"$fw_path"/intel-ucode && \
+				return 0 ||:
+		fi
+	done
 
 	return 1
 }
