@@ -122,7 +122,17 @@ AutoReq: noshell, noshebang
 %description mdadm
 Mdadm module for %name
 
-%prep
+%package ucode
+Summary: CPU microcode module for %name
+Group: System/Base
+Requires: %name = %version-%release
+Requires: iucode_tool, firmware-intel-ucode, linux-firmware
+AutoReq: noshell, noshebang
+
+%description ucode
+CPU microcode autoloading module for %name
+
+%%prep
 %setup -q
 
 %build
@@ -154,6 +164,7 @@ fi
 %exclude %_datadir/%myname/features/multipath
 %exclude %_datadir/%myname/features/plymouth
 %exclude %_datadir/%myname/features/mdadm
+%exclude %_datadir/%myname/features/ucode
 %doc README.ru
 
 %files devmapper
@@ -176,6 +187,9 @@ fi
 
 %files mdadm
 %_datadir/%myname/features/mdadm
+
+%files ucode
+%_datadir/%myname/features/ucode
 
 %changelog
 * Mon May 02 2016 Alexey Gladkov <legion@altlinux.ru> 2.0.0-alt1
