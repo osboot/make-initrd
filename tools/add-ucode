@@ -4,10 +4,11 @@
 
 IUCODE_BIN=/usr/sbin/iucode_tool
 fw_path="/lib/firmware"
-cpu=($(sed -r -n -e '1,/^processor[[:cntrl:]]\:.*/ d' -e '/^model[[:space:]]+[[:cntrl:]]\:.*/,$ d' -e 's/.*[[:cntrl:]]\:[[:space:]](.*)/\1/ip' /proc/cpuinfo))
+cpu="$(sed -r -n -e '1,/^processor[[:cntrl:]]\:.*/ d' -e '/^model[[:space:]]+[[:cntrl:]]\:.*/,$ d' -e 's/.*[[:cntrl:]]\:[[:space:]](.*)/\1/ip' /proc/cpuinfo|tr '\n' ':')"
 if [ -n "$cpu" ]; then
-	cpu_vendor="${cpu[0]}"
-	cpu_family="${cpu[1]}"
+	cpu_vendor="${cpu%%:*}"
+	family="${cpu#*:}"
+	cpu_family="${family%:}"
 fi
 
 prep_early_firmware()
@@ -43,7 +44,7 @@ prep_intel_ucode()
 	local retval=1
 
 	# microcode loading supported only for CPUs >= PentiumPro
-	[ -n "$cpu_family" -a "$cpu_family" -ge 6 ] || exit 1
+	[ -n "$cpu_family" -a "$cpu_family" -ge 6 ] || return 1
 
 	if [ -x "$IUCODE_BIN" ]; then
 		$IUCODE_BIN --scan-system --write-earlyfw="$workdir"/ucode.cpio \
