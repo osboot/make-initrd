@@ -6,7 +6,25 @@ CFLAGS = -Wall -Wextra -W -Wshadow -Wcast-align \
 
 depinfo_LIBS   = -lkmod
 
-PROGS = gen_init_cpio depinfo
+initrd_ls_LIBS = -lz
+
+initrd_ls_HEADERS = \
+	initrd-common.h \
+	initrd-cpio.h \
+	initrd-decompress.h \
+	initrd-parse.h \
+	initrd-ls.h
+
+initrd_ls_SOURCES = \
+	initrd-ls.c \
+	initrd-ls-format.c \
+	initrd-common.c \
+	initrd-cpio.c \
+	initrd-parse.c \
+	initrd-decompress.c \
+	initrd-decompress-gzip.c
+
+PROGS = gen_init_cpio depinfo initrd-ls
 
 bindir  ?= /usr/bin
 DESTDIR ?=
@@ -23,6 +41,9 @@ gen_init_cpio: gen_init_cpio.c
 
 depinfo: kmod-depinfo.c
 	$(CC) $(CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $< $(depinfo_LIBS)
+
+initrd-ls: $(initrd_ls_HEADERS) $(initrd_ls_SOURCES)
+	$(CC) $(CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $(initrd_ls_SOURCES) $(initrd_ls_LIBS)
 
 install: $(PROGS)
 	$(MKDIR_P) -- $(DESTDIR)$(bindir)
