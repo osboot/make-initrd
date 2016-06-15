@@ -22,6 +22,7 @@ GUESSDIR	 = $(WORKDIR)/guess
 # This is directory used for bug-report target.
 REPORTDIR	 = $(WORKDIR)/report
 
+SRCDIR		 = @PREFIX@/src
 TOOLSDIR	 = @PREFIX@/tools
 DATADIR		?= @PREFIX@/data
 SCRIPTDIR	?= @PREFIX@/scripts.d
@@ -32,7 +33,7 @@ BOOTDIR		?= /boot
 SYSCONFDIR	?= /etc
 SYSFS_PATH	?= /sys
 
-PATH		= $(TOOLSDIR):$(shell echo $$PATH)
+PATH		= $(SRCDIR):$(TOOLSDIR):$(shell echo $$PATH)
 
 # Config file locations
 INITRD_CONFIG		?=
