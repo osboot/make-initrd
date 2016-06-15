@@ -7,13 +7,11 @@ if [ ! -f "$imagefile" ]; then
 	exit 0
 fi
 
-type="$(file -bz "$imagefile")"
-case "$type" in 
-	*bzip2\ compressed\ data*) ;;
-	*gzip\ compressed\ data*)  ;;
-	*)
-		exit 0
-		;;
-esac
+init="$(initrd-ls -nC "$imagefile" |grep ' \./init$' |tail -1)"
 
-guess_feature compress
+for method in gzip bzip2 xz lzma lzo lz4; do
+	if [ -z "${init##* $method *}" ]; then
+		guess_feature compress
+		break
+	fi
+done
