@@ -9,6 +9,7 @@ case "$compress_method" in
 	bzip2|bz2) compress='bzip2' ;;
 	lzma)      compress='lzma'  ;;
 	lzo)       compress='lzop'  ;;
+	xz)        compress='xz'    ;;
 	'')        compress=''      ;;
 	*) fatal "Unknown compress method: $compress_method"
 esac
