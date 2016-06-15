@@ -10,10 +10,10 @@ struct compress_format {
 };
 
 static const struct compress_format compressed_formats[] = {
-	{ {0x1f, 0x8b}, "gzip",  gunzip },
-	{ {0x1f, 0x9e}, "gzip",  gunzip },
+	{ {0x1f, 0x8b}, "gzip",  gunzip  },
+	{ {0x1f, 0x9e}, "gzip",  gunzip  },
+	{ {0x42, 0x5a}, "bzip2", bunzip2 },
 /*
-	{ {0x42, 0x5a}, "bzip2", dumb },
 	{ {0x5d, 0x00}, "lzma",  dumb },
 	{ {0xfd, 0x37}, "xz",    dumb },
 	{ {0x89, 0x4c}, "lzo",   dumb },

@@ -6,7 +6,7 @@ CFLAGS = -Wall -Wextra -W -Wshadow -Wcast-align \
 
 depinfo_LIBS   = -lkmod
 
-initrd_ls_LIBS = -lz
+initrd_ls_LIBS = -lz -lbz2
 
 initrd_ls_HEADERS = \
 	initrd-common.h \
@@ -22,7 +22,8 @@ initrd_ls_SOURCES = \
 	initrd-cpio.c \
 	initrd-parse.c \
 	initrd-decompress.c \
-	initrd-decompress-gzip.c
+	initrd-decompress-gzip.c \
+	initrd-decompress-bzip2.c
 
 PROGS = gen_init_cpio depinfo initrd-ls
 
