@@ -15,13 +15,6 @@ find -O2 -mindepth 1 \
 	-o \( -type s -a -printf 'sock %p %#m 0 0\n'     \) \
 	> "$workdir"/initcpio
 
-printf >> "$workdir"/initcpio 'slink %s 0777 0 0\n' \
-	"/proc/kcore /dev/core" \
-	"/proc/self/fd /dev/fd" \
-	"/proc/self/fd/0 /dev/stdin"  \
-	"/proc/self/fd/1 /dev/stdout" \
-	"/proc/self/fd/2 /dev/stderr"
-
 printf >> "$workdir"/initcpio 'nod ./dev/%s\n' \
 	"ram     0644 0 0 b 1 1" \
 	"null    0666 0 0 c 1 3" \

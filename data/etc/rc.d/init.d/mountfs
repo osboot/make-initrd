@@ -46,6 +46,16 @@ MountVirtualFs()
 	action "$msg [/sys]:"  mount -t sysfs -o nodev,noexec,nosuid sysfs /sys
 	action "$msg [/run]:"  mount -t tmpfs -o mode=755            runfs /run
 
+	while read l t; do
+		[ -e "$l" ] || ln -s "$t" "$l"
+	done <<-EOF
+	/dev/core   /proc/kcore
+	/dev/fd     /proc/self/fd
+	/dev/stdin  /proc/self/fd/0
+	/dev/stdout /proc/self/fd/1
+	/dev/stderr /proc/self/fd/2
+	EOF
+
 	mkdir -p /dev/pts /dev/shm /run/lock/subsys /run/user /run/udev /run/systemd
 
 	action "$msg [/dev/pts]:" mount -t devpts devpts /dev/pts
