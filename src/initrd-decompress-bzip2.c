@@ -28,7 +28,7 @@ int bunzip2(unsigned char *in, unsigned long in_size,
     strm.next_in  = NULL;
 
 	if ((ret = BZ2_bzDecompressInit(&strm, 0, 0)) != BZ_OK)
-		return ret;
+		return DECOMP_FAIL;
 
 	strm.avail_in = in_size;
 	strm.next_in = in;
@@ -59,5 +59,5 @@ int bunzip2(unsigned char *in, unsigned long in_size,
 	/* clean up and return */
 	BZ2_bzDecompressEnd(&strm);
 
-	return ret == BZ_STREAM_END ? BZ_OK : BZ_DATA_ERROR;
+	return ret == BZ_STREAM_END ? DECOMP_OK : DECOMP_FAIL;
 }

@@ -26,7 +26,7 @@ read_stream(const char *compress, struct stream *arv, struct result *res)
 			unsigned long readed = 0;
 
 			//printf("Detected %s compressed data\n", compress_name);
-			if (decompress(arv->addr + offset, arv->size - offset, &unpack, &unpack_size, &readed) != 0)
+			if (decompress(arv->addr + offset, arv->size - offset, &unpack, &unpack_size, &readed) != DECOMP_OK)
 				error(EXIT_FAILURE, errno, "ERROR: %s: %d: decompressor failed", __FILE__, __LINE__);
 
 			l = list_append(&res->streams, sizeof(struct stream));

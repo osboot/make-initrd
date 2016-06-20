@@ -4,9 +4,10 @@ CFLAGS = -Wall -Wextra -W -Wshadow -Wcast-align \
 	-Wmissing-format-attribute -Wredundant-decls -Wdisabled-optimization \
 	-Wno-pointer-arith
 
-depinfo_LIBS   = -lkmod
+depinfo_LIBS = $(shell pkg-config --libs libkmod)
 
-initrd_ls_LIBS = -lz -lbz2
+initrd_ls_CFLAGS =
+initrd_ls_LIBS   =
 
 initrd_ls_HEADERS = \
 	initrd-common.h \
@@ -21,9 +22,19 @@ initrd_ls_SOURCES = \
 	initrd-common.c \
 	initrd-cpio.c \
 	initrd-parse.c \
-	initrd-decompress.c \
-	initrd-decompress-gzip.c \
-	initrd-decompress-bzip2.c
+	initrd-decompress.c
+
+initrd_ls_CFLAGS  += -DHAVE_GZIP
+initrd_ls_SOURCES += initrd-decompress-gzip.c
+initrd_ls_LIBS    += $(shell pkg-config --libs zlib)
+
+initrd_ls_CFLAGS  += -DHAVE_BZIP2
+initrd_ls_SOURCES += initrd-decompress-bzip2.c
+initrd_ls_LIBS    += -lbz2
+
+initrd_ls_CFLAGS  += -DHAVE_LZMA
+initrd_ls_SOURCES += initrd-decompress-lzma.c
+initrd_ls_LIBS    += $(shell pkg-config --libs liblzma)
 
 PROGS = gen_init_cpio depinfo initrd-ls
 
@@ -44,7 +55,7 @@ depinfo: kmod-depinfo.c
 	$(CC) $(CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $< $(depinfo_LIBS)
 
 initrd-ls: $(initrd_ls_HEADERS) $(initrd_ls_SOURCES)
-	$(CC) $(CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $(initrd_ls_SOURCES) $(initrd_ls_LIBS)
+	$(CC) $(CFLAGS) $(initrd_ls_CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $(initrd_ls_SOURCES) $(initrd_ls_LIBS)
 
 install: $(PROGS)
 	$(MKDIR_P) -- $(DESTDIR)$(bindir)

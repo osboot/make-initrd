@@ -10,15 +10,19 @@ struct compress_format {
 };
 
 static const struct compress_format compressed_formats[] = {
+#ifdef HAVE_GZIP
 	{ {0x1f, 0x8b}, "gzip",  gunzip  },
 	{ {0x1f, 0x9e}, "gzip",  gunzip  },
+#endif
+#ifdef HAVE_BZIP2
 	{ {0x42, 0x5a}, "bzip2", bunzip2 },
-/*
-	{ {0x5d, 0x00}, "lzma",  dumb },
-	{ {0xfd, 0x37}, "xz",    dumb },
-	{ {0x89, 0x4c}, "lzo",   dumb },
-	{ {0x02, 0x21}, "lz4",   dumb },
-*/
+#endif
+#ifdef HAVE_LZMA
+	{ {0x5d, 0x00}, "lzma",  NULL    },
+	{ {0xfd, 0x37}, "xz",    unlzma  },
+#endif
+	{ {0x89, 0x4c}, "lzo",   NULL    },
+	{ {0x02, 0x21}, "lz4",   NULL    },
 	{ {0, 0}, NULL, NULL }
 };
 
@@ -41,5 +45,9 @@ decompress_fn decompress_method(const unsigned char *inbuf, unsigned long len, c
 	}
 	if (name)
 		*name = cf->name;
+
+	if (cf->name && !cf->decompressor)
+		printf("Decompression of '%s' is not supported\n", cf->name);
+
 	return cf->decompressor;
 }
