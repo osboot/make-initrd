@@ -14,6 +14,8 @@
 
 #define STAT_ISSET(mode, mask) (((mode) & mask) == mask)
 
+extern int opts;
+
 static int max_nlinks = 1;
 static int max_size = 1;
 static int max_uid = 1;
@@ -66,8 +68,12 @@ show_header(struct cpio_header *h)
 	char timbuf[80];
 	struct tm lt;
 
-	localtime_r(&h->mtime, &lt);
-	strftime(timbuf, sizeof(timbuf), "%b %d %T %Y", &lt);
+	if (!(opts & SHOW_NO_MTIME)) {
+		localtime_r(&h->mtime, &lt);
+		strftime(timbuf, sizeof(timbuf), "%b %d %T %Y ", &lt);
+	} else {
+		timbuf[0] = '\0';
+	}
 
 	switch (h->mode & S_IFMT) {
 	case S_IFBLK:
@@ -117,7 +123,7 @@ show_header(struct cpio_header *h)
 		putchar(S_ISDIR(h->mode) ? 't' : 'T');
 
 	if (S_ISCHR(h->mode) || S_ISBLK(h->mode)) {
-		rc = asprintf(&fmt, " %%%dju %%%dju %%%dju %%%du,%%%du %%s %%s",
+		rc = asprintf(&fmt, " %%%dju %%%dju %%%dju %%%du,%%%du %%s%%s",
 				max_nlinks, max_uid, max_gid, max_size - max_maj - max_min, max_min);
 		if (rc == -1)
 			error(EXIT_FAILURE, errno, "ERROR: asprintf");
@@ -131,7 +137,7 @@ show_header(struct cpio_header *h)
 			timbuf,
 			h->name);
 	} else {
-		rc = asprintf(&fmt, " %%%dju %%%dju %%%dju %%%dju %%s %%s",
+		rc = asprintf(&fmt, " %%%dju %%%dju %%%dju %%%dju %%s%%s",
 				max_nlinks, max_uid, max_gid, max_size);
 		if (rc == -1)
 			error(EXIT_FAILURE, errno, "ERROR: %s: %d: asprintf", __FILE__, __LINE__);

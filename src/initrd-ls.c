@@ -18,16 +18,12 @@
 #include "initrd-parse.h"
 #include "initrd-ls.h"
 
-enum flags {
-	SHOW_COMPRESSION = (1 << 1),
-	SHOW_NAME_ONLY   = (1 << 2),
-};
-
-static int opts = 0;
+int opts = 0;
 
 static const char cmdopts_s[] = "nCVh";
 static const struct option cmdopts[] = {
 	{"name",        no_argument, 0, 'n'},
+	{"no-mtime",    no_argument, 0,  3 },
 	{"compression", no_argument, 0, 'C'},
 	{"version",     no_argument, 0, 'V'},
 	{"help",        no_argument, 0, 'h'},
@@ -40,6 +36,7 @@ print_help(const char *progname)
 	printf("Usage: %s [options] initramfs\n"
 		"\n"
 		"Options:\n"
+		"   --no-mtime          Hide modification time;\n"
 		"   -n, --name          Show only filenames;\n"
 		"   -C, --compression   Show compression method for each archive;\n"
 		"   -V, --version       Show version of program and exit;\n"
@@ -71,6 +68,9 @@ main(int argc, char **argv)
 
 	while ((c = getopt_long(argc, argv, cmdopts_s, cmdopts, NULL)) != -1) {
 		switch (c) {
+			case 3:
+				opts ^= SHOW_NO_MTIME;
+				break;
 			case 'n':
 				opts ^= SHOW_NAME_ONLY;
 				break;
