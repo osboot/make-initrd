@@ -3,7 +3,8 @@
 . sh-functions
 
 # to be sure that microcode loading supported by kernel
-egrep -qs "^CONFIG_MICROCODE(\=|_INTEL|_AMD)" "$KERNEL_CONFIG" || fatal "Microcode loading support is missing in kernel"
+egrep -qs "^CONFIG_MICROCODE(|_INTEL|_AMD)=[my]" "$KERNEL_CONFIG" ||
+	fatal "Microcode loading support is missing in kernel"
 
 IUCODE_BIN=/usr/sbin/iucode_tool
 
