@@ -22,15 +22,11 @@ endif
 MAN1PAGES = make-initrd.1 initrd-diff.1
 MANPAGES  = $(MAN1PAGES)
 
-TEXIDOCS  = make-initrd.texi
-INFODOCS  = $(TEXIDOCS:.texi=.info)
-
 CP = cp -a
 INSTALL = install
 MKDIR_P = mkdir -p
 TOUCH_R = touch -r
 HELP2MAN = env -i help2man -N
-MAKEINFO_FLAGS = -D "VERSION $(VERSION)"
 
 DIRS = data guess features tools kmodule.deps.d
 
@@ -48,7 +44,7 @@ SUBDIRS = src
 
 .PHONY: $(SUBDIRS)
 
-all: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS) $(MANPAGES) $(INFODOCS)
+all: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS) $(MANPAGES)
 
 %.1: % %.1.inc
 	$(HELP2MAN) -i $@.inc -- ./$< >$@
@@ -79,10 +75,9 @@ install: $(SUBDIRS) $(TARGETS) $(sbin_TARGETS)
 	$(MKDIR_P) -- $(DESTDIR)$(man1dir)
 	$(CP) $(MAN1PAGES) $(DESTDIR)$(man1dir)/
 	$(MKDIR_P) -- $(DESTDIR)$(infodir)
-	$(CP) $(INFODOCS) $(DESTDIR)$(infodir)/
 
 clean: $(SUBDIRS)
-	rm -f -- $(PREPROCESS_TARGET) $(MANPAGES) $(INFODOCS)
+	rm -f -- $(PREPROCESS_TARGET) $(MANPAGES)
 
 $(SUBDIRS):
 	$(MAKE) $(MFLAGS) -C "$@" $(MAKECMDGOALS)

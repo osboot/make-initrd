@@ -11,7 +11,6 @@ Group: System/Base
 Packager: Alexey Gladkov <legion@altlinux.ru>
 
 BuildRequires: help2man
-BuildRequires: makeinfo
 BuildRequires: libkmod-devel
 
 Conflicts: make-initrd <= 2.0.0
@@ -156,7 +155,6 @@ fi
 %_sbindir/*
 %_datadir/%myname
 %_man1dir/*
-%_infodir/*
 %exclude %_datadir/%myname/features/devmapper
 %exclude %_datadir/%myname/features/lvm
 %exclude %_datadir/%myname/features/luks
