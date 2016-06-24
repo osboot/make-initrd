@@ -163,7 +163,7 @@ fi
 %exclude %_datadir/%myname/features/plymouth
 %exclude %_datadir/%myname/features/mdadm
 %exclude %_datadir/%myname/features/ucode
-%doc README.ru
+%doc docs/*.md
 
 %files devmapper
 %_datadir/%myname/features/devmapper
