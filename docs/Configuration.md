@@ -17,7 +17,7 @@ Default: `$(uname -r)`
 Default: `$(BOOTDIR)/initrd-$(KERNEL)$(IMAGE_SUFFIX).img`
 - **DEVICES** - List of device files (for example `/dev/sda1`) for which you want to add modules.
 - **VERBOSE** - Print a message for each action.
-- **FIRMWARE_DIRS** - This parameter describes the list of directories with firmware.
+- **FIRMWARE_DIRS** - This parameter defines the list of directories with firmware and microcode.
 - **PUT_FILES** - This parameter describes the list of files that need to be put in the image initrd.  The files are copied with the same path as the original file.
 - **PUT_DIRS** - This parameter describes the list of directories to be copied into the image.
 

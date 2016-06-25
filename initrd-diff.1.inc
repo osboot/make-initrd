@@ -3,7 +3,7 @@
 .\" Additional documentation for the initrd-diff.
 .\"
 .\" This file is covered by the GNU General Public License,
-.\" which should be included with make-initrd as the file COPYING.
+.\" which should be included with make-initrd as the file LICENSE.
 
 [NAME]
 initrd-diff \- compares the listings of two initrd images

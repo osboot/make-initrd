@@ -3,7 +3,7 @@
 .\" Additional documentation for the make-initrd.
 .\"
 .\" This file is covered by the GNU General Public License,
-.\" which should be included with make-initrd as the file COPYING.
+.\" which should be included with make-initrd as the file LICENSE.
 
 [NAME]
 make-initrd \- creates initial ramdisk images for preloading modules
