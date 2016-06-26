@@ -36,9 +36,11 @@ initrd_ls_CFLAGS  += -DHAVE_LZMA
 initrd_ls_SOURCES += initrd-decompress-lzma.c
 initrd_ls_LIBS    += $(shell pkg-config --libs liblzma)
 
-PROGS = gen_init_cpio depinfo initrd-ls
+bin_PROGS  = gen_init_cpio
+sbin_PROGS = depinfo initrd-ls
 
 bindir  ?= /usr/bin
+sbindir ?= /usr/sbin
 DESTDIR ?=
 
 INSTALL ?= install
@@ -46,7 +48,7 @@ MKDIR_P ?= mkdir -p
 
 .PHONY:	all install clean
 
-all: $(PROGS)
+all: $(bin_PROGS) $(sbin_PROGS)
 
 gen_init_cpio: gen_init_cpio.c
 	$(CC) $(CFLAGS) -o $@ $<
@@ -57,9 +59,11 @@ depinfo: kmod-depinfo.c
 initrd-ls: $(initrd_ls_HEADERS) $(initrd_ls_SOURCES)
 	$(CC) $(CFLAGS) $(initrd_ls_CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $(initrd_ls_SOURCES) $(initrd_ls_LIBS)
 
-install: $(PROGS)
+install: $(bin_PROGS) $(sbin_PROGS)
 	$(MKDIR_P) -- $(DESTDIR)$(bindir)
-	$(INSTALL) -p -m755 $(PROGS) $(DESTDIR)$(bindir)/
+	$(INSTALL) -p -m755 $(bin_PROGS) $(DESTDIR)$(bindir)/
+	$(MKDIR_P) -- $(DESTDIR)$(sbindir)
+	$(INSTALL) -p -m755 $(sbin_PROGS) $(DESTDIR)$(sbindir)/
 
 clean:
-	rm -f -- $(PROGS)
+	rm -f -- $(bin_PROGS) $(sbin_PROGS)
