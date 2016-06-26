@@ -1,0 +1,6 @@
+depinfo
+gen_init_cpio
+initrd-diff
+initrd-ls
+make-initrd
+mkinitrd-make-initrd

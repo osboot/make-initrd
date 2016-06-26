@@ -81,7 +81,7 @@ VERBOSE			?=
 BLACKLIST_MODULES	?=
 
 # Load system configuration
-include @PREFIX@/initfiles.mk
+include @PREFIX@/mk/initfiles.mk
 
 # Load user configuration
 include $(INITRD_CONFIG)

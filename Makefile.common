@@ -1,0 +1,44 @@
+TOPDIR ?= $(CURDIR)
+
+PROJECT = make-initrd
+VERSION = $(shell sed '/^Version: */!d;s///;q' $(TOPDIR)/.gear/make-initrd.spec)
+
+sysconfdir ?= /etc
+bootdir    ?= /boot
+bindir     ?= /usr/bin
+sbindir    ?= /usr/sbin
+datadir    ?= /usr/share
+infodir    ?= $(datadir)/info
+mandir     ?= $(datadir)/man
+man1dir    ?= $(mandir)/man1
+tmpdir     ?= /tmp
+prefix     ?= $(datadir)/$(PROJECT)
+DESTDIR    ?=
+
+ifdef MKLOCAL
+prefix  = $(TOPDIR)
+bindir  = $(TOPDIR)/utils
+sbindir = $(TOPDIR)/utils
+endif
+
+CP       = cp -a
+RM       = rm -f
+CHMOD    = chmod
+INSTALL  = install
+MKDIR_P  = mkdir -p
+TOUCH_R  = touch -r
+HELP2MAN = env -i help2man -N
+
+%: %.in
+	sed \
+		-e 's,@VERSION@,$(VERSION),g' \
+		-e 's,@PROJECT@,$(PROJECT),g' \
+		-e 's,@BOOTDIR@,$(bootdir),g' \
+		-e 's,@CONFIG@,$(sysconfdir),g' \
+		-e 's,@PREFIX@,$(prefix),g' \
+		-e 's,@BINDIR@,$(bindir),g' \
+		-e 's,@SBINDIR@,$(sbindir),g' \
+		-e 's,@TMPDIR@,$(tmpdir),g' \
+		<$< >$@
+	$(TOUCH_R) $< $@
+	$(CHMOD) --reference=$< $@

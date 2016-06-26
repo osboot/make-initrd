@@ -1,3 +1,7 @@
+TOPDIR = $(CURDIR)/..
+
+include $(TOPDIR)/Makefile.common
+
 CFLAGS = -Wall -Wextra -W -Wshadow -Wcast-align \
 	-Wwrite-strings -Wconversion -Waggregate-return -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations -Wmissing-noreturn \
@@ -36,15 +40,14 @@ initrd_ls_CFLAGS  += -DHAVE_LZMA
 initrd_ls_SOURCES += initrd-decompress-lzma.c
 initrd_ls_LIBS    += $(shell pkg-config --libs liblzma)
 
-bin_PROGS  = gen_init_cpio
-sbin_PROGS = depinfo initrd-ls
-
-bindir  ?= /usr/bin
-sbindir ?= /usr/sbin
-DESTDIR ?=
-
-INSTALL ?= install
-MKDIR_P ?= mkdir -p
+bin_PROGS  = \
+	gen_init_cpio
+sbin_PROGS = \
+	depinfo \
+	initrd-ls \
+	initrd-diff \
+	make-initrd \
+	mkinitrd-make-initrd
 
 .PHONY:	all install clean
 
@@ -66,4 +69,4 @@ install: $(bin_PROGS) $(sbin_PROGS)
 	$(INSTALL) -p -m755 $(sbin_PROGS) $(DESTDIR)$(sbindir)/
 
 clean:
-	rm -f -- $(bin_PROGS) $(sbin_PROGS)
+	$(RM) -- $(bin_PROGS) $(sbin_PROGS)
