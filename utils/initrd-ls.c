@@ -35,6 +35,10 @@ print_help(const char *progname)
 {
 	printf("Usage: %s [options] initramfs\n"
 		"\n"
+		"Displays initramfs contents in a format similar to ls command.\n"
+		"If initramfs contains more than one cpio archive, utility will show all of them.\n"
+		"Archives can be compressed. In this case, utility will take a look inside.\n"
+		"\n"
 		"Options:\n"
 		"   --no-mtime          Hide modification time;\n"
 		"   -n, --name          Show only filenames;\n"
