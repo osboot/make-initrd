@@ -8,6 +8,8 @@ CFLAGS = -Wall -Wextra -W -Wshadow -Wcast-align \
 	-Wmissing-format-attribute -Wredundant-decls -Wdisabled-optimization \
 	-Wno-pointer-arith
 
+CFLAGS += -DPACKAGE=\"$@\" -DVERSION=\"$(VERSION)\"
+
 depinfo_LIBS = $(shell pkg-config --libs libkmod)
 
 initrd_ls_CFLAGS =
@@ -57,10 +59,10 @@ gen_init_cpio: gen_init_cpio.c
 	$(CC) $(CFLAGS) -o $@ $<
 
 depinfo: kmod-depinfo.c
-	$(CC) $(CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $< $(depinfo_LIBS)
+	$(CC) $(CFLAGS) -o $@ $< $(depinfo_LIBS)
 
 initrd-ls: $(initrd_ls_HEADERS) $(initrd_ls_SOURCES)
-	$(CC) $(CFLAGS) $(initrd_ls_CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $(initrd_ls_SOURCES) $(initrd_ls_LIBS)
+	$(CC) $(CFLAGS) $(initrd_ls_CFLAGS) -o $@ $(initrd_ls_SOURCES) $(initrd_ls_LIBS)
 
 install: $(bin_PROGS) $(sbin_PROGS)
 	$(MKDIR_P) -- $(DESTDIR)$(bindir)
