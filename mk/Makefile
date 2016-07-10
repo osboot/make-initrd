@@ -14,8 +14,8 @@ TARGETS = \
 all: $(TARGETS)
 
 install: $(TARGETS)
-	$(MKDIR_P) -- $(DESTDIR)$(datadir)/$(PROJECT)
-	$(CP) -- $(TARGETS) $(DESTDIR)$(datadir)/$(PROJECT)/
+	$(MKDIR_P) -- $(DESTDIR)$(datadir)/$(PROJECT)/mk
+	$(CP) -- $(TARGETS) $(DESTDIR)$(datadir)/$(PROJECT)/mk/
 
 clean:
 	@for n in *.in; do \
