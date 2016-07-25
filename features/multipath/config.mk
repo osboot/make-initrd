@@ -7,5 +7,6 @@ MULTIPATH_BIN		= /sbin/multipath /sbin/kpartx \
 
 MULTIPATH_CONF		= /etc/multipath.conf
 
-MULTIPATH_DATA          = /lib/udev/rules.d/40-kpartx.rules \
-			  /lib/udev/rules.d/40-multipath.rules
+MULTIPATH_DATA          = /lib/udev/rules.d/11-dm-mpath.rules \
+			  /lib/udev/rules.d/56-multipath.rules \
+			  /lib/udev/rules.d/66-kpartx.rules
