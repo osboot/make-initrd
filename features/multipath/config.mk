@@ -1,12 +1,11 @@
-MULTIPATH_PRELOAD	= dm-multipath
-MULTIPATH_MODULES	= scsi_dh scsi_dh_alua scsi_dh_emc \
-			  scsi_dh_hp_sw scsi_dh_rdac
+MULTIPATH_PRELOAD	= scsi_dh_alua scsi_dh_emc scsi_dh_rdac dm-multipath
 
-MULTIPATH_BIN		= /sbin/multipath /sbin/kpartx \
-			  /lib/udev/kpartx_id
+MULTIPATH_BIN		= /sbin/multipathd /sbin/multipath \
+			  /$(LIBNAME)/multipath /$(LIBNAME)/libmultipath.so.0
 
-MULTIPATH_CONF		= /etc/multipath.conf
+MULTIPATH_CONF		= /etc/multipath.conf /etc/multipath
 
 MULTIPATH_DATA          = /lib/udev/rules.d/11-dm-mpath.rules \
-			  /lib/udev/rules.d/56-multipath.rules \
-			  /lib/udev/rules.d/66-kpartx.rules
+			  /lib/udev/rules.d/56-multipath.rules
+
+MULTIPATH_DATADIR	= $(FEATURESDIR)/multipath/data

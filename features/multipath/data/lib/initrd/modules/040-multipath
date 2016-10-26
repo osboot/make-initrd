@@ -1,0 +1,6 @@
+#!/bin/sh
+
+msg='Starting multipathd...'
+run() {
+	multipathd -s
+}
