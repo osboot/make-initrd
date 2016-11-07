@@ -1,0 +1,18 @@
+#!/bin/sh
+
+msg=
+run() {
+	local got_mpath=
+	local sec=${ROOTDELAY:-30}
+
+	while [ "$sec" -gt 0 ]; do
+		if glob -q /dev/disk/by-id/dm-uuid-mpath*; then
+			got_mpath=1
+			break
+		fi
+		sleep 1
+		sec=$(($sec-1))
+	done
+
+	[ -n "$got_mpath" ] || error "Multipath not found."
+}

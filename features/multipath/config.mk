@@ -1,8 +1,8 @@
 MULTIPATH_PRELOAD	= scsi_dh_alua scsi_dh_emc scsi_dh_rdac \
 			  dm-multipath dm-service-time dm-queue-length dm-round-robin
 
-MULTIPATH_BIN		= /sbin/multipathd /sbin/multipath /sbin/kpartx \
-			  /$(LIBNAME)/multipath /$(LIBNAME)/libmultipath.so.0
+MULTIPATH_BIN		= /sbin/multipathd /sbin/multipath /$(LIBNAME)/multipath \
+			  /sbin/kpartx /lib/udev/kpartx_id
 
 MULTIPATH_CONF		= /etc/multipath.conf /etc/multipath
 
