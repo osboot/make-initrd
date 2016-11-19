@@ -1,5 +1,8 @@
 #!/bin/sh -efu
 
+if [ -z "${__included_make_initrd_guess_functions-}" ]; then
+__included_make_initrd_guess_functions=1
+
 . sh-functions
 
 get_device() {
@@ -68,3 +71,5 @@ slaves() {
 			guess_device "$1/slaves/${slave##*/}"
 	done
 }
+
+fi #__included_make_initrd_guess_functions

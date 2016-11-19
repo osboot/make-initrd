@@ -1,5 +1,8 @@
 #!/bin/sh -efu
 
+if [ -z "${__included_make_initrd_sh_functions-}" ]; then
+__included_make_initrd_sh_functions=1
+
 . shell-error
 
 export verbose="${VERBOSE:+-v}"
@@ -55,3 +58,5 @@ get_majmin() {
 		printf '%d:%d\n' "0x${v%:*}" "0x${v#*:}" ||
 		return 1
 }
+
+fi #__included_make_initrd_sh_functions
