@@ -16,12 +16,14 @@ if [ -z "${RDSHELL_NOMESSAGE-}" ]; then
 	fi
 fi
 
+RDSHELL_MODE="${RDSHELL_MODE:-shell}"
+
 # Disallow console access
-[ "${PANIC-}" != 0 ] || RDSHELL_MODE=disable
+[ "${PANIC-}" != 0 ] || [ "$RDSHELL_MODE" != shell ] || RDSHELL_MODE=disable
 
 shcmd='/bin/sh -l'
 case "${RDSHELL_MODE-}" in
-	shell|'')
+	shell)
 		;;
 	login)
 		printf '\n'
