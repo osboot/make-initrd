@@ -1,0 +1,7 @@
+PATH="/sbin:/usr/sbin:/bin:/usr/bin"
+PS1='(initramfs)$ '
+USER='root'
+HOME='/home/root'
+export PATH PS1 USER HOME
+
+umask 022

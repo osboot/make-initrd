@@ -4,7 +4,7 @@
 
 cd "$rootdir"
 
-mkfifo .initrd/shell
+mkfifo .initrd/rdshell
 
 for init in /sbin/init.initrd /sbin/init; do
 	[ -x "$init" ] ||

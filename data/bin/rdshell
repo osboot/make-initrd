@@ -1,0 +1,44 @@
+#!/bin/sh -eu
+
+for f in /.initrd/initenv /etc/sysconfig/rdshell; do
+	[ ! -f "$f" ] || . "$f"
+done
+
+if [ -z "${RDSHELL_NOMESSAGE-}" ]; then
+	if [ -z "${RDSHELL_MESSAGE-}" ]; then
+		fifo=/.initrd/rdshell
+		if [ -e "$fifo" ]; then
+			read msg < "$fifo" ||:
+			[ -z "${msg-}" ] || printf '%s: %s\n' "${0##*/}" "$msg"
+		fi
+	else
+		printf '%s: %s\n' "${0##*/}" "$RDSHELL_MESSAGE"
+	fi
+fi
+
+# Disallow console access
+[ "${PANIC-}" != 0 ] || RDSHELL_MODE=disable
+
+shcmd='/bin/sh -l'
+case "${RDSHELL_MODE-}" in
+	shell|'')
+		;;
+	login)
+		printf '\n'
+		shcmd='sulogin'
+		;;
+	disable)
+		printf 'Shell access is not allowed.\n'
+		while sleep 1; do :; done
+		;;
+esac
+
+lock=/.initrd/rdshell.lock
+mkdir "$lock" >/dev/null 2>&1 ||
+	exit 0
+for f in /lib/shell/*; do
+	[ -x "$f" ] || break
+	"$f" ||:
+done
+setsid -c $shcmd
+rmdir "$lock"

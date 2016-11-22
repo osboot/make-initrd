@@ -11,4 +11,7 @@ done
 [ ! -x "$rootmnt/$INIT" ] ||
 	exit 0
 
-echo "The waiting time expired!" > /.initrd/shell
+# Disallow console access
+[ "${PANIC-}" != 0 ] || reboot
+
+echo "The waiting time expired!" > /.initrd/rdshell

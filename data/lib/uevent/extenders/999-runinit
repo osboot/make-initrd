@@ -9,7 +9,7 @@
 	exit 0
 
 shell_inactive() {
-	[ ! -d /.initrd/shell.lock ]
+	[ ! -d /.initrd/rdshell.lock ]
 }
 
 rootfs()

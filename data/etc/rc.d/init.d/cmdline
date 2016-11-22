@@ -98,7 +98,7 @@ parse_cmdline() {
 
 post() {
 	if [ -n "${RDSHELL-}" ]; then
-		echo ESHELL_NOMESSAGE=1 >> /.initrd/initenv
+		echo RDSHELL_NOMESSAGE=1 >> /.initrd/initenv
 		return
 	fi
 	/lib/initrd/rootdelay &

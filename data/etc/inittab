@@ -10,11 +10,9 @@ l4:4:wait:/etc/rc.d/rc 4
 l5:5:wait:/etc/rc.d/rc 5
 l6:6:wait:/etc/rc.d/rc 6
 
-~~:S:respawn:/bin/sh -i +m
-
 # The "id" field MUST be the same as the last
 # characters of the device (after "tty").
 #
 # Format:
 #  <id>:<runlevels>:<action>:<process>
-1:345:respawn:/bin/emergency-shell
+1:345:respawn:/bin/rdshell

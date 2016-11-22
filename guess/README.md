@@ -7,3 +7,4 @@
 - **net** - adds kernel modules for network devices (netboot).
 - **keyboard** - adds modules for the keyboard.
 - **fstab** - looks for mountpoints which must be mounted from the initrd.
+- **rdshell** - gives the ability to get shell in initrd.

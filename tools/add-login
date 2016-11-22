@@ -1,0 +1,19 @@
+#!/bin/sh -efu
+
+. sh-functions
+
+if [ -n "${RDSHELL_PASSWORD-}" -a -n "${RDSHELL_COPY_PASSWORD_FROM_USER-}" ]; then
+	fatal 'Options "RDSHELL_PASSWORD" and "RDSHELL_COPY_PASSWORD_FROM_USER" are mutually exclusive'
+fi
+
+hash="${RDSHELL_PASSWORD-}"
+[ -z "${RDSHELL_COPY_PASSWORD_FROM_USER-}" ] ||
+	hash="$(getent shadow "${RDSHELL_COPY_PASSWORD_FROM_USER-}" |cut -d: -f2)"
+
+for n in passwd shadow; do
+	touch "$rootdir/etc/$n"
+	sed -i -e '/^root:/d' "$rootdir/etc/$n"
+done
+
+printf 'root:x:0:0::/home/root:/bin/sh\n' >> "$rootdir/etc/passwd"
+printf 'root:%s:13957::::::\n' "$hash"    >> "$rootdir/etc/shadow"

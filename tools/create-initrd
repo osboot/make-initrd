@@ -12,7 +12,9 @@ mkdir $verbose -p -- \
 	./etc/initrd \
 	./etc/fstab.d \
 	./etc/modprobe.d \
+	./etc/sysconfig \
 	./etc/udev/rules.d \
+	./home/root \
 	./"$kernel_modules_dir" \
 	./lib/initrd \
 	./lib/initrd/all \
@@ -32,6 +34,9 @@ mkdir $verbose -p -- \
 	#
 
 initrd-release
+
+# No shell access inside initramfs by default.
+printf 'RDSHELL_MODE=disable\n' >./etc/sysconfig/rdshell
 
 if [ -z "${INITRD_NO_LIBNSS-}" ]; then
 	verbose "Copying files from libnss_files.so* ..."
@@ -61,21 +66,28 @@ if [ -z "${INITRD_NO_LIBNSS-}" ]; then
 	EOF
 fi
 
-if [ -z "${INITRD_NO_PWGR-}" ]; then
-	echo 'root:x:13957::::::' >./etc/shadow
-	echo 'root:*::'           >./etc/gshadow
+for n in group gshadow passwd shadow; do
+	:> ./etc/$n
+done
 
+if [ -z "${INITRD_NO_PWGR-}" ]; then
 	while IFS=: read name pass gid dummy; do
 		[ -n "$name" ] && [ "$gid" -lt 500 ] ||
 			continue
-		printf '%s\n' "$name:$pass:$gid:$dummy"
-	done < /etc/group > ./etc/group
+		printf '%s\n' "$name:x:$gid:$dummy" >> ./etc/group
+		printf '%s\n' "$name:x::$dummy" >> ./etc/gshadow
+	done < /etc/group
 
 	while IFS=: read name pass uid gid dummy; do
 		[ -n "$name" ] && [ "$uid" -lt 500 ] ||
 			continue
-		printf '%s\n' "$name:$pass:$uid:$gid:$dummy"
-	done < /etc/passwd > ./etc/passwd
+		{
+			[ "$name" = "root" ] &&
+				printf '%s\n' "root:x:$uid:$gid::/home/root:/bin/sh" ||
+				printf '%s\n' "$name:x:$uid:$gid:$dummy"
+		} >> ./etc/passwd
+		printf '%s\n' "$name:*:13957::::::" >> ./etc/shadow
+	done < /etc/passwd
 fi
 
 if [ -z "${INITRD_NO_NETWORK-}" ]; then
