@@ -4,6 +4,7 @@ include $(TOPDIR)/Makefile.common
 
 MAN1PAGES = \
 	make-initrd.1 \
+	initrd-cp.1 \
 	initrd-diff.1 \
 	initrd-ls.1
 

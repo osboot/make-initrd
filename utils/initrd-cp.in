@@ -1,0 +1,374 @@
+#!/bin/sh -efu
+#
+# Copyright (C) 2012-2017  Alexey Gladkov <gladkov.alexey@gmail.com>
+#
+# This file is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+#
+
+. shell-error
+. shell-signal
+
+prefix=
+destdir=
+dryrun=
+force=
+
+print_version()
+{
+	cat <<-EOF
+	$PROG version @VERSION@
+	Written by Alexey Gladkov.
+
+	Copyright (C) 2012-2017  Alexey Gladkov <gladkov.alexey@gmail.com>
+	This is free software; see the source for copying conditions.  There is NO
+	warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	EOF
+	exit
+}
+
+show_help()
+{
+	cat <<-EOF
+	Usage: $PROG [<option>] <destdir> [directory|filename]...
+
+	Utility allows to copy files and directories along with their dependencies
+	into a specified destination directory.
+
+	This utility follows symbolic links and binary dependencies and copies them
+	along with the specified files.
+
+	Options:
+	   --dry-run                 don't do nothing;
+	   -f, --force               overwrite destination file if exists;
+	   -D, --debug               print more information about file dependencies;
+	   -r, --remove-prefix=STR   ignore prefix in path;
+	   -v, --verbose             print a message for each action;
+	   -V, --version             output version information and exit;
+	   -h, --help                display this help and exit.
+
+	Report bugs to authors.
+
+	EOF
+	exit
+}
+
+show_usage()
+{
+	[ -z "$*" ] || message "$*"
+	echo "Try \`$PROG --help' for more information." >&2
+	exit 1
+}
+
+workdir=
+exit_handler()
+{
+	[ -z "$workdir" ] || rm -rf -- "$workdir"
+}
+
+debug=
+debug()
+{
+	[ -n "$debug" ] || return 0
+	message "$@"
+}
+
+TEMP=`getopt -n $PROG -o 'f,r:,h,D,v,V' -l 'dry-run,force,remove-prefix:,help,debug,verbose,version' -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
+
+while :; do
+	case "$1" in
+		-r|--remove-prefix) shift
+			prefix="$1"
+			;;
+		--dry-run)
+			dryrun=:
+			;;
+		-D|--debug)
+			debug=-v
+			;;
+		-f|--force)
+			force=-f
+			;;
+		-h|--help)
+			show_help
+			;;
+		-v|--verbose)
+			verbose=-v
+			;;
+		-V|--version)
+			print_version
+			;;
+		--) shift
+			break
+			;;
+		*)
+			fatal "Unknown option: $1"
+			;;
+	esac
+	shift
+done
+
+[ "$#" -gt 0 ] ||
+	show_usage "More arguments required"
+
+destdir="$(readlink -ev "$1")"
+shift
+
+set_cleanup_handler exit_handler
+workdir="$(mktemp -dt "$PROG.XXXXXXXXX")"
+
+res_manifest="$workdir/manifest"
+cur_manifest="$workdir/manifest-cur"
+new_manifest="$workdir/manifest-new"
+processed_objects="$workdir/done"
+
+:>"$processed_objects"
+
+mark_fs_object_done()
+{
+	printf '%s\n' "$destname" >>"$processed_objects"
+}
+
+print_manifest()
+{
+	printf '%s\t%s\t%s\t%s\n' "$type" "$destname" "$realname" "$linktrgt"
+}
+
+canonicalize_file() {
+	local __canonicalize_file_name="$1" __canonicalize_file_result
+	__canonicalize_file() {
+		local fn="$1" r= t=
+		while [ "$fn" != "$r" ]; do
+			r="$fn"
+			if [ -z "${fn##*//*}" ]; then
+				fn="${fn%%//*}/${fn#*//}"
+			elif [ -z "${fn##*/./*}" ]; then
+				fn="${fn%%/./*}/${fn#*/./}"
+			elif [ -z "${fn##*/../*}" ]; then
+				t="${fn%%/../*}"
+				t="${t%/*}"
+				fn="$t/${fn#*/../}"
+			elif [ -z "${fn##./*}" -o -n "${fn##/*}" ]; then
+				fn="$PWD/${fn##./}"
+			elif [ -z "${fn##*/}" ]; then
+				fn="${fn%%/}"
+			fi
+		done
+		__canonicalize_file_result="$fn"
+	}
+	__canonicalize_file "$2"
+	eval "$__canonicalize_file_name=\$__canonicalize_file_result"
+}
+
+process_manifest()
+{
+	find -P "$@" -printf '%y\t%p\t%l\n' |
+	while read type destname linktrgt; do
+		case "$type" in
+			b|c|d|f|l|s)
+				;;
+			*)
+				fatal "Unsupported type ($type): $destname"
+				;;
+		esac
+		realname="$destname"
+		destname="${destname#$prefix}"
+		destname="$destdir/${destname#/}"
+		linktrgt="${linktrgt#$prefix}"
+
+		print_manifest
+	done
+}
+
+process_directory_recursively()
+{
+	if [ ! -d "$1" ]; then
+		verbose "$1: No such file or directory"
+		return
+	fi
+	local fn
+	canonicalize_file fn "$1"
+	process_manifest "$fn" -mindepth 1
+}
+
+process_single_fs_object()
+{
+	if [ ! -e "$1" ]; then
+		verbose "$1: No such file or directory"
+		return
+	fi
+	local fn
+	canonicalize_file fn "$1"
+	process_manifest "$fn" -mindepth 0 -maxdepth 0
+}
+
+is_destname_processed()
+{
+	local n
+	while read n; do
+		[ "$destname" != "$n" ] ||
+			return 0
+	done <"$processed_objects"
+	return 1
+}
+
+for n; do
+	[ -L "$n" -o ! -d "$n" ] ||
+		process_directory_recursively "$n"
+	process_single_fs_object "$n"
+done >"$cur_manifest"
+
+cat "$cur_manifest" > "$res_manifest"
+
+iter=1
+while :; do
+	while read type destname realname linktrgt; do
+		! is_destname_processed ||
+			continue
+
+		debug "iteration #$iter: processing $realname"
+
+		case "$type" in
+			d)
+				process_directory_recursively "$realname"
+				;;
+			l)
+				target="$(readlink "$realname")"
+				if [ -n "${target##/*}" ]; then
+					target="${realname%/*}/$target"
+				fi
+				[ -L "$target" -o ! -d "$target" ] ||
+					process_directory_recursively "$target"
+
+				debug "symlink $realname -> $target"
+				process_single_fs_object "$target"
+				;;
+			f)
+				mime="$(file -h "$realname")"
+
+				if [ -z "${mime##* ELF * dynamically linked*}" ]; then
+					ldd "$realname" |
+					while read f; do
+						case "$f" in
+							/*' (0x'*')')
+								f="${f% (0x*}"
+								;;
+							*' => /'*' (0x'*')')
+								f="${f% (0x*}"
+								f="${f##* => }"
+								;;
+							[!/]*' (0x'*')'|'statically linked') # ignore
+								continue
+								;;
+							*)
+								fatal "Unsupported ldd output for $realname: $f"
+								;;
+						esac
+						debug "binary file $realname -> $f"
+						process_single_fs_object "$f"
+					done
+				fi
+				;;
+		esac
+
+		mark_fs_object_done
+
+	done < "$cur_manifest" >"$new_manifest"
+
+	[ -s "$new_manifest" ] ||
+		break
+
+	LC_ALL=C sort -u -o "$cur_manifest" "$new_manifest"
+	cat "$cur_manifest"
+
+	iter=$(($iter + 1))
+
+done >> "$res_manifest"
+
+LC_ALL=C sort -u -o "$cur_manifest" "$res_manifest"
+
+while read type destname realname linktrgt; do
+	case "$type" in
+		d)
+			;;
+		c|b|f|l|s)
+			realname="${realname%/*}"
+			;;
+	esac
+
+	type='d'
+	linktrgt=
+	realname="${realname#$prefix}"
+
+	while [ -n "$realname" ]; do
+		destname="$destdir/${realname#/}"
+
+		print_manifest
+
+		realname="${realname%/*}"
+	done
+done < "$cur_manifest" > "$new_manifest"
+
+LC_ALL=C sort -u -d -k1,2 -o "$res_manifest" \
+	"$new_manifest" \
+	"$cur_manifest"
+
+if [ -n "${SHOW_MANIFEST-}" ]; then
+	cat "$res_manifest"
+	exit
+fi
+
+while read type destname realname linktrgt; do
+	case "$type" in
+		d)
+			if [ -d "$destname" ]; then
+				verbose "Directory \`$destname' already exists"
+				continue
+			fi
+			verbose "Make new directory \`$destname'"
+			$dryrun mkdir $debug -- "$destname" >&2
+			;;
+		l)
+			if [ -z "$force" ] && [ -L "$destname" ]; then
+				verbose "Symbolic link \`$destname' already exists"
+				continue
+			fi
+			verbose "Create symbolic link \`$destname' -> \`$linktrgt'"
+			$dryrun ln $debug $force -s -- "$linktrgt" "$destname" >&2
+			;;
+		b|c|f|s)
+			if [ -z "$force" ] && [ -e "$destname" ]; then
+				verbose "File \`$destname' already exists"
+				continue
+			fi
+			verbose "Copy file \`$destname'"
+			$dryrun cp $debug $force -a -- "$realname" "$destname" >&2
+			;;
+	esac
+done < "$res_manifest"
+
+while read type destname realname linktrgt; do
+	[ "$type" = "d" ] ||
+		break
+	[ -d "$realname" ] ||
+		continue
+	$dryrun chmod $debug --reference="$realname" -- "$destname" >&2
+done < "$res_manifest"
+
+exit
+
+# dependency builder requires it.
+chmod; cp; ln; mkdir; sort;

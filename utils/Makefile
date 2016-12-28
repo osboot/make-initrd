@@ -46,6 +46,7 @@ bin_PROGS  = \
 	gen_init_cpio
 sbin_PROGS = \
 	depinfo \
+	initrd-cp \
 	initrd-ls \
 	initrd-diff \
 	make-initrd \

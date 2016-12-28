@@ -1,5 +1,6 @@
 depinfo
 gen_init_cpio
+initrd-cp
 initrd-diff
 initrd-ls
 make-initrd
