@@ -1,12 +1,12 @@
 #!/bin/sh
 
 . /.initrd/initenv
-. uevent-sh-functions
-
-. shell-error
 
 [ "${RDMODE-}" != 'live' ] ||
 	exit 0
+
+. uevent-sh-functions
+. shell-error
 
 shell_inactive() {
 	[ ! -d /.initrd/rdshell.lock ]
