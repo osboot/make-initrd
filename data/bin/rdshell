@@ -42,5 +42,5 @@ for f in /lib/shell/*; do
 	[ -x "$f" ] || break
 	"$f" ||:
 done
-setsid -c $shcmd
+setsid $shcmd
 rmdir "$lock"
