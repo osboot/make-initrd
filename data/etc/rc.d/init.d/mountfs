@@ -70,7 +70,7 @@ MoveFilesystems()
 {
 	local n
 	for n in dev run ${EXPORT_FS-}; do
-		[ ! -d "$rootmnt/$n" ] ||
+		[ ! -d "$rootmnt/$n" ] || ! mountpoint -q "/$n" ||
 			action "Moving filesystem [/$n]:" mount --move "/$n" "$rootmnt/$n"
 	done
 }
@@ -83,6 +83,7 @@ UnmountFilesystems()
 	retry="$1"; shift
 	delay="$1"; shift
 	findmnt="$1"; shift
+	umount_types="$1"; shift
 
 	points="$($findmnt)"
 
@@ -92,7 +93,7 @@ UnmountFilesystems()
 		[ "$retry" -eq 3 ] || msg='(retry) '
 
 		for point in $points; do
-			action "Unmounting filesystem $msg[$point]:" umount -flt noproc "$point"
+			action "Unmounting filesystem $msg[$point]:" umount -fl ${umount_types:+-t $umount_types} "$point"
 		done
 
 		points="$($findmnt)"
@@ -122,10 +123,9 @@ stop()
 	# Unmount non-/dev tmpfs.
 	non_dev_tmpfs()
 	{
-		findmnt -mno TARGET -t tmpfs |
-		while read t; do
-			[ -d "$t" ] &&
-				mountpoint -q "$t" ||
+		findmnt -mno SOURCE,TARGET -t tmpfs |
+		while read s t; do
+			mountpoint -q "$t" ||
 				continue
 			case "$t" in
 				/dev|$rootmnt|$rootmnt/*) ;;
@@ -133,23 +133,30 @@ stop()
 			esac
 		done
 	}
-	UnmountFilesystems 3 5 non_dev_tmpfs
+	UnmountFilesystems 3 5 non_dev_tmpfs noproc
 
 	# Unmount all the rest.
-	all_rest()
+	non_proc_all()
 	{
 		findmnt -mno SOURCE,TARGET |
 		while read s t; do
-			[ -d "$t" ] &&
-				mountpoint -q "$t" ||
+			mountpoint -q "$t" ||
 				continue
-			case "$s:$t" in
-				*:/|*:$rootmnt|*:$rootmnt/*) ;;
+			case "$t" in
+				/|/proc|$rootmnt|$rootmnt/*) ;;
 				*) printf '%s ' "$t" ;;
 			esac
 		done
 	}
-	UnmountFilesystems 3 5 all_rest
+	UnmountFilesystems 3 5 non_proc_all noproc
+
+	proc_only()
+	{
+		! mountpoint -q /proc ||
+			echo /proc
+	}
+
+	UnmountFilesystems 3 5 proc_only
 
 	rm -f "$LOCKFILE"
 }
