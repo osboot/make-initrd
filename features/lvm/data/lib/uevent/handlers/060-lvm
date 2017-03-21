@@ -4,7 +4,7 @@
 . uevent-sh-functions
 
 /sbin/lvm vgscan >/dev/null
-/sbin/lvm vgchange -ay --noudevsync >/dev/null
+/sbin/lvm vgchange -ay --noudevsync >/dev/null ||:
 
 for e in "$eventdir"/lvm.*; do
 	done_event "$e"
