@@ -1,7 +1,7 @@
 %global myname make-initrd
 
-Name: make-initrd2
-Version: 2.0.2
+Name: make-initrd
+Version: 2.0.3
 Release: alt1
 
 Summary: Creates an initramfs image
@@ -16,12 +16,13 @@ BuildRequires: zlib-devel
 BuildRequires: bzlib-devel
 BuildRequires: liblzma-devel
 
-Conflicts: make-initrd <= 2.0.0
 Provides: mkinitrd = 2:%version-%release
 
 Requires: sh libshell make sed module-init-tools coreutils findutils grep glibc-utils
 Requires: chrooted-resolv service util-linux
-Requires: make-initrd-busybox
+
+# setsid, timeout
+Requires: make-initrd-busybox >= 1.24.2-alt2
 
 # depinfo
 Requires: libkmod >= 8-alt1
@@ -36,7 +37,7 @@ Requires: kinit-utils >= 1.5.25-alt2
 Requires: udev >= 167-alt1
 
 # installkernel
-#Requires: bootloader-utils >= 0.4.10-alt1
+Requires: bootloader-utils >= 0.4.10-alt1
 
 # blkid
 Requires: util-linux >= 2.17.2-alt1
@@ -134,7 +135,7 @@ AutoReq: noshell, noshebang
 %description ucode
 CPU microcode autoloading module for %name
 
-%%prep
+%prep
 %setup -q
 
 %build
@@ -193,6 +194,10 @@ fi
 %_datadir/%myname/features/ucode
 
 %changelog
+* Tue Mar 21 2017 Alexey Gladkov <legion@altlinux.ru> 2.0.3-alt1
+- Backport patches from make-initrd-0.8.14.
+- Rename back to original name.
+
 * Sun Mar 12 2017 Alexey Gladkov <legion@altlinux.ru> 2.0.2-alt1
 - Add feature to control access to shell inside initrd.
 - Replace put-file by standalone utility.
