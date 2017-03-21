@@ -17,6 +17,9 @@ BuildRequires: bzlib-devel
 BuildRequires: liblzma-devel
 
 Provides: mkinitrd = 2:%version-%release
+Provides: make-initrd2 = %version-%release
+
+Obsoletes: make-initrd2
 
 Requires: sh libshell make sed module-init-tools coreutils findutils grep glibc-utils
 Requires: chrooted-resolv service util-linux
