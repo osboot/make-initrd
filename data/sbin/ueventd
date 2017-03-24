@@ -72,7 +72,7 @@ message "STARTING ..."
 
 while :; do
 	if ! glob "$filterdir"/*; then
-		timeout $timeout_sec 1 cat "$ueventd_fifo" >/dev/null 2>&1 ||:
+		{ timeout $timeout_sec 1 cat "$ueventd_fifo"; } >/dev/null 2>&1 ||:
 		run_extenders
 		continue
 	fi
