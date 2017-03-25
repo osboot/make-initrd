@@ -1,7 +1,7 @@
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:            uevent
-# Required-Start:      udev
+# Required-Start:      cmdline
 # Should-Start:        $syslog
 # Required-Stop:
 # Should-Stop:
@@ -12,18 +12,25 @@
 ### END INIT INFO
 
 . /etc/init.d/template
+. uevent-sh-functions
 
 NAME=ueventd
 PIDFILE=/var/run/$NAME.pid
-ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --displayname $NAME"
+ARGS="--lockfile $LOCKFILE --pidfile "$PIDFILE""
 
 start() {
-	start_daemon $ARGS -- $NAME || RETVAL=$?
+	start_daemon $ARGS -- \
+		"$NAME" \
+		    --pidfile "$PIDFILE" \
+		    --logfile "/var/log/$NAME.log" \
+		    "$filterdir" /sbin/uevent-handler
+	RETVAL=$?
 	return $RETVAL
 }
 
 stop() {
-	stop_daemon $ARGS -- /bin/sh -eu /sbin/$NAME || RETVAL=$?
+	stop_daemon $ARGS -- "$NAME"
+	RETVAL=$?
 	return $RETVAL
 }
 

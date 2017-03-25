@@ -7,20 +7,13 @@ extendir='/lib/uevent/extenders'
 handlerdir='/lib/uevent/handlers'
 
 make_event() {
-	mkdir -p -- "$filterdir"
-	mktemp "$filterdir/.XXXXXXXXX"
+	mktemp "$filterdir/.tmp/.XXXXXXXXX"
 }
 
 release_event() {
 	local num= dummy
 	[ ! -e /proc/uptime ] || read num dummy < /proc/uptime ||:
-	mv -f "$2" "${2%/*}/$1.${num:-0.0}${2##*/}"
-
-	[ -n "$ueventd_pid" ] || [ ! -s "/var/run/ueventd.pid" ] ||
-		read ueventd_pid < "/var/run/ueventd.pid"
-
-	[ -z "$ueventd_pid" ] ||
-		kill -USR1 $ueventd_pid ||:
+	mv -f "$2" "${2%/.tmp/*}/$1.${num:-0.0}${2##*/}"
 }
 
 done_event() {

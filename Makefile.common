@@ -15,10 +15,13 @@ tmpdir     ?= /tmp
 prefix     ?= $(datadir)/$(PROJECT)
 DESTDIR    ?=
 
+initrddir =
+
 ifdef MKLOCAL
-prefix  = $(TOPDIR)
-bindir  = $(TOPDIR)/utils
-sbindir = $(TOPDIR)/utils
+prefix    = $(TOPDIR)
+bindir    = $(TOPDIR)/utils
+sbindir   = $(TOPDIR)/utils
+initrddir = $(TOPDIR)/datasrc/_out
 endif
 
 CP       = cp -a
@@ -28,6 +31,7 @@ INSTALL  = install
 MKDIR_P  = mkdir -p
 TOUCH_R  = touch -r
 HELP2MAN = env -i help2man -N
+STRIP    = strip -s
 
 %: %.in
 	sed \
@@ -39,6 +43,7 @@ HELP2MAN = env -i help2man -N
 		-e 's,@BINDIR@,$(bindir),g' \
 		-e 's,@SBINDIR@,$(sbindir),g' \
 		-e 's,@TMPDIR@,$(tmpdir),g' \
+		-e 's,@INITRDDIR@,$(initrddir),g' \
 		<$< >$@
 	$(TOUCH_R) $< $@
 	$(CHMOD) --reference=$< $@

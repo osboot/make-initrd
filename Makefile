@@ -9,7 +9,7 @@ DIRS = \
 	tools \
 	kmodule.deps.d
 
-SUBDIRS = conf utils mk man
+SUBDIRS = conf utils mk man datasrc
 
 .PHONY: $(SUBDIRS)
 

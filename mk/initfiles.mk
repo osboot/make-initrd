@@ -50,4 +50,4 @@ PUT_FILES += \
 	/usr/bin/setsid
 
 # initrd specific utilities
-PUT_DIRS += /lib/initrd $(DATADIR)
+PUT_DIRS += /lib/initrd $(INITRDDIR) $(DATADIR)

@@ -24,6 +24,7 @@ REPORTDIR	 = $(WORKDIR)/report
 
 UTILSDIR	 = @PREFIX@/utils
 TOOLSDIR	 = @PREFIX@/tools
+INITRDDIR	 = @INITRDDIR@
 DATADIR		?= @PREFIX@/data
 SCRIPTDIR	?= @PREFIX@/scripts.d
 FEATURESDIR	?= @PREFIX@/features

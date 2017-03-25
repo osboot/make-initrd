@@ -1,0 +1,40 @@
+#!/bin/sh -eu
+
+. shell-error
+
+. /.initrd/initenv
+. uevent-sh-functions
+
+glob()
+{
+	[ -e "$1" ]
+}
+
+message "STARTING ..."
+
+mv -f -- "$filterdir"/* "$eventdir"/ 2>/dev/null ||:
+
+for fn in "$handlerdir"/*; do
+	[ -x "$fn" ] ||
+		break
+
+	name="${fn##*/}"
+	name="${name#[0-9][0-9][0-9]-}"
+
+	glob "$eventdir/$name".* ||
+		continue
+
+	verbose "Running $name handler ..."
+	"$fn" || message "Event handler failed: $name"
+done
+
+for fn in "$extendir"/*; do
+	[ -x "$fn" ] ||
+		break
+
+	name="${fn##*/}"
+	name="${name#[0-9][0-9][0-9]-}"
+
+	verbose "Running $name extender ..."
+	"$fn" || message "Extender failed: $name"
+done
