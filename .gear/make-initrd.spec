@@ -2,7 +2,7 @@
 
 Name: make-initrd
 Version: 2.0.3
-Release: alt1
+Release: alt2
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -197,6 +197,9 @@ fi
 %_datadir/%myname/features/ucode
 
 %changelog
+* Sun Mar 26 2017 Alexey Gladkov <legion@altlinux.ru> 2.0.3-alt2
+- Rewrite ueventd.
+
 * Tue Mar 21 2017 Alexey Gladkov <legion@altlinux.ru> 2.0.3-alt1
 - Backport patches from make-initrd-0.8.14.
 - Rename back to original name.
