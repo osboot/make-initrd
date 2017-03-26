@@ -27,6 +27,8 @@ COLOR_NORMAL=
 COLOR_SUCCESS=
 COLOR_WARNING=
 
+SHOW_TIMESTAMP=1
+
 SourceIfNotEmpty /etc/sysconfig/init
 
 BOOTUP="${BOOTUP:-color}"
@@ -404,7 +406,9 @@ status()
 
 echo_msg()
 {
-	[ -z "$*" ] || printf '%s ' "$*"
+	[ -n "$*" ] || return 0
+	show_tstamp
+	printf '%s ' "$*"
 }
 
 
@@ -480,26 +484,31 @@ action_shell()
 
 msg_starting()
 {
+	show_tstamp
 	printf "Starting %s service: " "$1"
 }
 
 msg_already_running()
 {
+	show_tstamp
 	printf "Service %s is already running." "$1"
 }
 
 msg_stopping()
 {
+	show_tstamp
 	printf "Stopping %s service: " "$1"
 }
 
 msg_not_running()
 {
+	show_tstamp
 	printf "Service %s is not running." "$1"
 }
 
 msg_reloading()
 {
+	show_tstamp
 	printf "Reloading %s service: " "$1"
 }
 
@@ -549,4 +558,9 @@ dsort()
 	}
 	__sort "$@"
 	eval "$1=\"\$__list\""
+}
+
+show_tstamp()
+{
+	[ -z "${SHOW_TIMESTAMP-}" ] || /sbin/monotonic-timestamp
 }

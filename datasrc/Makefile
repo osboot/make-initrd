@@ -18,30 +18,39 @@ CFLAGS += -DPACKAGE=\"$@\" -DVERSION=\"$(VERSION)\" \
 CFLAGS += -I.
 CFLAGS += -Os
 
-PROG = $(outdir)/ueventd
+sbin_PROGS = \
+	$(outdir)/ueventd \
+	$(outdir)/monotonic-timestamp
 
-SOURCES = \
+ueventd_SOURCES = \
 	ueventd.c \
 	uevent-epoll.c \
 	uevent-logging.c \
 	uevent-pidfile.c \
 	uevent-worker.c
 
-HEADERS = \
+ueventd_HEADERS = \
 	uevent-epoll.h \
 	uevent-logging.h \
 	uevent-pidfile.h
 
-all: $(PROG)
+monotonic_timestamp_SOURCES = \
+	monotonic-timestamp.c
 
-$(PROG): $(HEADERS) $(SOURCES)
+all: $(sbin_PROGS)
+
+$(outdir)/ueventd: $(ueventd_HEADERS) $(ueventd_SOURCES)
 	$(MKDIR_P) -- $(outdir)
-	$(CC) $(CFLAGS) -o $(PROG) $(SOURCES)
+	$(CC) $(CFLAGS) -o $@ $(ueventd_SOURCES)
 
-install: $(PROG)
+$(outdir)/monotonic-timestamp: $(monotonic_timestamp_SOURCES)
+	$(MKDIR_P) -- $(outdir)
+	$(CC) $(CFLAGS) -o $@ $(monotonic_timestamp_SOURCES)
+
+install: $(sbin_PROGS)
 	$(MKDIR_P) -- $(DESTDIR)$(sbindir)
-	$(STRIP) $(PROG)
-	$(INSTALL) -p -m755 $(PROG) $(DESTDIR)$(sbindir)/
+	$(STRIP) $(sbin_PROGS)
+	$(INSTALL) -p -m755 $(sbin_PROGS) $(DESTDIR)$(sbindir)/
 
 clean:
 	$(RM) -rf -- $(outdir)
