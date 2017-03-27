@@ -2,8 +2,8 @@ TOPDIR = $(CURDIR)/..
 
 include $(TOPDIR)/Makefile.common
 
-outdir   = _out/sbin
-sbindir ?= /lib/initrd/sbin
+outdir         = _out/sbin
+initrdsbindir ?= /lib/initrd/sbin
 
 CFLAGS = -Wall -Wextra -W -Wshadow -Wcast-align \
 	-Wwrite-strings -Wconversion -Waggregate-return -Wstrict-prototypes \
@@ -48,9 +48,9 @@ $(outdir)/monotonic-timestamp: $(monotonic_timestamp_SOURCES)
 	$(CC) $(CFLAGS) -o $@ $(monotonic_timestamp_SOURCES)
 
 install: $(sbin_PROGS)
-	$(MKDIR_P) -- $(DESTDIR)$(sbindir)
+	$(MKDIR_P) -- $(DESTDIR)$(initrdsbindir)
 	$(STRIP) $(sbin_PROGS)
-	$(INSTALL) -p -m755 $(sbin_PROGS) $(DESTDIR)$(sbindir)/
+	$(INSTALL) -p -m755 $(sbin_PROGS) $(DESTDIR)$(initrdsbindir)/
 
 clean:
 	$(RM) -rf -- $(outdir)
