@@ -1,3 +1,6 @@
+GPG_PROGRAM  ?= /usr/bin/gpg
+LUKS_USE_GPG ?=
+
 CRYPTSETUP_BIN		?= /usr/sbin/cryptsetup
 LUKS_DATADIR		?= $(FEATURESDIR)/luks/data
 LUKS_CIPHERS		?= aes

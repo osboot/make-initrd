@@ -5,14 +5,12 @@
 . initrd-sh-functions
 
 freekey() {
-	local d="/mnt/$1-key"
+	local d="/mnt/luks-key"
 	[ -d "$d" ] && umount "$d" && rmdir "$d" ||:
 }
 
-keyfile=
 findkey() {
-	local name="$1"
-	local path keydev luksdev mnt
+	local path keydev luksdev mnt="/mnt/luks-key"
 
 	[ -f /etc/luks.keys ] ||
 		exit 2
@@ -25,7 +23,6 @@ findkey() {
 
 		mnt=
 		if [ -n "$keydev" ]; then
-			mnt="/mnt/$name-key"
 			mkdir -p -- "$mnt"
 			mount -r "$keydev" "$mnt" ||
 				exit 1
@@ -33,7 +30,6 @@ findkey() {
 
 		if [ ! -f "$mnt/$path" ]; then
 			error "luks: $path: keyfile not found."
-			freekey "$name"
 			exit 1
 		fi
 
@@ -48,10 +44,14 @@ findkey() {
 }
 
 readkey() {
-	if [ -n "$keyfile" ]; then
-		cat "$keyfile"
+	local keyfile="$1"
+	[ -s "$keyfile" ] ||
+		return 0
+	if [ -z "${keyfile##*.gpg}" ]; then
+		gpg --quiet --decrypt "$keyfile"
+		return
 	fi
-	freekey "$1"
+	cat "$keyfile"
 }
 
 handler() {
@@ -61,11 +61,14 @@ handler() {
 	! dmsetup info "$nameluks" >/dev/null 2>&1 ||
 		exit 0
 
-	local rc=0
+	local rc=0 keyfile=
 	if [ -n "${LUKS_KEY-}" ]; then
-		findkey "$nameluks"
-		readkey "$nameluks" |
-			cryptsetup -d- luksOpen "$LUKS_ROOT" "$nameluks"
+		findkey ||
+			rc="$?"
+		[ "$rc" != 0 ] ||
+			{ readkey "$keyfile" |cryptsetup -d- luksOpen "$LUKS_ROOT" "$nameluks"; } ||
+			rc="$?"
+		freekey
 	else
 		rc=2
 		while [ "$rc" = 2 ]; do
