@@ -355,7 +355,7 @@ while read type destname realname linktrgt; do
 				continue
 			fi
 			verbose "Copy file \`$destname'"
-			$dryrun cp $debug $force -a -- "$realname" "$destname" >&2
+			$dryrun cp $debug $force -a --remove-destination -- "$realname" "$destname" >&2
 			;;
 	esac
 done < "$res_manifest"
