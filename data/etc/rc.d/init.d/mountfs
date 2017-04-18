@@ -56,9 +56,7 @@ MountVirtualFs()
 	/dev/stderr /proc/self/fd/2
 	EOF
 
-	mkdir -p /dev/pts /dev/shm /run/lock/subsys /run/user /run/udev /run/systemd
-
-	action "$msg [/dev/pts]:" mount -t devpts devpts /dev/pts
+	mkdir -p /run/lock/subsys /run/user /run/udev /run/systemd
 
 	:> /run/utmp
 	chmod 0664 /run/utmp
