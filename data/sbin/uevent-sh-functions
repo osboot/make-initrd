@@ -1,6 +1,7 @@
 #!/bin/sh
 
 ueventd_pid=
+debugdir='/.initrd/udev-events'
 filterdir='/.initrd/uevent-udev'
 eventdir='/.initrd/uevent-events'
 extendir='/lib/uevent/extenders'
