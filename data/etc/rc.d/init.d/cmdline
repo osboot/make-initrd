@@ -104,6 +104,14 @@ post() {
 	/lib/initrd/rootdelay &
 }
 
+ignored() {
+	case "$1" in
+		INITLOG_FILE|RUNLEVEL|runlevel)
+			return 0 ;;
+	esac
+	return 1
+}
+
 parse() {
 	defaults
 	parse_cmdline
@@ -111,7 +119,7 @@ parse() {
 	showenv -q |
 	while read l; do
 		s="${l%%=*}"
-		[ -z "${s##*[!A-Za-z0-9_]*}" ] ||
+		[ -z "${s##*[!A-Za-z0-9_]*}" ] || ignored "$s" ||
 			printf 'export %s\n' "$l"
 	done > /.initrd/initenv
 	post
