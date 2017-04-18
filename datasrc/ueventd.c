@@ -15,6 +15,7 @@
 #include <sys/signalfd.h>
 #include <sys/epoll.h>
 #include <sys/inotify.h>
+#include <dirent.h>
 
 #include "uevent-logging.h"
 #include "uevent-pidfile.h"
@@ -99,6 +100,32 @@ handle_events(int fd)
 	}
 
 	free(buf);
+
+	return ret;
+}
+
+static int
+is_dir_not_empty(char *eventdir)
+{
+	struct dirent *ent;
+	DIR *dir = NULL;
+	int ret = 0;
+
+	if ((dir = opendir(eventdir)) == NULL)
+		fatal("opendir: %m");
+
+	errno = 0;
+	while ((ent = readdir(dir)) != NULL) {
+		if (ent->d_type == DT_REG) {
+			ret = 1;
+			break;
+		}
+	}
+
+	if (errno != 0)
+		fatal("readdir: %m");
+
+	closedir(dir);
 
 	return ret;
 }
@@ -239,7 +266,12 @@ main(int argc, char **argv)
 			// Initialization here
 			// ...
 			// Initialization done and increase wait timeout.
-			ep_timeout = -1;
+			ep_timeout = 3000;
+
+			if (!have_events && is_dir_not_empty(eventdir)) {
+				dbg("Directory not empty: %s", eventdir);
+				have_events = 1;
+			}
 
 		} else for (i = 0; i < fdcount; i++) {
 
