@@ -20,15 +20,15 @@ load_modules() {
 	[ ! -e /etc/initrd/modules-"$1" ] ||
 	while read m; do
 		[ -z "${m##\#*}" ] || modprobe "$m"
-	done < /etc/initrd/modules-"$1"
+	done < /etc/initrd/modules-"$1" 2>"/var/log/udev-$1.log"
 }
 
 pre_start() {
-	action_shell "Loading modules before udev:" load_modules preudev
+	load_modules preudev ||:
 }
 
 post_start() {
-	action_shell "Loading modules after udev:" load_modules postudev
+	load_modules postudev ||:
 }
 
 start() {
