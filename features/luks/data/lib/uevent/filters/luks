@@ -4,7 +4,9 @@
 . uevent-sh-functions
 . initrd-sh-functions
 
-DEVNAME="/dev/${DEVNAME#/dev}"
+DEVNAME="${DEVNAME#/dev}"
+DEVNAME="${DEVNAME#/}"
+DEVNAME="/dev/$DEVNAME"
 
 [ -z "${NO_LUKS-}" ] ||
 	exit 0
