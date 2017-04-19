@@ -1,12 +1,10 @@
 SYSVINIT_FILES = \
-	/bin/bash \
 	/bin/kill \
 	/bin/dmesg \
 	/bin/runas \
 	/bin/touch \
 	/bin/sleep \
 	/bin/findmnt \
-	/usr/bin/flock \
 	/usr/bin/ip \
 	/usr/bin/which \
 	/sbin/killall5 \
