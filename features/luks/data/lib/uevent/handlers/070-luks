@@ -3,6 +3,7 @@
 . /.initrd/initenv
 . uevent-sh-functions
 . initrd-sh-functions
+. rdshell-sh-functions
 
 freekey() {
 	local d="/mnt/luks-key"
@@ -70,18 +71,25 @@ handler() {
 			rc="$?"
 		freekey
 	else
+		# WARNING: Wait decrypt forever!
 		rc=2
 		while [ "$rc" = 2 ]; do
-			cryptsetup -d- luksOpen "$LUKS_ROOT" "$nameluks"
+			cryptsetup luksOpen "$LUKS_ROOT" "$nameluks"
 			rc="$?"
 		done
 	fi
 
 	if [ "$rc" != 0 ]; then
-		error "Unable to activate LUKS: $rc"
+		printf 'ERROR: %s: unable to activate LUKS (rc=%s)\n' "$LUKS_ROOT" "$rc" >&2
 		exit 1
 	fi
 }
+
+while ! console_lock; do
+	sleep 0.5
+done
+
+exec 0</dev/console >/dev/console 2>&1
 
 rc=0
 for e in "$eventdir"/luks.*; do
@@ -94,4 +102,5 @@ for e in "$eventdir"/luks.*; do
 	esac
 done
 
+console_unlock
 exit $rc

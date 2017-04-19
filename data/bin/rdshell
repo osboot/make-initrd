@@ -1,20 +1,27 @@
 #!/bin/sh -eu
 
+. rdshell-sh-functions
+
 for f in /.initrd/initenv /etc/sysconfig/rdshell; do
 	[ ! -f "$f" ] || . "$f"
 done
 
+msg=
 if [ -z "${RDSHELL_NOMESSAGE-}" ]; then
 	if [ -z "${RDSHELL_MESSAGE-}" ]; then
-		fifo=/.initrd/rdshell
-		if [ -e "$fifo" ]; then
-			read msg < "$fifo" ||:
-			[ -z "${msg-}" ] || printf '%s: %s\n' "${0##*/}" "$msg"
+		if [ -e "$rdshell_fifo" ]; then
+			read msg < "$rdshell_fifo" ||:
 		fi
 	else
-		printf '%s: %s\n' "${0##*/}" "$RDSHELL_MESSAGE"
+		msg="$RDSHELL_MESSAGE"
 	fi
 fi
+
+while ! console_lock; do
+	sleep 0.5
+done
+
+[ -z "${msg-}" ] || printf '%s: %s\n' "${0##*/}" "$msg"
 
 RDSHELL_MODE="${RDSHELL_MODE:-shell}"
 
@@ -35,12 +42,12 @@ case "${RDSHELL_MODE-}" in
 		;;
 esac
 
-lock=/.initrd/rdshell.lock
-mkdir "$lock" >/dev/null 2>&1 ||
-	exit 0
 for f in /lib/shell/*; do
 	[ -x "$f" ] || break
 	"$f" ||:
 done
 setsid $shcmd
-rmdir "$lock"
+console_unlock
+
+# avoid a too fast respawn
+sleep 3

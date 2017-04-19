@@ -1,0 +1,19 @@
+#!/bin/sh -eu
+
+lock=/.initrd/rdshell.lock
+rdshell_fifo=/.initrd/rdshell
+
+console_lock()
+{
+	mkdir "$lock" >/dev/null 2>&1 ||
+		return 1
+}
+
+console_unlock()
+{
+	rmdir "$lock"
+}
+
+console_inactive() {
+	[ ! -d "$lock" ]
+}

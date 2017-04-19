@@ -6,11 +6,8 @@
 	exit 0
 
 . uevent-sh-functions
+. rdshell-sh-functions
 . shell-error
-
-shell_inactive() {
-	[ ! -d /.initrd/rdshell.lock ]
-}
 
 rootfs()
 {
@@ -48,6 +45,6 @@ mountfs()
 	done < /etc/fstab
 }
 
-shell_inactive && mountfs && rootfs ||
+console_inactive && mountfs && rootfs ||
 	exit 0
 telinit 2
