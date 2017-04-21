@@ -107,6 +107,12 @@ fi
 [ -z "${PUT_DIRS-}"  ] || put-tree . $PUT_DIRS
 [ -z "${PUT_FILES-}" ] || put-file . $PUT_FILES
 
+if [ -n "${LOCALBUILDDIR:+1}" ]; then
+	tree=$(readlink -ev "$LOCALBUILDDIR")
+	verbose "Copying '$tree' recursively (with force) ..."
+	put-file -f -r "$tree" "." "$tree"
+fi
+
 :>>./etc/fstab
 
 if [ ! -x ./bin/sh ]; then

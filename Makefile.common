@@ -15,13 +15,17 @@ tmpdir     ?= /tmp
 prefix     ?= $(datadir)/$(PROJECT)
 DESTDIR    ?=
 
-initrddir =
+helperdir      ?= /lib/initrd
+helper_bindir  ?= $(initrddir)/bin
+helper_sbindir ?= $(initrddir)/sbin
+
+localbuilddir =
 
 ifdef MKLOCAL
-prefix    = $(TOPDIR)
-bindir    = $(TOPDIR)/utils
-sbindir   = $(TOPDIR)/utils
-initrddir = $(TOPDIR)/datasrc/_out
+prefix        = $(TOPDIR)
+bindir        = $(TOPDIR)/utils
+sbindir       = $(TOPDIR)/utils
+localbuilddir = $(TOPDIR)/datasrc/_out
 endif
 
 CP       = cp -a
@@ -43,7 +47,7 @@ STRIP    = strip -s
 		-e 's,@BINDIR@,$(bindir),g' \
 		-e 's,@SBINDIR@,$(sbindir),g' \
 		-e 's,@TMPDIR@,$(tmpdir),g' \
-		-e 's,@INITRDDIR@,$(initrddir),g' \
+		-e 's,@LOCALBUILDDIR@,$(localbuilddir),g' \
 		<$< >$@
 	$(TOUCH_R) $< $@
 	$(CHMOD) --reference=$< $@

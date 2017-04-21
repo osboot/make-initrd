@@ -25,9 +25,6 @@ PUT_FILES += \
 	/sbin/depmod \
 	/sbin/lsmod \
 	/sbin/modprobe \
-	/sbin/reboot \
-	/sbin/poweroff \
-	/sbin/halt \
 	/bin/sh \
 	/bin/cat \
 	/bin/cp \
@@ -50,4 +47,4 @@ PUT_FILES += \
 	/usr/bin/setsid
 
 # initrd specific utilities
-PUT_DIRS += /lib/initrd $(INITRDDIR) $(DATADIR)
+PUT_DIRS += /lib/initrd $(DATADIR)

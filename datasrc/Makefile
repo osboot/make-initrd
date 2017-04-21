@@ -2,8 +2,8 @@ TOPDIR = $(CURDIR)/..
 
 include $(TOPDIR)/Makefile.common
 
-outdir         = _out/sbin
-initrdsbindir ?= /lib/initrd/sbin
+out_bindir  = _out/bin
+out_sbindir = _out/sbin
 
 CFLAGS = -Wall -Wextra -W -Wshadow -Wcast-align \
 	-Wwrite-strings -Wconversion -Waggregate-return -Wstrict-prototypes \
@@ -18,9 +18,14 @@ CFLAGS += -DPACKAGE=\"$@\" -DVERSION=\"$(VERSION)\" \
 CFLAGS += -I.
 CFLAGS += -Os
 
+bin_PROGS = \
+	$(out_bindir)/halt \
+	$(out_bindir)/replace \
+	$(out_bindir)/showenv
+
 sbin_PROGS = \
-	$(outdir)/ueventd \
-	$(outdir)/monotonic-timestamp
+	$(out_sbindir)/ueventd \
+	$(out_sbindir)/monotonic-timestamp
 
 ueventd_SOURCES = \
 	ueventd.c \
@@ -37,20 +42,42 @@ ueventd_HEADERS = \
 monotonic_timestamp_SOURCES = \
 	monotonic-timestamp.c
 
-all: $(sbin_PROGS)
+halt_SOURCES = \
+	halt.c
 
-$(outdir)/ueventd: $(ueventd_HEADERS) $(ueventd_SOURCES)
-	$(MKDIR_P) -- $(outdir)
-	$(CC) $(CFLAGS) -o $@ $(ueventd_SOURCES)
+replace_SOURCES = \
+	replace.c
 
-$(outdir)/monotonic-timestamp: $(monotonic_timestamp_SOURCES)
-	$(MKDIR_P) -- $(outdir)
-	$(CC) $(CFLAGS) -o $@ $(monotonic_timestamp_SOURCES)
+showenv_SOURCES = \
+	showenv.c
 
-install: $(sbin_PROGS)
-	$(MKDIR_P) -- $(DESTDIR)$(initrdsbindir)
-	$(STRIP) $(sbin_PROGS)
-	$(INSTALL) -p -m755 $(sbin_PROGS) $(DESTDIR)$(initrdsbindir)/
+all: $(bin_PROGS) $(sbin_PROGS)
+
+$(out_sbindir)/ueventd: $(ueventd_HEADERS) $(ueventd_SOURCES)
+	$(MKDIR_P) -- $(out_sbindir)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(out_sbindir)/monotonic-timestamp: $(monotonic_timestamp_SOURCES)
+	$(MKDIR_P) -- $(out_sbindir)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(out_bindir)/halt: $(halt_SOURCES)
+	$(MKDIR_P) -- $(out_bindir)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(out_bindir)/replace: $(replace_SOURCES)
+	$(MKDIR_P) -- $(out_bindir)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(out_bindir)/showenv: $(showenv_SOURCES)
+	$(MKDIR_P) -- $(out_bindir)
+	$(CC) $(CFLAGS) -o $@ $^
+
+install: $(bin_PROGS) $(sbin_PROGS)
+	$(MKDIR_P) -- $(DESTDIR)$(helper_bindir) $(DESTDIR)$(helper_sbindir)
+	$(STRIP) $^
+	$(INSTALL) -p -m755 $(bin_PROGS)  $(DESTDIR)$(helper_bindir)/
+	$(INSTALL) -p -m755 $(sbin_PROGS) $(DESTDIR)$(helper_sbindir)/
 
 clean:
-	$(RM) -rf -- $(outdir)
+	$(RM) -rf -- $(out_bindir) $(out_sbindir)
