@@ -35,20 +35,12 @@ Parameters responsible for mounting the root file system:
 
 #### NFS root
 
-- `nfsroot=[<server-ip>:]<root-dir>[,<nfs-options>]` mount nfs share from <server-ip>:/<root-dir>
-- `nfsopts`
+[See nfsroot feature](../features/nfsroot/README.md)
 
-#### LUKS
+### LUKS
 
-- `no-luks` disables crypto LUKS detection.
-- `luks-key=<keypath>:<keydev>:<luksdev>` key for luks device on removable device
-  - `keypath` is a path to key file to look for. When keypath ends with .gpg it’s considered to be key encrypted symmetrically with GPG. You will be prompted for password on boot.
-  - `keydev` is a device on which key file resides. It might be kernel name of devices (should start with "/dev/"), UUID (prefixed with "UUID=") or label (prefix with "LABEL=").
-  - If `luksdev` is given, the specified key will only be applied for that LUKS device. Possible values are the same as for keydev. Unless you have several LUKS devices, you don’t have to specify this parameter.
-- `luks-dev`
+[See luks feature](../features/luks/README.md)
 
 #### plymouth
 
-- `vga`
-- `splash`
-- `nosplash`
+[See plymouth feature](../features/plymouth/README.md)

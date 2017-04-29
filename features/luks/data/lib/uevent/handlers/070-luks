@@ -5,16 +5,17 @@
 . initrd-sh-functions
 . rdshell-sh-functions
 
+mnt="/mnt/luks-key"
+
 freekey() {
-	local d="/mnt/luks-key"
-	[ -d "$d" ] && umount "$d" && rmdir "$d" ||:
+	[ -d "$mnt" ] && umount "$mnt" && rmdir "$mnt" ||:
 }
 
 findkey() {
-	local path keydev luksdev mnt="/mnt/luks-key"
+	local path keydev luksdev
 
 	[ -f /etc/luks.keys ] ||
-		exit 2
+		return 2
 
 	while IFS='	' read path keydev luksdev; do
 		if [ -n "$luksdev" ]; then
@@ -22,37 +23,38 @@ findkey() {
 				continue
 		fi
 
-		mnt=
 		if [ -n "$keydev" ]; then
 			mkdir -p -- "$mnt"
 			mount -r "$keydev" "$mnt" ||
-				exit 1
+				return 1
 		fi
 
 		if [ ! -f "$mnt/$path" ]; then
-			error "luks: $path: keyfile not found."
-			exit 1
+			printf "ERROR(luks): $path: keyfile not found.\n" >&2
+			return 1
 		fi
 
 		keyfile="$mnt/$path"
-		verbose "Keyfile '$path' for '${LUKS_ROOT#/dev/}' encrypted partition."
+		printf "Found keyfile '%s' for '%s' encrypted partition.\n" "$path" "${LUKS_ROOT#/dev/}"
 		return 0
 
 	done < /etc/luks.keys
 
 	# Keyfile not found yet.
-	exit 2
+	return 2
 }
 
 readkey() {
 	local keyfile="$1"
 	[ -s "$keyfile" ] ||
 		return 0
-	if [ -z "${keyfile##*.gpg}" ]; then
-		gpg --quiet --decrypt "$keyfile"
-		return
-	fi
-	cat "$keyfile"
+	{ cat "$keyfile"; printf .; } |
+		sed \
+			-e ':a'      \
+			-e 'N'       \
+			-e '$!ba'    \
+			-e 's/\.$//' \
+			-e 's/\n$//'
 }
 
 handler() {
@@ -80,7 +82,7 @@ handler() {
 	fi
 
 	if [ "$rc" != 0 ]; then
-		printf 'ERROR: %s: unable to activate LUKS (rc=%s)\n' "$LUKS_ROOT" "$rc" >&2
+		printf 'ERROR(luks): %s: unable to activate LUKS (rc=%s)\n' "$LUKS_ROOT" "$rc" >&2
 		exit 1
 	fi
 }
