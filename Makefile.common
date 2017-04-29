@@ -16,8 +16,8 @@ prefix     ?= $(datadir)/$(PROJECT)
 DESTDIR    ?=
 
 helperdir      ?= /lib/initrd
-helper_bindir  ?= $(initrddir)/bin
-helper_sbindir ?= $(initrddir)/sbin
+helper_bindir  ?= $(helperdir)/bin
+helper_sbindir ?= $(helperdir)/sbin
 
 localbuilddir =
 
