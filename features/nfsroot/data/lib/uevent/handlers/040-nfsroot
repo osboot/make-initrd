@@ -21,7 +21,7 @@ handler() {
 	[ -n "$NFSOPTS" ] || NFSOPTS="-o retrans=10"
 
 	local roflag='-o rw'
-	[ -z "$readonly" ] || roflag='-o ro'
+	[ -z "$READONLY" ] || roflag='-o ro'
 
 	mountpoint -q "$rootmnt" ||
 		nfsmount -o nolock $roflag $NFSOPTS "$NFSROOT" "$rootmnt" ||

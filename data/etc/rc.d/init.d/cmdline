@@ -15,96 +15,113 @@
 
 . /etc/init.d/functions
 
-defaults() {
+. shell-error
+. shell-var
+. shell-cmdline
+
+defaults()
+{
 	[ ! -s /etc/initrd/initramfs.conf ] || . /etc/initrd/initramfs.conf
 
 	export PATH=/bin:/sbin:/usr/bin:/usr/sbin:/lib/initrd/bin
 	export RUN_INITRD=1
-	export INIT='/sbin/init'
-	export DEBUG=
-	export QUIET=
-	export PANIC=
-	export STOP=
 	export rootmnt='/root'
-	export readonly=1
-	export RESCUE_MODULES="${RESCUE_MODULES-}"
 	export UDEV_VERSION="$(udevd --version)" ||:
 }
 
-unquote() {
-	local var="$1" out="$2"
-	if [ -z "${out##*\'}${out%%\'*}" ]; then
-		out="${out#\'}"
-		out="${out%\'}"
-	elif [ -z "${out##*\"}${out%%\"*}" ]; then
-		out="${out#\"}"
-		out="${out%\"}"
-	fi
-	eval "$var=\"\$out\""
+readonly VAR_S=1
+readonly VAR_N=2
+readonly VAR_B=3
+readonly VAR_ARR=10
+
+__register()
+{
+	[ -n "${__vars##* $1:*}" ] ||
+		return 0
+	eval "export $1=\"\$2\""
+	__vars="$__vars$1:$3 "
 }
 
-
-parse_attrs() {
-	multival=
-	case "$n" in
-		*:m) multival=1 ;;
+__get_type()
+{
+	case "$2" in
+		string) eval "$1=\$VAR_S" ;;
+		number) eval "$1=\$VAR_N" ;;
+		bool)   eval "$1=\$VAR_B" ;;
 	esac
-	n="${n%:*}"
 }
 
-export_multi() {
-	local i= n="$1" v="$2"
-	eval "i=\${$n:-0}"
-	eval export "$n$i=\"\$v\""
-	eval export "$n=$(($i+1))"
+register_parameter()
+{
+	local v=0
+	__get_type v "$1"
+	__register "$2" "${3-}" $v
 }
 
-parse_cmdline() {
-	local x s n v l=
-	local CMDLINE_PARAMS
-
-	read CMDLINE </proc/cmdline
-	export CMDLINE
-
-	for x in /etc/initrd/cmdline.d/*; do
-		if [ -s "$x" ]; then
-			. "$x"
-			l="$l ${CMDLINE_PARAMS-}"
-		fi
-	done
-
-	for x in $CMDLINE; do
-		s="$(replace -s= "[a-z]-." "[A-Z]__" "$x")"
-		for n in $l; do
-			parse_attrs
-			case "$s" in
-				RW)	readonly=	;;
-				RO)	readonly=1	;;
-				$n)	export "$s=1"	;;
-				$n=*)
-					v="${s#*=}"
-					unquote v "$v"
-					[ -n "$multival" ] &&
-						export_multi "$n" "$v" ||
-						eval export "$n=\"\$v\""
-					;;
-			esac
-		done
-	done
-
-	[ -z "$DEBUG" ] || QUIET=
-	STOP=",$STOP,"
+register_array()
+{
+	local v=0
+	__get_type v "$1"
+	__register "$2" "0" $(($v + $VAR_ARR))
 }
 
-post() {
-	if [ -n "${RDSHELL-}" ]; then
-		echo RDSHELL_NOMESSAGE=1 >> /.initrd/initenv
-		return
+__set_var()
+{
+	local n="$1" v="$2" flags
+
+	n="$(replace -s= "[a-z]-." "[A-Z]__" "$n")"
+
+	[ -z "${__vars##* $n:*}" ] ||
+		return 0
+
+	flags="${__vars##* $n:}"
+	flags="${flags%% *}"
+
+	case "$flags" in
+		*$VAR_S)
+			;;
+		*$VAR_N)
+			if ! shell_var_is_number "$v"; then
+				message "$n: $v: invalid number"
+				return 1
+			fi
+			;;
+		*$VAR_B)
+			if [ -n "$v" ]; then
+				if shell_var_is_yes "$v"; then
+					v="1"
+				elif shell_var_is_no "$v"; then
+					v=
+				else
+					message "$n: $v: invalid bool"
+					return 1
+				fi
+			fi
+			;;
+		*)
+			message "$n: $flags: unknown type"
+			return 1
+			;;
+	esac
+
+	# backward compatibility
+	case "$n" in
+		RO) READONLY=1 ;;
+		RW) READONLY=  ;;
+	esac
+
+	if [ $flags -gt $VAR_ARR ]; then
+		local i
+		eval "i=\${$n:-0}"
+		eval "export $n=$(($i + 1))"
+		eval "export $n$i=\"\$v\""
+	else
+		eval "export $n=\"\$v\""
 	fi
-	/lib/initrd/rootdelay &
 }
 
-ignored() {
+ignored()
+{
 	case "$1" in
 		INITLOG_FILE|RUNLEVEL|runlevel)
 			return 0 ;;
@@ -112,9 +129,23 @@ ignored() {
 	return 1
 }
 
-parse() {
+parse()
+{
+	local x __vars=' '
+
+	for x in /etc/initrd/cmdline.d/*; do
+		. "$x"
+	done
+
 	defaults
-	parse_cmdline
+
+	read CMDLINE < /proc/cmdline
+	export CMDLINE
+
+	cmdline_foreach "$CMDLINE" __set_var
+
+	[ -z "$DEBUG" ] || QUIET=
+	STOP=",$STOP,"
 
 	showenv -q |
 	while read l; do
@@ -122,7 +153,13 @@ parse() {
 		[ -z "${s##*[!A-Za-z0-9_]*}" ] || ignored "$s" ||
 			printf 'export %s\n' "$l"
 	done > /.initrd/initenv
-	post
+
+	if [ -n "${RDSHELL-}" ]; then
+		echo RDSHELL_NOMESSAGE=1 >> /.initrd/initenv
+		return
+	fi
+
+	/lib/initrd/rootdelay &
 }
 
 action_shell 'Parsing cmdline arguments:' parse

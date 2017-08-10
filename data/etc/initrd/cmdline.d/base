@@ -1,0 +1,19 @@
+register_array string IP
+register_parameter bool DEBUG
+register_parameter bool QUIET
+register_parameter bool RDSHELL
+register_parameter bool READONLY 1
+register_parameter bool RO
+register_parameter bool ROOTONLY
+register_parameter bool RW
+register_parameter number IPTIMEOUT 30
+register_parameter number PANIC
+register_parameter number ROOTDELAY
+register_parameter string INIT /sbin/init
+register_parameter string RDMODE
+register_parameter string RESCUE_MODULES
+register_parameter string RESUME
+register_parameter string ROOT
+register_parameter string ROOTFLAGS
+register_parameter string ROOTFSTYPE
+register_parameter string STOP

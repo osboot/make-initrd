@@ -1,1 +1,3 @@
-CMDLINE_PARAMS='VGA SPLASH NOSPLASH'
+register_parameter string VGA
+register_parameter bool SPLASH
+register_parameter bool NOSPLASH

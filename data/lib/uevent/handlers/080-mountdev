@@ -12,7 +12,7 @@ handler() {
 }
 
 roflag=-w
-[ -z "$readonly" ] || roflag=-r
+[ -z "$READONLY" ] || roflag=-r
 
 for e in "$eventdir"/mountdev.*; do
 	( . "$e"; handler; ) && done_event "$e" ||:

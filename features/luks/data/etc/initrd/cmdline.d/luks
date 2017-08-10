@@ -1,1 +1,3 @@
-CMDLINE_PARAMS='NO_LUKS LUKS_DEV LUKS_KEY:m'
+register_array string LUKS_KEY
+register_parameter bool NO_LUKS
+register_parameter string LUKS_DEV
