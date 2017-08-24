@@ -131,10 +131,18 @@ ignored()
 
 parse()
 {
-	local x __vars=' '
+	local x __vars=' ' CMDLINE_PARAMS=
 
 	for x in /etc/initrd/cmdline.d/*; do
 		. "$x"
+		# backward compatibility
+		for n in $CMDLINE_PARAMS; do
+			case "$n" in
+				*:m) register_array string "${n%:m}" ;;
+				*)   register_parameter string "$n"  ;;
+			esac
+		done
+		CMDLINE_PARAMS=
 	done
 
 	defaults
