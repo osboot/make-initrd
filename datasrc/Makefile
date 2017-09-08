@@ -19,6 +19,7 @@ bin_PROGS = \
 	$(out_bindir)/showenv
 
 sbin_PROGS = \
+	$(out_sbindir)/container \
 	$(out_sbindir)/ueventd \
 	$(out_sbindir)/monotonic-timestamp
 
@@ -28,6 +29,22 @@ halt_SRCS = halt.c
 replace_SRCS = replace.c
 showenv_SRCS = showenv.c
 
+container_SRCS = \
+	container.c \
+	container-caps.c \
+	container-common.c \
+	container-env.c \
+	container-epoll.c \
+	container-fds.c \
+	container-hooks.c \
+	container-mknod.c \
+	container-mount.c \
+	container-netns.c \
+	container-ns.c \
+	container-userns.c
+
+container_LIBS = $(shell pkg-config --libs libcap)
+
 DEPS = $(call get_depends,$(bin_PROGS) $(sbin_PROGS),)
 OBJS = $(call get_objects,$(bin_PROGS) $(sbin_PROGS),)
 
@@ -36,6 +53,9 @@ all: $(bin_PROGS) $(sbin_PROGS)
 prepare:
 	$(MKDIR_P) -- $(out_bindir)
 	$(MKDIR_P) -- $(out_sbindir)
+
+$(out_sbindir)/container: prepare $(call get_objects,container)
+	$(LINK) $(realpath $^) -o $@ $(container_LIBS)
 
 $(out_sbindir)/ueventd: prepare $(call get_objects,ueventd)
 	$(LINK) $(realpath $^) -o $@

@@ -1,0 +1,61 @@
+#!/bin/sh
+
+. /.initrd/initenv
+
+[ "${RDMODE-}" = 'live' ] && [ -n "${RDCONTAINER-}" ] ||
+	exit 0
+
+. uevent-sh-functions
+. rdshell-sh-functions
+. shell-git-config
+
+configdir=/etc/container
+
+mountfs()
+{
+	local eof fsdev fsdir dummy
+	eof=
+	while [ -z "$eof" ]; do
+		read fsdev fsdir dummy ||
+			eof=1
+
+		[ -n "$fsdev" ] ||
+			continue
+
+		if [ -n "${ROOTONLY-}" ]; then
+			[ "$fsdir" = "$rootmnt" ] ||
+				continue
+		fi
+
+		[ "$fsdir" = "$rootdir" ] || [ -z "${fsdir##$rootdir/*}" ] ||
+			continue
+
+		if [ ! -d "$fsdir" ]; then
+			message "$fsdir: Does not exist"
+			return 1
+		fi
+
+		if ! mountpoint -q "$fsdir"; then
+			message "$fsdir: Not mounted"
+			return 1
+		fi
+	done < /etc/fstab
+}
+
+for dir in "$configdir"/*; do
+	[ -d "$dir" ] ||
+		continue
+
+	name="${dir##*/}"
+	git_config_get rootdir "$configdir/config.ini" "container.$name.rootdir"
+
+	if [ -n "${ROOTONLY-}" ]; then
+		[ "$rootdir" = "$rootmnt" ] ||
+			continue
+	fi
+
+	[ -n "$rootdir" ] && mountfs ||
+		continue
+
+	container-run "$name" &
+done

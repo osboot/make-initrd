@@ -40,11 +40,19 @@ MountDev()
 MountVirtualFs()
 {
 	local msg="Mounting filesystem"
+	local f spec dest vtype opts
 
 	action_shell "$msg [/dev]:" MountDev
-	action "$msg [/proc]:" mount -t proc  -o nodev,noexec,nosuid proc  /proc
-	action "$msg [/sys]:"  mount -t sysfs -o nodev,noexec,nosuid sysfs /sys
-	action "$msg [/run]:"  mount -t tmpfs -o mode=755            runfs /run
+
+	for f in /etc/mount.d/*.conf; do
+		[ -f "$f" ] ||
+			break
+		while read spec dest vtype opts; do
+			[ -z "${spec##\#*}" ] ||
+				mountpoint -q "$dest" ||
+				action "$msg [$dest]:" mount -t "$vtype" ${opts:+-o "$opts"} "$spec" "$dest"
+		done < "$f"
+	done
 
 	while read l t; do
 		[ -e "$l" ] || ln -s "$t" "$l"

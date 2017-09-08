@@ -1,0 +1,138 @@
+#!/bin/sh -efu
+
+. shell-error
+. shell-var
+. shell-quote
+. shell-git-config
+
+prefix=container
+container=/sbin/container
+configdir=/etc/container
+
+cfg="$configdir/config.ini"
+
+split_comma()
+{
+	local s IFS=', 	'
+	while read s; do
+		printf '%s\n' $s
+	done
+}
+
+join_comma()
+{
+	local a res=
+	for a; do
+		res="$res,$a"
+	done
+	printf '%s' "${res#,}"
+}
+
+get_bool()
+{
+	local location rc=1 v
+	for location; do
+		git_config_location_exists "$cfg" "$location" ||
+			continue
+		git_config_get v "$cfg" "$location"
+		shell_var_is_yes "$v" && rc=0 || rc=1
+	done
+	return $rc
+}
+
+exit_handler()
+{
+	local rc=$1
+	trap - EXIT
+	[ ! -d "$cfg_lockdir" ] || rmdir -- "$cfg_lockdir/$name"
+	exit $rc
+}
+
+if [ "$#" != 1 ]; then
+	cat <<-EOF
+	Usage: $PROG <container-name>
+	EOF
+	exit 0
+fi
+
+name="$1"; shift
+
+[ -s "$cfg" ] ||
+	fatal "config file not found: $cfg"
+
+git_config_get cfg_lockdir "$cfg" "global.lockdir"
+
+if [ -n "$cfg_lockdir" ]; then
+	mkdir -m700 "$cfg_lockdir/$name" >/dev/null 2>&1 ||
+		exit 0
+	trap 'exit_handler $?' EXIT
+	trap 'exit_handler  1' HUP PIPE INT QUIT TERM
+fi
+
+if [ -s /.initrd/initenv ]; then
+	. /.initrd/initenv
+	read initargs < /.initrd/initargs
+fi
+
+git_config_get cfg_rootdir "$cfg" "container.$name.rootdir"
+git_config_get cfg_uid     "$cfg" "container.$name.uid"
+git_config_get cfg_gid     "$cfg" "container.$name.gid"
+git_config_get cfg_fstab   "$cfg" "container.$name.fstab"
+git_config_get cfg_envfile "$cfg" "container.$name.envfile"
+git_config_get cfg_init    "$cfg" "container.$name.init"
+git_config_get cfg_stdout  "$cfg" "container.$name.stdout"
+git_config_get cfg_stdin   "$cfg" "container.$name.stdin"
+git_config_get cfg_restart "$cfg" "container.$name.restart"
+git_config_get cfg_prerun  "$cfg" "container.$name.prerun"
+git_config_get cfg_postrun "$cfg" "container.$name.postrun"
+
+cfg_cap_add="$(git_config_list "$cfg" "container.$name.cap-add" |split_comma)"
+cfg_cap_drop="$(git_config_list "$cfg" "container.$name.cap-drop" |split_comma)"
+cfg_unshare="$(git_config_list "$cfg" "container.$name.unshare" |split_comma)"
+
+args=
+
+! get_bool 'global.verbose' "container.$name.verbose" ||
+	args="$args -v"
+
+[ -z "$cfg_uid"     ] || args="$args --uid='$cfg_uid'"
+[ -z "$cfg_gid"     ] || args="$args --gid='$cfg_gid'"
+[ -z "$cfg_fstab"   ] || args="$args --mount='$cfg_fstab'"
+[ -z "$cfg_envfile" ] || args="$args --setenv='$cfg_envfile'"
+
+value="$(join_comma $cfg_unshare)"
+[ -z "$value" ] || args="$args --unshare=$value"
+
+value="$(join_comma $cfg_cap_drop)"
+[ -z "$value" ] || args="$args --cap-drop=$value"
+
+value="$(join_comma $cfg_cap_add)"
+[ -z "$value" ] || args="$args --cap-add=$value"
+
+quote_shell_args args "$args"
+eval "set -- $args"
+
+[ -z "$cfg_stdin" ] && [ -z "$cfg_stdout" ] ||
+	eval exec ${cfg_stdin:+<"$cfg_stdin"} ${cfg_stdout:+>"$cfg_stdout" 2>&1}
+
+i=0
+while [ "$i" != 5 ]; do
+	[ -z "$cfg_prerun" ] || "$cfg_prerun" ||:
+
+	rc=0
+	{
+		eval "$container" "$@" -- "$cfg_rootdir" $cfg_init
+	} || rc=$?
+
+	[ -z "$cfg_postrun" ] || "$cfg_postrun" ||:
+
+	[ $rc != 0 ] ||
+		i=0
+
+	[ -n "$cfg_restart" ] ||
+		break
+
+	i=$(($i+1))
+done
+
+exit $rc
