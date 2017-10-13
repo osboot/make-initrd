@@ -22,5 +22,5 @@ run() {
 	udevadm trigger --type=devices    --action=add >/dev/null 2>&1
 
 	# Load user-defined modules
-	load_modules postudev
+	load_modules postudev ||:
 }
