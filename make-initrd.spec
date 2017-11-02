@@ -1,5 +1,5 @@
 Name: make-initrd
-Version: 0.8.14
+Version: 0.8.15
 Release: alt1.M80P.1
 
 Summary: Creates an initramfs image
@@ -112,6 +112,16 @@ AutoReq: noshell, noshebang
 %description mdadm
 Mdadm module for %name
 
+%package ucode
+Summary: CPU microcode module for %name
+Group: System/Base
+Requires: %name = %version-%release
+Requires: iucode_tool, firmware-intel-ucode, linux-firmware
+AutoReq: noshell, noshebang
+
+%description ucode
+CPU microcode autoloading module for %name
+
 %prep
 %setup -q
 
@@ -144,6 +154,7 @@ fi
 %exclude %_datadir/%name/features/multipath
 %exclude %_datadir/%name/features/plymouth
 %exclude %_datadir/%name/features/mdadm
+%exclude %_datadir/%name/features/ucode
 %doc README.ru
 
 %files devmapper
@@ -167,7 +178,13 @@ fi
 %files mdadm
 %_datadir/%name/features/mdadm
 
+%files ucode
+%_datadir/%name/features/ucode
+
 %changelog
+* Thu Nov 02 2017 Sergey V Turchin <zerg@altlinux.org> 0.8.15-alt1.M80P.1
+- Backport ucode feature for early loading microcode.
+
 * Fri Oct 13 2017 Anton V. Boyarshinov <boyarsh@altlinux.org> 0.8.14-alt1.M80P.1
 - ignore load_modules return (there are some warnings, poisioning 
   return code of modprobe) (Closes: #32749)
