@@ -1,0 +1,91 @@
+#!/bin/sh -efu
+
+. sh-functions
+
+# to be sure that microcode loading supported by kernel
+egrep -qs "^CONFIG_MICROCODE(|_INTEL|_AMD)=[my]" "$KERNEL_CONFIG" ||
+	fatal "Microcode loading support is missing in kernel"
+
+IUCODE_BIN=/usr/sbin/iucode_tool
+
+cpu="$(sed -r -n -e '1,/^processor[[:cntrl:]]\:.*/ d' -e '/^model[[:space:]]+[[:cntrl:]]\:.*/,$ d' -e 's/.*[[:cntrl:]]\:[[:space:]](.*)/\1/ip' /proc/cpuinfo)"
+cpu_vendor=${cpu_vendor:-}
+cpu_family=${cpu_family:-}
+if [ -n "$cpu" ]; then
+	cpu_vendor="${cpu%%
+*}"
+	cpu_family="${cpu##*
+}"
+fi
+
+prep_early_firmware()
+{
+	local fw_path fw_file= fw="$1"
+	shift
+
+	for fw_path in ${FIRMWARE_DIRS:-/lib/firmware}; do
+		if [ -f "$fw_path/$fw" ]; then
+			fw_file="$fw_path/$fw"
+			break
+		fi
+	done
+
+	[ -n "$fw_file" ] ||
+		fatal "$fw not found"
+
+	cd "$workdir"
+	mkdir -p kernel/x86/microcode
+	cp ${VERBOSE:+-v} -- "$fw_file" kernel/x86/microcode/"$cpu_vendor".bin
+	find ./kernel | cpio -o -H newc >"$workdir"/ucode.cpio && \
+	    rm -rf -- kernel
+
+	return $?
+}
+
+prep_amd_ucode()
+{
+	local family ucode_file=
+
+	[ -z "$cpu_family" ] || family="$(printf '%x' "$cpu_family")"
+	[ "$family" -ge 15 ] && \
+		ucode_file=amd-ucode/microcode_amd_fam"$family"h.bin || \
+		ucode_file=amd-ucode/microcode_amd.bin
+
+	prep_early_firmware "$ucode_file" && return 0
+
+	return 1
+}
+
+prep_intel_ucode()
+{
+	# microcode loading supported only for CPUs >= PentiumPro
+	[ -n "$cpu_family" -a "$cpu_family" -ge 6 ] || return 1
+
+	[ -x "$IUCODE_BIN" ] ||
+		return 1
+
+	local fw_path
+	for fw_path in ${FIRMWARE_DIRS:-/lib/firmware}; do
+		if [ -d "$fw_path"/intel-ucode ]; then
+			$IUCODE_BIN \
+					--quiet \
+					--scan-system \
+					--write-earlyfw="$workdir"/ucode.cpio \
+					"$fw_path"/intel-ucode && \
+				return 0 ||:
+		fi
+	done
+
+	return 1
+}
+
+case "$cpu_vendor" in
+	AuthenticAMD) prep_amd_ucode
+		;;
+	GenuineIntel) prep_intel_ucode
+		;;
+	*) exit 0
+		;;
+esac
+
+exit $?
