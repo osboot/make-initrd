@@ -8,7 +8,15 @@ egrep -qs "^CONFIG_MICROCODE(|_INTEL|_AMD)=[my]" "$KERNEL_CONFIG" ||
 
 IUCODE_BIN=/usr/sbin/iucode_tool
 
-cpu="$(sed -r -n -e '1,/^processor[[:cntrl:]]\:.*/ d' -e '/^model[[:space:]]+[[:cntrl:]]\:.*/,$ d' -e 's/.*[[:cntrl:]]\:[[:space:]](.*)/\1/ip' /proc/cpuinfo)"
+cpu_vendor=
+cpu_family=
+
+cpu="$(sed -r -n \
+	-e '1,/^processor[[:cntrl:]]\:.*/ d' \
+	-e '/^model[[:space:]]+[[:cntrl:]]\:.*/,$ d' \
+	-e 's/.*[[:cntrl:]]\:[[:space:]](.*)/\1/ip' \
+	/proc/cpuinfo
+)"
 if [ -n "$cpu" ]; then
 	cpu_vendor="${cpu%%
 *}"
