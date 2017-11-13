@@ -20,4 +20,4 @@ Patches are welcome.
 - [kinit-utils](http://git.altlinux.org/gears/k/kinit-utils.git) is a set of tools from klibc ported to glibc. These tools have broad enough functionality and small size.
 These utilities are used by some features (setup network, NFS root, raid autodetect).
 
-- [SysV init](http://savannah.nongnu.org/projects/sysvinit) used inside initramfs. It was chosen because it is small, simple and able to execute instead of self any other program.
+- [SysV init](http://savannah.nongnu.org/projects/sysvinit) used inside initramfs. It was chosen because it is small, simple and able to execute any other program instead of self.
