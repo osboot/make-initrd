@@ -97,7 +97,7 @@ append()
 parse_services()
 {
 	local f name l block value level type vname
-	local provides S_requires S_suggests S_level K_requires K_suggests K_level
+	local provides S_requires S_suggests S_level S_before K_requires K_suggests K_level K_before
 
 	verbose "Parsing services"
 
@@ -110,8 +110,8 @@ parse_services()
 			service="${f##*/}"
 			provides=
 
-			S_requires= S_suggests= S_level=
-			K_requires= K_suggests= K_level=
+			S_requires= S_suggests= S_level= S_before=
+			K_requires= K_suggests= K_level= K_before=
 
 			while read l; do
 				vname=
@@ -131,6 +131,7 @@ parse_services()
 					'# Should-Start:'*)   vname='S_suggests' ;;
 					'# Required-Stop:'*)  vname='K_requires' ;;
 					'# Should-Stop:'*)    vname='K_suggests' ;;
+					'# X-Start-Before:'*) vname='S_before'   ;;
 					'# Default-Stop:'*)   vname=             ;;
 				esac
 
@@ -149,6 +150,7 @@ parse_services()
 			verbose "Service with LSB header: $f"
 			verbose "   Levels   (S):$S_level"
 			verbose "   Provides    :$provides"
+			verbose "   Before   (S):$S_before"
 			verbose "   Requires (S):$S_requires"
 			verbose "   Requires (K):$K_requires"
 			verbose "   Suggests (S):$S_suggests"
@@ -163,6 +165,7 @@ parse_services()
 			eval "rc_${name}_provides=\"\$provides\""
 
 			for type in S K; do
+				eval "rc_${name}_${type}_before=\"\$${type}_before\""
 				eval "rc_${name}_${type}_requires=\"\$${type}_requires\""
 				eval "rc_${name}_${type}_suggests=\"\$${type}_suggests\""
 			done
@@ -202,7 +205,7 @@ print_list()
 
 process_suggests()
 {
-	local level names deps requires suggests name req
+	local level type names deps requires suggests name req
 	level="$1"; shift
 	type="$1"; shift
 
@@ -219,6 +222,32 @@ process_suggests()
 		for req in $suggests; do
 			[ -n "${deps##* $req *}" ] ||
 				append requires $req
+		done
+
+		eval "rc_${name}_${type}_requires=\"\$requires\""
+	done
+}
+
+process_before()
+{
+	local level type names before provides requires name req reqname dep
+	level="$1"; shift
+	type="$1"; shift
+
+	eval "names=\"\$rc${level}_${type}_names\""
+
+	for name in $names; do
+		eval "provides=\"\$rc_${name}_provides\""
+		eval "requires=\"\$rc_${name}_${type}_requires\""
+
+		for req in $names; do
+			eval "reqname=\"\$rc_${req}\""
+			eval "before=\"\$rc_${req}_${type}_before\""
+
+			for dep in $before; do
+				[ -n "${provides##* $dep *}" ] ||
+					append requires $reqname
+			done
 		done
 
 		eval "rc_${name}_${type}_requires=\"\$requires\""
@@ -367,6 +396,8 @@ process_runlevel()
 
 	process_suggests "$level" S
 	process_suggests "$level" K
+
+	process_before "$level" S
 
 	sort_services "$level" S
 	sort_services "$level" K
