@@ -47,7 +47,7 @@ INITLOG_ARGS=
 
 start_daemon()
 {
-# Process options.
+	# Process options.
 	local ANNOUNCE=1 BACKGROUND= BASENAME= CHECK= CMDNAME= DISPNAME= EXPECT= FLAGS= LOCKFILE= MAKE_PIDFILE= NICE=0 PIDFILE= STATUS= SU= WHICH=
 
 	while [ "$1" != "${1##-}" -o "$1" != "${1##+}" ]; do
@@ -98,7 +98,6 @@ start_daemon()
 		shift
 	done
 
-# We need the absolute pathname.
 	if [ -z "$1" ]; then
 		msg_usage "start_daemon [options]... {program}..."
 		return 1
@@ -112,6 +111,7 @@ start_daemon()
 		return 1
 	fi
 
+	# We need the absolute pathname.
 	[ -z "$CHECK" ] || CHECK="$(absolute "$CHECK")" || return 1
 	WHICH="$(absolute "$1")" || return 1
 	if [ -n "$CMDNAME" ]; then
@@ -125,11 +125,11 @@ start_daemon()
 	[ -n "$BASENAME" ] || return 1
 	[ -n "$DISPNAME" ] || DISPNAME="$BASENAME"
 
-# Use a safe umask
+	# Use a safe umask
 	#umask 077
 
-# Don't export these because they may be invalid under another UID and the
-# directories may be gone while the daemon is still running.
+	# Don't export these because they may be invalid under another UID and the
+	# directories may be gone while the daemon is still running.
 	local HOME= TMP= TMPDIR=
 
 	FLAGS="--start -N $NICE"
@@ -144,21 +144,21 @@ start_daemon()
 	[ -z "$BACKGROUND" ] || FLAGS="$FLAGS $BACKGROUND"
 	[ -z "$MAKE_PIDFILE" ] || FLAGS="$FLAGS $MAKE_PIDFILE"
 
-# Is it running at all?
+	# Is it running at all?
 	start-stop-daemon $FLAGS --test > /dev/null
 	STATUS=$?
 
 	if [ $STATUS != 0 ]; then
 		[ -z "$ANNOUNCE" ] || msg_already_running "$DISPNAME"
 		passed "$BASENAME startup"
-		echo
+		echo_newline
 		return $STATUS
 	fi
 
-# Announce the action.
+	# Announce the action.
 	[ -z "$ANNOUNCE" ] || msg_starting "$DISPNAME"
 
-# Actually start the daemon.
+	# Actually start the daemon.
 	$INITLOG $INITLOG_ARGS -n "$BASENAME" -c "start-stop-daemon $FLAGS -- $*"
 	STATUS=$?
 
@@ -169,17 +169,17 @@ start_daemon()
 	else
 		failure "$BASENAME startup"
 	fi
-	echo
+	echo_newline
 
 	return $STATUS
 }
 
 stop_daemon()
 {
-# Process options.
+	# Process options.
 	local ANNOUNCE=1 BASENAME= CMDNAME= DEFAULT=true DISPNAME= EXPECT= FLAGS= HUPSIG= LOCKFILE= MESSAGE= NAME= PIDFILE= RETRY= SIGNAL= STATUS= WHICH=
 
-# start-stop-daemon wants a signal number.
+	# start-stop-daemon wants a signal number.
 	SIGNAL="$(/bin/kill -l TERM)" || SIGNAL=15
 	HUPSIG="$(/bin/kill -l HUP)" || HUPSIG=1
 	while [ $# -ge 1 ]; do
@@ -222,7 +222,7 @@ stop_daemon()
 			DEFAULT=false
 			ANNOUNCE=
 			;;
-# Allow the process name to be in any argument for Red Hat compatibility.
+		# Allow the process name to be in any argument for Red Hat compatibility.
 		*)
 			[ -z "$NAME" ] || return 1
 			NAME="$1"
@@ -231,7 +231,7 @@ stop_daemon()
 		shift
 	done
 
-# We need the absolute pathname for /proc/*/exe checks.
+	# We need the absolute pathname for /proc/*/exe checks.
 	if [ -z "$NAME" ]; then
 		msg_usage "stop_daemon [options]... {program}..."
 		return 1
@@ -243,7 +243,7 @@ stop_daemon()
 
 	[ -n "$DISPNAME" ] || DISPNAME="$BASENAME"
 
-# Try to guess the PID file if one isn't specified manually.
+	# Try to guess the PID file if one isn't specified manually.
 	if [ -z "$PIDFILE" ]; then
 		PIDFILE="/var/run/$BASENAME.pid"
 		[ -f "$PIDFILE" ] || PIDFILE=
@@ -269,7 +269,7 @@ stop_daemon()
 		MESSAGE="sending signal $SIGNAL to $BASENAME"
 	fi
 
-# Is it running at all?
+	# Is it running at all?
 	start-stop-daemon $FLAGS --test > /dev/null
 	STATUS=$?
 
@@ -277,19 +277,19 @@ stop_daemon()
 		[ -z "$ANNOUNCE" ] || msg_not_running "$DISPNAME"
 		[ -z "$LOCKFILE" ] || rm -f "$LOCKFILE"
 		passed "$MESSAGE"
-		echo
+		echo_newline
 		return $STATUS
 	fi
 
-# Announce the action.
+	# Announce the action.
 	[ -z "$ANNOUNCE" ] || msg_stopping "$DISPNAME"
 
-# Actually tell the daemon to stop.
+	# Actually tell the daemon to stop.
 	start-stop-daemon $FLAGS --signal "$SIGNAL"
 	STATUS=$?
 
-# We really want to be sure the daemon is dead, unless we're sending a
-# custom signal.
+	# We really want to be sure the daemon is dead, unless we're sending a
+	# custom signal.
 	if [ "$DEFAULT" = true -a $STATUS -eq 0 ]; then
 		sleep 0.1
 		if start-stop-daemon $FLAGS --test > /dev/null; then
@@ -307,7 +307,7 @@ stop_daemon()
 	else
 		failure "$MESSAGE"
 	fi
-	echo
+	echo_newline
 
 	return $STATUS
 }
@@ -320,7 +320,7 @@ status()
 		return 1
 	fi
 
-# Process options.
+	# Process options.
 	local BASENAME= CMDNAME= DISPNAME= EXPECT= FLAGS= LOCKFILE= PIDFILE= WHICH=
 
 	while [ "$1" != "${1##-}" ]; do
@@ -350,7 +350,7 @@ status()
 		shift
 	done
 
-# We need the absolute pathname for /proc/*/exe checks.
+	# We need the absolute pathname for /proc/*/exe checks.
 	if [ -z "$1" ]; then
 		msg_usage "status [options]... {program}"
 		return 1
@@ -362,7 +362,7 @@ status()
 
 	[ -n "$DISPNAME" ] || DISPNAME="$BASENAME"
 
-# Try to guess the PID file if one isn't specified manually.
+	# Try to guess the PID file if one isn't specified manually.
 	if [ -z "$PIDFILE" ]; then
 		PIDFILE="/var/run/$BASENAME.pid"
 		test -f "$PIDFILE" || PIDFILE=
@@ -375,7 +375,7 @@ status()
 		return 1
 	fi
 
-# Actually determine the status.
+	# Actually determine the status.
 	FLAGS="--stop --test"
 	[ -z "$CMDNAME" ] &&
 		FLAGS="$FLAGS --exec $WHICH --user-fallback-to-name" ||
@@ -383,7 +383,7 @@ status()
 	[ -z "$PIDFILE" ] || FLAGS="$FLAGS --pidfile $PIDFILE"
 	start-stop-daemon $FLAGS >/dev/null
 
-# Report it.
+	# Report it.
 	if [ $? -eq 0 ]; then
 		echo "$DISPNAME is running"
 		return 0
@@ -411,6 +411,10 @@ echo_msg()
 	printf '%s ' "$*"
 }
 
+echo_newline()
+{
+	echo
+}
 
 echo_success()
 {
@@ -465,7 +469,7 @@ action()
 	$INITLOG $INITLOG_ARGS -c "$*"
 	local rc=$?
 	[ $rc -eq 0 ] && success "$STRING" || failure "$STRING"
-	echo
+	echo_newline
 	return $rc
 }
 
@@ -478,7 +482,7 @@ action_shell()
 	"$@"
 	rc=$?
 	[ $rc -eq 0 ] && success "$STRING" || failure "$STRING"
-	echo
+	echo_newline
 	return $rc
 }
 
