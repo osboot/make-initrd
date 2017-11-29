@@ -65,7 +65,7 @@ handler() {
 		exit 0
 
 	local rc=0 keyfile=
-	if [ -n "${LUKS_KEY-}" ]; then
+	if [ -n "$LUKS_KEY" ] && [ "$LUKS_KEY" != 0 ]; then
 		findkey ||
 			rc="$?"
 		[ "$rc" != 0 ] ||

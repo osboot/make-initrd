@@ -13,7 +13,7 @@
 
 . /.initrd/initenv
 
-[ -n "$LUKS_KEY" ] || exit 0
+[ -n "$LUKS_KEY" ] && [ "$LUKS_KEY" != 0 ] || exit 0
 
 i=0
 while [ "$i" -lt "$LUKS_KEY" ]; do

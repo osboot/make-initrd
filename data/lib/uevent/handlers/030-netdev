@@ -47,7 +47,7 @@ interface() {
 }
 
 handler() {
-	[ -n "$IP" ] ||
+	[ -n "$IP" ] && [ "$IP" != 0 ] ||
 		return 0
 
 	i=0
