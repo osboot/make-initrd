@@ -55,7 +55,12 @@ gen_fstab()
 			esac
 
 			n=$i
-			[ "$path" = / ] && n=0 || i=$(($i+1))
+			if [ "$path" = / ]; then
+				n=0
+				path=
+			else
+				i=$(($i+1))
+			fi
 
 			convert_dev ndev "$dev"
 

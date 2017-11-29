@@ -29,7 +29,7 @@ mountfs()
 			continue
 
 		if [ -n "${ROOTONLY-}" ]; then
-			[ "$fsdir" = "$rootmnt/" ] ||
+			[ "$fsdir" = "$rootmnt" ] ||
 				continue
 		fi
 
