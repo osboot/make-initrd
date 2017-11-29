@@ -1,0 +1,59 @@
+#!/bin/sh -efu
+
+. shell-error
+. sh-functions
+
+mkdir -p -- "$rootdir"/etc
+
+process_mpoint() {
+	local mpoint="$1"
+	local t_fsname= t_fstype= t_opts=
+
+	for f in "${FSTAB:-/etc/fstab}" "${PROC_MOUNTS:-/proc/mounts}"; do
+		[ -f "$f" ] ||
+			continue
+
+		local fsname fsdir fstype opts freq passno
+		local device_list
+		local eof=
+		while [ -z "$eof" ]; do
+			read fsname fsdir fstype opts freq passno ||
+				eof=1
+
+			[ -n "${fsname##\#*}" ] && [ "$fsdir" = "$mpoint" ] && [ "$fstype" != 'rootfs' ] ||
+				continue
+
+			case "$fsname" in
+				/*)
+					t_fsname="$(blkid -c /dev/null -o value -s UUID "$fsname")" ||:
+					[ -n "$t_fsname" ] &&
+						t_fsname="UUID=$t_fsname" ||
+						t_fsname="$fsname"
+					;;
+				*)
+					t_fsname="$fsname"
+					;;
+			esac
+
+			t_fstype="$fstype"
+			t_opts="$opts"
+
+			break 2
+		done < "$f"
+	done
+
+	[ -n "$t_fsname" ] ||
+		fatal "Unable to find device for '$mpoint' mount point"
+
+	printf '%s\t%s\t%s\t%s 0 0\n' "$t_fsname" "$mpoint" "$t_fstype" "$t_opts"
+}
+
+pass=' '
+for m in ${MOUNTPOINTS-}; do
+	[ -n "${pass##* $m *}" ] ||
+		continue
+	process_mpoint "$m"
+	pass="$pass$m "
+done >"$rootdir"/etc/fstab
+
+sort -uo "$rootdir"/etc/fstab "$rootdir"/etc/fstab

@@ -66,5 +66,6 @@ for m in ${MOUNTPOINTS-}; do
 	[ -n "${pass##* $m *}" ] ||
 		continue
 	process_mpoint "$m"
+	guess_feature rootfs
 	pass="$pass$m "
 done

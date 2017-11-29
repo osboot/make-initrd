@@ -10,7 +10,6 @@ mkdir $verbose -p -- \
 	./.initrd/uevent-udev/.tmp \
 	./dev \
 	./etc/initrd \
-	./etc/fstab.d \
 	./etc/modprobe.d \
 	./etc/sysconfig \
 	./etc/udev/rules.d \
