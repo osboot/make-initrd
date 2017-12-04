@@ -1,6 +1,6 @@
 Name: make-initrd
 Version: 0.8.15
-Release: alt1.M80P.1
+Release: alt1.M80P.2
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -117,6 +117,7 @@ Summary: CPU microcode module for %name
 Group: System/Base
 Requires: %name = %version-%release
 Requires: iucode_tool, firmware-intel-ucode, linux-firmware
+Requires: cpio
 AutoReq: noshell, noshebang
 
 %description ucode
@@ -182,6 +183,9 @@ fi
 %_datadir/%name/features/ucode
 
 %changelog
+* Mon Dec 04 2017 Sergey V Turchin <zerg@altlinux.org> 0.8.15-alt1.M80P.2
+- fix requires
+
 * Thu Nov 02 2017 Sergey V Turchin <zerg@altlinux.org> 0.8.15-alt1.M80P.1
 - Backport ucode feature for early loading microcode.
 
