@@ -24,6 +24,7 @@ prefix=
 destdir=
 dryrun=
 force=
+logfile=
 
 print_version()
 {
@@ -53,6 +54,7 @@ show_help()
 	   --dry-run                 don't do nothing;
 	   -f, --force               overwrite destination file if exists;
 	   -D, --debug               print more information about file dependencies;
+	   -l, --log=FILE            white log about what was copied;
 	   -r, --remove-prefix=STR   ignore prefix in path;
 	   -v, --verbose             print a message for each action;
 	   -V, --version             output version information and exit;
@@ -84,7 +86,7 @@ debug()
 	message "$@"
 }
 
-TEMP=`getopt -n $PROG -o 'f,r:,h,D,v,V' -l 'dry-run,force,remove-prefix:,help,debug,verbose,version' -- "$@"` ||
+TEMP=`getopt -n $PROG -o 'f,l:,r:,h,D,v,V' -l 'dry-run,force,log:,remove-prefix:,help,debug,verbose,version' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -92,6 +94,9 @@ while :; do
 	case "$1" in
 		-r|--remove-prefix) shift
 			prefix="$1"
+			;;
+		-l|--log) shift
+			logfile="$1"
 			;;
 		--dry-run)
 			dryrun=:
@@ -325,6 +330,11 @@ done < "$cur_manifest" > "$new_manifest"
 LC_ALL=C sort -u -d -k1,2 -o "$res_manifest" \
 	"$new_manifest" \
 	"$cur_manifest"
+
+if [ -n "$logfile" ]; then
+	cat "$res_manifest" >> "$logfile"
+	LC_ALL=C sort -uo "$logfile" "$logfile"
+fi
 
 if [ -n "${SHOW_MANIFEST-}" ]; then
 	cat "$res_manifest"

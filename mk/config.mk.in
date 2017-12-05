@@ -30,6 +30,7 @@ SCRIPTDIR	?= @PREFIX@/scripts.d
 FEATURESDIR	?= @PREFIX@/features
 DETECTDIR	?= @PREFIX@/guess
 KMODDEPSDIR	?= @PREFIX@/kmodule.deps.d
+STATEDIR	?= @STATEDIR@
 BOOTDIR		?= /boot
 SYSCONFDIR	?= /etc
 SYSFS_PATH	?= /sys

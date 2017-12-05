@@ -1,3 +1,3 @@
 #!/bin/sh -efu
 
-exec initrd-cp "$@"
+exec initrd-cp ${IMAGEFILES:+--log="$IMAGEFILES"} "$@"
