@@ -48,13 +48,20 @@ readkey() {
 	local keyfile="$1"
 	[ -s "$keyfile" ] ||
 		return 0
-	{ cat "$keyfile"; printf .; } |
-		sed \
-			-e ':a'      \
-			-e 'N'       \
-			-e '$!ba'    \
-			-e 's/\.$//' \
-			-e 's/\n$//'
+	case "${LUKS_KEY_FORMAT:-plain}" in
+		plain)
+			{ cat "$keyfile"; printf .; } |
+			sed \
+				-e ':a'      \
+				-e 'N'       \
+				-e '$!ba'    \
+				-e 's/\.$//' \
+				-e 's/\n$//'
+			;;
+		raw)
+			cat "$keyfile"
+			;;
+	esac
 }
 
 handler() {
