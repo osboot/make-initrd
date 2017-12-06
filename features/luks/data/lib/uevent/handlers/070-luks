@@ -74,19 +74,34 @@ handler() {
 	! dmsetup info "$nameluks" >/dev/null 2>&1 ||
 		exit 0
 
+	luks_discard=
+	if [ -n "$LUKS_DISCARD" ] && [ "$LUKS_DISCARD" != 0 ]; then
+		i=0
+		while [ "$i" -lt "$LUKS_DISCARD" ]; do
+			luksdev=$(eval "echo \"\$LUKS_DISCARD$i\"")
+			i=$(($i + 1))
+			realdev=
+			get_dev realdev "$luksdev"
+			if [ "$realdev" = "$LUKS_ROOT" ]; then
+				luks_discard=--allow-discards
+				break
+			fi
+		done
+	fi
+
 	local rc=0 keyfile=
 	if [ -n "$LUKS_KEY" ] && [ "$LUKS_KEY" != 0 ]; then
 		findkey ||
 			rc="$?"
 		[ "$rc" != 0 ] ||
-			{ readkey "$keyfile" |cryptsetup -d- luksOpen "$LUKS_ROOT" "$nameluks"; } ||
+			{ readkey "$keyfile" |cryptsetup $luks_discard -d- luksOpen "$LUKS_ROOT" "$nameluks"; } ||
 			rc="$?"
 		freekey
 	else
 		# WARNING: Wait decrypt forever!
 		rc=2
 		while [ "$rc" = 2 ]; do
-			cryptsetup luksOpen "$LUKS_ROOT" "$nameluks"
+			cryptsetup $luks_discard luksOpen "$LUKS_ROOT" "$nameluks"
 			rc="$?"
 		done
 	fi
