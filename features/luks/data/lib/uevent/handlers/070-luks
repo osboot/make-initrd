@@ -12,7 +12,7 @@ freekey() {
 }
 
 findkey() {
-	local path keydev luksdev
+	local path keydev luksdev prefix
 
 	[ -f /etc/luks.keys ] ||
 		return 2
@@ -27,14 +27,17 @@ findkey() {
 			mkdir -p -- "$mnt"
 			mount -r "$keydev" "$mnt" ||
 				return 1
+			prefix=$mnt
+		else
+			prefix=
 		fi
 
-		if [ ! -f "$mnt/$path" ]; then
+		if [ ! -f "$prefix/$path" ]; then
 			printf "ERROR(luks): $path: keyfile not found.\n" >&2
 			return 1
 		fi
 
-		keyfile="$mnt/$path"
+		keyfile="$prefix/$path"
 		printf "Found keyfile '%s' for '%s' encrypted partition.\n" "$path" "${LUKS_ROOT#/dev/}"
 		return 0
 
