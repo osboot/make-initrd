@@ -23,7 +23,7 @@ read_stream(const char *compress, struct stream *arv, struct result *res)
 		if (decompress) {
 			unsigned char *unpack = NULL;
 			unsigned long unpack_size = 0;
-			unsigned long readed = 0;
+			unsigned long long readed = 0;
 
 			//printf("Detected %s compressed data\n", compress_name);
 			if (decompress(arv->addr + offset, arv->size - offset, &unpack, &unpack_size, &readed) != DECOMP_OK)

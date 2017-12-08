@@ -29,13 +29,15 @@
 #define MINOR(dev)	((unsigned int) ((dev) & MINORMASK))
 #define MKDEV(ma,mi)	(((ma) << MINORBITS) | (mi))
 
-#define N_ALIGN(len) ((((len) + 1) & ~3) + 2)
+#define N_ALIGN(len) ((((len) + 1) & ~3U) + 2)
 
-static inline unsigned new_encode_dev(dev_t dev)
+static inline unsigned
+new_encode_dev(dev_t dev)
 {
+	unsigned v = 0xff;
 	unsigned major = MAJOR(dev);
 	unsigned minor = MINOR(dev);
-	return (minor & 0xff) | (major << 8) | ((minor & ~0xff) << 12);
+	return (minor & 0xff) | (major << 8) | ((minor & ~v) << 12);
 }
 
 static int
@@ -61,6 +63,8 @@ parse_header(const unsigned char *s, struct cpio_header *h)
 	h->body_len = parsed[6];
 	h->major    = parsed[7];
 	h->minor    = parsed[8];
+	h->rmajor   = parsed[9];
+	h->rminor   = parsed[10];
 	h->rdev     = new_encode_dev(MKDEV(parsed[9], parsed[10]));
 	h->name_len = parsed[11];
 	h->name     = (char *) s;
@@ -95,7 +99,7 @@ read_cpio(struct cpio *a)
 		offset += CPIO_HEADER_SIZE;
 
 		offset += N_ALIGN(h->name_len) + h->body_len;
-		offset = (offset + 3) & ~3;
+		offset = (offset + 3) & ~3U;
 
 		if (h->name && !memcmp(h->name, CPIO_TRAILER, strlen(CPIO_TRAILER))) {
 			list_shift(&a->headers);
@@ -107,6 +111,133 @@ read_cpio(struct cpio *a)
 	}
 
 	return offset;
+}
+
+static unsigned long
+push_hdr(const char *s, unsigned long offset, FILE *output)
+{
+	fputs(s, output);
+	offset += 110;
+	return offset;
+}
+
+static unsigned long
+push_rest(const char *name, unsigned long offset, FILE *output)
+{
+	size_t name_len = strlen(name) + 1;
+	size_t tmp_ofs;
+
+	fputs(name, output);
+	fputc(0, output);
+	offset += name_len;
+
+	tmp_ofs = name_len + 110;
+	while (tmp_ofs & 3) {
+		fputc(0, output);
+		offset++;
+		tmp_ofs++;
+	}
+	return offset;
+}
+
+static unsigned long
+push_string(const char *name, unsigned long offset, FILE *output)
+{
+	size_t name_len = strlen(name) + 1;
+
+	fputs(name, output);
+	fputc(0, output);
+	offset += name_len;
+	return offset;
+}
+
+static unsigned long
+push_pad(unsigned long offset, FILE *output)
+{
+	while (offset & 3) {
+		fputc(0, output);
+		offset++;
+	}
+	return offset;
+}
+
+unsigned long
+write_cpio(struct cpio_header *data, unsigned long offset, FILE *output)
+{
+	char s[256];
+
+	sprintf(s,"%s%08lX%08X%08lX%08lX%08lX%08lX"
+	        "%08lX%08lX%08lX%08lX%08lX%08lX%08X",
+		CPIO_FORMAT_NEWASCII,	/* magic */
+		data->ino,		/* ino */
+		data->mode,		/* mode */
+		(long) data->uid,	/* uid */
+		(long) data->gid,	/* gid */
+		data->nlink,		/* nlink */
+		data->mtime,		/* mtime */
+
+		data->body_len,		/* filesize */
+		data->major,		/* major */
+		data->minor,		/* minor */
+		data->rmajor,		/* rmajor */
+		data->rminor,		/* rminor */
+		data->name_len,		/* namesize */
+		0);			/* chksum */
+
+	offset = push_hdr(s, offset, output);
+
+	switch (data->mode & S_IFMT) {
+		case S_IFBLK:
+		case S_IFCHR:
+		case S_IFDIR:
+		case S_IFIFO:
+		case S_IFSOCK:
+			offset = push_rest(data->name, offset, output);
+			return offset;
+	}
+
+	offset = push_string(data->name, offset, output);
+	offset = push_pad(offset, output);
+
+	if (data->body_len) {
+		fwrite(data->body, data->body_len, 1, output);
+		offset += data->body_len;
+		offset = push_pad(offset, output);
+	}
+
+	return offset;
+}
+
+void
+write_trailer(unsigned long offset, FILE *output)
+{
+	char s[256];
+	const char name[] = "TRAILER!!!";
+
+	sprintf(s, "%s%08X%08X%08lX%08lX%08X%08lX"
+	       "%08X%08X%08X%08X%08X%08X%08X",
+		CPIO_FORMAT_NEWASCII,	/* magic */
+		0,			/* ino */
+		0,			/* mode */
+		(long) 0,		/* uid */
+		(long) 0,		/* gid */
+		1,			/* nlink */
+		(long) 0,		/* mtime */
+		0,			/* filesize */
+		0,			/* major */
+		0,			/* minor */
+		0,			/* rmajor */
+		0,			/* rminor */
+		(unsigned)strlen(name)+1, /* namesize */
+		0);			/* chksum */
+
+	offset = push_hdr(s, offset, output);
+	offset = push_rest(name, offset, output);
+
+	while (offset % 512) {
+		fputc(0, output);
+		offset++;
+	}
 }
 
 void

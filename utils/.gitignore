@@ -2,6 +2,9 @@ depinfo
 gen_init_cpio
 initrd-cp
 initrd-diff
+initrd-extract
 initrd-ls
 make-initrd
 mkinitrd-make-initrd
+*.d
+*.o

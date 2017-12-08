@@ -12,26 +12,26 @@
 
 int bunzip2(unsigned char *in, unsigned long in_size,
             unsigned char **out, unsigned long *out_size,
-            unsigned long *inread)
+            unsigned long long *inread)
 {
 	int ret;
-	unsigned long have, out_offset;
+	unsigned long have, out_offset, total_in_hi32;
 	bz_stream strm;
-	unsigned char obuf[CHUNK];
+	char obuf[CHUNK];
 	out_offset = 0;
 
-    /* allocate inflate state */
-    strm.bzalloc  = NULL;
-    strm.bzfree   = NULL;
-    strm.opaque   = NULL;
-    strm.avail_in = 0;
-    strm.next_in  = NULL;
+	/* allocate inflate state */
+	strm.bzalloc  = NULL;
+	strm.bzfree   = NULL;
+	strm.opaque   = NULL;
+	strm.avail_in = 0;
+	strm.next_in  = NULL;
 
 	if ((ret = BZ2_bzDecompressInit(&strm, 0, 0)) != BZ_OK)
 		return DECOMP_FAIL;
 
-	strm.avail_in = in_size;
-	strm.next_in = in;
+	strm.avail_in = (unsigned int) in_size;
+	strm.next_in = (char *) in;
 
 	do {
 		strm.avail_out = CHUNK;
@@ -54,7 +54,8 @@ int bunzip2(unsigned char *in, unsigned long in_size,
 		out_offset += have;
 	} while (!strm.avail_out);
 
-	*inread += (strm.total_in_hi32 << 32) + strm.total_in_lo32;
+	total_in_hi32 = strm.total_in_hi32;
+	*inread += (total_in_hi32 << 32) + strm.total_in_lo32;
 
 	/* clean up and return */
 	BZ2_bzDecompressEnd(&strm);

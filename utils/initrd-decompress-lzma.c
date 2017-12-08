@@ -13,7 +13,7 @@
 
 int unlzma(unsigned char *in, unsigned long in_size,
            unsigned char **out, unsigned long *out_size,
-           unsigned long *inread)
+           unsigned long long *inread)
 {
 	unsigned long have, out_offset;
 	lzma_ret ret;

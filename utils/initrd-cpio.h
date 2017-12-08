@@ -13,7 +13,7 @@ struct cpio {
 };
 
 struct cpio_header {
-	unsigned long ino, major, minor, nlink;
+	unsigned long ino, major, minor, rmajor, rminor, nlink;
 	mode_t mode;
 	time_t mtime;
 	unsigned long body_len, name_len;
@@ -27,5 +27,9 @@ struct cpio_header {
 unsigned long read_cpio(struct cpio *archive);
 void cpio_free(struct cpio *archive);
 
+#include <stdio.h>
+
+unsigned long write_cpio(struct cpio_header *data, unsigned long offset, FILE *output);
+void write_trailer(unsigned long offset, FILE *output);
 
 #endif /* INITRD_CPIO_H */

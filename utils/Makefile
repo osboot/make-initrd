@@ -10,44 +10,54 @@ CFLAGS = -Wall -Wextra -W -Wshadow -Wcast-align \
 
 CFLAGS += -DPACKAGE=\"$@\" -DVERSION=\"$(VERSION)\"
 
-depinfo_LIBS = $(shell pkg-config --libs libkmod)
+gen_init_cpio_SRC = gen_init_cpio.c
+gen_init_cpio_LIB =
+gen_init_cpio_OBJ = $(gen_init_cpio_SRC:.c=.o)
+gen_init_cpio_DEP = $(gen_init_cpio_SRC:.c=.d)
 
-initrd_ls_CFLAGS =
-initrd_ls_LIBS   =
+depinfo_SRC = kmod-depinfo.c
+depinfo_LIB = $(shell pkg-config --libs libkmod)
+depinfo_OBJ = $(depinfo_SRC:.c=.o)
+depinfo_DEP = $(depinfo_SRC:.c=.d)
 
-initrd_ls_HEADERS = \
-	initrd-common.h \
-	initrd-cpio.h \
-	initrd-decompress.h \
-	initrd-parse.h \
-	initrd-ls.h
+initrd_ls_SRC = initrd-ls.c initrd-ls-format.c initrd-common.c initrd-cpio.c initrd-parse.c initrd-decompress.c
+initrd_ls_LIB =
+initrd_ls_OBJ = $(initrd_ls_SRC:.c=.o)
+initrd_ls_DEP = $(initrd_ls_SRC:.c=.d)
 
-initrd_ls_SOURCES = \
-	initrd-ls.c \
-	initrd-ls-format.c \
-	initrd-common.c \
-	initrd-cpio.c \
-	initrd-parse.c \
-	initrd-decompress.c
+initrd_ls_SRC += initrd-decompress-gzip.c
+initrd_ls_LIB += $(shell pkg-config --libs zlib)
 
-initrd_ls_CFLAGS  += -DHAVE_GZIP
-initrd_ls_SOURCES += initrd-decompress-gzip.c
-initrd_ls_LIBS    += $(shell pkg-config --libs zlib)
+initrd_ls_SRC += initrd-decompress-bzip2.c
+initrd_ls_LIB += -lbz2
 
-initrd_ls_CFLAGS  += -DHAVE_BZIP2
-initrd_ls_SOURCES += initrd-decompress-bzip2.c
-initrd_ls_LIBS    += -lbz2
+initrd_ls_SRC += initrd-decompress-lzma.c
+initrd_ls_LIB += $(shell pkg-config --libs liblzma)
 
-initrd_ls_CFLAGS  += -DHAVE_LZMA
-initrd_ls_SOURCES += initrd-decompress-lzma.c
-initrd_ls_LIBS    += $(shell pkg-config --libs liblzma)
+initrd_extract_SRC = initrd-extract.c initrd-common.c initrd-cpio.c initrd-parse.c initrd-decompress.c
+initrd_extract_LIB =
+initrd_extract_OBJ = $(initrd_extract_SRC:.c=.o)
+initrd_extract_DEP = $(initrd_extract_SRC:.c=.d)
+
+initrd_extract_SRC += initrd-decompress-gzip.c
+initrd_extract_LIB += $(shell pkg-config --libs zlib)
+
+initrd_extract_SRC += initrd-decompress-bzip2.c
+initrd_extract_LIB += -lbz2
+
+initrd_extract_SRC += initrd-decompress-lzma.c
+initrd_extract_LIB += $(shell pkg-config --libs liblzma)
+
+DEP = $(gen_init_cpio_DEP) $(depinfo_DEP) $(initrd_ls_DEP) $(initrd_extract_DEP)
 
 bin_PROGS  = \
 	gen_init_cpio
+
 sbin_PROGS = \
 	depinfo \
 	initrd-cp \
 	initrd-ls \
+	initrd-extract \
 	initrd-diff \
 	make-initrd \
 	mkinitrd-make-initrd
@@ -56,14 +66,17 @@ sbin_PROGS = \
 
 all: $(bin_PROGS) $(sbin_PROGS)
 
-gen_init_cpio: gen_init_cpio.c
-	$(CC) $(CFLAGS) -o $@ $<
+gen_init_cpio: $(gen_init_cpio_OBJ)
+	$(LINK.o) $^ $(gen_init_cpio_LIB) -o $@
 
-depinfo: kmod-depinfo.c
-	$(CC) $(CFLAGS) -o $@ $< $(depinfo_LIBS)
+depinfo: $(depinfo_OBJ)
+	$(LINK.o) $^ $(depinfo_LIB) -o $@
 
-initrd-ls: $(initrd_ls_HEADERS) $(initrd_ls_SOURCES)
-	$(CC) $(CFLAGS) $(initrd_ls_CFLAGS) -o $@ $(initrd_ls_SOURCES) $(initrd_ls_LIBS)
+initrd-ls: $(initrd_ls_OBJ)
+	$(LINK.o) $^ $(initrd_ls_LIB) -o $@
+
+initrd-extract: $(initrd_extract_OBJ)
+	$(LINK.o) $^ $(initrd_extract_LIB) -o $@
 
 install: $(bin_PROGS) $(sbin_PROGS)
 	$(MKDIR_P) -- $(DESTDIR)$(bindir)
@@ -72,4 +85,21 @@ install: $(bin_PROGS) $(sbin_PROGS)
 	$(INSTALL) -p -m755 $(sbin_PROGS) $(DESTDIR)$(sbindir)/
 
 clean:
-	$(RM) -- $(bin_PROGS) $(sbin_PROGS)
+	$(RM) -- \
+	    $(bin_PROGS) $(sbin_PROGS) $(DEP) \
+	    $(gen_init_cpio_OBJ) $(depinfo_OBJ) $(initrd_ls_OBJ) $(initrd_extract_OBJ)
+
+# We need dependencies only if goal isn't "indent" or "clean".
+ifneq ($(MAKECMDGOALS),indent)
+ifneq ($(MAKECMDGOALS),clean)
+
+%.d: %.c Makefile
+	@echo Making dependences for $<
+	@$(CC) -MM $(CPPFLAGS) $< |sed -e 's,\($*\)\.o[ :]*,\1.o $@: Makefile ,g' >$@
+
+ifneq ($(DEP),)
+-include $(DEP)
+endif
+
+endif # clean
+endif # indent
