@@ -25,4 +25,4 @@ clean: $(SUBDIRS)
 man: utils
 
 $(SUBDIRS):
-	$(MAKE) $(MFLAGS) -C "$@" $(MAKECMDGOALS)
+	$(Q)$(MAKE) $(MFLAGS) -C "$@" $(MAKECMDGOALS)

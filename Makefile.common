@@ -30,17 +30,40 @@ localbuilddir = $(TOPDIR)/datasrc/_out
 statedir      = $(tmpdir)
 endif
 
-CP       = cp -a
-RM       = rm -f
-CHMOD    = chmod
-INSTALL  = install
-MKDIR_P  = mkdir -p
-TOUCH_R  = touch -r
-HELP2MAN = env -i help2man -N
-STRIP    = strip -s
+Q = @
+VERBOSE ?= $(V)
+ifeq ($(VERBOSE),1)
+    Q =
+endif
+
+quiet_cmd = \
+	$(if $(VERBOSE),$(3),$(Q)printf "  %-07s%s\n" "$(1)" $(2); $(3))
+
+CP       = $(Q)cp -a
+RM       = $(Q)rm -f
+CHMOD    = $(Q)chmod
+INSTALL  = $(Q)install
+MKDIR_P  = $(Q)mkdir -p
+TOUCH_R  = $(Q)touch -r
+STRIP    = $(Q)strip -s
+SED      = $(call quiet_cmd,SED,$@,sed)
+HELP2MAN = $(call quiet_cmd,MAN,$@,env -i help2man -N)
+COMPILE  = $(call quiet_cmd,CC,$<,$(COMPILE.c))
+LINK     = $(call quiet_cmd,CCLD,$@,$(LINK.o))
+DEP      = $(call quiet_cmd,DEP,$<,$(CC))
+
+get_objects = $(foreach name,$(notdir $(1)),$($(subst -,_,$(name))_SRCS:.c=.o))
+get_depends = $(foreach name,$(notdir $(1)),$($(subst -,_,$(name))_SRCS:.c=.d))
+
+warning_CFLAGS = \
+	-Wall -Wextra -W -Wshadow -Wcast-align \
+	-Wwrite-strings -Wconversion -Waggregate-return -Wstrict-prototypes \
+	-Wmissing-prototypes -Wmissing-declarations -Wmissing-noreturn \
+	-Wmissing-format-attribute -Wredundant-decls -Wdisabled-optimization \
+	-Wno-pointer-arith
 
 %: %.in
-	sed \
+	$(SED) \
 		-e 's,@VERSION@,$(VERSION),g' \
 		-e 's,@PROJECT@,$(PROJECT),g' \
 		-e 's,@BOOTDIR@,$(bootdir),g' \
@@ -54,3 +77,6 @@ STRIP    = strip -s
 		<$< >$@
 	$(TOUCH_R) $< $@
 	$(CHMOD) --reference=$< $@
+
+%.o: %.c
+	$(COMPILE) $(OUTPUT_OPTION) $<

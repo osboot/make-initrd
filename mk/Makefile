@@ -18,6 +18,6 @@ install: $(TARGETS)
 	$(CP) -- $(TARGETS) $(DESTDIR)$(datadir)/$(PROJECT)/mk/
 
 clean:
-	@for n in *.in; do \
-		$(RM) -f -- "$${n%%.in}";\
+	$(Q)for n in *.in; do \
+		rm -f -- "$${n%%.in}";\
 	done
