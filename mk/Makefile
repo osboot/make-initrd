@@ -2,6 +2,8 @@ TOPDIR = $(CURDIR)/..
 
 include $(TOPDIR)/Makefile.common
 
+GEN = $(patsubst %.in,%,$(wildcard *.in))
+
 TARGETS = \
 	config.mk \
 	guess.mk \
@@ -9,7 +11,7 @@ TARGETS = \
 	initfiles.mk \
 	make-initrd.mk
 
-.PHONY:	all install clean
+.PHONY: all install clean
 
 all: $(TARGETS)
 
@@ -18,6 +20,4 @@ install: $(TARGETS)
 	$(CP) -- $(TARGETS) $(DESTDIR)$(datadir)/$(PROJECT)/mk/
 
 clean:
-	$(Q)for n in *.in; do \
-		rm -f -- "$${n%%.in}";\
-	done
+	$(RM) -- $(GEN)
