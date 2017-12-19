@@ -1,1 +1,0 @@
-IMAGELOGDIR ?= $(STATEDIR)/initrd

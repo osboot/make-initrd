@@ -1,4 +1,4 @@
-# Feature: imagelog
+# Feature: buildinfo
 
 Feature saves information about the created initramfs image.
 
