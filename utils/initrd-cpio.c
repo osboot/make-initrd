@@ -29,7 +29,7 @@
 #define MINOR(dev)	((unsigned int) ((dev) & MINORMASK))
 #define MKDEV(ma,mi)	(((ma) << MINORBITS) | (mi))
 
-#define N_ALIGN(len) ((((len) + 1) & ~3U) + 2)
+#define N_ALIGN(len) ((((len) + 1) & ~3UL) + 2)
 
 static inline unsigned
 new_encode_dev(dev_t dev)
@@ -99,7 +99,7 @@ read_cpio(struct cpio *a)
 		offset += CPIO_HEADER_SIZE;
 
 		offset += N_ALIGN(h->name_len) + h->body_len;
-		offset = (offset + 3) & ~3U;
+		offset = (offset + 3) & ~3UL;
 
 		if (h->name && !memcmp(h->name, CPIO_TRAILER, strlen(CPIO_TRAILER))) {
 			list_shift(&a->headers);
