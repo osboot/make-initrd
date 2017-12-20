@@ -5,6 +5,8 @@ include $(TOPDIR)/Makefile.common
 CFLAGS = $(warning_CFLAGS) \
 	-DPACKAGE=\"$@\" -DVERSION=\"$(VERSION)\"
 
+CFLAGS += -DHAVE_GZIP -DHAVE_BZIP2 -DHAVE_LZMA
+
 gen_init_cpio_SRCS = gen_init_cpio.c
 gen_init_cpio_LIBS =
 
