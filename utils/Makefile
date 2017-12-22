@@ -5,7 +5,7 @@ include $(TOPDIR)/Makefile.common
 CFLAGS = $(warning_CFLAGS) \
 	-DPACKAGE=\"$@\" -DVERSION=\"$(VERSION)\"
 
-CFLAGS += -DHAVE_GZIP -DHAVE_BZIP2 -DHAVE_LZMA
+CFLAGS += -DHAVE_GZIP -DHAVE_BZIP2 -DHAVE_LZMA -DHAVE_ZSTD
 
 gen_init_cpio_SRCS = gen_init_cpio.c
 gen_init_cpio_LIBS =
@@ -25,6 +25,9 @@ initrd_ls_LIBS += -lbz2
 initrd_ls_SRCS += initrd-decompress-lzma.c
 initrd_ls_LIBS += $(shell pkg-config --libs liblzma)
 
+initrd_ls_SRCS += initrd-decompress-zstd.c
+initrd_ls_LIBS += $(shell pkg-config --libs libzstd)
+
 initrd_extract_SRCS = initrd-extract.c initrd-common.c initrd-cpio.c initrd-parse.c initrd-decompress.c
 initrd_extract_LIBS =
 
@@ -36,6 +39,9 @@ initrd_extract_LIBS += -lbz2
 
 initrd_extract_SRCS += initrd-decompress-lzma.c
 initrd_extract_LIBS += $(shell pkg-config --libs liblzma)
+
+initrd_extract_SRCS += initrd-decompress-zstd.c
+initrd_extract_LIBS += $(shell pkg-config --libs libzstd)
 
 bin_PROGS  = \
 	gen_init_cpio

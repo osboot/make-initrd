@@ -21,6 +21,9 @@ static const struct compress_format compressed_formats[] = {
 	{ {0x5d, 0x00}, "lzma",  NULL    },
 	{ {0xfd, 0x37}, "xz",    unlzma  },
 #endif
+#ifdef HAVE_ZSTD
+	{ {0x28, 0xb5}, "zstd",  unzstd  },
+#endif
 	{ {0x89, 0x4c}, "lzo",   NULL    },
 	{ {0x02, 0x21}, "lz4",   NULL    },
 	{ {0, 0}, NULL, NULL }

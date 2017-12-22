@@ -19,4 +19,7 @@ int bunzip2(unsigned char *in, unsigned long in_size, unsigned char **o, unsigne
 #ifdef HAVE_LZMA
 int unlzma(unsigned char *in, unsigned long in_size, unsigned char **o, unsigned long *olen, unsigned long long *inread);
 #endif
+#ifdef HAVE_ZSTD
+int unzstd(unsigned char *in, unsigned long in_size, unsigned char **o, unsigned long *olen, unsigned long long *inread);
+#endif
 #endif /* INITRD_DECOMPRESS_H */
