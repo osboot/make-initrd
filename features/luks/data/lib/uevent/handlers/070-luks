@@ -7,6 +7,36 @@
 
 mnt="/mnt/luks-key"
 
+match_dev_in_array() {
+	[ "$#" = 2 ] || return 2
+
+	local value array_name array_size
+
+	array_name="$1"
+	value="$2"
+
+	eval "array_size=\"\${$array_name-}\""
+
+	[ -n "$array_size" ] && [ "$array_size" != 0 ] ||
+		return 1
+
+	local i luksdev realdev
+
+	i=0
+	while [ "$i" -lt "$array_size" ]; do
+		eval "luksdev=\"\$$array_name$i\""
+		i=$(($i + 1))
+
+		realdev=
+		get_dev realdev "$luksdev"
+
+		[ "$realdev" != "$value" ] ||
+			return 0
+	done
+
+	return 1
+}
+
 freekey() {
 	[ -d "$mnt" ] && umount "$mnt" && rmdir "$mnt" ||:
 }
@@ -75,19 +105,8 @@ handler() {
 		exit 0
 
 	luks_discard=
-	if [ -n "$LUKS_DISCARD" ] && [ "$LUKS_DISCARD" != 0 ]; then
-		i=0
-		while [ "$i" -lt "$LUKS_DISCARD" ]; do
-			luksdev=$(eval "echo \"\$LUKS_DISCARD$i\"")
-			i=$(($i + 1))
-			realdev=
-			get_dev realdev "$luksdev"
-			if [ "$realdev" = "$LUKS_ROOT" ]; then
-				luks_discard=--allow-discards
-				break
-			fi
-		done
-	fi
+	! match_dev_in_array LUKS_DISCARD "$LUKS_ROOT" ||
+		luks_discard=--allow-discards
 
 	local rc=0 keyfile=
 	if [ -n "$LUKS_KEY" ] && [ "$LUKS_KEY" != 0 ]; then
