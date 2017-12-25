@@ -104,6 +104,9 @@ handler() {
 	! dmsetup info "$nameluks" >/dev/null 2>&1 ||
 		exit 0
 
+	! match_dev_in_array LUKS_IGNORE "$LUKS_ROOT" ||
+		exit 0
+
 	luks_discard=
 	! match_dev_in_array LUKS_DISCARD "$LUKS_ROOT" ||
 		luks_discard=--allow-discards

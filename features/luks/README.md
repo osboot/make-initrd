@@ -11,4 +11,5 @@ Feature adds the ability to boot from LUKS partition.
   - If `luksdev` is given, the specified key will only be applied for that LUKS device. Possible values are the same as for keydev. Unless you have several LUKS devices, you don’t have to specify this parameter.
 - `luks-key-format=<format>` defines the format of the key file (possible values: `plain`, `raw`)
 - `luks-discard` is an array of luks devices specified in same format in luksdev to which discard operation is perfomed (is essential for SSD).
+- `luks-ignore` specifies which luks device should be ignored by initrd to decrypt.
 - `luks-dev`
