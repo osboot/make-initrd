@@ -11,6 +11,7 @@ The following parameters can be passed via kernel command line.
 - `rdshell` opens emergency console after all services.
 - `debug` shows more messages.
 - `quiet` tries to be more quiet.
+- `rd-preload-modules` enables/disables loading a static list of modules before udev service.
 
 Parameters responsible for mounting the root file system:
 

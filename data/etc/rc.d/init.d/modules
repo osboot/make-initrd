@@ -15,10 +15,21 @@
 
 . /.initrd/initenv
 
-[ -z "${NOMODULES-}" ] ||
+[ -n "${RD_PRELOAD_MODULES-}" ] ||
 	exit 0
 
 . /etc/init.d/functions
 
-[ ! -x /sbin/systemd-modules-load ] ||
-	action 'Loading modules:' systemd-modules-load
+preload_modules()
+{
+	local conf modname rc=0
+	for conf in /etc/modules-load.d/*.conf /run/modules-load.d/*.conf /lib/modules-load.d/*.conf /etc/initrd/modules-preudev; do
+		[ ! -e "$conf" ] ||
+		while read modname; do
+			[ -z "${modname##\#*}" ] || modprobe $modname || rc=1
+		done < "$conf"
+	done 2>"/var/log/preload-modules.log"
+	return $rc
+}
+
+action_shell 'Loading modules:' preload_modules

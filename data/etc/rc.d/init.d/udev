@@ -23,17 +23,11 @@ load_modules() {
 	done < /etc/initrd/modules-"$1" 2>"/var/log/udev-$1.log"
 }
 
-pre_start() {
-	load_modules preudev ||:
-}
-
 post_start() {
 	load_modules postudev ||:
 }
 
 start() {
-	pre_start
-
 	start_daemon --background --lockfile "$LOCKFILE" -- udevd --daemon --resolve-names=never ||
 		RETVAL=$?
 
