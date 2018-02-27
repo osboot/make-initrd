@@ -1,4 +1,4 @@
-ucode:
+ucode: compress
 	@echo "Adding CPU microcode ..."
 	@$(ADD_UCODE)
 	@if [ -s "$(WORKDIR)/ucode.cpio" ]; then \
