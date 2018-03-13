@@ -11,7 +11,7 @@ epollin_add(int fd_ep, int fd)
 	struct epoll_event ev;
 
 	memset(&ev, 0, sizeof(struct epoll_event));
-	ev.events = EPOLLIN;
+	ev.events  = EPOLLIN;
 	ev.data.fd = fd;
 
 	if (epoll_ctl(fd_ep, EPOLL_CTL_ADD, fd, &ev) < 0)

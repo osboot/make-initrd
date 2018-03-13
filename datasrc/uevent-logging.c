@@ -40,7 +40,7 @@ logging_init(void)
 	if (!logfile)
 		return;
 
-	if ((fd = open(logfile, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR|S_IWUSR)) < 0)
+	if ((fd = open(logfile, O_WRONLY | O_APPEND | O_CREAT, S_IRUSR | S_IWUSR)) < 0)
 		error(EXIT_FAILURE, errno, "%s: open", PROGRAM_NAME);
 
 	close(STDOUT_FILENO);
@@ -63,8 +63,8 @@ logging_close(void)
 }
 
 void
-__attribute__ ((format (printf, 2, 3)))
-message(int priority, const char *fmt, ...)
+    __attribute__((format(printf, 2, 3)))
+    message(int priority, const char *fmt, ...)
 {
 	va_list ap;
 	struct timespec tp = { 0 };

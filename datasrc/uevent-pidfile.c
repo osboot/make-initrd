@@ -94,8 +94,7 @@ write_pid(const char *pidfile)
 	int fd;
 	int pid;
 
-	if (((fd = open(pidfile, O_RDWR | O_CREAT | O_TRUNC, 0644)) == -1)
-	    || ((f = fdopen(fd, "r+")) == NULL)) {
+	if (((fd = open(pidfile, O_RDWR | O_CREAT | O_TRUNC, 0644)) == -1) || ((f = fdopen(fd, "r+")) == NULL)) {
 		err("Can't open or create %s", pidfile);
 		return 0;
 	}

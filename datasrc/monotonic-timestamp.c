@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <time.h>
 
-int main(void)
+int
+main(void)
 {
 	struct timespec tp = { 0 };
 	clock_gettime(CLOCK_MONOTONIC, &tp);

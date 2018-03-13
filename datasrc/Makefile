@@ -61,9 +61,13 @@ install: $(bin_PROGS) $(sbin_PROGS)
 clean:
 	$(RM) -rf -- $(out_bindir) $(out_sbindir) $(DEPS) $(OBJS)
 
+format:
+	clang-format -style=file -i *.c *.h
+
 # We need dependencies only if goal isn't "indent" or "clean".
 ifneq ($(MAKECMDGOALS),indent)
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),format)
 
 %.d: %.c Makefile
 	$(DEP) -MM $(CPPFLAGS) $< |sed -e 's,\($*\)\.o[ :]*,\1.o $@: Makefile ,g' >$@
@@ -72,5 +76,6 @@ ifneq ($(DEPS),)
 -include $(DEPS)
 endif
 
+endif # format
 endif # clean
 endif # indent

@@ -21,7 +21,8 @@ print_ch(const char c)
 	write_ch(c);
 }
 
-int main(int argc, char *argv[], char *envp[])
+int
+main(int argc, char *argv[], char *envp[])
 {
 	unsigned int i = 0, j;
 
@@ -39,13 +40,15 @@ int main(int argc, char *argv[], char *envp[])
 
 	while (envp[i]) {
 		j = 0;
-		while(envp[i][j] != '=') j++;
+		while (envp[i][j] != '=')
+			j++;
 		envp[i][j] = '\0';
 
 		if (shell) {
 			unsigned int k = 0;
 
-			while(envp[i][k] && (isalnum(envp[i][k]) || envp[i][k] == '_')) k++;
+			while (envp[i][k] && (isalnum(envp[i][k]) || envp[i][k] == '_'))
+				k++;
 
 			if (j != k) {
 				i++;
@@ -53,7 +56,7 @@ int main(int argc, char *argv[], char *envp[])
 			}
 		}
 		j = 0;
-		while(envp[i][j])
+		while (envp[i][j])
 			print_ch(envp[i][j++]);
 		j++;
 
@@ -61,7 +64,7 @@ int main(int argc, char *argv[], char *envp[])
 		if (quote)
 			write_ch('"');
 
-		while(envp[i][j])
+		while (envp[i][j])
 			print_ch(envp[i][j++]);
 
 		if (quote)

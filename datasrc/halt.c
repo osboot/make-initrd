@@ -16,10 +16,10 @@ usage(void)
 }
 
 int
-main(int argc __attribute__ ((__unused__)), char *argv[])
+main(int argc __attribute__((__unused__)), char *argv[])
 {
 	unsigned int cmd = 0; /* initalize to shut gcc up */
-	int do_sync = 1;
+	int do_sync      = 1;
 	char *ptr, *ptr2;
 
 	/* Which action (program name)? */
@@ -41,13 +41,13 @@ main(int argc __attribute__ ((__unused__)), char *argv[])
 	/* Walk options */
 	while (*++argv && **argv == '-') {
 		switch (*++*argv) {
-		case 'f':
-			break; /* -f assumed */
-		case 'n':
-			do_sync = 0;
-			break;
-		default:
-			usage();
+			case 'f':
+				break; /* -f assumed */
+			case 'n':
+				do_sync = 0;
+				break;
+			default:
+				usage();
 		}
 	}
 

@@ -5,9 +5,9 @@
 #include <stdlib.h>
 
 static const char usage[] = "Usage: replace [-s<stop-at-char>] [-r] [-q] <src> <dst> [<string> ...]\n";
-static int revert = 0;
-static int quote = 0;
-static char stop_at = '\0';
+static int revert         = 0;
+static int quote          = 0;
+static char stop_at       = '\0';
 
 static void
 write_ch(const char c)
@@ -25,15 +25,17 @@ print_ch(const char c)
 }
 
 #ifndef SIMPLE
-#define err(x) do { \
-		if (write(2, x, strlen(x)) > 0 && write(2, "\n", 1) > 0) {}; \
-		_exit(1); \
-	} while(0)
+#define err(x)                                                             \
+	do {                                                               \
+		if (write(2, x, strlen(x)) > 0 && write(2, "\n", 1) > 0) { \
+		};                                                         \
+		_exit(1);                                                  \
+	} while (0)
 
 static char *
 add_sequence(char *res, size_t *rlen, unsigned int *i, char *str, size_t len)
 {
-	size_t j = 0;
+	size_t j   = 0;
 	size_t siz = (*rlen);
 
 	while (siz < (strlen(res) + 1 + len)) {
@@ -44,7 +46,7 @@ add_sequence(char *res, size_t *rlen, unsigned int *i, char *str, size_t len)
 
 	while (str && j < len)
 		res[(*i)++] = str[j++];
-	res[(*i)] = '\0';
+	res[(*i)]           = '\0';
 
 	(*rlen) = siz;
 	return res;
@@ -55,7 +57,7 @@ expand_sequence(char *res, size_t *rlen, unsigned int *i, char from, char to)
 {
 	size_t siz = (*rlen);
 
-	while (siz < (strlen(res) + 1 + (unsigned)(to - from))) {
+	while (siz < (strlen(res) + 1 + (unsigned) (to - from))) {
 		siz += BUFSIZ;
 		if (!(res = realloc(res, siz)))
 			err("realloc failed");
@@ -63,7 +65,7 @@ expand_sequence(char *res, size_t *rlen, unsigned int *i, char from, char to)
 
 	while (to >= from)
 		res[(*i)++] = from++;
-	res[(*i)] = '\0';
+	res[(*i)]           = '\0';
 
 	(*rlen) = siz;
 	return res;
@@ -75,7 +77,7 @@ expand(char *src)
 	unsigned int i = 0, ri = 0, class = 0;
 	char prev = '\0';
 
-	char *res = NULL;
+	char *res   = NULL;
 	size_t rlen = BUFSIZ;
 
 	if (!(res = (char *) malloc(rlen)))
@@ -84,7 +86,7 @@ expand(char *src)
 
 	while (src[i]) {
 		if (prev == '\\') {
-			res = add_sequence(res, &rlen, &ri, src + i++, 1);
+			res  = add_sequence(res, &rlen, &ri, src + i++, 1);
 			prev = '\0';
 			continue;
 		}
@@ -103,7 +105,7 @@ expand(char *src)
 						res = expand_sequence(res, &rlen, &ri, 'A', 'Z');
 						res = expand_sequence(res, &rlen, &ri, 'a', 'z');
 						res = expand_sequence(res, &rlen, &ri, '0', '9');
-						res =    add_sequence(res, &rlen, &ri, (char *) "_", 1);
+						res = add_sequence(res, &rlen, &ri, (char *) "_", 1);
 						i += 8;
 					} else if (!strncasecmp(src + i, "[:alnum:]", 9)) {
 						res = expand_sequence(res, &rlen, &ri, 'A', 'Z');
@@ -194,35 +196,39 @@ main(int argc, char **argv)
 	src = argv[i++];
 	dst = argv[i++];
 #endif
-//	printf("src={%s}\n", src);
-//	printf("dst={%s}\n", dst);
+	//	printf("src={%s}\n", src);
+	//	printf("dst={%s}\n", dst);
 
-	while (dst[len]) len++;
+	while (dst[len])
+		len++;
 
 	while (argv[i]) {
-		if (quote) write_ch('"');
+		if (quote)
+			write_ch('"');
 
 		j = 0;
 		while (argv[i][j]) {
 			if (argv[i][j] == stop_at)
 				break;
 			k = 0;
-			while (src[k] && argv[i][j] != src[k]) k++;
+			while (src[k] && argv[i][j] != src[k])
+				k++;
 
 			if (revert)
 				(!src[k])
-					? print_ch(dst[len - 1])
-					: print_ch(argv[i][j]);
+				    ? print_ch(dst[len - 1])
+				    : print_ch(argv[i][j]);
 			else
 				(src[k])
-					? print_ch(dst[(k < len) ? k : len - 1])
-					: print_ch(argv[i][j]);
+				    ? print_ch(dst[(k < len) ? k : len - 1])
+				    : print_ch(argv[i][j]);
 			j++;
 		}
 		while (argv[i][j])
 			print_ch(argv[i][j++]);
-			
-		if (quote) write_ch('"');
+
+		if (quote)
+			write_ch('"');
 		write_ch('\n');
 		i++;
 	}

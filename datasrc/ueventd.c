@@ -24,16 +24,16 @@
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-int fd_ep       = -1;
-int fd_signal   = -1;
-int fd_eventdir = -1;
+int fd_ep        = -1;
+int fd_signal    = -1;
+int fd_eventdir  = -1;
 pid_t worker_pid = 0;
 
 int do_exit = 0;
 
 /* Arguments */
-int log_priority = 0;
-char *logfile = NULL;
+int log_priority     = 0;
+char *logfile        = NULL;
 static char *pidfile = NULL;
 static int daemonize = 1;
 
@@ -47,7 +47,7 @@ handle_signal(uint32_t signo)
 			break;
 
 		case SIGCHLD:
-			while(1) {
+			while (1) {
 				pid_t pid;
 				int status;
 
@@ -96,7 +96,7 @@ handle_events(int fd)
 		// next event
 		i = sizeof(struct inotify_event) + ie->len;
 		len -= i;
-		ie = (void*)((char*)ie + i);
+		ie = (void *) ((char *) ie + i);
 	}
 
 	free(buf);
@@ -109,7 +109,7 @@ is_dir_not_empty(char *eventdir)
 {
 	struct dirent *ent;
 	DIR *dir = NULL;
-	int ret = 0;
+	int ret  = 0;
 
 	if ((dir = opendir(eventdir)) == NULL)
 		fatal("opendir: %m");
@@ -135,18 +135,18 @@ main(int argc, char **argv)
 {
 	sigset_t mask, sigmask_orig;
 	int c, fd;
-	int ep_timeout = 0;
+	int ep_timeout  = 0;
 	int have_events = 0;
 
 	char *eventdir, *prog, **prog_args;
 
 	struct option long_options[] = {
-		{ "help",		no_argument,		0, 'h' },
-		{ "version",		no_argument,		0, 'V' },
-		{ "foreground",		no_argument,		0, 'f' },
-		{ "loglevel",		required_argument,	0, 'L' },
-		{ "logfile",		required_argument,	0, 'l' },
-		{ "pidfile",		required_argument,	0, 'p' },
+		{ "help", no_argument, 0, 'h' },
+		{ "version", no_argument, 0, 'V' },
+		{ "foreground", no_argument, 0, 'f' },
+		{ "loglevel", required_argument, 0, 'L' },
+		{ "logfile", required_argument, 0, 'l' },
+		{ "pidfile", required_argument, 0, 'p' },
 		{ 0, 0, 0, 0 }
 	};
 
@@ -246,10 +246,10 @@ main(int argc, char **argv)
 
 	epollin_add(fd_ep, fd_signal);
 
-	if ((fd_eventdir = inotify_init1(IN_NONBLOCK|IN_CLOEXEC)) < 0)
+	if ((fd_eventdir = inotify_init1(IN_NONBLOCK | IN_CLOEXEC)) < 0)
 		fatal("inotify_init1: %m");
 
-	if (inotify_add_watch(fd_eventdir, eventdir, IN_ONLYDIR|IN_DONT_FOLLOW|IN_MOVED_TO|IN_CLOSE_WRITE) < 0)
+	if (inotify_add_watch(fd_eventdir, eventdir, IN_ONLYDIR | IN_DONT_FOLLOW | IN_MOVED_TO | IN_CLOSE_WRITE) < 0)
 		fatal("inotify_add_watch: %m");
 
 	epollin_add(fd_ep, fd_eventdir);
@@ -273,28 +273,29 @@ main(int argc, char **argv)
 				have_events = 1;
 			}
 
-		} else for (i = 0; i < fdcount; i++) {
+		} else
+			for (i = 0; i < fdcount; i++) {
 
-			if (!(ev[i].events & EPOLLIN)) {
-				continue;
-
-			} else if (ev[i].data.fd == fd_signal) {
-				struct signalfd_siginfo fdsi;
-
-				size = TEMP_FAILURE_RETRY(read(fd_signal,
-				        &fdsi, sizeof(struct signalfd_siginfo)));
-
-				if (size != sizeof(struct signalfd_siginfo)) {
-					err("unable to read signal info");
+				if (!(ev[i].events & EPOLLIN)) {
 					continue;
+
+				} else if (ev[i].data.fd == fd_signal) {
+					struct signalfd_siginfo fdsi;
+
+					size = TEMP_FAILURE_RETRY(read(fd_signal,
+					                               &fdsi, sizeof(struct signalfd_siginfo)));
+
+					if (size != sizeof(struct signalfd_siginfo)) {
+						err("unable to read signal info");
+						continue;
+					}
+
+					handle_signal(fdsi.ssi_signo);
+
+				} else if (ev[i].data.fd == fd_eventdir) {
+					have_events = handle_events(fd_eventdir);
 				}
-
-				handle_signal(fdsi.ssi_signo);
-
-			} else if (ev[i].data.fd == fd_eventdir) {
-				have_events = handle_events(fd_eventdir);
 			}
-		}
 
 		if (have_events && !worker_pid) {
 			have_events = 0;
