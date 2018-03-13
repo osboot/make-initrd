@@ -208,9 +208,20 @@ fi
 export TEMPDIR KERNEL BOOTDIR VERBOSE
 unset MAKELEVEL
 
+read make_version <<EOF
+`make --version`
+EOF
+
+output_sync=
+case "$make_version" in
+	'GNU Make '[0-3].*) ;;
+	'GNU Make '*)
+		output_sync='--output-sync=target'
+		;;
+esac
 
 rc=0
-make -r -f @PREFIX@/mk/make-initrd.mk -- "$@" || rc=$?
+make $output_sync -r -f @PREFIX@/mk/make-initrd.mk -- "$@" || rc=$?
 
 [ -z "$TEMPDIR" ] ||
 	rmdir -- "$TEMPDIR" 2>/dev/null ||:
