@@ -196,8 +196,10 @@ fi
 %files mdadm
 %_datadir/%myname/features/mdadm
 
+%ifarch %ix86 x86_64
 %files ucode
 %_datadir/%myname/features/ucode
+%endif
 
 %changelog
 * Fri Jan 12 2018 Alexey Gladkov <legion@altlinux.ru> 2.0.7-alt1
