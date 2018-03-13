@@ -54,9 +54,9 @@ guess_device() {
 modalias() {
 	[ -f "$SYSFS_PATH$1"/modalias ] ||
 		return 0
-	local alias
-	read alias < "$SYSFS_PATH$1"/modalias
-	guess_modalias "$alias"
+	local alias=
+	readline alias "$SYSFS_PATH$1"/modalias
+	[ -z "$alias" ] || guess_modalias "$alias"
 }
 
 parent() {

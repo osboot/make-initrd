@@ -5,7 +5,8 @@
 [ -d "$SYSFS_PATH$1"/dm ] ||
 	exit 0
 
-read uuid < "$SYSFS_PATH$1"/dm/uuid
+uuid=
+readline uuid "$SYSFS_PATH$1"/dm/uuid
 
 [ -n "${uuid##mpath-*}" ] ||
 	guess_feature multipath

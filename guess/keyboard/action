@@ -10,7 +10,8 @@ detect()
 		[ -f "$i/name" -a -f "$i/modalias" ] ||
 			continue
 
-		read led < "$i/capabilities/led"
+		local led=
+		readline led "$i/capabilities/led"
 
 		[ "$led" != '0' ] ||
 			continue
@@ -20,8 +21,9 @@ detect()
 		p="$input"
 		while [ "$p" != "$SYSFS_PATH/devices" ]; do
 			if [ -f "$p/modalias" ]; then
-				read alias < "$p/modalias"
-				guess_modalias "$alias"
+				local alias=
+				readline alias "$p/modalias"
+				[ -z "$alias" ] || guess_modalias "$alias"
 
 				# Detect usbhid
 				[ -n "${alias##usb:v*p*d*dc*dsc*dp*ic03isc*ip*in*}" ] ||
@@ -44,8 +46,9 @@ detect()
 		p="$hid"
 		while [ "$p" != "$SYSFS_PATH/devices" ]; do
 			if [ -f "$p/modalias" ]; then
-				read alias < "$p/modalias"
-				guess_modalias "$alias"
+				local alias=
+				readline alias "$p/modalias"
+				[ -z "$alias" ] || guess_modalias "$alias"
 			fi
 			p="${p%/*}"
 		done

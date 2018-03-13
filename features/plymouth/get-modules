@@ -8,7 +8,8 @@ f=/sys/class/graphics/fb0/device/modalias
 [ -e "$f" ] ||
 	exit 0
 
-read modalias < "$f"
+modalias=
+readline modalias "$f"
 
 depinfo --set-version="$kernel" --no-prefix --no-firmware "$modalias" 2>/dev/null |
 	sort -u

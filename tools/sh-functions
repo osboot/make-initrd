@@ -59,4 +59,10 @@ get_majmin() {
 		return 1
 }
 
+readline() {
+	local __v=
+	read __v < "$2" ||:
+	eval "$1=\"\$__v\""
+}
+
 fi #__included_make_initrd_sh_functions

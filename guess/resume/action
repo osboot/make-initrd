@@ -3,7 +3,8 @@
 . sh-functions
 . guess-functions
 
-read cmdline </proc/cmdline
+cmdline=
+readline cmdline /proc/cmdline
 
 resume=
 for x in $cmdline; do

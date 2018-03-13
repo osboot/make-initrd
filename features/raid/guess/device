@@ -5,7 +5,8 @@
 [ -d "$SYSFS_PATH$1"/md ] ||
 	exit 0
 
-read level < "$SYSFS_PATH$1"/md/level
+level=
+readline level "$SYSFS_PATH$1"/md/level
 
 depinfo \
 		--set-version="$kernel" \
