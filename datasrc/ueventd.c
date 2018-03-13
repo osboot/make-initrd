@@ -87,10 +87,9 @@ handle_events(int fd)
 		fatal("read: unable to read events: %m");
 
 	len = (size_t) count;
+	ret = (len > 0);
 
 	while (len > 0) {
-		ret = 1;
-
 		dbg("Event %s", ie->name);
 
 		// next event
