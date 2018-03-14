@@ -7,5 +7,6 @@ md_run $CMDLINE
 echo add > /sys/block/md0/uevent
 
 for e in "$eventdir"/md_run.*; do
+	[ -f "$e" ] || break
 	done_event "$e"
 done

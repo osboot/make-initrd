@@ -30,6 +30,7 @@ handler() {
 
 rc=0
 for e in "$eventdir"/nfsroot.*; do
+	[ -f "$e" ] || break
 	( . "$e"; handler; ) ||
 		rc=1
 	done_event "$e"

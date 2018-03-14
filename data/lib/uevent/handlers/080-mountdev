@@ -15,5 +15,6 @@ roflag=-w
 [ -z "$READONLY" ] || roflag=-r
 
 for e in "$eventdir"/mountdev.*; do
+	[ -e "$e" ] || break
 	( . "$e"; handler; ) && done_event "$e" ||:
 done

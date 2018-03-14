@@ -7,5 +7,6 @@
 /sbin/lvm vgchange -ay --noudevsync >/dev/null ||:
 
 for e in "$eventdir"/lvm.*; do
+	[ -f "$e" ] || break
 	done_event "$e"
 done
