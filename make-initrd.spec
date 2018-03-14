@@ -1,6 +1,6 @@
 Name: make-initrd
 Version: 0.8.15
-Release: alt1.M80P.3
+Release: alt1.M80P.5
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -183,6 +183,9 @@ fi
 %_datadir/%name/features/ucode
 
 %changelog
+* Wed Mar 14 2018 Lenar Shakirov <snejok@altlinux.ru> 0.8.15-alt1.M80P.5
+- /etc/mtab moved from /proc/mounts symlink to regular empty file (Closes: #31465)
+
 * Tue Feb 27 2018 Lenar Shakirov <snejok@altlinux.ru> 0.8.15-alt1.M80P.3
 - stage ucode after compress (closes: #34456)
 
