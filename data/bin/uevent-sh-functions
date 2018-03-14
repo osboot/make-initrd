@@ -11,12 +11,16 @@ make_event() {
 	mktemp "$filterdir/.tmp/.XXXXXXXXX"
 }
 
+publish_event() {
+	mv -f -- "$2" "${2%/.tmp/*}/$1"
+}
+
 release_event() {
 	local num= dummy
 	[ ! -e /proc/uptime ] || read num dummy < /proc/uptime ||:
-	mv -f "$2" "${2%/.tmp/*}/$1.${num:-0.0}${2##*/}"
+	publish_event "$1.${num:-0.0}${2##*/}" "$2"
 }
 
 done_event() {
-	mv -f "$1" "${1%/*}/done.${1##*/}"
+	mv -f -- "$1" "${1%/*}/done.${1##*/}"
 }
