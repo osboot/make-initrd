@@ -3,3 +3,8 @@
 # Fix console loglevel
 LOGLEVEL=1
 dmesg -n "$LOGLEVEL"
+
+. /etc/initrd-release
+
+[ -z "${VERSION-}" ] ||
+	echo "INITRAMFS: version $VERSION"

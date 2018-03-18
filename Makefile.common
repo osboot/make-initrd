@@ -23,6 +23,7 @@ helper_sbindir ?= $(helperdir)/sbin
 localbuilddir =
 
 ifdef MKLOCAL
+VERSION       = $(shell git describe HEAD)
 prefix        = $(TOPDIR)
 bindir        = $(TOPDIR)/utils
 sbindir       = $(TOPDIR)/utils
