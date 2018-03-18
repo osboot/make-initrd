@@ -28,6 +28,7 @@ start() {
 	fi
 	start_daemon $ARGS -- \
 		"$NAME" \
+		    ${RDUEVENT_TIMEOUT:+--timeout=$RDUEVENT_TIMEOUT} \
 		    --pidfile "$PIDFILE" \
 		    --logfile "/var/log/$NAME.log" \
 		    "$filterdir" /sbin/uevent-handler

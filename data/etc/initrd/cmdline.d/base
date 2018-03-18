@@ -10,6 +10,7 @@ register_parameter bool RD_PRELOAD_MODULES 1
 register_parameter number IPTIMEOUT 30
 register_parameter number PANIC
 register_parameter number ROOTDELAY
+register_parameter number RDUEVENT_TIMEOUT
 register_parameter string INIT /sbin/init
 register_parameter string RDMODE
 register_parameter string RESCUE_MODULES
