@@ -12,9 +12,19 @@ RETVAL=0
 
 start()   { :; }
 stop()    { :; }
-status()  { :; }
 restart() { stop; start; }
 reload()  { restart; }
+
+status()
+{
+	if [ ! -e "$LOCKFILE" ]; then
+		echo "$PROG is stopped"
+		RETVAL=3
+	else
+		echo "$PROG is running"
+	fi
+	exit $RETVAL
+}
 
 switch()
 {
