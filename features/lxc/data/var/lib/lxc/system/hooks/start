@@ -1,9 +1,0 @@
-#!/bin/sh -efu
-
-rootfs="${LXC_ROOTFS_MOUNT:-/root}"
-kver="$(uname -r)"
-
-for d in "/lib/modules/$kver" "/lib/firmware"; do
-	[ ! -d "$d" -o ! -d "$rootfs/$d" ] || mountpoint -q "$d" ||
-		mount --bind "$rootfs/$d" "$d"
-done
