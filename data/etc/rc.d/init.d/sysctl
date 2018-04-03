@@ -21,14 +21,26 @@
 [ ! -x /sbin/systemd-sysctl ] ||
 	action 'Configuring kernel parameters:' systemd-sysctl
 
-if [ -f /proc/sys/kernel/modprobe ]; then
-	#echo                > /proc/sys/kernel/hotplug
-	#echo /sbin/modprobe > /proc/sys/kernel/modprobe
+conflist()
+{
+	for d in run etc lib usr/lib; do
+		for f in /"$d"/sysctl.d/*.conf; do
+			[ ! -f "$f" ] || echo "${f##*/}	$f"
+		done
+	done | sort -k1,1 | cut -f2
+	f=/etc/sysctl.conf
+	[ ! -f "$f" ] || echo "$f"
+}
 
-	sysctl -w kernel.modprobe="/sbin/modprobe" >/dev/null 2>&1
-	sysctl -w kernel.hotplug="/bin/true" >/dev/null 2>&1
+sysctl_system()
+{
+	conflist | while read f; do sysctl -q -p "$f" || exit $?; done
+}
 
+if [ -x /sbin/sysctl ]; then
+	if [ -f /proc/sys/kernel/modprobe ]; then
+		sysctl -w kernel.modprobe="/sbin/modprobe" >/dev/null 2>&1
+		sysctl -w kernel.hotplug="/bin/true" >/dev/null 2>&1
+	fi
+	action_shell 'Setting kernel runtime parameters:' sysctl_system
 fi
-
-[ ! -x /sbin/sysctl ] ||
-	action 'Setting kernel runtime parameters:' sysctl -q -p
