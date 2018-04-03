@@ -113,6 +113,9 @@ parse_services()
 			S_requires= S_suggests= S_level= S_before=
 			K_requires= K_suggests= K_level= K_before=
 
+			# provide service filename
+			append provides "${f##*/}"
+
 			while read l; do
 				vname=
 				case "$l" in
@@ -230,14 +233,17 @@ process_suggests()
 
 process_before()
 {
-	local level type names before provides requires name req reqname dep
+	local level type names before provides requires name req reqname dep rcname
 	level="$1"; shift
 	type="$1"; shift
+
+	verbose "Processing x-start-before services ($type$level)"
 
 	eval "names=\"\$rc${level}_${type}_names\""
 
 	for name in $names; do
-		eval "provides=\"\$rc_${name}_provides\""
+		eval "rcname=\"\$rc_${name}\""
+		eval "provides=\" \$rc_${name}_provides \""
 		eval "requires=\"\$rc_${name}_${type}_requires\""
 
 		for req in $names; do
@@ -245,8 +251,10 @@ process_before()
 			eval "before=\"\$rc_${req}_${type}_before\""
 
 			for dep in $before; do
-				[ -n "${provides##* $dep *}" ] ||
-					append requires $reqname
+				if [ -z "${provides##* $dep *}" ]; then
+					verbose "   $rcname requires $reqname"
+					append requires "$reqname"
+				fi
 			done
 		done
 
