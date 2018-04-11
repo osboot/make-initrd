@@ -19,7 +19,7 @@ check-for-root:
 
 depmod-host: check-for-root
 	@if [ -z "$$IGNORE_DEPMOD" ]; then \
-	   echo "Generating module dependencies on host ..."; \
+	   $(MSG) "Generating module dependencies on host ..."; \
 	   depmod -a -F "/boot/System.map-$(KERNEL)" "$(KERNEL)"; \
 	fi
 
@@ -39,12 +39,12 @@ show-guessed:
 	fi
 
 create: depmod-host show-guessed
-	@echo "Creating initrd image ..."
+	@$(MSG) "Creating initrd image ..."
 	@mkdir -m 755 -p $(verbose) -- $(ROOTDIR)
 	@$(TOOLSDIR)/create-initrd
 
 show-modules:
-	@printf 'Packed modules: '
+	@$(MSG_N) 'Packed modules: '
 	@find $(ROOTDIR)/lib/modules/$(KERNEL) -type f \( -name '*.ko'  -o -name '*.ko.*' \) -printf '%f\n' 2>/dev/null | \
 	    sed -e 's/\.ko\(\.[^\.]\+\)\?$$//' | sort | tr '\n' ' '
 	@printf '\n'
@@ -52,7 +52,7 @@ show-modules:
 pre-pack: show-modules
 
 pack: create
-	@echo "Packing image to archive ..."
+	@$(MSG) "Packing image to archive ..."
 	@$(TOOLSDIR)/pack-image
 
 install: pack
@@ -65,13 +65,13 @@ install: pack
 	    echo "" >&2; \
 	    exit 1; \
 	else \
-	    echo "Installing image ..."; \
+	    $(MSG) "Installing image ..."; \
 	    chmod 600 -- "$(WORKDIR)/initrd.img"; \
 	    mv -f $(verbose) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"; \
 	    echo "$(IMAGEFILE)" >> "$(TEMPDIR)/images"; \
 	fi
 
 clean:
-	@echo "Removing work directory ..."
+	@$(MSG) "Removing work directory ..."
 	$Qrm -rf -- "$(ROOTDIR)" "$(GUESSDIR)" "$(WORKDIR)/initcpio"
 	$Qrmdir -- "$(WORKDIR)"

@@ -1,5 +1,5 @@
 telnetd:
-	@echo "Adding telnet server ..."
+	@$(MSG) "Adding telnet server ..."
 	@put-tree "$(ROOTDIR)" $(TELNET_DATADIR)
 
 pack: telnetd

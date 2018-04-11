@@ -1,5 +1,5 @@
 ucode: compress
-	@echo "Adding CPU microcode ..."
+	@$(MSG) "Adding CPU microcode ..."
 	@$(ADD_UCODE)
 	@if [ -s "$(WORKDIR)/ucode.cpio" ]; then \
 		cat "$(WORKDIR)/initrd.img" >> "$(WORKDIR)/ucode.cpio"; \

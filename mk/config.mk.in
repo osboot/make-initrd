@@ -106,3 +106,5 @@ else
   V = @\#
 endif
 
+MSG   = echo
+MSG_N = echo -n

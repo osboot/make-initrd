@@ -1,5 +1,5 @@
 bootsplash: create
-	@echo "Building bootsplash ..."
+	@$(MSG) "Building bootsplash ..."
 	@$(ADD_BOOTSPLASH)
 
 pack: bootsplash

@@ -1,7 +1,7 @@
 IMAGEFILES  = $(WORKDIR)/image.files
 
 buildinfo: pack
-	@echo "Writing build info files ..."
+	@$(MSG) "Writing build info files ..."
 	$Qmkdir -p -- "$(BUILDINFODIR)/$(KERNEL).$(WORKDIR_SUFFIX)"
 	$Qprintf '%s\n' $(FEATURES) | \
 	    sort -uo "$(BUILDINFODIR)/$(KERNEL).$(WORKDIR_SUFFIX)/features"

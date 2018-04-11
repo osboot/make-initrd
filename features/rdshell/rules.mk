@@ -6,7 +6,7 @@ RDSHELL = login
 endif
 
 rdshell:
-	@echo "Adding initrd shell support ($(RDSHELL) mode) ..."
+	@$(MSG) "Adding initrd shell support ($(RDSHELL) mode) ..."
 	@mkdir -p -- "$(ROOTDIR)/etc/sysconfig"
 	@echo "RDSHELL_MODE=$(RDSHELL)" >"$(ROOTDIR)/etc/sysconfig/rdshell"
 	@$(ADD_LOGIN)

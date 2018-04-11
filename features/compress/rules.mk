@@ -1,5 +1,5 @@
 compress: pack
-	@echo "Compressing image ..."
+	@$(MSG) "Compressing image ..."
 	@$(COMPRESS_IMAGE)
 
 install: compress

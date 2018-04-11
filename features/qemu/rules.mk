@@ -4,6 +4,6 @@ MODULES_ADD += \
 	virtio.*
 
 qemu: create
-	@echo "Adding modules to run inside qemu ..."
+	@$(MSG) "Adding modules to run inside qemu ..."
 
 pack: qemu
