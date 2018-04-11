@@ -6,5 +6,5 @@ dmesg -n "$LOGLEVEL"
 
 . /etc/initrd-release
 
-[ -z "${VERSION-}" ] ||
-	echo "INITRAMFS: version $VERSION"
+[ -z "${VERSION_ID-}" ] ||
+	echo "INITRAMFS: version $VERSION_ID"
