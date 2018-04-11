@@ -2,48 +2,82 @@
 
 . sh-functions
 
+SYSFS_PATH="${SYSFS_PATH:-/sys}"
 reportdir="$workdir/report"
 
+c=/
+progress()
+{
+	case "$1" in
+		'/') c='-' ;;
+		'-') c='\' ;;
+		'\') c='|' ;;
+		'|') c='/' ;;
+	esac
+	echo -en "\rPlease wait ... $1 "
+}
+
+copy()
+{
+	find -P "$@" -regextype egrep \! -type d |
+	while read filename; do
+		progress "$c"
+		mkdir -p -- "$reportdir/${filename%/*}"
+		cp -d --preserve=all -- \
+			"$filename" "$reportdir/${filename%/*}"/ 2>/dev/null ||:
+	done
+}
+
+progress "$c"
 mkdir -p -- \
 	"$reportdir"/boot \
 	"$reportdir"/etc \
 	"$reportdir"/sys \
-	"$reportdir"/proc \
-	#
+	"$reportdir"/proc/self \
+#
 
 if [ -f "${KERNEL_CONFIG-}" ]; then
 	cp -a \
 		"$KERNEL_CONFIG" \
 		"$reportdir"/boot/
+	progress "$c"
 fi
 
-cp -aP \
-	/sys \
-	"$reportdir" 2>/dev/null ||:
-cp -a  \
+blkid -c /dev/null >"$reportdir"/etc/blkid.out
+progress "$c"
+
+copy \
+	/etc/blkid.tab \
+	/etc/blkid.tab \
+	/etc/fstab \
+	/etc/fstab \
+	/proc/cmdline \
 	/proc/config.gz \
 	/proc/cpuinfo \
-	/proc/cmdline \
 	/proc/crypto \
 	/proc/devices \
 	/proc/filesystems \
 	/proc/mdstat \
 	/proc/modules \
+	/proc/mounts \
 	/proc/partitions \
+	/proc/self/mountinfo \
+	/proc/self/mounts \
 	/proc/sys \
 	/proc/version \
-	"$reportdir"/proc/ 2>/dev/null ||:
-cat /proc/mounts > "$reportdir"/proc/mounts
-
-cp -a  \
-	/etc/fstab \
-	/etc/blkid.tab \
-	"$reportdir"/etc/
-
-blkid -c /dev/null >"$reportdir"/etc/blkid.out
+	"$SYSFS_PATH/block" \
+	"$SYSFS_PATH/bus" \
+	"$SYSFS_PATH/class" \
+	"$SYSFS_PATH/dev" \
+	"$SYSFS_PATH/devices" \
+	"$SYSFS_PATH/firmware" \
+	"$SYSFS_PATH/module" \
+#
 
 [ -z "${VERSION-}" ] ||
-		printf '%s\n' "$VERSION" > "$reportdir"/.version
+	printf '%s\n' "$VERSION" > "$reportdir"/.version
+progress "done"
+echo
 
 outfile="$PWD/make-initrd-bugreport-$(date +"%Y%m%d").tar.bz2"
 
