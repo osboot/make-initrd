@@ -1,6 +1,0 @@
-#!/bin/sh -efu
-
-. guess-functions
-
-[ ! -x /sbin/syslogd -o ! -x /sbin/klogd ] ||
-	guess_feature syslog
