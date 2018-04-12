@@ -59,7 +59,7 @@ install: $(bin_PROGS) $(sbin_PROGS)
 	$(INSTALL) -p -m755 $(sbin_PROGS) $(DESTDIR)$(helper_sbindir)/
 
 clean:
-	$(RM) -rf -- $(out_bindir) $(out_sbindir) $(DEPS) $(OBJS)
+	$(RM) -rf -- _out $(out_bindir) $(out_sbindir) $(DEPS) $(OBJS)
 
 format:
 	clang-format -style=file -i *.c *.h
