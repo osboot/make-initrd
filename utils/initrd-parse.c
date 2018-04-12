@@ -18,10 +18,10 @@ read_stream(const char *compress, struct stream *arv, struct result *res)
 
 	unsigned long offset = 0;
 
-	while(offset < arv->size) {
+	while (offset < arv->size) {
 		decompress = decompress_method(arv->addr + offset, arv->size - offset, &compress_name);
 		if (decompress) {
-			unsigned char *unpack = NULL;
+			unsigned char *unpack     = NULL;
 			unsigned long unpack_size = 0;
 			unsigned long long readed = 0;
 
@@ -63,8 +63,8 @@ free_streams(struct list_tail *stream)
 {
 	struct list_tail *l = stream;
 	while (l) {
-		if (((struct stream *)l->data)->allocated) {
-			free(((struct stream *)l->data)->addr);
+		if (((struct stream *) l->data)->allocated) {
+			free(((struct stream *) l->data)->addr);
 		}
 		l = l->next;
 	}
@@ -83,4 +83,3 @@ free_cpios(struct list_tail *cpios)
 	}
 	list_free(cpios);
 }
-

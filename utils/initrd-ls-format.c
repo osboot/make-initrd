@@ -12,16 +12,16 @@
 
 #include "initrd-ls.h"
 
-#define STAT_ISSET(mode, mask) (((mode) & mask) == mask)
+#define STAT_ISSET(mode, mask) (((mode) &mask) == mask)
 
 extern int opts;
 
 static int max_nlinks = 1;
-static int max_size = 1;
-static int max_uid = 1;
-static int max_gid = 1;
-static int max_min = 1;
-static int max_maj = 1;
+static int max_size   = 1;
+static int max_uid    = 1;
+static int max_gid    = 1;
+static int max_min    = 1;
+static int max_maj    = 1;
 
 int
 preformat(struct cpio_header *h)
@@ -76,79 +76,73 @@ show_header(struct cpio_header *h)
 	}
 
 	switch (h->mode & S_IFMT) {
-	case S_IFBLK:
-		putchar('b');
-		break;
-	case S_IFCHR:
-		putchar('c');
-		break;
-	case S_IFDIR:
-		putchar('d');
-		break;
-	case S_IFIFO:
-		putchar('p');
-		break;
-	case S_IFLNK:
-		putchar('l');
-		break;
-	case S_IFSOCK:
-		putchar('s');
-		break;
-	case S_IFREG:
-		putchar('-');
-		break;
-	default:
-		putchar('?');
-		break;
+		case S_IFBLK:
+			putchar('b');
+			break;
+		case S_IFCHR:
+			putchar('c');
+			break;
+		case S_IFDIR:
+			putchar('d');
+			break;
+		case S_IFIFO:
+			putchar('p');
+			break;
+		case S_IFLNK:
+			putchar('l');
+			break;
+		case S_IFSOCK:
+			putchar('s');
+			break;
+		case S_IFREG:
+			putchar('-');
+			break;
+		default:
+			putchar('?');
+			break;
 	}
 	putchar(STAT_ISSET(h->mode, S_IRUSR) ? 'r' : '-');
 	putchar(STAT_ISSET(h->mode, S_IWUSR) ? 'w' : '-');
 
-	!STAT_ISSET(h->mode, S_ISUID) ?
-		putchar(STAT_ISSET(h->mode, S_IXUSR) ? 'x' : '-') :
-		putchar('S');
+	!STAT_ISSET(h->mode, S_ISUID) ? putchar(STAT_ISSET(h->mode, S_IXUSR) ? 'x' : '-') : putchar('S');
 
 	putchar(STAT_ISSET(h->mode, S_IRGRP) ? 'r' : '-');
 	putchar(STAT_ISSET(h->mode, S_IWGRP) ? 'w' : '-');
 
-	!STAT_ISSET(h->mode, S_ISGID) ?
-		putchar(STAT_ISSET(h->mode, S_IXGRP) ? 'x' : '-') :
-		putchar('S');
+	!STAT_ISSET(h->mode, S_ISGID) ? putchar(STAT_ISSET(h->mode, S_IXGRP) ? 'x' : '-') : putchar('S');
 
 	putchar(STAT_ISSET(h->mode, S_IROTH) ? 'r' : '-');
 	putchar(STAT_ISSET(h->mode, S_IWOTH) ? 'w' : '-');
 
-	!STAT_ISSET(h->mode, S_ISVTX) ?
-		putchar(STAT_ISSET(h->mode, S_IXOTH) ? 'x' : '-') :
-		putchar(S_ISDIR(h->mode) ? 't' : 'T');
+	!STAT_ISSET(h->mode, S_ISVTX) ? putchar(STAT_ISSET(h->mode, S_IXOTH) ? 'x' : '-') : putchar(S_ISDIR(h->mode) ? 't' : 'T');
 
 	if (S_ISCHR(h->mode) || S_ISBLK(h->mode)) {
 		rc = asprintf(&fmt, " %%%dju %%%dju %%%dju %%%du,%%%du %%s%%s",
-				max_nlinks, max_uid, max_gid, max_size - max_maj - max_min, max_min);
+		              max_nlinks, max_uid, max_gid, max_size - max_maj - max_min, max_min);
 		if (rc == -1)
 			error(EXIT_FAILURE, errno, "ERROR: asprintf");
 
 		fprintf(stdout, fmt,
-			(uintmax_t) h->nlink,
-			(uintmax_t) h->uid,
-			(uintmax_t) h->gid,
-			major(h->rdev),
-			minor(h->rdev),
-			timbuf,
-			h->name);
+		        (uintmax_t) h->nlink,
+		        (uintmax_t) h->uid,
+		        (uintmax_t) h->gid,
+		        major(h->rdev),
+		        minor(h->rdev),
+		        timbuf,
+		        h->name);
 	} else {
 		rc = asprintf(&fmt, " %%%dju %%%dju %%%dju %%%dju %%s%%s",
-				max_nlinks, max_uid, max_gid, max_size);
+		              max_nlinks, max_uid, max_gid, max_size);
 		if (rc == -1)
 			error(EXIT_FAILURE, errno, "ERROR: %s: %d: asprintf", __FILE__, __LINE__);
 
 		fprintf(stdout, fmt,
-			(uintmax_t) h->nlink,
-			(uintmax_t) h->uid,
-			(uintmax_t) h->gid,
-			(uintmax_t) h->body_len,
-			timbuf,
-			h->name);
+		        (uintmax_t) h->nlink,
+		        (uintmax_t) h->uid,
+		        (uintmax_t) h->gid,
+		        (uintmax_t) h->body_len,
+		        timbuf,
+		        h->name);
 	}
 	free(fmt);
 

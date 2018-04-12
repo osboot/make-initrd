@@ -20,37 +20,37 @@
 
 int opts = 0;
 
-static const char cmdopts_s[] = "nCVh";
+static const char cmdopts_s[]        = "nCVh";
 static const struct option cmdopts[] = {
-	{"name",        no_argument, 0, 'n'},
-	{"no-mtime",    no_argument, 0,  3 },
-	{"compression", no_argument, 0, 'C'},
-	{"version",     no_argument, 0, 'V'},
-	{"help",        no_argument, 0, 'h'},
-	{NULL, 0, 0, 0}
+	{ "name", no_argument, 0, 'n' },
+	{ "no-mtime", no_argument, 0, 3 },
+	{ "compression", no_argument, 0, 'C' },
+	{ "version", no_argument, 0, 'V' },
+	{ "help", no_argument, 0, 'h' },
+	{ NULL, 0, 0, 0 }
 };
 
-static void __attribute__ ((noreturn))
+static void __attribute__((noreturn))
 print_help(const char *progname)
 {
 	printf("Usage: %s [options] initramfs\n"
-		"\n"
-		"Displays initramfs contents in a format similar to ls command.\n"
-		"If initramfs contains more than one cpio archive, utility will show all of them.\n"
-		"Archives can be compressed. In this case, utility will take a look inside.\n"
-		"\n"
-		"Options:\n"
-		"   --no-mtime          Hide modification time;\n"
-		"   -n, --name          Show only filenames;\n"
-		"   -C, --compression   Show compression method for each archive;\n"
-		"   -V, --version       Show version of program and exit;\n"
-		"   -h, --help          Show this text and exit.\n"
-		"\n",
-		progname);
+	       "\n"
+	       "Displays initramfs contents in a format similar to ls command.\n"
+	       "If initramfs contains more than one cpio archive, utility will show all of them.\n"
+	       "Archives can be compressed. In this case, utility will take a look inside.\n"
+	       "\n"
+	       "Options:\n"
+	       "   --no-mtime          Hide modification time;\n"
+	       "   -n, --name          Show only filenames;\n"
+	       "   -C, --compression   Show compression method for each archive;\n"
+	       "   -V, --version       Show version of program and exit;\n"
+	       "   -h, --help          Show this text and exit.\n"
+	       "\n",
+	       progname);
 	exit(EXIT_SUCCESS);
 }
 
-static void __attribute__ ((noreturn))
+static void __attribute__((noreturn))
 print_version(const char *progname)
 {
 	printf("%s version " VERSION "\n"
@@ -99,7 +99,7 @@ main(int argc, char **argv)
 	if ((fd = open(argv[optind], O_RDONLY)) == -1)
 		error(EXIT_FAILURE, errno, "ERROR: %s: %d: open", __FILE__, __LINE__);
 
-	unsigned char *addr = mmap(NULL, (size_t) st.st_size, PROT_READ, MAP_PRIVATE|MAP_POPULATE, fd, 0);
+	unsigned char *addr = mmap(NULL, (size_t) st.st_size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);
 
 	if (addr == MAP_FAILED)
 		error(EXIT_FAILURE, errno, "ERROR: %s: %d: mmap", __FILE__, __LINE__);
@@ -110,22 +110,22 @@ main(int argc, char **argv)
 	struct result res;
 
 	res.streams = NULL;
-	res.cpios = NULL;
+	res.cpios   = NULL;
 
 	l = list_append(&res.streams, sizeof(struct stream));
 	if (l == NULL)
 		error(EXIT_FAILURE, errno, "unable to add element to list");
 	s = l->data;
 
-	s->addr = addr;
-	s->size = (unsigned long) st.st_size;
+	s->addr      = addr;
+	s->size      = (unsigned long) st.st_size;
 	s->allocated = 0;
 
 	read_stream("raw", s, &res);
 
 	int bytes;
 	int max_compress_name = 3;
-	char *fmt = NULL;
+	char *fmt             = NULL;
 
 	l = res.cpios;
 	while (l) {
@@ -146,8 +146,8 @@ main(int argc, char **argv)
 	bytes = snprintf(NULL, 0, "%ju", n_cpio);
 
 	c = (opts & SHOW_COMPRESSION)
-		? asprintf(&fmt, "%%%dd %%%ds ", bytes, max_compress_name)
-		: asprintf(&fmt, "%%%dd ", bytes);
+	        ? asprintf(&fmt, "%%%dd %%%ds ", bytes, max_compress_name)
+	        : asprintf(&fmt, "%%%dd ", bytes);
 
 	if (c == -1)
 		error(EXIT_FAILURE, errno, "ERROR: %s: %d: asprintf", __FILE__, __LINE__);
@@ -158,11 +158,11 @@ main(int argc, char **argv)
 		h = ((struct cpio *) l->data)->headers;
 		while (h) {
 			(opts & SHOW_COMPRESSION)
-				? fprintf(stdout, fmt, c, ((struct cpio *) l->data)->compress)
-				: fprintf(stdout, fmt, c);
+			    ? fprintf(stdout, fmt, c, ((struct cpio *) l->data)->compress)
+			    : fprintf(stdout, fmt, c);
 			(opts & SHOW_NAME_ONLY)
-				? fprintf(stdout, "%s\n", ((struct cpio_header *) h->data)->name)
-				: show_header(h->data);
+			    ? fprintf(stdout, "%s\n", ((struct cpio_header *) h->data)->name)
+			    : show_header(h->data);
 			h = h->next;
 		}
 		l = l->next;

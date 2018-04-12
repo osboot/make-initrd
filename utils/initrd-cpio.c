@@ -22,19 +22,19 @@
 #define CPIO_FORMAT_OLDASCII "070707"
 #define CPIO_FORMAT_LENGTH 6
 
-#define MINORBITS	20
-#define MINORMASK	((1U << MINORBITS) - 1)
+#define MINORBITS 20
+#define MINORMASK ((1U << MINORBITS) - 1)
 
-#define MAJOR(dev)	((unsigned int) ((dev) >> MINORBITS))
-#define MINOR(dev)	((unsigned int) ((dev) & MINORMASK))
-#define MKDEV(ma,mi)	(((ma) << MINORBITS) | (mi))
+#define MAJOR(dev) ((unsigned int) ((dev) >> MINORBITS))
+#define MINOR(dev) ((unsigned int) ((dev) &MINORMASK))
+#define MKDEV(ma, mi) (((ma) << MINORBITS) | (mi))
 
 #define N_ALIGN(len) ((((len) + 1) & ~3UL) + 2)
 
 static inline unsigned
 new_encode_dev(dev_t dev)
 {
-	unsigned v = 0xff;
+	unsigned v     = 0xff;
 	unsigned major = MAJOR(dev);
 	unsigned minor = MINOR(dev);
 	return (minor & 0xff) | (major << 8) | ((minor & ~v) << 12);
@@ -80,7 +80,7 @@ read_cpio(struct cpio *a)
 	struct cpio_header *h;
 	unsigned long offset = 0;
 
-	while(offset < a->size) {
+	while (offset < a->size) {
 		if (a->size < (CPIO_FORMAT_LENGTH + CPIO_HEADER_SIZE))
 			error(EXIT_FAILURE, 0, "archive less than header");
 
@@ -166,23 +166,23 @@ write_cpio(struct cpio_header *data, unsigned long offset, FILE *output)
 {
 	char s[256];
 
-	sprintf(s,"%s%08lX%08X%08lX%08lX%08lX%08lX"
-	        "%08lX%08lX%08lX%08lX%08lX%08lX%08X",
-		CPIO_FORMAT_NEWASCII,	/* magic */
-		data->ino,		/* ino */
-		data->mode,		/* mode */
-		(long) data->uid,	/* uid */
-		(long) data->gid,	/* gid */
-		data->nlink,		/* nlink */
-		data->mtime,		/* mtime */
+	sprintf(s, "%s%08lX%08X%08lX%08lX%08lX%08lX"
+	           "%08lX%08lX%08lX%08lX%08lX%08lX%08X",
+	        CPIO_FORMAT_NEWASCII, /* magic */
+	        data->ino,            /* ino */
+	        data->mode,           /* mode */
+	        (long) data->uid,     /* uid */
+	        (long) data->gid,     /* gid */
+	        data->nlink,          /* nlink */
+	        data->mtime,          /* mtime */
 
-		data->body_len,		/* filesize */
-		data->major,		/* major */
-		data->minor,		/* minor */
-		data->rmajor,		/* rmajor */
-		data->rminor,		/* rminor */
-		data->name_len,		/* namesize */
-		0);			/* chksum */
+	        data->body_len, /* filesize */
+	        data->major,    /* major */
+	        data->minor,    /* minor */
+	        data->rmajor,   /* rmajor */
+	        data->rminor,   /* rminor */
+	        data->name_len, /* namesize */
+	        0);             /* chksum */
 
 	offset = push_hdr(s, offset, output);
 
@@ -215,21 +215,21 @@ write_trailer(unsigned long offset, FILE *output)
 	const char name[] = "TRAILER!!!";
 
 	sprintf(s, "%s%08X%08X%08lX%08lX%08X%08lX"
-	       "%08X%08X%08X%08X%08X%08X%08X",
-		CPIO_FORMAT_NEWASCII,	/* magic */
-		0,			/* ino */
-		0,			/* mode */
-		(long) 0,		/* uid */
-		(long) 0,		/* gid */
-		1,			/* nlink */
-		(long) 0,		/* mtime */
-		0,			/* filesize */
-		0,			/* major */
-		0,			/* minor */
-		0,			/* rmajor */
-		0,			/* rminor */
-		(unsigned)strlen(name)+1, /* namesize */
-		0);			/* chksum */
+	           "%08X%08X%08X%08X%08X%08X%08X",
+	        CPIO_FORMAT_NEWASCII,        /* magic */
+	        0,                           /* ino */
+	        0,                           /* mode */
+	        (long) 0,                    /* uid */
+	        (long) 0,                    /* gid */
+	        1,                           /* nlink */
+	        (long) 0,                    /* mtime */
+	        0,                           /* filesize */
+	        0,                           /* major */
+	        0,                           /* minor */
+	        0,                           /* rmajor */
+	        0,                           /* rminor */
+	        (unsigned) strlen(name) + 1, /* namesize */
+	        0);                          /* chksum */
 
 	offset = push_hdr(s, offset, output);
 	offset = push_rest(name, offset, output);

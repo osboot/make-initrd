@@ -10,9 +10,10 @@
 
 #define CHUNK 0x4000
 
-int bunzip2(unsigned char *in, unsigned long in_size,
-            unsigned char **out, unsigned long *out_size,
-            unsigned long long *inread)
+int
+bunzip2(unsigned char *in, unsigned long in_size,
+        unsigned char **out, unsigned long *out_size,
+        unsigned long long *inread)
 {
 	int ret;
 	unsigned long have, out_offset, total_in_hi32;
@@ -31,11 +32,11 @@ int bunzip2(unsigned char *in, unsigned long in_size,
 		return DECOMP_FAIL;
 
 	strm.avail_in = (unsigned int) in_size;
-	strm.next_in = (char *) in;
+	strm.next_in  = (char *) in;
 
 	do {
 		strm.avail_out = CHUNK;
-		strm.next_out = obuf;
+		strm.next_out  = obuf;
 
 		ret = BZ2_bzDecompress(&strm);
 

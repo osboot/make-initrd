@@ -11,32 +11,33 @@ struct compress_format {
 
 static const struct compress_format compressed_formats[] = {
 #ifdef HAVE_GZIP
-	{ {0x1f, 0x8b}, "gzip",  gunzip  },
-	{ {0x1f, 0x9e}, "gzip",  gunzip  },
+	{ { 0x1f, 0x8b }, "gzip", gunzip },
+	{ { 0x1f, 0x9e }, "gzip", gunzip },
 #endif
 #ifdef HAVE_BZIP2
-	{ {0x42, 0x5a}, "bzip2", bunzip2 },
+	{ { 0x42, 0x5a }, "bzip2", bunzip2 },
 #endif
 #ifdef HAVE_LZMA
-	{ {0x5d, 0x00}, "lzma",  NULL    },
-	{ {0xfd, 0x37}, "xz",    unlzma  },
+	{ { 0x5d, 0x00 }, "lzma", NULL },
+	{ { 0xfd, 0x37 }, "xz", unlzma },
 #endif
 #ifdef HAVE_ZSTD
-	{ {0x28, 0xb5}, "zstd",  unzstd  },
+	{ { 0x28, 0xb5 }, "zstd", unzstd },
 #endif
-	{ {0x89, 0x4c}, "lzo",   NULL    },
-	{ {0x02, 0x21}, "lz4",   NULL    },
-	{ {0, 0}, NULL, NULL }
+	{ { 0x89, 0x4c }, "lzo", NULL },
+	{ { 0x02, 0x21 }, "lz4", NULL },
+	{ { 0, 0 }, NULL, NULL }
 };
 
-decompress_fn decompress_method(const unsigned char *inbuf, unsigned long len, const char **name)
+decompress_fn
+decompress_method(const unsigned char *inbuf, unsigned long len, const char **name)
 {
 	const struct compress_format *cf;
 
 	if (len < 2) {
 		if (name)
 			*name = NULL;
-		return NULL;	/* Need at least this much... */
+		return NULL; /* Need at least this much... */
 	}
 
 	//printf("Compressed data magic: %#.2x %#.2x\n", inbuf[0], inbuf[1]);
@@ -44,7 +45,6 @@ decompress_fn decompress_method(const unsigned char *inbuf, unsigned long len, c
 	for (cf = compressed_formats; cf->name; cf++) {
 		if (!memcmp(inbuf, cf->magic, 2))
 			break;
-
 	}
 	if (name)
 		*name = cf->name;

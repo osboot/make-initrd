@@ -83,9 +83,13 @@ install: $(bin_PROGS) $(sbin_PROGS)
 clean:
 	$(RM) -- $(bin_PROGS) $(sbin_PROGS) $(DEPS) $(OBJS)
 
+format:
+	clang-format -style=file -i *.h $(depinfo_SRCS) $(initrd_ls_SRCS) $(initrd_extract_SRCS)
+
 # We need dependencies only if goal isn't "indent" or "clean".
 ifneq ($(MAKECMDGOALS),indent)
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),format)
 
 %.d: %.c Makefile
 	$(DEP) -MM $(CPPFLAGS) $< |sed -e 's,\($*\)\.o[ :]*,\1.o $@: Makefile ,g' >$@
@@ -94,5 +98,6 @@ ifneq ($(DEPS),)
 -include $(DEPS)
 endif
 
+endif # format
 endif # clean
 endif # indent

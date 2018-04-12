@@ -66,7 +66,7 @@ list_free(struct list_tail *head)
 	struct list_tail *l, *n;
 
 	l = head;
-	while(l) {
+	while (l) {
 		if (l->data)
 			free(l->data);
 		n = l->next;

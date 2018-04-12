@@ -1,12 +1,12 @@
 #ifndef INITRD_DECOMPRESS_H
 #define INITRD_DECOMPRESS_H
 
-#define DECOMP_OK   0
+#define DECOMP_OK 0
 #define DECOMP_FAIL 1
 
 typedef int (*decompress_fn)(unsigned char *inbuf, unsigned long ilen,
-	unsigned char **outbuf, unsigned long *olen,
-	unsigned long long *inread);
+                             unsigned char **outbuf, unsigned long *olen,
+                             unsigned long long *inread);
 
 decompress_fn decompress_method(const unsigned char *inbuf, unsigned long len, const char **name);
 

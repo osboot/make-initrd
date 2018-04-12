@@ -19,7 +19,7 @@ enum show_flags {
 };
 
 static int show_tree = 0;
-static int opts = SHOW_DEPS | SHOW_MODULES | SHOW_FIRMWARE | SHOW_PREFIX | SHOW_BUILTIN;
+static int opts      = SHOW_DEPS | SHOW_MODULES | SHOW_FIRMWARE | SHOW_PREFIX | SHOW_BUILTIN;
 
 static char *firmware_dir;
 static char firmware_defaultdir[] = "/lib/firmware/updates:/lib/firmware";
@@ -38,7 +38,7 @@ process_firmware(const char *firmware)
 			int i = show_tree;
 
 			if (--i > 0) {
-				while(i--)
+				while (i--)
 					printf("   ");
 				printf("\\_ ");
 			}
@@ -80,7 +80,7 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 		int i = show_tree;
 
 		if (--i > 0) {
-			while(i--)
+			while (i--)
 				printf("   ");
 			printf("\\_ ");
 		}
@@ -96,9 +96,10 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 
 	if ((ret = kmod_module_get_info(mod, &list)) < 0)
 		error(EXIT_FAILURE, ret, "ERROR: Could not get information from '%s'",
-			kmod_module_get_name(mod));
+		      kmod_module_get_name(mod));
 
-	kmod_list_foreach(l, list) {
+	kmod_list_foreach(l, list)
+	{
 		const char *key = kmod_module_info_get_key(l);
 		const char *val = kmod_module_info_get_value(l);
 
@@ -144,7 +145,8 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 
 	if (!filtered) {
 		if (opts & SHOW_BUILTIN) {
-			kmod_list_foreach(l, list) {
+			kmod_list_foreach(l, list)
+			{
 				mod = kmod_module_get_module(l);
 
 				if (opts & SHOW_PREFIX)
@@ -160,7 +162,8 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 		return;
 	}
 
-	kmod_list_foreach(l, filtered) {
+	kmod_list_foreach(l, filtered)
+	{
 		mod = kmod_module_get_module(l);
 		depinfo(ctx, mod);
 		kmod_module_unref(mod);
@@ -169,49 +172,49 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 	kmod_module_unref_list(list);
 }
 
-static const char cmdopts_s[] = "k:b:f:tDMFPBVh";
+static const char cmdopts_s[]        = "k:b:f:tDMFPBVh";
 static const struct option cmdopts[] = {
-	{"tree",          no_argument,       0, 't'},
-	{"no-deps",       no_argument,       0, 'D'},
-	{"no-modules",    no_argument,       0, 'M'},
-	{"no-firmware",   no_argument,       0, 'F'},
-	{"no-prefix",     no_argument,       0, 'P'},
-	{"no-builtin",    no_argument,       0, 'B'},
-	{"set-version",   required_argument, 0, 'k'},
-	{"base-dir",      required_argument, 0, 'b'},
-	{"firmware-dir",  required_argument, 0, 'f'},
-	{"version",       no_argument,       0, 'V'},
-	{"help",          no_argument,       0, 'h'},
-	{NULL, 0, 0, 0}
+	{ "tree", no_argument, 0, 't' },
+	{ "no-deps", no_argument, 0, 'D' },
+	{ "no-modules", no_argument, 0, 'M' },
+	{ "no-firmware", no_argument, 0, 'F' },
+	{ "no-prefix", no_argument, 0, 'P' },
+	{ "no-builtin", no_argument, 0, 'B' },
+	{ "set-version", required_argument, 0, 'k' },
+	{ "base-dir", required_argument, 0, 'b' },
+	{ "firmware-dir", required_argument, 0, 'f' },
+	{ "version", no_argument, 0, 'V' },
+	{ "help", no_argument, 0, 'h' },
+	{ NULL, 0, 0, 0 }
 };
 
-static void __attribute__ ((noreturn))
+static void __attribute__((noreturn))
 print_help(const char *progname)
 {
 	printf("Usage: %s [options] [module|filename|alias]...\n"
-		"\n"
-		"Displays the full path to module and its dependencies.\n"
-		"It also shows the full path to firmware.\n"
-		"\n"
-		"Options:\n"
-		"   -t, --tree                  Show dependencies between modules hierarchically;\n"
-		"   -D, --no-deps               Don't show dependence;\n"
-		"   -P, --no-prefix             Omit the prefix describing the type of file;\n"
-		"   -M, --no-modules            Omit modules from the output;\n"
-		"   -F, --no-firmware           Omit firmware from the output;\n"
-		"   -B, --no-builtin            Omit builtin modules from the output;\n"
-		"   -k, --set-version=VERSION   Use VERSION instead of `uname -r`;\n"
-		"   -b, --base-dir=DIR          Use DIR as filesystem root for /lib/modules;\n"
-		"   -f, --firmware-dir=DIR      Use DIR as colon-separated list of firmware directories\n"
-		"                               (default: %s);\n"
-		"   -V, --version               Show version of program and exit;\n"
-		"   -h, --help                  Show this text and exit.\n"
-		"\n",
-		progname, firmware_defaultdir);
+	       "\n"
+	       "Displays the full path to module and its dependencies.\n"
+	       "It also shows the full path to firmware.\n"
+	       "\n"
+	       "Options:\n"
+	       "   -t, --tree                  Show dependencies between modules hierarchically;\n"
+	       "   -D, --no-deps               Don't show dependence;\n"
+	       "   -P, --no-prefix             Omit the prefix describing the type of file;\n"
+	       "   -M, --no-modules            Omit modules from the output;\n"
+	       "   -F, --no-firmware           Omit firmware from the output;\n"
+	       "   -B, --no-builtin            Omit builtin modules from the output;\n"
+	       "   -k, --set-version=VERSION   Use VERSION instead of `uname -r`;\n"
+	       "   -b, --base-dir=DIR          Use DIR as filesystem root for /lib/modules;\n"
+	       "   -f, --firmware-dir=DIR      Use DIR as colon-separated list of firmware directories\n"
+	       "                               (default: %s);\n"
+	       "   -V, --version               Show version of program and exit;\n"
+	       "   -h, --help                  Show this text and exit.\n"
+	       "\n",
+	       progname, firmware_defaultdir);
 	exit(EXIT_SUCCESS);
 }
 
-static void __attribute__ ((noreturn))
+static void __attribute__((noreturn))
 print_version(const char *progname)
 {
 	printf("%s version " VERSION "\n"
@@ -298,8 +301,8 @@ main(int argc, char **argv)
 
 	for (i = optind; i < argc; i++) {
 		access(argv[i], F_OK)
-			? depinfo_alias(ctx, argv[i])
-			: depinfo_path(ctx, argv[i]);
+		    ? depinfo_alias(ctx, argv[i])
+		    : depinfo_path(ctx, argv[i]);
 	}
 
 	kmod_unref(ctx);

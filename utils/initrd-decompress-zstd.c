@@ -18,9 +18,10 @@ xmalloc(size_t size)
 	return r;
 }
 
-int unzstd(unsigned char *in, unsigned long in_size,
-           unsigned char **out, unsigned long *out_size,
-           unsigned long long *inread)
+int
+unzstd(unsigned char *in, unsigned long in_size,
+       unsigned char **out, unsigned long *out_size,
+       unsigned long long *inread)
 {
 	void *buff_in, *buff_out;
 	size_t to_read, pos = 0;
@@ -29,7 +30,7 @@ int unzstd(unsigned char *in, unsigned long in_size,
 
 	if (!dstream) {
 		error(EXIT_SUCCESS, 0, "ERROR: %s: %d: ZSTD_createDStream",
-			__FILE__, __LINE__);
+		      __FILE__, __LINE__);
 		return DECOMP_FAIL;
 	}
 
@@ -37,7 +38,7 @@ int unzstd(unsigned char *in, unsigned long in_size,
 
 	if (ZSTD_isError(result)) {
 		error(EXIT_SUCCESS, 0, "ERROR: %s: %d: ZSTD_initDStream: %s",
-			__FILE__, __LINE__, ZSTD_getErrorName(result));
+		      __FILE__, __LINE__, ZSTD_getErrorName(result));
 		ZSTD_freeDStream(dstream);
 		return DECOMP_FAIL;
 	}
@@ -64,7 +65,7 @@ int unzstd(unsigned char *in, unsigned long in_size,
 
 			if (ZSTD_isError(to_read)) {
 				error(EXIT_SUCCESS, 0, "ERROR: %s: %d: ZSTD_decompressStream: %s",
-					__FILE__, __LINE__, ZSTD_getErrorName(to_read));
+				      __FILE__, __LINE__, ZSTD_getErrorName(to_read));
 
 				ZSTD_freeDStream(dstream);
 				free(buff_in);

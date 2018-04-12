@@ -46,7 +46,7 @@ add_sequence(char *res, size_t *rlen, unsigned int *i, char *str, size_t len)
 
 	while (str && j < len)
 		res[(*i)++] = str[j++];
-	res[(*i)]           = '\0';
+	res[(*i)] = '\0';
 
 	(*rlen) = siz;
 	return res;
@@ -65,7 +65,7 @@ expand_sequence(char *res, size_t *rlen, unsigned int *i, char from, char to)
 
 	while (to >= from)
 		res[(*i)++] = from++;
-	res[(*i)]           = '\0';
+	res[(*i)] = '\0';
 
 	(*rlen) = siz;
 	return res;

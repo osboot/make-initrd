@@ -11,13 +11,14 @@
 
 #define CHUNK 0x4000
 
-int unlzma(unsigned char *in, unsigned long in_size,
-           unsigned char **out, unsigned long *out_size,
-           unsigned long long *inread)
+int
+unlzma(unsigned char *in, unsigned long in_size,
+       unsigned char **out, unsigned long *out_size,
+       unsigned long long *inread)
 {
 	unsigned long have, out_offset;
 	lzma_ret ret;
-	lzma_stream strm = LZMA_STREAM_INIT;
+	lzma_stream strm   = LZMA_STREAM_INIT;
 	lzma_action action = LZMA_RUN;
 
 	unsigned char obuf[CHUNK];
@@ -27,11 +28,11 @@ int unlzma(unsigned char *in, unsigned long in_size,
 		return DECOMP_FAIL;
 
 	strm.avail_in = in_size;
-	strm.next_in = in;
+	strm.next_in  = in;
 
 	do {
 		strm.avail_out = CHUNK;
-		strm.next_out = obuf;
+		strm.next_out  = obuf;
 
 		ret = lzma_code(&strm, action);
 

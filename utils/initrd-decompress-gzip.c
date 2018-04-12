@@ -12,9 +12,10 @@
 #define windowBits 15
 #define CHUNK 0x4000
 
-int gunzip(unsigned char *in, unsigned long in_size,
-           unsigned char **out, unsigned long *out_size,
-           unsigned long long *inread)
+int
+gunzip(unsigned char *in, unsigned long in_size,
+       unsigned char **out, unsigned long *out_size,
+       unsigned long long *inread)
 {
 	int ret;
 	unsigned long have, out_offset;
@@ -22,22 +23,22 @@ int gunzip(unsigned char *in, unsigned long in_size,
 	unsigned char obuf[CHUNK];
 	out_offset = 0;
 
-    /* allocate inflate state */
-    strm.zalloc   = Z_NULL;
-    strm.zfree    = Z_NULL;
-    strm.opaque   = Z_NULL;
-    strm.avail_in = 0;
-    strm.next_in  = Z_NULL;
+	/* allocate inflate state */
+	strm.zalloc   = Z_NULL;
+	strm.zfree    = Z_NULL;
+	strm.opaque   = Z_NULL;
+	strm.avail_in = 0;
+	strm.next_in  = Z_NULL;
 
-	if ((ret = inflateInit2(&strm, windowBits|ENABLE_ZLIB_GZIP)) != Z_OK)
+	if ((ret = inflateInit2(&strm, windowBits | ENABLE_ZLIB_GZIP)) != Z_OK)
 		return DECOMP_FAIL;
 
 	strm.avail_in = (unsigned int) in_size;
-	strm.next_in = in;
+	strm.next_in  = in;
 
 	do {
 		strm.avail_out = CHUNK;
-		strm.next_out = obuf;
+		strm.next_out  = obuf;
 
 		ret = inflate(&strm, Z_NO_FLUSH);
 
