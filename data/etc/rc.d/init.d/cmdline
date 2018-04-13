@@ -65,11 +65,27 @@ register_array()
 	__register "$2" "0" $(($v + $VAR_ARR))
 }
 
+register_alias()
+{
+	local n="$1"
+	shift
+	while [ "$#" != 0 ]; do
+		[ -z "${__aliases##* $1:*}" ] ||
+			__aliases="$__aliases$1:$n "
+		shift
+	done
+}
+
 __set_var()
 {
 	local n="$1" v="$2" flags
 
 	n="$(replace -s= "[a-z]-." "[A-Z]__" "$n")"
+
+	while [ -z "${__aliases##* $n:*}" ]; do
+		n="${__aliases##* $n:}"
+		n="${n%% *}"
+	done
 
 	[ -z "${__vars##* $n:*}" ] ||
 		return 0
@@ -131,7 +147,7 @@ ignored()
 
 parse()
 {
-	local x __vars=' ' CMDLINE_PARAMS=
+	local x __vars=' ' __aliases=' ' CMDLINE_PARAMS=
 
 	for x in /etc/initrd/cmdline.d/*; do
 		. "$x"
