@@ -66,6 +66,8 @@ install: pack
 	    exit 1; \
 	else \
 	    $(MSG) "Installing image ..."; \
+	    echo "Unpacked size: `du -sh "$(WORKDIR)" |cut -f1 ||:`"; \
+	    echo "Image size: `du -sh "$(IMAGEFILE)" |cut -f1 ||:`"; \
 	    chmod 600 -- "$(WORKDIR)/initrd.img"; \
 	    mv -f $(verbose) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"; \
 	    echo "$(IMAGEFILE)" >> "$(TEMPDIR)/images"; \
