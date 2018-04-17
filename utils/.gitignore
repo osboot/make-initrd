@@ -4,6 +4,7 @@ initrd-cp
 initrd-diff
 initrd-extract
 initrd-ls
+initrd-scanmod
 make-initrd
 mkinitrd-make-initrd
 *.d

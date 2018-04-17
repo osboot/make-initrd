@@ -1,0 +1,51 @@
+#!/bin/sh -eu
+
+. sh-functions
+. module-functions
+
+. shell-signal
+
+rulesdir=
+exit_handler() {
+	[ ! -d "$rulesdir" ] ||
+		rm -rf -- "$rulesdir"
+}
+
+set_cleanup_handler exit_handler
+rulesdir="$(mktemp -d "$rulesdir/$PROG.XXXXXXXXX")"
+
+i=0
+for var in ${MODULES_PATTERN_SETS-}; do
+	eval "MODULES_PATTERN=\"\${$var-}\""
+	for pattern in $MODULES_PATTERN; do
+		[ -z "${pattern##*:*}" ] ||
+			fatal "unexpected pattern format: $pattern"
+
+		keyword="${pattern%%:*}"
+		regexp="${pattern#*:}"
+
+		prefix="${keyword%%-*}"
+		if [ "$prefix" != "$keyword" ]; then
+			keyword="${keyword#*-}"
+		else
+			prefix=
+		fi
+
+		case "$keyword" in
+			alias|author|depends|description|filename|firmware|license|name|symbol)
+				;;
+			*)
+				fatal "unknown keyword: $keyword"
+		esac
+
+		printf '%s %s\n' "${prefix:+$prefix-}$keyword" "$regexp" >> "$rulesdir/filter-$i"
+	done
+done
+
+[ -f "$rulesdir/filter-0" ] ||
+	exit 0
+
+initrd-scanmod --set-version="$kernel" "$rulesdir/filter"-* |
+while read m; do
+	add_module "$m"
+done

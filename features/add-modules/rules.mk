@@ -12,6 +12,10 @@ add-modules: create
 		[ -n "$(RESOLVE_MODALIAS)" ] && args= || args=--optional; \
 		$(TOOLSDIR)/add-module $$args $(MODULES_ADD); \
 	fi
+	@if [ -n "$(MODULES_PATTERN_SETS)" ]; then \
+		$(MSG) "Adding modules by pattern sets ..."; \
+		$(TOOLSDIR)/add-module-pattern; \
+	fi
 
 preload-modules: create
 	@if [ -n "$(MODULES_PRELOAD)" ]; then \

@@ -13,6 +13,9 @@ gen_init_cpio_LIBS =
 depinfo_SRCS = kmod-depinfo.c
 depinfo_LIBS = $(shell pkg-config --libs libkmod)
 
+initrd_scanmod_SRCS = initrd-scanmod.c initrd-scanmod-common.c initrd-scanmod-file.c initrd-scanmod-rules.c initrd-scanmod-walk.c
+initrd_scanmod_LIBS = $(shell pkg-config --libs libkmod)
+
 initrd_ls_SRCS = initrd-ls.c initrd-ls-format.c initrd-common.c initrd-cpio.c initrd-parse.c initrd-decompress.c
 initrd_ls_LIBS =
 
@@ -48,6 +51,7 @@ bin_PROGS  = \
 
 sbin_PROGS = \
 	depinfo \
+	initrd-scanmod \
 	initrd-cp \
 	initrd-ls \
 	initrd-extract \
@@ -68,6 +72,9 @@ gen_init_cpio: $(call get_objects,gen_init_cpio)
 depinfo: $(call get_objects,depinfo)
 	$(LINK) $^ $(depinfo_LIBS) -o $@
 
+initrd-scanmod: $(call get_objects,initrd-scanmod)
+	$(LINK) $^ $(initrd_scanmod_LIBS) -o $@
+
 initrd-ls: $(call get_objects,initrd-ls)
 	$(LINK) $^ $(initrd_ls_LIBS) -o $@
 
@@ -84,7 +91,7 @@ clean:
 	$(RM) -- $(bin_PROGS) $(sbin_PROGS) $(DEPS) $(OBJS)
 
 format:
-	clang-format -style=file -i *.h $(depinfo_SRCS) $(initrd_ls_SRCS) $(initrd_extract_SRCS)
+	clang-format -style=file -i *.h $(depinfo_SRCS) $(initrd_ls_SRCS) $(initrd_extract_SRCS) $(initrd_scanmod_SRCS)
 
 # We need dependencies only if goal isn't "indent" or "clean".
 ifneq ($(MAKECMDGOALS),indent)

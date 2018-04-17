@@ -1,6 +1,8 @@
 #!/bin/sh -efu
 
 . sh-functions
+. module-functions
+
 . shell-error
 
 ignore_missing=
@@ -8,65 +10,6 @@ if [ "${1-}" = '--optional' ]; then
 	ignore_missing=1
 	shift
 fi
-
-check_blacklist() {
-	local m f="$1"
-
-	f="${f##*/}"
-	f="$(normalize_modname "${f%.ko*}")"
-
-	for m in ${blacklist-}; do
-		[ "$f" != "$m" ] || return 0
-	done
-	return 1
-}
-
-add_module() {
-	local name n v
-	name="$1"
-
-	local builtin=' ' modules= firmware=
-
-	while read n v; do
-		case "$n" in
-			builtin)  builtin="$builtin $v "  ;;
-			module)   modules="$modules $v"   ;;
-			firmware) firmware="$firmware $v" ;;
-		esac
-	done <<-EOF
-		`depinfo --set-version="$kernel" "$name" 2>/dev/null |
-			sort -u`
-	EOF
-
-	if [ -z "$modules" ]; then
-		if [ -z "${builtin##* $name *}" ]; then
-			verbose "Builtin module \"$name\""
-			return 0
-		fi
-
-		[ -z "$ignore_missing" ] ||
-			return 0
-
-		fatal "No module \"$name\" found for kernel $kernel"
-	fi
-
-	for n in $modules; do
-		check_blacklist "$n" ||
-			continue
-		verbose "Module '$name' is ignored because the '$n' is blacklisted"
-		return
-	done
-
-	for n in $modules; do
-		verbose "Adding module \"$n\""
-		put-file "$rootdir" "$n"
-	done
-
-	for n in $firmware; do
-		verbose "Adding firmware file \"$n\""
-		put-file "$rootdir" "$n"
-	done
-}
 
 for n; do
 	if [ -n "${n##*[/\[\].*&^\$\\\\/]*}" ]; then
