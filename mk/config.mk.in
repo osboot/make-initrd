@@ -88,6 +88,17 @@ include @PREFIX@/mk/initfiles.mk
 # Load user configuration
 include $(INITRD_CONFIG)
 
+ifeq "$(MAKECMDGOALS)" 'guess'
+unknown_features = \
+	$(filter-out \
+		$(notdir $(wildcard $(FEATURESDIR)/*)), \
+		$(FEATURES))
+
+ifneq "$(unknown_features)" ''
+$(info WARNING: Unknown features are specified in the config: $(unknown_features))
+endif
+endif
+
 # Load extra configs
 feature_configs		 = $(call wildcard_features,config.mk)
 ifeq "$(feature_configs)" ''
