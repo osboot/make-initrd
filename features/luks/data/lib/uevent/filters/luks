@@ -11,17 +11,29 @@ DEVNAME="/dev/$DEVNAME"
 [ -z "${NO_LUKS-}" ] ||
 	exit 0
 
-[ $ID_FS_TYPE = "crypto_LUKS" ] ||
+[ "$ID_FS_TYPE" = "crypto_LUKS" ] ||
 	exit 0
 
 cryptsetup isLuks "$DEVNAME" ||
 	exit 0
 
-[ -n "$LUKS_DEV" ] ||
-	LUKS_DEV="$DEVNAME"
-
 devluks=
-get_dev devluks "$LUKS_DEV" ||
+if [ -n "$LUKS_DEV" ] && [ "$LUKS_DEV" != 0 ]; then
+	i=0
+	while [ "$i" -lt "$LUKS_DEV" ]; do
+		dev=
+		eval "dev=\"\${LUKS_DEV$i-}\""
+		i=$(( $i + 1 ))
+		[ -n "$dev" ] &&
+			get_dev devluks "$dev" &&
+			break ||:
+	done
+else
+	get_dev devluks "$DEVNAME" ||
+		exit 0
+fi
+
+[ -n "$devluks" ] ||
 	exit 0
 
 event="$(make_event)"
