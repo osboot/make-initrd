@@ -23,7 +23,7 @@ defaults()
 {
 	[ ! -s /etc/initrd/initramfs.conf ] || . /etc/initrd/initramfs.conf
 
-	export PATH=/bin:/sbin:/usr/bin:/usr/sbin:/lib/initrd/bin
+	export PATH=/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin
 	export RUN_INITRD=1
 	export rootmnt='/root'
 	export UDEV_VERSION="$(udevd --version)" ||:

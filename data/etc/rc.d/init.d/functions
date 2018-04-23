@@ -7,7 +7,7 @@
 # Changed by:	Dmitry V. Levin
 
 # Set the initial default search path for use by startup scripts.
-export PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:/usr/X11R6/bin"
+export PATH="/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin"
 
 SourceIfExists()     { [ -f "$1" ] && . "$@"; }
 SourceIfExecutable() { [ -x "$1" ] && . "$@"; }

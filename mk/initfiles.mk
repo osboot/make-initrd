@@ -1,5 +1,6 @@
 PUT_DIRS  ?=
 PUT_FILES ?=
+PUT_PROGS ?=
 
 # UDEV utilities
 PUT_FILES += \

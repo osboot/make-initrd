@@ -106,6 +106,14 @@ fi
 [ -z "${PUT_DIRS-}"  ] || put-tree . $PUT_DIRS
 [ -z "${PUT_FILES-}" ] || put-file . $PUT_FILES
 
+for n in ${PUT_PROGS-}; do
+	n="$(
+		export PATH=/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin
+		which --skip-alias --skip-functions --skip-dot --skip-tilde "$n"
+	)"
+	[ -z "$n" ] || put-file . $n
+done
+
 if [ -n "${LOCALBUILDDIR:+1}" ]; then
 	tree=$(readlink -ev "$LOCALBUILDDIR")
 	verbose "Copying '$tree' recursively (with force) ..."

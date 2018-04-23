@@ -1,4 +1,4 @@
-PATH="/sbin:/usr/sbin:/bin:/usr/bin"
+PATH="/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin"
 PS1='(initramfs)$ '
 USER='root'
 HOME='/home/root'
