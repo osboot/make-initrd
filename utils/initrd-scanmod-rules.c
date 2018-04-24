@@ -67,7 +67,7 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 			value = xfree(value);
 
 			rule->type = RULE_MATCH;
-			n          = sscanf(a, "%ms %ms\n", &kw, &value);
+			n          = sscanf(a, "%ms %m[^\n]\n", &kw, &value);
 
 			if (n != 2)
 				error(EXIT_FAILURE, 0, "%s:%lu: bad line format", rulesfile, i);
