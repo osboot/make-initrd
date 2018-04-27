@@ -10,7 +10,7 @@ add-modules: create
 	@if [ -n "$(MODULES_ADD)" ]; then \
 		echo "Adding modules ..."; \
 		[ -n "$(RESOLVE_MODALIAS)" ] && args= || args=--optional; \
-		$(TOOLSDIR)/add-module $$args $(MODULES_ADD); \
+		$(TOOLSDIR)/add-module $$args crc32c $(MODULES_ADD); \
 	fi
 
 preload-modules: create
