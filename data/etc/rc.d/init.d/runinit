@@ -13,7 +13,4 @@
 
 [ "$1" = start ] || exit 0
 
-. /.initrd/initenv
-echo "Running init ($INIT)"
-
 echo 9 > /.initrd/telinit

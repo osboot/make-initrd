@@ -10,3 +10,5 @@ dmesg -n "$LOGLEVEL"
 	/sbin/monotonic-timestamp
 	echo "INITRAMFS: version $VERSION_ID"
 }
+
+mount -t proc -o nodev,noexec,nosuid proc /proc

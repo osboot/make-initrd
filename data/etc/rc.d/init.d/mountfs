@@ -1,7 +1,7 @@
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:            mountfs mountvirtfs $local_fs
-# Required-Start:
+# Required-Start:      fstab
 # Should-Start:
 # Required-Stop:
 # Should-Stop:
@@ -42,9 +42,8 @@ MountVirtualFs()
 	local msg="Mounting filesystem"
 
 	action_shell "$msg [/dev]:" MountDev
-	action "$msg [/proc]:" mount -t proc  -o nodev,noexec,nosuid proc  /proc
-	action "$msg [/sys]:"  mount -t sysfs -o nodev,noexec,nosuid sysfs /sys
-	action "$msg [/run]:"  mount -t tmpfs -o mode=755            runfs /run
+	action "$msg [/sys]:"  mount /sys
+	action "$msg [/run]:"  mount /run
 
 	while read -r l t; do
 		[ -e "$l" ] || ln -s "$t" "$l"
