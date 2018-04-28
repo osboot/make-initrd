@@ -1,4 +1,7 @@
 #define _GNU_SOURCE
+#include <sys/param.h>
+#include <sys/utsname.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
@@ -6,7 +9,6 @@
 #include <error.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/utsname.h>
 #include <libgen.h>
 #include <libkmod.h>
 
@@ -23,6 +25,57 @@ static int opts      = SHOW_DEPS | SHOW_MODULES | SHOW_FIRMWARE | SHOW_PREFIX | 
 
 static char *firmware_dir;
 static char firmware_defaultdir[] = "/lib/firmware/updates:/lib/firmware";
+
+static char **modules   = NULL;
+static size_t n_modules = 0;
+
+static int
+tracked_module(struct kmod_module *mod)
+{
+	const char *path = kmod_module_get_path(mod);
+
+	if (modules) {
+		int i   = 0;
+		char *m = modules[i++];
+
+		while (m) {
+			if (!strcmp(m, path))
+				return 1;
+			m = modules[i++];
+		}
+	}
+
+	modules = realloc(modules, (n_modules + 2) * sizeof(void *));
+
+	if (!modules)
+		error(EXIT_FAILURE, errno, "realloc: allocating %lu bytes", (n_modules + 2) * sizeof(void *));
+
+	modules[n_modules]     = strdup(path);
+	modules[n_modules + 1] = NULL;
+
+	if (!(modules[n_modules]))
+		error(EXIT_FAILURE, errno, "strdup");
+
+	n_modules++;
+	return 0;
+}
+
+static void
+free_modules(void)
+{
+	if (!modules)
+		return;
+
+	int i   = 0;
+	char *m = modules[i++];
+
+	while (m) {
+		free(m);
+		m = modules[i++];
+	}
+
+	free(modules);
+}
 
 static void
 process_firmware(const char *firmware)
@@ -71,10 +124,32 @@ process_depends(struct kmod_ctx *ctx, const char *depends)
 }
 
 static void
+process_soft_depends(struct kmod_ctx *ctx, const char *depends)
+{
+	char *s, *str, *token, *saveptr = NULL;
+	size_t len = strlen(depends);
+	s = str = strdup(depends);
+
+	if (len > 5 && !strncmp("pre: ", s, 5))
+		str += 5;
+	else if (len > 6 && !strncmp("post: ", s, 6))
+		str += 6;
+
+	while ((token = strtok_r(str, " ", &saveptr)) != NULL) {
+		depinfo_alias(ctx, token);
+		str = NULL;
+	}
+	free(s);
+}
+
+static void
 depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 {
 	struct kmod_list *l, *list = NULL;
 	int ret;
+
+	if (tracked_module(mod))
+		return;
 
 	if (opts & SHOW_MODULES) {
 		int i = show_tree;
@@ -103,10 +178,13 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 		const char *key = kmod_module_info_get_key(l);
 		const char *val = kmod_module_info_get_value(l);
 
-		if ((opts & SHOW_DEPS) && (opts & SHOW_MODULES) && !strcmp("depends", key))
-			process_depends(ctx, val);
+		if ((opts & SHOW_DEPS) && (opts & SHOW_MODULES)) {
+			if (!strcmp("depends", key))
+				process_depends(ctx, val);
+			else if (!strcmp("softdep", key))
+				process_soft_depends(ctx, val);
 
-		else if ((opts & SHOW_FIRMWARE) && !strcmp("firmware", key))
+		} else if ((opts & SHOW_FIRMWARE) && !strcmp("firmware", key))
 			process_firmware(val);
 	}
 
@@ -169,6 +247,7 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 		kmod_module_unref(mod);
 	}
 
+	kmod_module_unref_list(filtered);
 	kmod_module_unref_list(list);
 }
 
@@ -306,5 +385,7 @@ main(int argc, char **argv)
 	}
 
 	kmod_unref(ctx);
+	free_modules();
+
 	return EXIT_SUCCESS;
 }
