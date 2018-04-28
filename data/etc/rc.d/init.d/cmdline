@@ -185,7 +185,8 @@ parse()
 		return
 	fi
 
-	/lib/initrd/rootdelay &
+	setsid /lib/initrd/rootdelay &
+	setsid /bin/rdshell &
 }
 
 action_shell 'Parsing cmdline arguments:' parse

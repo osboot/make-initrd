@@ -51,6 +51,12 @@ show-modules:
 
 pre-pack: show-modules
 
+sort-services:
+	@$(MSG) "Sorting sysvinit services ..."
+	@sort-lsb --rootdir="$(ROOTDIR)" --result=symlink
+
+pre-pack: sort-services
+
 pack: create
 	@$(MSG) "Packing image to archive ..."
 	@$(TOOLSDIR)/pack-image

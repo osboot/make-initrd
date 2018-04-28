@@ -6,5 +6,7 @@ dmesg -n "$LOGLEVEL"
 
 . /etc/initrd-release
 
-[ -z "${VERSION_ID-}" ] ||
+[ -z "${VERSION_ID-}" ] || {
+	/sbin/monotonic-timestamp
 	echo "INITRAMFS: version $VERSION_ID"
+}

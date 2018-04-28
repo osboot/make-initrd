@@ -49,4 +49,4 @@ mountfs()
 	exit 0
 
 echo ROOTFS_FOUND=1 >> /.initrd/initenv
-telinit 2
+echo 2 > /.initrd/telinit

@@ -16,4 +16,4 @@
 . /.initrd/initenv
 echo "Running init ($INIT)"
 
-exec telinit u
+echo 9 > /.initrd/telinit

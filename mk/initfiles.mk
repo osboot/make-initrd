@@ -21,16 +21,12 @@ PUT_FILES += $(wildcard $(UDEV_FILES_OLD))
 
 # System utilities
 PUT_FILES += \
-	/sbin/blkid \
-	/sbin/chroot \
-	/sbin/depmod \
-	/sbin/lsmod \
-	/sbin/modprobe \
-	/bin/sh \
 	/bin/cat \
-	/bin/cp \
 	/bin/chmod \
+	/bin/cp \
 	/bin/dmesg \
+	/bin/findmnt \
+	/bin/kill \
 	/bin/ln \
 	/bin/ls \
 	/bin/mkdir \
@@ -39,13 +35,30 @@ PUT_FILES += \
 	/bin/mount \
 	/bin/mountpoint \
 	/bin/mv \
-	/bin/umount \
 	/bin/readlink \
 	/bin/rm \
 	/bin/rmdir \
+	/bin/runas \
+	/bin/sh \
 	/bin/sleep \
+	/bin/touch \
+	/bin/umount \
+	/sbin/blkid \
+	/sbin/chroot \
+	/sbin/depmod \
+	/sbin/ip \
+	/sbin/killall5 \
+	/sbin/lsmod \
+	/sbin/modprobe \
+	/sbin/start-stop-daemon \
 	/usr/bin/logger \
-	/usr/bin/setsid
+	/usr/bin/setsid \
+	/usr/bin/which \
+	/usr/share/terminfo/l \
+	/var/resolv
+
+# Add libshell
+PUT_FILES += $(wildcard /bin/shell-*)
 
 # initrd specific utilities
 PUT_DIRS += /lib/initrd $(DATADIR)

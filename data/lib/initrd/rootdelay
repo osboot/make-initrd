@@ -4,7 +4,7 @@
 . rdshell-sh-functions
 
 delay=${ROOTDELAY:-180}
-while [ "$delay" -gt 0 ]; do
+while [ "$delay" -gt 0 ] && [ ! -x "$rootmnt/$INIT" ]; do
 	delay=$(($delay - 1))
 	sleep 1
 done
