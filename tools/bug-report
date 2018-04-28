@@ -43,6 +43,14 @@ if [ -f "${KERNEL_CONFIG-}" ]; then
 	progress "$c"
 fi
 
+kver="$(uname -r)" ||:
+if [ -n "$kver" ]; then
+	find "/lib/modules/$kver" -mindepth 1 -maxdepth 1 -type f -name 'modules.*' |
+	while read filename; do
+		copy "$filename"
+	done
+fi
+
 blkid -c /dev/null >"$reportdir"/etc/blkid.out
 progress "$c"
 
