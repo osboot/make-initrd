@@ -28,9 +28,8 @@ echo_end()
 omitpid=
 for pid in /.initrd/killall/[0-9]*; do
 	[ ! -f "$pid" ] ||
-		omitpid="${omitpid:+$omitpid,}${pid##*/}"
+		omitpid="${omitpid:+$omitpid }-o ${pid##*/}"
 done
-omitpid="${omitpid:+-o $omitpid}"
 
 echo_msg 'Asking all remaining processes to terminate:'
 killall5 -15 $omitpid
