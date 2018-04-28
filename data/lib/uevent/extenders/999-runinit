@@ -45,6 +45,8 @@ mountfs()
 	done < /etc/fstab
 }
 
-console_inactive && mountfs && rootfs ||
+[ -z "${ROOTFS_FOUND-}" ] && console_inactive && mountfs && rootfs ||
 	exit 0
+
+echo ROOTFS_FOUND=1 >> /.initrd/initenv
 telinit 2
