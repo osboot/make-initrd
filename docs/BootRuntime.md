@@ -1,7 +1,6 @@
 # Boot order
 
-- kernel calls `/init`. In the initramfs `/init` is the simplest script which saves the environment variables and calls `/sbin/init-bin`.
-- `/sbin/init-bin` is SysV init which starts/stops [services](InitramfsServices.md) on runlevel 3.
+- kernel calls `/init`. In the initramfs `/init` is the simplest script which saves the environment variables and starts/stops [services](InitramfsServices.md) on runlevel 3.
 - When the root file system found init goes to runlevel 2. Last service on runlevel 2 asks init to restart. When the SysV init receives request to reboot himself uses predefined path (`/sbin/init`).
 - `/sbin/init` is another script which removes initramfs, restore kernel environment and runs real init.
 
@@ -21,7 +20,7 @@ the [init scripts](InitramfsServices.md). The LSB standard defines them as:
 - 3 normal/full multiuser;
 - 4 reserved for local use, default is normal/full multiuser;
 - 5 multiuser with a display manager or equivalent;
-- 6 reboot.
+- 6 reboot;
 
 but implementations are not required to provide these exact run levels or give them the meanings described here.
 The initramfs uses following run levels:
@@ -29,4 +28,5 @@ The initramfs uses following run levels:
 - ...
 - 2 is used to switch to real system. The switch to this level occurs only after the rootfs is found and mounted.
 - 3 default initramfs runtime.
+- 9 exec real system in the `/root`.
 - ...

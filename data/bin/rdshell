@@ -46,8 +46,6 @@ for f in /lib/shell/*; do
 	[ -x "$f" ] || break
 	"$f" ||:
 done
-setsid $shcmd
-console_unlock
 
-# avoid a too fast respawn
-sleep 3
+setsid -c $shcmd </dev/console >/dev/console 2>&1
+console_unlock

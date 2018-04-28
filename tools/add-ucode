@@ -1,4 +1,4 @@
-#!/bin/sh -efu
+#!/bin/sh -efux
 
 . sh-functions
 

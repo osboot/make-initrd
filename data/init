@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -fu
 
 # Save kernel environment and init arguments
 /bin/showenv > /.initrd/kernenv
@@ -7,7 +7,65 @@ echo "$*" > /.initrd/initargs
 # Create storage for init environment
 :> /.initrd/initenv
 
-# Don't initialize SELinux
-export SELINUX_INIT=1
+trap : CHLD INT TSTP QUIT HUP
 
-exec /sbin/init-bin
+x=/etc/rc.d/rc.sysinit
+[ ! -x "$x" ] || setsid "$x" ||:
+
+lock=/tmp/rc.lock
+lock() {
+	while ! mkdir -- "$lock" >/dev/null 2>&1; do
+		sleep 0.1
+	done
+}
+
+unlock() {
+	rmdir -- "$lock"
+}
+
+level=3
+rc=
+rc_pid=
+
+while :; do
+	[ -z "$rc" ] || {
+		read level < /.initrd/telinit
+	} 2>/dev/null ||:
+
+	case "$level" in
+		[0-6])
+			[ "$rc" != "$level" ] ||
+				continue
+
+			rc="$level"
+
+			lock
+			{
+				lock
+				[ -z "$rc_pid" ] ||
+					rm -f -- "$rc_pid"
+
+				/sbin/monotonic-timestamp
+				echo "INIT: Entering runlevel: $level"
+
+				setsid /etc/rc.d/rc "$level" ||:
+				unlock
+			} &
+
+			rc_pid="/.initrd/killall/$!"
+			:>"$rc_pid"
+
+			unlock
+			;;
+		9)
+			lock
+
+			. /.initrd/initenv
+
+			umount -fl /proc
+
+			# Run system init with arguments. Goodbye!
+			exec runas /sbin/init /bin/run-init -e /.initrd/kernenv "$rootmnt" "$INIT" "$@"
+			;;
+	esac
+done
