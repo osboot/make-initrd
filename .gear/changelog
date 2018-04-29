@@ -1,3 +1,7 @@
+group: Runtime changes
+regexp: ^initrd:
+filter: s/^initrd: //
+
 group: NFS feature changes
 regexp: ^nfs:
 filter: s/^nfs: //
@@ -18,9 +22,20 @@ group: Device mapper feature changes
 regexp: ^devmapper:
 filter: s/^devmapper: //
 
+group: Ucode feature changes
+regexp: ^ucode:
+filter: s/^ucode: //
+
 group: Documentation
 regexp: ^doc:
 filter: s/^doc: //
+
+group: Command arguments
+regexp: ^(guess-config|guess-modules|bug-report):
+
+group: Utilities
+regexp: ^(make-initrd|mkinitrd-make-initrd|depinfo|gen_init_cpio|initrd-cp|initrd-diff|initrd-ls|initrd-scanmod):
+#filter: s/^[^:]+: //
 
 group: Other fixes
 regexp: ^Fix
