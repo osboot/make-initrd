@@ -183,8 +183,8 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 				process_depends(ctx, val);
 			else if (!strcmp("softdep", key))
 				process_soft_depends(ctx, val);
-
-		} else if ((opts & SHOW_FIRMWARE) && !strcmp("firmware", key))
+		}
+		if ((opts & SHOW_FIRMWARE) && !strcmp("firmware", key))
 			process_firmware(val);
 	}
 
