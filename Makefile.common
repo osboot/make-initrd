@@ -63,6 +63,8 @@ warning_CFLAGS = \
 	-Wmissing-format-attribute -Wredundant-decls -Wdisabled-optimization \
 	-Wno-pointer-arith
 
+.PHONY: all
+
 %: %.in
 	$(SED) \
 		-e 's,@VERSION@,$(VERSION),g' \
@@ -81,3 +83,23 @@ warning_CFLAGS = \
 
 %.o: %.c
 	$(COMPILE) $(OUTPUT_OPTION) $<
+
+# We need dependencies only if goal isn't "indent" or "clean".
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),format)
+
+%.d: %.c Makefile
+	$(DEP) -MM $(CPPFLAGS) $< |sed -e 's,\($*\)\.o[ :]*,\1.o $@: Makefile ,g' >$@
+
+ifneq ($(DEPS),)
+-include $(DEPS)
+endif
+
+endif # format
+endif # clean
+
+clean:
+	$(RM) -rf -- $(GARBAGE)
+
+format:
+	$(Q)clang-format -verbose -style=file -i $(wildcard $(C_SOURCES))

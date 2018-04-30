@@ -1,7 +1,5 @@
 .EXPORT_ALL_VARIABLES:
 
-include Makefile.common
-
 DIRS = \
 	data \
 	guess \
@@ -14,6 +12,8 @@ SUBDIRS = conf utils mk man datasrc
 .PHONY: $(SUBDIRS)
 
 all: $(SUBDIRS)
+
+include Makefile.common
 
 install: $(SUBDIRS)
 	$(MKDIR_P) -- $(DESTDIR)$(tempdir)

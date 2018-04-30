@@ -1,7 +1,5 @@
 TOPDIR = $(CURDIR)/..
 
-include $(TOPDIR)/Makefile.common
-
 CFLAGS = $(warning_CFLAGS) \
 	-DPACKAGE=\"$@\" -DVERSION=\"$(VERSION)\"
 
@@ -62,9 +60,12 @@ sbin_PROGS = \
 DEPS = $(call get_depends,$(bin_PROGS) $(sbin_PROGS),)
 OBJS = $(call get_objects,$(bin_PROGS) $(sbin_PROGS),)
 
-.PHONY: all install clean
+GARBAGE   = $(bin_PROGS) $(sbin_PROGS) $(DEPS) $(OBJS)
+C_SOURCES = *.h $(depinfo_SRCS) $(initrd_ls_SRCS) $(initrd_extract_SRCS) $(initrd_scanmod_SRCS)
 
 all: $(bin_PROGS) $(sbin_PROGS)
+
+include $(TOPDIR)/Makefile.common
 
 gen_init_cpio: $(call get_objects,gen_init_cpio)
 	$(LINK) $^ $(gen_init_cpio_LIBS) -o $@
@@ -86,25 +87,3 @@ install: $(bin_PROGS) $(sbin_PROGS)
 	$(INSTALL) -p -m755 $(bin_PROGS) $(DESTDIR)$(bindir)/
 	$(MKDIR_P) -- $(DESTDIR)$(sbindir)
 	$(INSTALL) -p -m755 $(sbin_PROGS) $(DESTDIR)$(sbindir)/
-
-clean:
-	$(RM) -- $(bin_PROGS) $(sbin_PROGS) $(DEPS) $(OBJS)
-
-format:
-	clang-format -style=file -i *.h $(depinfo_SRCS) $(initrd_ls_SRCS) $(initrd_extract_SRCS) $(initrd_scanmod_SRCS)
-
-# We need dependencies only if goal isn't "indent" or "clean".
-ifneq ($(MAKECMDGOALS),indent)
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),format)
-
-%.d: %.c Makefile
-	$(DEP) -MM $(CPPFLAGS) $< |sed -e 's,\($*\)\.o[ :]*,\1.o $@: Makefile ,g' >$@
-
-ifneq ($(DEPS),)
--include $(DEPS)
-endif
-
-endif # format
-endif # clean
-endif # indent

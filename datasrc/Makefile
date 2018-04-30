@@ -1,7 +1,5 @@
 TOPDIR = $(CURDIR)/..
 
-include $(TOPDIR)/Makefile.common
-
 out_bindir  = _out/bin
 out_sbindir = _out/sbin
 
@@ -31,7 +29,12 @@ showenv_SRCS = showenv.c
 DEPS = $(call get_depends,$(bin_PROGS) $(sbin_PROGS),)
 OBJS = $(call get_objects,$(bin_PROGS) $(sbin_PROGS),)
 
+GARBAGE   = _out $(out_bindir) $(out_sbindir) $(DEPS) $(OBJS)
+C_SOURCES = *.c *.h
+
 all: $(bin_PROGS) $(sbin_PROGS)
+
+include $(TOPDIR)/Makefile.common
 
 prepare:
 	$(MKDIR_P) -- $(out_bindir)
@@ -57,25 +60,3 @@ install: $(bin_PROGS) $(sbin_PROGS)
 	$(STRIP) $^
 	$(INSTALL) -p -m755 $(bin_PROGS)  $(DESTDIR)$(helper_bindir)/
 	$(INSTALL) -p -m755 $(sbin_PROGS) $(DESTDIR)$(helper_sbindir)/
-
-clean:
-	$(RM) -rf -- _out $(out_bindir) $(out_sbindir) $(DEPS) $(OBJS)
-
-format:
-	clang-format -style=file -i *.c *.h
-
-# We need dependencies only if goal isn't "indent" or "clean".
-ifneq ($(MAKECMDGOALS),indent)
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),format)
-
-%.d: %.c Makefile
-	$(DEP) -MM $(CPPFLAGS) $< |sed -e 's,\($*\)\.o[ :]*,\1.o $@: Makefile ,g' >$@
-
-ifneq ($(DEPS),)
--include $(DEPS)
-endif
-
-endif # format
-endif # clean
-endif # indent

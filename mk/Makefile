@@ -1,7 +1,5 @@
 TOPDIR = $(CURDIR)/..
 
-include $(TOPDIR)/Makefile.common
-
 GEN = $(patsubst %.in,%,$(wildcard *.in))
 
 TARGETS = \
@@ -11,13 +9,14 @@ TARGETS = \
 	initfiles.mk \
 	make-initrd.mk
 
-.PHONY: all install clean
+GARBAGE = $(GEN)
+
+.PHONY: all install
 
 all: $(TARGETS)
+
+include $(TOPDIR)/Makefile.common
 
 install: $(TARGETS)
 	$(MKDIR_P) -- $(DESTDIR)$(datadir)/$(PROJECT)/mk
 	$(CP) -- $(TARGETS) $(DESTDIR)$(datadir)/$(PROJECT)/mk/
-
-clean:
-	$(RM) -- $(GEN)
