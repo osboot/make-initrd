@@ -3,25 +3,32 @@
 . sh-functions
 
 # to be sure that microcode loading supported by kernel
-egrep -qs "^CONFIG_MICROCODE(|_INTEL|_AMD)=[my]" "$KERNEL_CONFIG" ||
-	fatal "Microcode loading support is missing in kernel"
+[ -f "$KERNEL_CONFIG" ] &&
+	egrep -qs "^CONFIG_MICROCODE(|_INTEL|_AMD)=[my]" "$KERNEL_CONFIG" ||
+	error "Microcode loading support is missing in kernel"
 
 IUCODE_BIN=/usr/sbin/iucode_tool
 
-cpu_vendor=
-cpu_family=
+cpu_vendor="${UCODE_CPU_VENDOR-}"
+cpu_family="${UCODE_CPU_FAMILY-}"
+iucode_scan_system='--scan-system'
 
-cpu="$(sed -r -n \
-	-e '1,/^processor[[:cntrl:]]\:.*/ d' \
-	-e '/^model[[:space:]]+[[:cntrl:]]\:.*/,$ d' \
-	-e 's/.*[[:cntrl:]]\:[[:space:]](.*)/\1/ip' \
-	/proc/cpuinfo
-)"
-if [ -n "$cpu" ]; then
-	cpu_vendor="${cpu%%
+[ -z "${UCODE_ALL_MICROCODE-}" ||
+	iucode_scan_system=
+
+if [ -z "$cpu_vendor" ]; then
+	cpu="$(sed -r -n \
+		-e '1,/^processor[[:cntrl:]]\:.*/ d' \
+		-e '/^model[[:space:]]+[[:cntrl:]]\:.*/,$ d' \
+		-e 's/.*[[:cntrl:]]\:[[:space:]](.*)/\1/ip' \
+		/proc/cpuinfo
+	)"
+	if [ -n "$cpu" ]; then
+		cpu_vendor="${cpu%%
 *}"
-	cpu_family="${cpu##*
+		cpu_family="${cpu##*
 }"
+	fi
 fi
 
 prep_early_firmware()
@@ -50,7 +57,7 @@ prep_early_firmware()
 
 prep_amd_ucode()
 {
-	local family ucode_file=
+	local family=0 ucode_file=
 
 	[ -z "$cpu_family" ] || family="$(printf '%x' "$cpu_family")"
 	[ "$family" -ge 15 ] && \
@@ -73,9 +80,9 @@ prep_intel_ucode()
 	local fw_path
 	for fw_path in ${FIRMWARE_DIRS:-/lib/firmware}; do
 		if [ -d "$fw_path"/intel-ucode ]; then
-			$IUCODE_BIN \
+			"$IUCODE_BIN" \
 					--quiet \
-					--scan-system \
+					$iucode_scan_system \
 					--write-earlyfw="$workdir"/ucode.cpio \
 					"$fw_path"/intel-ucode && \
 				return 0 ||:
