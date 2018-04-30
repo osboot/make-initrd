@@ -4,7 +4,7 @@ CFLAGS = -Wall -Wextra -W -Wshadow -Wcast-align \
 	-Wmissing-format-attribute -Wredundant-decls -Wdisabled-optimization \
 	-Wno-pointer-arith
 
-depinfo_LIBS   = -lkmod
+depinfo_LIBS   = $(shell pkg-config --libs libkmod)
 
 PROGS = gen_init_cpio depinfo elfcheck
 
@@ -22,7 +22,7 @@ gen_init_cpio: gen_init_cpio.c
 	$(CC) $(CFLAGS) -o $@ $<
 
 depinfo: kmod-depinfo.c
-	$(CC) $(CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $< $(depinfo_LIBS)
+	$(CC) $(CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"2.0.9\" -o $@ $< $(depinfo_LIBS)
 
 elfcheck: elfcheck.c
 	$(CC) $(CFLAGS) -DPACKAGE=\"$@\" -DVERSION=\"1.0\" -o $@ $<

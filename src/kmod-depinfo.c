@@ -1,4 +1,7 @@
 #define _GNU_SOURCE
+#include <sys/param.h>
+#include <sys/utsname.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
@@ -6,7 +9,6 @@
 #include <error.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/utsname.h>
 #include <libgen.h>
 #include <libkmod.h>
 
@@ -19,10 +21,61 @@ enum show_flags {
 };
 
 static int show_tree = 0;
-static int opts = SHOW_DEPS | SHOW_MODULES | SHOW_FIRMWARE | SHOW_PREFIX | SHOW_BUILTIN;
+static int opts      = SHOW_DEPS | SHOW_MODULES | SHOW_FIRMWARE | SHOW_PREFIX | SHOW_BUILTIN;
 
 static char *firmware_dir;
 static char firmware_defaultdir[] = "/lib/firmware/updates:/lib/firmware";
+
+static char **modules   = NULL;
+static size_t n_modules = 0;
+
+static int
+tracked_module(struct kmod_module *mod)
+{
+	const char *path = kmod_module_get_path(mod);
+
+	if (modules) {
+		int i   = 0;
+		char *m = modules[i++];
+
+		while (m) {
+			if (!strcmp(m, path))
+				return 1;
+			m = modules[i++];
+		}
+	}
+
+	modules = realloc(modules, (n_modules + 2) * sizeof(void *));
+
+	if (!modules)
+		error(EXIT_FAILURE, errno, "realloc: allocating %lu bytes", (n_modules + 2) * sizeof(void *));
+
+	modules[n_modules]     = strdup(path);
+	modules[n_modules + 1] = NULL;
+
+	if (!(modules[n_modules]))
+		error(EXIT_FAILURE, errno, "strdup");
+
+	n_modules++;
+	return 0;
+}
+
+static void
+free_modules(void)
+{
+	if (!modules)
+		return;
+
+	int i   = 0;
+	char *m = modules[i++];
+
+	while (m) {
+		free(m);
+		m = modules[i++];
+	}
+
+	free(modules);
+}
 
 static void
 process_firmware(const char *firmware)
@@ -38,7 +91,7 @@ process_firmware(const char *firmware)
 			int i = show_tree;
 
 			if (--i > 0) {
-				while(i--)
+				while (i--)
 					printf("   ");
 				printf("\\_ ");
 			}
@@ -71,16 +124,38 @@ process_depends(struct kmod_ctx *ctx, const char *depends)
 }
 
 static void
+process_soft_depends(struct kmod_ctx *ctx, const char *depends)
+{
+	char *s, *str, *token, *saveptr = NULL;
+	size_t len = strlen(depends);
+	s = str = strdup(depends);
+
+	if (len > 5 && !strncmp("pre: ", s, 5))
+		str += 5;
+	else if (len > 6 && !strncmp("post: ", s, 6))
+		str += 6;
+
+	while ((token = strtok_r(str, " ", &saveptr)) != NULL) {
+		depinfo_alias(ctx, token);
+		str = NULL;
+	}
+	free(s);
+}
+
+static void
 depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 {
 	struct kmod_list *l, *list = NULL;
 	int ret;
 
+	if (tracked_module(mod))
+		return;
+
 	if (opts & SHOW_MODULES) {
 		int i = show_tree;
 
 		if (--i > 0) {
-			while(i--)
+			while (i--)
 				printf("   ");
 			printf("\\_ ");
 		}
@@ -96,16 +171,20 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 
 	if ((ret = kmod_module_get_info(mod, &list)) < 0)
 		error(EXIT_FAILURE, ret, "ERROR: Could not get information from '%s'",
-			kmod_module_get_name(mod));
+		      kmod_module_get_name(mod));
 
-	kmod_list_foreach(l, list) {
+	kmod_list_foreach(l, list)
+	{
 		const char *key = kmod_module_info_get_key(l);
 		const char *val = kmod_module_info_get_value(l);
 
-		if ((opts & SHOW_DEPS) && (opts & SHOW_MODULES) && !strcmp("depends", key))
-			process_depends(ctx, val);
-
-		else if ((opts & SHOW_FIRMWARE) && !strcmp("firmware", key))
+		if ((opts & SHOW_DEPS) && (opts & SHOW_MODULES)) {
+			if (!strcmp("depends", key))
+				process_depends(ctx, val);
+			else if (!strcmp("softdep", key))
+				process_soft_depends(ctx, val);
+		}
+		if ((opts & SHOW_FIRMWARE) && !strcmp("firmware", key))
 			process_firmware(val);
 	}
 
@@ -144,7 +223,8 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 
 	if (!filtered) {
 		if (opts & SHOW_BUILTIN) {
-			kmod_list_foreach(l, list) {
+			kmod_list_foreach(l, list)
+			{
 				mod = kmod_module_get_module(l);
 
 				if (opts & SHOW_PREFIX)
@@ -160,58 +240,60 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 		return;
 	}
 
-	kmod_list_foreach(l, filtered) {
+	kmod_list_foreach(l, filtered)
+	{
 		mod = kmod_module_get_module(l);
 		depinfo(ctx, mod);
 		kmod_module_unref(mod);
 	}
 
+	kmod_module_unref_list(filtered);
 	kmod_module_unref_list(list);
 }
 
-static const char cmdopts_s[] = "k:b:f:tDMFPBVh";
+static const char cmdopts_s[]        = "k:b:f:tDMFPBVh";
 static const struct option cmdopts[] = {
-	{"tree",          no_argument,       0, 't'},
-	{"no-deps",       no_argument,       0, 'D'},
-	{"no-modules",    no_argument,       0, 'M'},
-	{"no-firmware",   no_argument,       0, 'F'},
-	{"no-prefix",     no_argument,       0, 'P'},
-	{"no-builtin",    no_argument,       0, 'B'},
-	{"set-version",   required_argument, 0, 'k'},
-	{"base-dir",      required_argument, 0, 'b'},
-	{"firmware-dir",  required_argument, 0, 'f'},
-	{"version",       no_argument,       0, 'V'},
-	{"help",          no_argument,       0, 'h'},
-	{NULL, 0, 0, 0}
+	{ "tree", no_argument, 0, 't' },
+	{ "no-deps", no_argument, 0, 'D' },
+	{ "no-modules", no_argument, 0, 'M' },
+	{ "no-firmware", no_argument, 0, 'F' },
+	{ "no-prefix", no_argument, 0, 'P' },
+	{ "no-builtin", no_argument, 0, 'B' },
+	{ "set-version", required_argument, 0, 'k' },
+	{ "base-dir", required_argument, 0, 'b' },
+	{ "firmware-dir", required_argument, 0, 'f' },
+	{ "version", no_argument, 0, 'V' },
+	{ "help", no_argument, 0, 'h' },
+	{ NULL, 0, 0, 0 }
 };
 
-static void __attribute__ ((noreturn))
+static void __attribute__((noreturn))
 print_help(const char *progname)
 {
 	printf("Usage: %s [options] [module|filename|alias]...\n"
-		"\n"
-		"Displays the full path to module and its dependencies.\n"
-		"It also shows the full path to firmware.\n"
-		"\n"
-		"Options:\n"
-		"   -t, --tree                  Show dependencies between modules hierarchically;\n"
-		"   -D, --no-deps               Don't show dependence;\n"
-		"   -P, --no-prefix             Omit the prefix describing the type of file;\n"
-		"   -M, --no-modules            Omit modules from the output;\n"
-		"   -F, --no-firmware           Omit firmware from the output;\n"
-		"   -B, --no-builtin            Omit builtin modules from the output;\n"
-		"   -k, --set-version=VERSION   Use VERSION instead of `uname -r`;\n"
-		"   -b, --base-dir=DIR          Use DIR as filesystem root for /lib/modules;\n"
-		"   -f, --firmware-dir=DIR      Use DIR as colon-separated list of firmware directories\n"
-		"                               (default: %s);\n"
-		"   -V, --version               Show version of program and exit;\n"
-		"   -h, --help                  Show this text and exit.\n"
-		"\n",
-		progname, firmware_defaultdir);
+	       "\n"
+	       "Displays the full path to module and its dependencies.\n"
+	       "It also shows the full path to firmware.\n"
+	       "\n"
+	       "Options:\n"
+	       "   -t, --tree                  Show dependencies between modules hierarchically;\n"
+	       "   -D, --no-deps               Don't show dependence;\n"
+	       "   -P, --no-prefix             Omit the prefix describing the type of file;\n"
+	       "   -M, --no-modules            Omit modules from the output;\n"
+	       "   -F, --no-firmware           Omit firmware from the output;\n"
+	       "   -B, --no-builtin            Omit builtin modules from the output;\n"
+	       "   -k, --set-version=VERSION   Use VERSION instead of `uname -r`;\n"
+	       "   -b, --base-dir=DIR          Use DIR as filesystem root for /lib/modules;\n"
+	       "   -f, --firmware-dir=DIR      Use DIR as colon-separated list of firmware directories\n"
+	       "                               (default: %s);\n"
+	       "   -V, --version               Show version of program and exit;\n"
+	       "   -h, --help                  Show this text and exit.\n"
+	       "\n",
+	       progname, firmware_defaultdir);
 	exit(EXIT_SUCCESS);
 }
 
-static void __attribute__ ((noreturn))
+static void __attribute__((noreturn))
 print_version(const char *progname)
 {
 	printf("%s version " VERSION "\n"
@@ -298,10 +380,12 @@ main(int argc, char **argv)
 
 	for (i = optind; i < argc; i++) {
 		access(argv[i], F_OK)
-			? depinfo_alias(ctx, argv[i])
-			: depinfo_path(ctx, argv[i]);
+		    ? depinfo_alias(ctx, argv[i])
+		    : depinfo_path(ctx, argv[i]);
 	}
 
 	kmod_unref(ctx);
+	free_modules();
+
 	return EXIT_SUCCESS;
 }
