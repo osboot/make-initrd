@@ -13,7 +13,7 @@ cpu_vendor="${UCODE_CPU_VENDOR-}"
 cpu_family="${UCODE_CPU_FAMILY-}"
 iucode_scan_system='--scan-system'
 
-[ -z "${UCODE_ALL_MICROCODE-}" ||
+[ -z "${UCODE_ALL_MICROCODE-}" ] ||
 	iucode_scan_system=
 
 if [ -z "$cpu_vendor" ]; then
