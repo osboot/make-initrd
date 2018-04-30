@@ -5,11 +5,11 @@
 kmodules_list="$1"
 shift
 
-LIBCRC32C="$(depinfo -D "libcrc32c" 2>/dev/null |cut -f1 -d\ )"
+LIBCRC32C="$(depinfo --set-version="$kernel" -D "libcrc32c" 2>/dev/null |cut -f1 -d\ )"
 
 case "$LIBCRC32C" in
-	builtin) pattern='^(xfs|btrfs) ' ;;
-	module)  pattern='^libcrc32c '   ;;
+	builtin) pattern='^(ext4|xfs|btrfs) ' ;;
+	module)  pattern='^libcrc32c ' ;;
 	*) exit 0 ;;
 esac
 
