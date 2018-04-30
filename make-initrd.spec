@@ -1,6 +1,6 @@
 Name: make-initrd
 Version: 0.8.15
-Release: alt1.M80P.6
+Release: alt1.M80P.7
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -183,6 +183,10 @@ fi
 %_datadir/%name/features/ucode
 
 %changelog
+* Mon Apr 30 2018 Leonid Krivoshein <klark@altlinux.org> 0.8.15-alt1.M80P.7
+- Depinfo utility v2.0.9 ported from Sisyphus to p8 branch
+- Hidden dependency for ext4 filesystem added
+
 * Fri Apr 27 2018 Leonid Krivoshein <klark@altlinux.org> 0.8.15-alt1.M80P.6
 - Hard dependency to crc32c module added (Closes: #34854)
 
