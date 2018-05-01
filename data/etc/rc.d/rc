@@ -44,10 +44,15 @@ for i in "$rcd"/S*; do
 	subsys="${i#$rcd/S??}"
 
 	SourceIfExists /.initrd/initenv
-	if [ -n "${STOP-}" ] && [ -z "${STOP##*,all,*}" -o -z "${STOP##*,$subsys,*}" ]; then
+
+	interactive=
+	[ -z "${STOP-}" ] || [ -n "${STOP##*,all,*}" ] || [ -n "${STOP##*,$subsys,*}" ] ||
+			interactive=1
+
+	if [ -n "$interactive" ]; then
 		while :; do
 			printf 'Start service %s (Y)es/(N)o/(C)ontinue/(S)hell? [Y] ' "$subsys"
-			read answer < /dev/console
+			read -r answer < /dev/console
 			case "$(replace '[A-Z]' '[a-z]' "$answer")" in
 				c|continue)
 					printf 'STOP=,,\n' >> /.initrd/initenv

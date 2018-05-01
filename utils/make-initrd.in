@@ -99,7 +99,7 @@ check_noexec() {
 	return $rc
 }
 
-TEMP=`getopt -n $PROG -o 'b:,c:,k:,D,N,h,v,V' -l 'bootdir:,config:,kernel:,no-depmod,no-checks,help,verbose,version' -- "$@"` ||
+TEMP=`getopt -n "$PROG" -o 'b:,c:,k:,D,N,h,v,V' -l 'bootdir:,config:,kernel:,no-depmod,no-checks,help,verbose,version' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -208,7 +208,7 @@ fi
 export TEMPDIR KERNEL BOOTDIR VERBOSE
 unset MAKELEVEL
 
-read make_version <<EOF
+read -r make_version <<EOF
 `make --version`
 EOF
 

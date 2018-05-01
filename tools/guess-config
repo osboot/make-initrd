@@ -3,7 +3,7 @@
 . guess-functions
 
 modules_fmt() {
-	while read m; do
+	while read -r m; do
 		m="${m##*/}"
 		m="${m%.ko*}"
 		printf '%s ' "$m"

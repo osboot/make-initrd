@@ -73,7 +73,7 @@ extract()
 
 GETOPT_ALLOW_UNKNOWN=1
 GETOPT_ALLOW_ABBREV=
-TEMP=`getopt -n $PROG -o "$getopt_common_opts" -l "$getopt_common_longopts" -- "$@"` ||
+TEMP=`getopt -n "$PROG" -o "$getopt_common_opts" -l "$getopt_common_longopts" -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -95,6 +95,7 @@ done
 
 diffopts=
 while [ $# -gt 2 ]; do
+	arg=
 	quote_shell_variable arg "$1"
 	diffopts="$diffopts \"$arg\""
 	shift

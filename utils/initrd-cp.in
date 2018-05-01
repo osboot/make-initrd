@@ -86,7 +86,7 @@ debug()
 	message "$@"
 }
 
-TEMP=`getopt -n $PROG -o 'f,l:,r:,h,D,v,V' -l 'dry-run,force,log:,remove-prefix:,help,debug,verbose,version' -- "$@"` ||
+TEMP=`getopt -n "$PROG" -o 'f,l:,r:,h,D,v,V' -l 'dry-run,force,log:,remove-prefix:,help,debug,verbose,version' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -155,7 +155,7 @@ print_manifest()
 canonicalize_file() {
 	local __canonicalize_file_name="$1" __canonicalize_file_result
 	__canonicalize_file() {
-		local fn="$1" r= t=
+		local fn="$1" r='' t=''
 		while [ "$fn" != "$r" ]; do
 			r="$fn"
 			if [ -z "${fn##*//*}" ]; then
@@ -166,7 +166,7 @@ canonicalize_file() {
 				t="${fn%%/../*}"
 				t="${t%/*}"
 				fn="$t/${fn#*/../}"
-			elif [ -z "${fn##./*}" -o -n "${fn##/*}" ]; then
+			elif [ -z "${fn##./*}" ] || [ -n "${fn##/*}" ]; then
 				fn="$PWD/${fn##./}"
 			elif [ -z "${fn##*/}" ]; then
 				fn="${fn%%/}"
@@ -181,7 +181,7 @@ canonicalize_file() {
 process_manifest()
 {
 	find -P "$@" -printf '%y\t%p\t%l\n' |
-	while read type destname linktrgt; do
+	while read -r type destname linktrgt; do
 		case "$type" in
 			b|c|d|f|l|s)
 				;;
@@ -223,7 +223,7 @@ process_single_fs_object()
 is_destname_processed()
 {
 	local n
-	while read n; do
+	while read -r n; do
 		[ "$destname" != "$n" ] ||
 			return 0
 	done <"$processed_objects"
@@ -238,7 +238,7 @@ log()
 }
 
 for n; do
-	[ -L "$n" -o ! -d "$n" ] ||
+	[ -L "$n" ] || [ ! -d "$n" ] ||
 		process_directory_recursively "$n"
 	process_single_fs_object "$n"
 done >"$cur_manifest"
@@ -247,7 +247,7 @@ cat "$cur_manifest" > "$res_manifest"
 
 iter=1
 while :; do
-	while read type destname realname linktrgt; do
+	while read -r type destname realname linktrgt; do
 		! is_destname_processed ||
 			continue
 
@@ -262,7 +262,7 @@ while :; do
 				if [ -n "${target##/*}" ]; then
 					target="${realname%/*}/$target"
 				fi
-				[ -L "$target" -o ! -d "$target" ] ||
+				[ -L "$target" ] || [ ! -d "$target" ] ||
 					process_directory_recursively "$target"
 
 				debug "symlink $realname -> $target"
@@ -273,7 +273,7 @@ while :; do
 
 				if [ -z "${mime##* ELF * dynamically linked*}" ]; then
 					ldd "$realname" |
-					while read f; do
+					while read -r f; do
 						case "$f" in
 							/*' (0x'*')')
 								f="${f% (0x*}"
@@ -312,7 +312,7 @@ done >> "$res_manifest"
 
 LC_ALL=C sort -u -o "$cur_manifest" "$res_manifest"
 
-while read type destname realname linktrgt; do
+while read -r type destname realname linktrgt; do
 	case "$type" in
 		d)
 			;;
@@ -343,7 +343,7 @@ if [ -n "${SHOW_MANIFEST-}" ]; then
 	exit
 fi
 
-while read type destname realname linktrgt; do
+while read -r type destname realname linktrgt; do
 	case "$type" in
 		d)
 			if [ -d "$destname" ]; then
@@ -373,7 +373,7 @@ while read type destname realname linktrgt; do
 	log
 done < "$res_manifest"
 
-while read type destname realname linktrgt; do
+while read -r type destname realname linktrgt; do
 	[ "$type" = "d" ] ||
 		break
 	[ -d "$realname" ] ||

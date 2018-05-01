@@ -17,8 +17,8 @@ for n; do
 		add_module "$n"
 
 	elif [ -n "${KERNEL_MODULES-}" ]; then
-		find "$KERNEL_MODULES" -type f |egrep -e "$n" |
-		while read m; do
+		find "$KERNEL_MODULES" -type f | grep -E -e "$n" |
+		while read -r m; do
 			add_module "$m"
 		done
 	else

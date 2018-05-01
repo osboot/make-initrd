@@ -5,7 +5,7 @@
 
 if [ -z "$IP" ] || [ "$IP" = 0 ]; then
 	# Special case for nfsroot.
-	if [ -n "$NFSROOT" -o "$ROOT" = '/dev/nfs' ]; then
+	if [ -n "$NFSROOT" ] || [ "$ROOT" = '/dev/nfs' ]; then
 		export IP0=dhcp
 		export IP=1
 	fi

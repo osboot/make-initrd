@@ -18,7 +18,7 @@ fi
 
 if [ -z "${PRETTY_NAME-}" ]; then
 	[ ! -s /etc/system-release ] ||
-		read PRETTY_NAME < /etc/system-release
+		read -r PRETTY_NAME < /etc/system-release
 fi
 
 mkdir -p -- ./etc

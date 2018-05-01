@@ -2,7 +2,7 @@
 
 . sh-functions
 
-if [ -n "${RDSHELL_PASSWORD-}" -a -n "${RDSHELL_COPY_PASSWORD_FROM_USER-}" ]; then
+if [ -n "${RDSHELL_PASSWORD-}" ] && [ -n "${RDSHELL_COPY_PASSWORD_FROM_USER-}" ]; then
 	fatal 'Options "RDSHELL_PASSWORD" and "RDSHELL_COPY_PASSWORD_FROM_USER" are mutually exclusive'
 fi
 

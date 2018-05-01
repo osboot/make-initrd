@@ -17,7 +17,7 @@ split() {
 	exit 0
 i=0
 while [ "$i" -lt "$LUKS_KEY" ]; do
-	path= keydev= luksdev=
+	path='' keydev='' luksdev=''
 	eval "split \"\$LUKS_KEY$i\""
 	i=$(( $i + 1 ))
 	[ -n "$keydev" ] ||

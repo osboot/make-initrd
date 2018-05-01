@@ -7,7 +7,7 @@ detect()
 	hid_required=
 
 	for i in "$SYSFS_PATH/class/input"/*; do
-		[ -f "$i/name" -a -f "$i/modalias" ] ||
+		[ -f "$i/name" ] && [ -f "$i/modalias" ] ||
 			continue
 
 		local led=
@@ -61,7 +61,7 @@ if [ ! -s "$guessdir/guess:modalias${GUESS_SUFFIX:+:$GUESS_SUFFIX}" ]; then
 	[ -n "${KEYBOARD_DEFAULT_MODULES-}" ] ||
 		exit 0
 	printf '%s\n' ${KEYBOARD_DEFAULT_MODULES-} |
-	while read m; do
+	while read -r m; do
 		[ -z "$m" ] || guess_module "$m"
 	done
 fi

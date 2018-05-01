@@ -12,4 +12,6 @@ for m; do
 done
 
 add-module "$@"
+
+# shellcheck disable=SC2016
 printf 'RESCUE_MODULES="${RESCUE_MODULES:-} %s"\n' "$l" >> "$rootdir"/etc/initrd/initramfs.conf

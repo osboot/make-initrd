@@ -4,7 +4,7 @@
 
 # to be sure that microcode loading supported by kernel
 [ -f "$KERNEL_CONFIG" ] &&
-	egrep -qs "^CONFIG_MICROCODE(|_INTEL|_AMD)=[my]" "$KERNEL_CONFIG" ||
+	grep -E -qs "^CONFIG_MICROCODE(|_INTEL|_AMD)=[my]" "$KERNEL_CONFIG" ||
 	error "Microcode loading support is missing in kernel"
 
 IUCODE_BIN=/usr/sbin/iucode_tool
@@ -33,7 +33,7 @@ fi
 
 prep_early_firmware()
 {
-	local fw_path fw_file= fw="$1"
+	local fw_path fw_file='' fw="$1"
 	shift
 
 	for fw_path in ${FIRMWARE_DIRS:-/lib/firmware}; do
@@ -72,7 +72,7 @@ prep_amd_ucode()
 prep_intel_ucode()
 {
 	# microcode loading supported only for CPUs >= PentiumPro
-	[ -n "$cpu_family" -a "$cpu_family" -ge 6 ] || return 1
+	[ -n "$cpu_family" ] && [ "$cpu_family" -ge 6 ] || return 1
 
 	[ -x "$IUCODE_BIN" ] ||
 		return 1

@@ -16,7 +16,7 @@
 
 NAME=ueventd
 PIDFILE=/var/run/$NAME.pid
-ARGS="--lockfile $LOCKFILE --pidfile "$PIDFILE""
+ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE"
 
 start() {
 	if [ -n "${runlevel-}" ] && [ -n "${RDSHELL-}" ]; then

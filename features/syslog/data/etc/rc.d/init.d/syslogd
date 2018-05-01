@@ -48,7 +48,8 @@ restart()
 
 reload()
 {
-	if echo -E "$SYSLOGD_OPTIONS" |grep -Eqs '(^|[[:space:]]+)-j[[:space:]]+'; then
+	# shellcheck disable=SC2169
+	if echo -E "$SYSLOGD_OPTIONS" | grep -E -qs '(^|[[:space:]]+)-j[[:space:]]+'; then
 		restart
 	else
 		msg_reloading "system logger"

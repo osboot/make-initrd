@@ -47,7 +47,7 @@ findkey() {
 	[ -f /etc/luks.keys ] ||
 		return 2
 
-	while IFS='	' read path keydev luksdev; do
+	while IFS='	' read -r path keydev luksdev; do
 		if [ -n "$luksdev" ]; then
 			get_dev "$luksdev" ||
 				continue
@@ -63,7 +63,7 @@ findkey() {
 		fi
 
 		if [ ! -f "$prefix/$path" ]; then
-			printf "ERROR(luks): $path: keyfile not found.\n" >&2
+			printf "ERROR(luks): %s: keyfile not found.\n" "$path" >&2
 			return 1
 		fi
 

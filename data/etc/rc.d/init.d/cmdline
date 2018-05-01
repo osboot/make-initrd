@@ -26,7 +26,9 @@ defaults()
 	export PATH=/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin
 	export RUN_INITRD=1
 	export rootmnt='/root'
-	export UDEV_VERSION="$(udevd --version)" ||:
+
+	UDEV_VERSION="$(udevd --version)" ||:
+	export UDEV_VERSION
 }
 
 readonly VAR_S=1
@@ -147,7 +149,7 @@ ignored()
 
 parse()
 {
-	local x __vars=' ' __aliases=' ' CMDLINE_PARAMS=
+	local x __vars=' ' __aliases=' ' CMDLINE_PARAMS=''
 
 	for x in /etc/initrd/cmdline.d/*; do
 		. "$x"
@@ -163,7 +165,7 @@ parse()
 
 	defaults
 
-	read CMDLINE < /proc/cmdline
+	read -r CMDLINE < /proc/cmdline
 	export CMDLINE
 
 	cmdline_foreach "$CMDLINE" __set_var
@@ -172,7 +174,7 @@ parse()
 	STOP=",$STOP,"
 
 	showenv -q |
-	while read l; do
+	while read -r l; do
 		s="${l%%=*}"
 		[ -z "${s##*[!A-Za-z0-9_]*}" ] || ignored "$s" ||
 			printf 'export %s\n' "$l"

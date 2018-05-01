@@ -22,9 +22,9 @@ add_module() {
 	local name n v
 	name="$1"
 
-	local builtin=' ' modules= firmware=
+	local builtin=' ' modules='' firmware=''
 
-	while read n v; do
+	while read -r n v; do
 		case "$n" in
 			builtin)  builtin="$builtin $v "  ;;
 			module)   modules="$modules $v"   ;;

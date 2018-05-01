@@ -48,9 +48,9 @@ INITLOG_ARGS=
 start_daemon()
 {
 	# Process options.
-	local ANNOUNCE=1 BACKGROUND= BASENAME= CHECK= CMDNAME= DISPNAME= EXPECT= FLAGS= LOCKFILE= MAKE_PIDFILE= NICE=0 PIDFILE= STATUS= SU= WHICH=
+	local ANNOUNCE=1 BACKGROUND='' BASENAME='' CHECK='' CMDNAME='' DISPNAME='' EXPECT='' FLAGS='' LOCKFILE='' MAKE_PIDFILE='' NICE=0 PIDFILE='' STATUS='' SU='' WHICH=''
 
-	while [ "$1" != "${1##-}" -o "$1" != "${1##+}" ]; do
+	while [ "$1" != "${1##-}" ] || [ "$1" != "${1##+}" ]; do
 		case "$1" in
 		--) shift
 			break
@@ -102,11 +102,11 @@ start_daemon()
 		msg_usage "start_daemon [options]... {program}..."
 		return 1
 	fi
-	if [ -n "$CHECK" -a -n "$CMDNAME" ]; then
+	if [ -n "$CHECK" ] && [ -n "$CMDNAME" ]; then
 		echo >&2 "start_daemon: --check and --name are mutually exclusive options"
 		return 1
 	fi
-	if [ -n "$CMDNAME" -a -z "$PIDFILE" ]; then
+	if [ -n "$CMDNAME" ] && [ -z "$PIDFILE" ]; then
 		echo >&2 "start_daemon: --name is set but --pidfile is not set"
 		return 1
 	fi
@@ -130,7 +130,7 @@ start_daemon()
 
 	# Don't export these because they may be invalid under another UID and the
 	# directories may be gone while the daemon is still running.
-	local HOME= TMP= TMPDIR=
+	local HOME='' TMP='' TMPDIR=''
 
 	FLAGS="--start -N $NICE"
 	if [ -n "$CMDNAME" ]; then
@@ -177,7 +177,7 @@ start_daemon()
 stop_daemon()
 {
 	# Process options.
-	local ANNOUNCE=1 BASENAME= CMDNAME= DEFAULT=true DISPNAME= EXPECT= FLAGS= HUPSIG= LOCKFILE= MESSAGE= NAME= PIDFILE= RETRY= SIGNAL= STATUS= WHICH=
+	local ANNOUNCE=1 BASENAME='' CMDNAME='' DEFAULT=true DISPNAME='' EXPECT='' FLAGS='' HUPSIG='' LOCKFILE='' MESSAGE='' NAME='' PIDFILE='' RETRY='' SIGNAL='' STATUS='' WHICH=''
 
 	# start-stop-daemon wants a signal number.
 	SIGNAL="$(/bin/kill -l TERM)" || SIGNAL=15
@@ -251,7 +251,7 @@ stop_daemon()
 		PIDFILE=
 	fi
 
-	if [ -n "$CMDNAME" -a -z "$PIDFILE" ]; then
+	if [ -n "$CMDNAME" ] && [ -z "$PIDFILE" ]; then
 		echo "stop_daemon: --name is set but --pidfile is not set" >&2
 		return 1
 	fi
@@ -290,7 +290,7 @@ stop_daemon()
 
 	# We really want to be sure the daemon is dead, unless we're sending a
 	# custom signal.
-	if [ "$DEFAULT" = true -a $STATUS -eq 0 ]; then
+	if [ "$DEFAULT" = true ] && [ $STATUS -eq 0 ]; then
 		sleep 0.1
 		if start-stop-daemon $FLAGS --test > /dev/null; then
 			sleep 1
@@ -301,7 +301,7 @@ stop_daemon()
 	fi
 
 	if [ $STATUS = 0 ]; then
-		[ -z "$LOCKFILE" -o "$SIGNAL" = "$HUPSIG" ] || rm -f "$LOCKFILE"
+		[ -z "$LOCKFILE" ] || [ "$SIGNAL" = "$HUPSIG" ] || rm -f "$LOCKFILE"
 		[ "$BOOTUP" != verbose ] || echo -n " $DISPNAME "
 		success "$MESSAGE"
 	else
@@ -321,7 +321,7 @@ status()
 	fi
 
 	# Process options.
-	local BASENAME= CMDNAME= DISPNAME= EXPECT= FLAGS= LOCKFILE= PIDFILE= WHICH=
+	local BASENAME='' CMDNAME='' DISPNAME='' EXPECT='' FLAGS='' LOCKFILE='' PIDFILE='' WHICH=''
 
 	while [ "$1" != "${1##-}" ]; do
 		case "$1" in
@@ -370,7 +370,7 @@ status()
 		PIDFILE=
 	fi
 
-	if [ -n "$CMDNAME" -a -z "$PIDFILE" ]; then
+	if [ -n "$CMDNAME" ] && [ -z "$PIDFILE" ]; then
 		echo "status: --name is set but --pidfile is not set" >&2
 		return 1
 	fi
@@ -381,15 +381,14 @@ status()
 		FLAGS="$FLAGS --exec $WHICH --user-fallback-to-name" ||
 		FLAGS="$FLAGS --name $CMDNAME"
 	[ -z "$PIDFILE" ] || FLAGS="$FLAGS --pidfile $PIDFILE"
-	start-stop-daemon $FLAGS >/dev/null
 
 	# Report it.
-	if [ $? -eq 0 ]; then
+	if start-stop-daemon $FLAGS >/dev/null; then
 		echo "$DISPNAME is running"
 		return 0
 	fi
 
-	if [ -n "$PIDFILE" -a -f "$PIDFILE" ]; then
+	if [ -n "$PIDFILE" ] && [ -f "$PIDFILE" ]; then
 		echo "$DISPNAME is dead, but stale PID file exists"
 		return 1
 	fi
@@ -527,7 +526,7 @@ dsort()
 	__cmp()
 	{
 		local a="$1" b="$2"
-		[ -z "${a##$b/*}" -o ${#a} -ge ${#b} ]
+		[ -z "${a##$b/*}" ] || [ ${#a} -ge ${#b} ]
 	}
 	__sort()
 	{

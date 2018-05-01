@@ -15,7 +15,7 @@ depinfo \
 		--no-firmware \
 		"md-$level" 2>/dev/null |
 	sort -u |
-while read mod; do
+while read -r mod; do
 	guess_module "$mod"
 done
 

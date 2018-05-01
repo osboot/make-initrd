@@ -38,7 +38,7 @@ print_version()
 	exit
 }
 
-TEMP=`getopt -n $PROG -o a:,f,V,v,d,h -l type:,fstab:,preload:,with:,extra:,with-raid,omit-scsi-modules,omit-ide-modules,omit-raid-modules,pause,nocompress,nobootsplash,strict,image-version,ifneeded,version,add:,force,verbose,debug,help -- "$@"` ||
+TEMP=`getopt -n "$PROG" -o a:,f,V,v,d,h -l type:,fstab:,preload:,with:,extra:,with-raid,omit-scsi-modules,omit-ide-modules,omit-raid-modules,pause,nocompress,nobootsplash,strict,image-version,ifneeded,version,add:,force,verbose,debug,help -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -80,7 +80,7 @@ done
 
 export IMAGEFILE="$1"
 
-if [ -f "$IMAGEFILE" -a -z "$FORCE" ]; then
+if [ -f "$IMAGEFILE" ] && [ -z "$FORCE" ]; then
 	message "$IMAGEFILE already exists."
 	exit 1
 fi

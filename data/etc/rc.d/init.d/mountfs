@@ -46,7 +46,7 @@ MountVirtualFs()
 	action "$msg [/sys]:"  mount -t sysfs -o nodev,noexec,nosuid sysfs /sys
 	action "$msg [/run]:"  mount -t tmpfs -o mode=755            runfs /run
 
-	while read l t; do
+	while read -r l t; do
 		[ -e "$l" ] || ln -s "$t" "$l"
 	done <<-EOF
 	/dev/core   /proc/kcore
@@ -76,7 +76,7 @@ MoveFilesystems()
 # Unmount file systems, killing processes if we have to.
 UnmountFilesystems()
 {
-	local sig= retry delay findmnt msg= points
+	local sig='' retry delay findmnt msg='' points
 
 	retry="$1"; shift
 	delay="$1"; shift
@@ -85,7 +85,7 @@ UnmountFilesystems()
 
 	points="$($findmnt)"
 
-	while [ -n "$points" -a "$retry" -gt 0 ]; do
+	while [ -n "$points" ] && [ "$retry" -gt 0 ]; do
 		dsort points $points
 
 		[ "$retry" -eq 3 ] || msg='(retry) '
@@ -122,7 +122,7 @@ stop()
 	non_dev_tmpfs()
 	{
 		findmnt -mno SOURCE,TARGET -t tmpfs |
-		while read s t; do
+		while read -r s t; do
 			mountpoint -q "$t" ||
 				continue
 			case "$t" in
@@ -137,7 +137,7 @@ stop()
 	non_proc_all()
 	{
 		findmnt -mno SOURCE,TARGET |
-		while read s t; do
+		while read -r s t; do
 			mountpoint -q "$t" ||
 				continue
 			case "$t" in

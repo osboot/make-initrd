@@ -10,7 +10,7 @@ msg=
 if [ -z "${RDSHELL_NOMESSAGE-}" ]; then
 	if [ -z "${RDSHELL_MESSAGE-}" ]; then
 		if [ -e "$rdshell_fifo" ]; then
-			read msg < "$rdshell_fifo" ||:
+			read -r msg < "$rdshell_fifo" ||:
 		fi
 	else
 		msg="$RDSHELL_MESSAGE"

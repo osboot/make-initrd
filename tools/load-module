@@ -27,7 +27,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 for n in $modules_list; do
-	! fgrep -xqs "$n" "$rootdir/$modules_file" ||
+	! grep -F -xqs "$n" "$rootdir/$modules_file" ||
 		continue
 
 	add-module "$n"

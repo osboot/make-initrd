@@ -5,6 +5,7 @@ __included_make_initrd_sh_functions=1
 
 . shell-error
 
+# shellcheck disable=SC2153
 export verbose="${VERBOSE:+-v}"
 
 export workdir="${WORKDIR:?Work directory required}"
@@ -61,6 +62,7 @@ get_majmin() {
 
 readline() {
 	local __v=
+	# shellcheck disable=SC2162
 	read __v < "$2" ||:
 	eval "$1=\"\$__v\""
 }

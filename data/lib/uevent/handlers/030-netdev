@@ -17,7 +17,7 @@ interface() {
 	[ ! -f "/tmp/net-$INTERFACE.conf" ] ||
 		return 0
 
-	local dev= proto=
+	local dev='' proto=''
 	case "$IPOPTS" in
 		*:*:*:*:*:*:*)
 			dev="$(mcut 6 "$IPOPTS")"
@@ -29,7 +29,7 @@ interface() {
 			;;
 	esac
 
-	[ -z "$dev" -o "$dev" = "$INTERFACE" ] ||
+	[ -z "$dev" ] || [ "$dev" = "$INTERFACE" ] ||
 		return 0
 
 	case "$proto" in

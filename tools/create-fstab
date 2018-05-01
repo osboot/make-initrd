@@ -7,7 +7,7 @@ mkdir -p -- "$rootdir"/etc
 
 process_mpoint() {
 	local mpoint="$1"
-	local t_fsname= t_fstype= t_opts=
+	local t_fsname='' t_fstype='' t_opts=''
 
 	for f in "${FSTAB:-/etc/fstab}" "${PROC_MOUNTS:-/proc/mounts}"; do
 		[ -f "$f" ] ||
@@ -17,7 +17,7 @@ process_mpoint() {
 		local device_list
 		local eof=
 		while [ -z "$eof" ]; do
-			read fsname fsdir fstype opts freq passno ||
+			read -r fsname fsdir fstype opts freq passno ||
 				eof=1
 
 			[ -n "${fsname##\#*}" ] && [ "$fsdir" = "$mpoint" ] && [ "$fstype" != 'rootfs' ] ||

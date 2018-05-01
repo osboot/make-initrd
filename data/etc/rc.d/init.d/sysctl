@@ -34,7 +34,7 @@ conflist()
 
 sysctl_system()
 {
-	conflist | while read f; do sysctl -q -p "$f" || exit $?; done
+	conflist | while read -r f; do sysctl -q -p "$f" || exit $?; done
 }
 
 if [ -x /sbin/sysctl ]; then

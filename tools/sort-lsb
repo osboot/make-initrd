@@ -86,7 +86,7 @@ append()
 	var="$1"; shift
 	eval "name=\" \${$var:-}\""
 	for n; do
-		[ "$n" = '@mark' -o -n "${name##* $n *}" ] ||
+		[ "$n" = '@mark' ] || [ -n "${name##* $n *}" ] ||
 			continue
 		name="$name $n "
 	done
@@ -110,12 +110,13 @@ parse_services()
 			service="${f##*/}"
 			provides=
 
-			S_requires= S_suggests= S_level= S_before=
-			K_requires= K_suggests= K_level= K_before=
+			S_requires='' S_suggests='' S_level='' S_before=''
+			K_requires='' K_suggests='' K_level='' K_before=''
 
 			# provide service filename
 			append provides "${f##*/}"
 
+			# shellcheck disable=SC2162
 			while read l; do
 				vname=
 				case "$l" in
@@ -124,9 +125,9 @@ parse_services()
 						block=1
 						;;
 					'### END INIT INFO')
-	    					[ "$block" = 1 ] || continue
-		    				block=2
-	    					break
+						[ "$block" = 1 ] || continue
+						block=2
+						break
 						;;
 					'# Provides:'*)       vname='provides'   ;;
 					'# Default-Start:'*)  vname='S_level'    ;;
@@ -138,7 +139,7 @@ parse_services()
 					'# Default-Stop:'*)   vname=             ;;
 				esac
 
-				[ "$block" != 1 -o -z "$vname" ] ||
+				[ "$block" != 1 ] || [ -z "$vname" ] ||
 					append $vname ${l#*:}
 			done < "$f"
 
@@ -269,8 +270,8 @@ sort_services()
 	type="$1"; shift
 
 	local names name services deps=' ' found
-	local req requires provides new_serv= new_prov=
-	local unmet_name= unmet_req=
+	local req requires provides new_serv='' new_prov=''
+	local unmet_name='' unmet_req=''
 
 	verbose "Ordering services ($type$level)"
 
@@ -413,11 +414,11 @@ process_runlevel()
 	[ "$result" = 'none' ] ||
 		verbose "Runlevel: $level"
 
-	make_stop_links  $level
-	make_start_links $level
+	make_stop_links  "$level"
+	make_start_links "$level"
 }
 
-TEMP=`getopt -n $PROG -o "$getopt_common_opts,P:,r:" -l "$getopt_common_longopts,rcdir:,result:,rootdir:,runlevels:,sys-provides:" -- "$@"` ||
+TEMP=`getopt -n "$PROG" -o "$getopt_common_opts,P:,r:" -l "$getopt_common_longopts,rcdir:,result:,rootdir:,runlevels:,sys-provides:" -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 

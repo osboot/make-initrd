@@ -13,13 +13,13 @@ case "$LIBCRC32C" in
 	*) exit 0 ;;
 esac
 
-egrep -qs "$pattern" "$kmodules_list" ||
+grep -E -qs -e "$pattern" "$kmodules_list" ||
 	exit 0
 
 # CRC32c (Castagnoli) calculations wrapper for lib/crc32c
 add-module 'crc32c'
 
-egrep '^alias crc32c ' "$kernel_modules_dir"/modules.alias |
-while read prefix alias module; do
+grep -E -e '^alias crc32c ' "$kernel_modules_dir"/modules.alias |
+while read -r prefix alias module; do
 	add-module "$module"
 done

@@ -9,11 +9,11 @@ fi
 
 found=
 if [ -f "$SYSFS_PATH/$1"/uevent ]; then
-	! egrep -qs '^DRIVER=(ub|usb-storage)$' "$SYSFS_PATH/$1"/uevent ||
+	! grep -E -qs '^DRIVER=(ub|usb-storage)$' "$SYSFS_PATH/$1"/uevent ||
 		found=1
 fi
 
-if [ -z "$found" -a -e "$SYSFS_PATH/$1"/driver ]; then
+if [ -z "$found" ] && [ -e "$SYSFS_PATH/$1"/driver ]; then
 	t="$(readlink -ev "$SYSFS_PATH/$1"/driver 2>/dev/null)" ||:
 	case "${t##*/}" in
 		ub|usb-storage) found=1

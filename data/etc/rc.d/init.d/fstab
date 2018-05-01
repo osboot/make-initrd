@@ -44,7 +44,7 @@ gen_fstab()
 	local i=1 n dev path str s0 ndev
 
 	[ ! -s /etc/fstab ] ||
-		while read dev path str; do
+		while read -r dev path str; do
 			[ -n "${dev##\#*}" ] && [ -z "${path##/*}" ] ||
 				continue
 
@@ -85,7 +85,7 @@ gen_fstab()
 }
 
 msg='Creating /etc/fstab:'
-if [ ! -s /etc/fstab -a -z "${ROOT-}" ]; then
+if [ ! -s /etc/fstab ] && [ -z "${ROOT-}" ]; then
 	echo_msg "$msg"; passed "$msg"; echo
 else
 	action_shell "$msg" gen_fstab

@@ -3,7 +3,7 @@
 . /.initrd/initenv
 . uevent-sh-functions
 
-[ -n "$NFSROOT" -o "$ROOT" != '/dev/nfs' ] ||
+[ -n "$NFSROOT" ] || [ "$ROOT" != '/dev/nfs' ] ||
 	NFSROOT='auto'
 
 [ -n "$NFSROOT" ] ||

@@ -45,6 +45,7 @@ logEvent() {
 		4) fmt="%s failed due to a failed dependency" ;;
 		*) fmt="%s" ;;
 	esac
+	# shellcheck disable=SC2059
 	printf "$fmt\\n" "$cmdname: $logstring"
 	exit
 }
@@ -71,11 +72,11 @@ runCommand() {
 		[ -z "$line" ] || printf '%s: %s\n' "$cmdname" "$line"
 		[ -z "$eof" ] || break
 	done
-	read ret < "$workdir/ret"
+	read -r ret < "$workdir/ret"
 	exit $ret
 }
 
-TEMP=`getopt -n $PROG -o 'c:,e:,f:,l:,n:,p:,s:,h,q' -l 'cmd:,event:,facility:,log:,name:,priority:,string:,help,quiet' -- "$@"` ||
+TEMP=`getopt -n "$PROG" -o 'c:,e:,f:,l:,n:,p:,s:,h,q' -l 'cmd:,event:,facility:,log:,name:,priority:,string:,help,quiet' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
@@ -106,26 +107,26 @@ while :; do
 	shift
 done
 
-[ -n "$cmd" -a -n "$logstring" ] &&
-	fatal "--cmd and --run are incompatible with --string"
+[ -n "$cmd" ] && [ -n "$logstring" ] &&
+	fatal "--cmd and --run are incompatible with --string" ||:
 
-[ -n "$cmdname" -a -z "$logstring" -a -z "$cmdevent" -a -z "$cmd" ] &&
-	fatal "--name requires one of --event, --string or --cmd"
+[ -n "$cmdname" ] && [ -z "$logstring" ] && [ -z "$cmdevent" ] && [ -z "$cmd" ] &&
+	fatal "--name requires one of --event, --string or --cmd" ||:
 
-[ -n "$cmdevent" -a -z "$cmdname" -a -z "$logstring" ] &&
-	fatal "--event requires one of --cmdname or --logstring"
+[ -n "$cmdevent" ] && [ -z "$cmdname" ] && [ -z "$logstring" ] &&
+	fatal "--event requires one of --cmdname or --logstring" ||:
 
 cmdname="${cmdname##*/}"
 [ -n "$cmdname" ] ||
 	cmdname='(none)'
 
-[ -n "$cmdevent" ] &&
+[ -z "$cmdevent" ] ||
 	logEvent "$cmdname" "$cmdevent" "$logstring" >>"$logfile" 2>&1
 
-[ -n "$logstring" ] &&
+[ -z "$logstring" ] ||
 	logString "$cmdname" "$logstring" >>"$logfile" 2>&1
 
-[ -n "$cmd" ] && {
+[ -z "$cmd" ] || {
 	set_cleanup_handler cleanup_handler
 	workdir="$(mktemp -dt "$PROG.XXXXXXXXXX")"
 	runCommand "$cmdname" "$cmd" >>"$logfile" 2>&1

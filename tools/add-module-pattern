@@ -46,6 +46,6 @@ done
 	exit 0
 
 initrd-scanmod --set-version="$kernel" "$rulesdir/filter"-* |
-while read m; do
+while read -r m; do
 	add_module "$m"
 done

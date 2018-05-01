@@ -22,7 +22,7 @@ mountfs()
 	local eof fsdev fsdir dummy
 	eof=
 	while [ -z "$eof" ]; do
-		read fsdev fsdir dummy ||
+		read -r fsdev fsdir dummy ||
 			eof=1
 
 		[ -n "$fsdev" ] ||

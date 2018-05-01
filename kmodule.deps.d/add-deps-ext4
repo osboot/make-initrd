@@ -5,16 +5,16 @@
 kmodules_list="$1"
 shift
 
-egrep -qs '^ext4 ' "$kmodules_list" ||
+grep -E -qs '^ext4 ' "$kmodules_list" ||
 	exit 0
 
-depinfo --set-version="$kernel" -D "ext4" 2>/dev/null | egrep -qs '^module ' ||
+depinfo --set-version="$kernel" -D "ext4" 2>/dev/null | grep -E -qs '^module ' ||
 	exit 0
 
 add-module 'libcrc32c'
 add-module 'crc32c'
 
-egrep '^alias crc32c ' "$kernel_modules_dir"/modules.alias |
-while read prefix alias module; do
+grep -E '^alias crc32c ' "$kernel_modules_dir"/modules.alias |
+while read -r prefix alias module; do
 	add-module "$module"
 done

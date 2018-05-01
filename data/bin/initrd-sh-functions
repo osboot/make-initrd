@@ -50,12 +50,12 @@ get_dev() {
 				return 1
 			;;
 		*:*)
-			[ "$MAJOR" = "${name%:*}" -a "$MINOR" = "${name#*:}" ] ||
+			[ "$MAJOR" = "${name%:*}" ] && [ "$MINOR" = "${name#*:}" ] ||
 				return 1
 			;;
 		*)
 			value=$(( 0x$name ))
-			[ "$MAJOR" = "$(( $value / 256 ))" -a "$MINOR" = "$(( $value % 256 ))" ] ||
+			[ "$MAJOR" = "$(( $value / 256 ))" ] && [ "$MINOR" = "$(( $value % 256 ))" ] ||
 				return 1
 			;;
 	esac

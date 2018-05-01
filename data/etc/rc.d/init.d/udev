@@ -17,9 +17,10 @@
 
 load_modules() {
 	local m
+	# shellcheck disable=SC2162
 	[ ! -e /etc/initrd/modules-"$1" ] ||
 	while read m; do
-		[ -z "${m##\#*}" ] || modprobe "$m"
+		[ -z "${m##\#*}" ] || modprobe $m
 	done < /etc/initrd/modules-"$1" 2>"/var/log/udev-$1.log"
 }
 
