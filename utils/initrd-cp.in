@@ -230,6 +230,83 @@ is_destname_processed()
 	return 1
 }
 
+binary_file()
+{
+	local realname="$1"
+
+	ldd "$realname" |
+	while read -r f; do
+		case "$f" in
+			/*' (0x'*')')
+				f="${f% (0x*}"
+				;;
+			*' => /'*' (0x'*')')
+				f="${f% (0x*}"
+				f="${f##* => }"
+				;;
+			[!/]*' (0x'*')'|'statically linked') # ignore
+				continue
+				;;
+			*)
+				fatal "Unsupported ldd output for $realname: $f"
+				;;
+		esac
+		debug "binary file $realname -> $f"
+		process_single_fs_object "$f"
+	done
+}
+
+shebang_file()
+{
+	local CR
+	CR="$(printf '\r')"
+
+	local f="$1"
+	shift
+
+	local line=
+	read -r line < "$f"
+
+	[ -n "$line" ] && [ -z "${line##\#\!*}" ] ||
+		return 0
+
+	line="${line##\#\!}"
+	line="${line%$CR}"
+
+	set -- $line
+
+	[ "$#" != 0 ] ||
+		return 0
+
+	local exe="$1"
+
+	[ -z "${exe##/*}" ] ||
+		fatal "interpreter must be an absolute pathname: $f: $*"
+
+	[ -x "$exe" ] ||
+		fatal "interpreter must be executable: $f: $*"
+
+	case "$#,$exe" in
+		2,/usr/bin/env)
+			local arg=
+			arg="$(
+				export PATH=/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin
+				which --skip-alias --skip-functions --skip-dot --skip-tilde "$2"
+			)"
+			debug "script file $f -> $arg"
+			process_single_fs_object "$arg"
+			;;
+		[12],*)
+			;;
+		*,/usr/bin/env)
+			fatal "too many arguments: $f: $line"
+			;;
+	esac
+
+	debug "script file $f -> $exe"
+	process_single_fs_object "$exe"
+}
+
 log()
 {
 	[ -z "$dryrun" ] && [ -n "$logfile" ] || return 0
@@ -271,28 +348,14 @@ while :; do
 			f)
 				mime="$(file -h "$realname")"
 
-				if [ -z "${mime##* ELF * dynamically linked*}" ]; then
-					ldd "$realname" |
-					while read -r f; do
-						case "$f" in
-							/*' (0x'*')')
-								f="${f% (0x*}"
-								;;
-							*' => /'*' (0x'*')')
-								f="${f% (0x*}"
-								f="${f##* => }"
-								;;
-							[!/]*' (0x'*')'|'statically linked') # ignore
-								continue
-								;;
-							*)
-								fatal "Unsupported ldd output for $realname: $f"
-								;;
-						esac
-						debug "binary file $realname -> $f"
-						process_single_fs_object "$f"
-					done
-				fi
+				case "$mime" in
+					*' ELF '*' dynamically linked'*)
+						binary_file "$realname"
+						;;
+					*'script text'*)
+						shebang_file "$realname"
+						;;
+				esac
 				;;
 		esac
 
