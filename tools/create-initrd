@@ -46,21 +46,27 @@ done
 # No shell access inside initramfs by default.
 printf 'RDSHELL_MODE=disable\n' >./etc/sysconfig/rdshell
 
-if [ -z "${INITRD_NO_LIBNSS-}" ]; then
-	verbose "Copying files from libnss_files.so* ..."
-
+find_libs()
+{
 	libdirs='/lib64 /lib'
 	slib="$(getconf SLIB 2>/dev/null)" &&
 		libdirs="/$slib" ||:
 	for lib in $libdirs; do
 		[ ! -d "$lib" ] ||
-			find $lib -mindepth 1 -maxdepth 1 \
-				\( \
-					-name 'libnss_files.so*' -o \
-					-name 'libnss_dns.so*' \
-				\) \
-				-exec put-file . '{}' '+'
+			find $lib "$@"
 	done
+}
+
+if [ -z "${INITRD_NO_LIBNSS-}" ]; then
+	verbose "Copying files from libnss_files.so* ..."
+
+	find_libs \
+		-mindepth 1 -maxdepth 1 \
+		\( \
+			-name 'libnss_files.so*' -o \
+			-name 'libnss_dns.so*' \
+		\) \
+		-exec put-file . '{}' '+'
 
 	cat >./etc/nsswitch.conf <<-EOF
 		passwd:    files
@@ -72,6 +78,15 @@ if [ -z "${INITRD_NO_LIBNSS-}" ]; then
 		services:  files
 		protocols: files
 	EOF
+fi
+
+# libgcc_s.so.1 must be installed for pthread_cancel to work
+if [ -z "${INITRD_NO_LIBGCC_S-}" ]; then
+	verbose "Copying files from libgcc_s.so* ..."
+	find_libs \
+		-mindepth 1 -maxdepth 1 \
+		-name 'libgcc_s.so*' \
+		-exec put-file . '{}' '+'
 fi
 
 for n in group gshadow passwd shadow; do
