@@ -19,13 +19,6 @@ PIDFILE=/var/run/$NAME.pid
 ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE"
 
 start() {
-	if [ -n "${runlevel-}" ] && [ -n "${RDSHELL-}" ]; then
-		echo_msg "Starting $NAME service (shell mode)"
-		passed "$NAME startup"
-		echo
-		RETVAL=$?
-		return $RETVAL
-	fi
 	start_daemon $ARGS -- \
 		"$NAME" \
 		    ${RDUEVENT_TIMEOUT:+--timeout=$RDUEVENT_TIMEOUT} \

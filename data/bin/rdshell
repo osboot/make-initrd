@@ -21,6 +21,8 @@ while ! console_lock; do
 	sleep 0.5
 done
 
+exec </dev/console >/dev/console 2>&1
+
 [ -z "${msg-}" ] || printf '%s: %s\n' "${0##*/}" "$msg"
 
 RDSHELL_MODE="${RDSHELL_MODE:-shell}"
@@ -47,5 +49,5 @@ for f in /lib/shell/*; do
 	"$f" ||:
 done
 
-setsid -c $shcmd </dev/console >/dev/console 2>&1
+setsid -c $shcmd
 console_unlock

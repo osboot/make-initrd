@@ -9,6 +9,8 @@ echo "$*" > /.initrd/initargs
 
 trap : CHLD INT TSTP QUIT HUP
 
+. rdshell-sh-functions
+
 x=/etc/rc.d/rc.sysinit
 [ ! -x "$x" ] || setsid "$x" ||:
 
@@ -22,9 +24,13 @@ lock() {
 	while ! mkdir -- "$lock" >/dev/null 2>&1; do
 		sleep 0.1
 	done
+	while ! console_lock; do
+		sleep 0.5
+	done
 }
 
 unlock() {
+	console_unlock
 	rmdir -- "$lock"
 }
 

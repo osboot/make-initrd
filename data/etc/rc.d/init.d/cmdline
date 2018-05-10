@@ -1,7 +1,7 @@
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:            cmdline
-# Required-Start:
+# Required-Start:      shell
 # Should-Start:
 # Required-Stop:
 # Should-Stop:
@@ -14,6 +14,8 @@
 [ "$1" = start ] || exit 0
 
 . /etc/init.d/functions
+
+. rdshell-sh-functions
 
 . shell-error
 . shell-var
@@ -181,12 +183,11 @@ parse()
 	done > /.initrd/initenv
 
 	if [ -n "${RDSHELL-}" ]; then
-		echo RDSHELL_NOMESSAGE=1 >> /.initrd/initenv
+		echo "Emergency shell" > "$rdshell_fifo"
 		return
 	fi
 
 	setsid /lib/initrd/rootdelay &
-	setsid /bin/rdshell &
 }
 
 action_shell 'Parsing cmdline arguments:' parse
