@@ -1,8 +1,10 @@
 MODULES_LOAD += $(LUKS_MODULES)
 
-$(call require,devmapper,depmod-image)
+$(call require,depmod-image)
+$(call require,devmapper)
+$(call require,modules-crypto-user-api)
 
-luks: devmapper
+luks: devmapper modules-crypto-user-api
 	@$(MSG) "Adding LUKS support ..."
 	@put-file "$(ROOTDIR)" $(CRYPTSETUP_BIN)
 	@put-tree "$(ROOTDIR)" $(LUKS_DATADIR)
