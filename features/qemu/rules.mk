@@ -3,7 +3,9 @@ MODULES_ADD += \
 	ne2k_pci pata_acpi pcnet32 sr_mod \
 	virtio.*
 
+$(call require,depmod-image)
+
 qemu: create
 	@$(MSG) "Adding modules to run inside qemu ..."
 
-pack: qemu
+depmod-image: qemu
