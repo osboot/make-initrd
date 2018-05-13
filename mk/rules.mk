@@ -6,6 +6,9 @@ require = \
 			$(MAKEFILE_LIST) $(foreach exl,$(DISABLE_FEATURES),$(realpath $(exl:%=$(FEATURESDIR)/%/rules.mk))), \
 			$(realpath $(req:%=$(FEATURESDIR)/%/rules.mk)))))
 
+if_feature = \
+	$(filter-out $(DISABLE_FEATURES),$(1))
+
 genimage: install
 	@echo
 	@echo "Image is saved as $(IMAGEFILE)"

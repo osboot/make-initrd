@@ -1,4 +1,4 @@
-ucode: compress
+ucode: $(call if_feature,compress)
 	@$(MSG) "Adding CPU microcode ..."
 	@$(ADD_UCODE)
 	@if [ -s "$(WORKDIR)/ucode.cpio" ]; then \
