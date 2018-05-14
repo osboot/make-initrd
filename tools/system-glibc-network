@@ -1,0 +1,19 @@
+#!/bin/sh -efu
+
+. sh-functions
+
+cd "$rootdir"
+
+mkdir -p -- ./etc
+
+echo '127.0.0.1 localhost.localdomain localhost' >./etc/hosts
+echo ''                                          >./etc/resolv.conf
+
+for n in protocols rpc services; do
+	grep -E -v '^[[:space:]]*(#.*)?$' "/etc/$n" > "./etc/$n" ||:
+done
+
+cat >./etc/host.conf <<EOF
+order hosts,bind
+multi on
+EOF

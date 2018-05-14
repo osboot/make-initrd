@@ -1,0 +1,27 @@
+#!/bin/sh -efu
+
+. sh-functions
+
+verbose "Copying files from libnss_files.so* ..."
+
+cd "$rootdir"
+
+find_libs \
+	-mindepth 1 -maxdepth 1 \
+	\( \
+		-name 'libnss_files.so*' -o \
+		-name 'libnss_dns.so*' \
+	\) \
+	-exec put-file . '{}' '+'
+
+mkdir -p -- ./etc
+cat >./etc/nsswitch.conf <<EOF
+passwd:    files
+group:     files
+shadow:    files
+hosts:     files dns
+networks:  files
+rpc:       files
+services:  files
+protocols: files
+EOF

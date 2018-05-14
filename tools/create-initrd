@@ -46,86 +46,9 @@ done
 # No shell access inside initramfs by default.
 printf 'RDSHELL_MODE=disable\n' >./etc/sysconfig/rdshell
 
-find_libs()
-{
-	libdirs='/lib64 /lib'
-	slib="$(getconf SLIB 2>/dev/null)" &&
-		libdirs="/$slib" ||:
-	for lib in $libdirs; do
-		[ ! -d "$lib" ] ||
-			find $lib "$@"
-	done
-}
-
-if [ -z "${INITRD_NO_LIBNSS-}" ]; then
-	verbose "Copying files from libnss_files.so* ..."
-
-	find_libs \
-		-mindepth 1 -maxdepth 1 \
-		\( \
-			-name 'libnss_files.so*' -o \
-			-name 'libnss_dns.so*' \
-		\) \
-		-exec put-file . '{}' '+'
-
-	cat >./etc/nsswitch.conf <<-EOF
-		passwd:    files
-		group:     files
-		shadow:    files
-		hosts:     files dns
-		networks:  files
-		rpc:       files
-		services:  files
-		protocols: files
-	EOF
-fi
-
-# libgcc_s.so.1 must be installed for pthread_cancel to work
-if [ -z "${INITRD_NO_LIBGCC_S-}" ]; then
-	verbose "Copying files from libgcc_s.so* ..."
-	find_libs \
-		-mindepth 1 -maxdepth 1 \
-		-name 'libgcc_s.so*' \
-		-exec put-file . '{}' '+'
-fi
-
 for n in group gshadow passwd shadow; do
 	:> ./etc/$n
 done
-
-if [ -z "${INITRD_NO_PWGR-}" ]; then
-	while IFS=: read -r name pass gid dummy; do
-		[ -n "$name" ] && [ "$gid" -lt 500 ] ||
-			continue
-		printf '%s\n' "$name:x:$gid:$dummy" >> ./etc/group
-		printf '%s\n' "$name:x::$dummy" >> ./etc/gshadow
-	done < /etc/group
-
-	while IFS=: read -r name pass uid gid dummy; do
-		[ -n "$name" ] && [ "$uid" -lt 500 ] ||
-			continue
-		{
-			[ "$name" = "root" ] &&
-				printf '%s\n' "root:x:$uid:$gid::/home/root:/bin/sh" ||
-				printf '%s\n' "$name:x:$uid:$gid:$dummy"
-		} >> ./etc/passwd
-		printf '%s\n' "$name:*:13957::::::" >> ./etc/shadow
-	done < /etc/passwd
-fi
-
-if [ -z "${INITRD_NO_NETWORK-}" ]; then
-	echo '127.0.0.1 localhost.localdomain localhost' >./etc/hosts
-	echo ''                                          >./etc/resolv.conf
-
-	for n in protocols rpc services; do
-		grep -E -v '^[[:space:]]*(#.*)?$' /etc/$n > ./etc/$n ||:
-	done
-
-	cat >./etc/host.conf <<-EOF
-		order hosts,bind
-		multi on
-	EOF
-fi
 
 [ -z "${PUT_DIRS-}"  ] || put-tree . $PUT_DIRS
 [ -z "${PUT_FILES-}" ] || put-file . $PUT_FILES

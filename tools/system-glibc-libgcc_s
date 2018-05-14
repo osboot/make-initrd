@@ -1,0 +1,12 @@
+#!/bin/sh -efu
+
+. sh-functions
+
+verbose "Copying files from libgcc_s.so* ..."
+
+cd "$rootdir"
+
+find_libs \
+	-mindepth 1 -maxdepth 1 \
+	-name 'libgcc_s.so*' \
+	-exec put-file . '{}' '+'
