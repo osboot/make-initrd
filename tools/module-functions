@@ -18,6 +18,10 @@ check_blacklist() {
 	return 1
 }
 
+add_module_callback() {
+	put-file "$rootdir" "$@"
+}
+
 add_module() {
 	local name n v
 	name="$1"
@@ -56,12 +60,12 @@ add_module() {
 
 	for n in $modules; do
 		verbose "Adding module \"$n\""
-		put-file "$rootdir" "$n"
+		add_module_callback "$n"
 	done
 
 	for n in $firmware; do
 		verbose "Adding firmware file \"$n\""
-		put-file "$rootdir" "$n"
+		add_module_callback "$n"
 	done
 }
 

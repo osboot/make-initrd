@@ -11,8 +11,8 @@ exit_handler() {
 		rm -rf -- "$rulesdir"
 }
 
-set_cleanup_handler exit_handler
 rulesdir="$(mktemp -d "$rulesdir/$PROG.XXXXXXXXX")"
+set_cleanup_handler exit_handler
 
 i=0
 for var in ${MODULES_PATTERN_SETS-}; do
@@ -45,7 +45,14 @@ done
 [ -f "$rulesdir/filter-0" ] ||
 	exit 0
 
+add_module_callback() {
+	printf '%s\n' "$@" >> "$rulesdir/list"
+}
+
 initrd-scanmod --set-version="$kernel" "$rulesdir/filter"-* |
 while read -r m; do
 	add_module "$m"
 done
+
+[ ! -s "$rulesdir/list" ] ||
+	xargs -r put-file "$rootdir" < "$rulesdir/list"

@@ -2,6 +2,8 @@
 
 . sh-functions
 
+. shell-signal
+
 modules_file='/etc/initrd/modules-postudev'
 modules_list=
 modules_check=
@@ -26,6 +28,19 @@ while [ "$#" -gt 0 ]; do
 	shift
 done
 
+workdir=
+exit_handler()
+{
+	[ -z "$workdir" ] || rm -rf -- "$workdir"
+}
+
+workdir="$(mktemp -dt "$PROG.XXXXXXXXX")"
+set_cleanup_handler exit_handler
+
+add_module_callback() {
+	printf '%s\n' "$@" >> "$workdir/list"
+}
+
 for n in $modules_list; do
 	! grep -F -xqs "$n" "$rootdir/$modules_file" ||
 		continue
@@ -36,3 +51,6 @@ for n in $modules_list; do
 	[ -z "$modules_check" ] ||
 		cp -a -- "$modules_check" "$rootdir/scripts/kmodules/check-$n"
 done
+
+[ ! -s "$workdir/list" ] ||
+	xargs -r put-file "$rootdir" < "$workdir/list"

@@ -4,12 +4,26 @@
 . module-functions
 
 . shell-error
+. shell-signal
 
 ignore_missing=
 if [ "${1-}" = '--optional' ]; then
 	ignore_missing=1
 	shift
 fi
+
+workdir=
+exit_handler()
+{
+	[ -z "$workdir" ] || rm -rf -- "$workdir"
+}
+
+workdir="$(mktemp -dt "$PROG.XXXXXXXXX")"
+set_cleanup_handler exit_handler
+
+add_module_callback() {
+	printf '%s\n' "$@" >> "$workdir/list"
+}
 
 for n; do
 	if [ -n "${n##*[/\[\].*&^\$\\\\/]*}" ]; then
@@ -25,3 +39,6 @@ for n; do
 		fatal "Unable to handle pattern: $n"
 	fi
 done
+
+[ ! -s "$workdir/list" ] ||
+	xargs -r put-file "$rootdir" < "$workdir/list"
