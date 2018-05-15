@@ -11,7 +11,6 @@ grep -E -qs '^ext4 ' "$kmodules_list" ||
 depinfo --set-version="$kernel" -D "ext4" 2>/dev/null | grep -E -qs '^module ' ||
 	exit 0
 
-add-module 'libcrc32c'
 add-module 'crc32c'
 
 grep -E '^alias crc32c ' "$kernel_modules_dir"/modules.alias |
