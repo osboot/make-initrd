@@ -101,9 +101,4 @@ gen_fstab()
 	done > /etc/fstab
 }
 
-msg='Creating /etc/fstab:'
-if [ ! -s /etc/fstab ] && [ -z "${ROOT-}" ]; then
-	echo_msg "$msg"; passed "$msg"; echo
-else
-	action_shell "$msg" gen_fstab
-fi
+action_shell 'Creating /etc/fstab:' gen_fstab
