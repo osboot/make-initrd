@@ -7,6 +7,10 @@ echo "$*" > /.initrd/initargs
 # Create storage for init environment
 :> /.initrd/initenv
 
+# Backward compatibility
+x=/sbin/init-bin
+[ ! -x "$x" ] || exec "$x"
+
 trap : CHLD INT TSTP QUIT HUP
 
 . rdshell-sh-functions
