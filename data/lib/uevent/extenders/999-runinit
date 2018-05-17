@@ -7,45 +7,8 @@
 
 . uevent-sh-functions
 . rdshell-sh-functions
-. shell-error
 
-rootfs()
-{
-	if [ ! -e "$rootmnt/$INIT" ]; then
-		message "Unable to mount root"
-		return 1
-	fi
-}
-
-mountfs()
-{
-	local eof fsdev fsdir dummy
-	eof=
-	while [ -z "$eof" ]; do
-		read -r fsdev fsdir dummy ||
-			eof=1
-
-		[ -n "$fsdev" ] ||
-			continue
-
-		if [ -n "${ROOTONLY-}" ]; then
-			[ "$fsdir" = "$rootmnt" ] ||
-				continue
-		fi
-
-		if [ ! -d "$fsdir" ]; then
-			message "$fsdir: Does not exist"
-			return 1
-		fi
-
-		if ! mountpoint -q "$fsdir"; then
-			message "$fsdir: Not mounted"
-			return 1
-		fi
-	done < /etc/fstab
-}
-
-[ -z "${ROOTFS_FOUND-}" ] && [ -z "${RDSHELL-}" ] && console_inactive && mountfs && rootfs ||
+[ -z "${ROOTFS_FOUND-}" ] && [ -z "${RDSHELL-}" ] && console_inactive && have_mountpoints && have_rootfs ||
 	exit 0
 
 echo ROOTFS_FOUND=1 >> /.initrd/initenv
