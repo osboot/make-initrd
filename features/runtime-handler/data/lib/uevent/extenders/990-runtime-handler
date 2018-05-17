@@ -1,0 +1,25 @@
+#!/bin/sh
+
+. /.initrd/initenv
+
+[ "${RDMODE-}" != 'live' ] ||
+	exit 0
+
+. uevent-sh-functions
+. rdshell-sh-functions
+
+[ -x "$rootmnt/initramfs" ] && [ -z "${RDSHELL-}" ] && console_inactive && have_mountpoints && have_rootfs ||
+	exit 0
+
+exec </dev/console >/dev/console 2>&1
+
+# Do not cleanup env to have access to cmdline params.
+unshare -mpf -- chroot "$rootmnt" /initramfs
+
+export UMOUNT_ROOTMNT=1
+export IGNORE_OMITPIDS=1
+
+/etc/rc.d/init.d/killall start
+/etc/rc.d/init.d/mountfs stop
+
+exec reboot -f
