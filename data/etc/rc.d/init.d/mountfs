@@ -115,7 +115,7 @@ start()
 stop()
 {
 	# Move some filesystems to real root.
-	MoveFilesystems
+	[ -n "${UMOUNT_ROOTMNT-}" ] || MoveFilesystems
 
 	# Unmount non-/dev tmpfs.
 	non_dev_tmpfs()
@@ -125,7 +125,8 @@ stop()
 			mountpoint -q "$t" ||
 				continue
 			case "$t" in
-				/dev|$rootmnt|$rootmnt/*) ;;
+				/dev) ;;
+				$rootmnt|$rootmnt/*) [ -z "${UMOUNT_ROOTMNT-}" ] || printf '%s ' "$t" ;;
 				*) printf '%s ' "$t" ;;
 			esac
 		done
@@ -140,7 +141,8 @@ stop()
 			mountpoint -q "$t" ||
 				continue
 			case "$t" in
-				/|/proc|$rootmnt|$rootmnt/*) ;;
+				/|/proc) ;;
+				$rootmnt|$rootmnt/*) [ -z "${UMOUNT_ROOTMNT-}" ] || printf '%s ' "$t" ;;
 				*) printf '%s ' "$t" ;;
 			esac
 		done

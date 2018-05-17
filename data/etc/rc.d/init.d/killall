@@ -26,6 +26,7 @@ echo_end()
 }
 
 omitpid=
+[ -n "${IGNORE_OMITPIDS-}" ] ||
 for pid in /.initrd/killall/[0-9]*; do
 	[ ! -f "$pid" ] ||
 		omitpid="${omitpid:+$omitpid }-o ${pid##*/}"
