@@ -49,24 +49,24 @@ gen_fstab()
 		while read -r dev path str; do
 			[ -n "${dev##\#*}" ] && [ -z "${path##/*}" ] ||
 				continue
-
-			case "$dev" in
-				cgroup|proc|sysfs|tmpfs|devfs|devtmpfs|usbfs|rpc_pipefs|nfsd)
+			n=$i
+			case "$path" in
+				/)
+					n=0
+					path=
+					;;
+				/proc|/proc/*|/dev|/dev/*|/.initrd|/.initrd/*)
 					continue
 					;;
-			esac
-
-			n=$i
-			if [ "$path" = / ]; then
-				n=0
-				path=
-			else
-				i=$(($i+1))
-			fi
-
-			case "$path" in
-				/sys) have_sys="$i" ;;
-				/run) have_run="$i" ;;
+				/sys)
+					have_sys=1
+					;;
+				/run)
+					have_run=1
+					;;
+				*)
+					i=$(($i+1))
+					;;
 			esac
 
 			convert_dev ndev "$dev"
@@ -80,8 +80,7 @@ gen_fstab()
 	fi
 
 	if [ -z "${s0-}" ]; then
-		echo "Root device unspecified." >&2
-		return 1
+		[ -z "${DEBUG-}" ] || echo "Root device unspecified." >&2
 	fi
 
 	if [ -z "$have_sys" ]; then
