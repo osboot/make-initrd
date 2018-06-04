@@ -1,4 +1,4 @@
-#!/bin/sh -efu
+#!/bin/sh -eu
 #
 # Copyright (C) 2012-2017  Alexey Gladkov <gladkov.alexey@gmail.com>
 #
@@ -17,8 +17,43 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 
+LANG=C
+LANGUAGE=C
+LC_ALL=C
+
 . shell-error
+
+abortfile=
+abort()
+{
+	: >"$abortfile"
+	fatal "$*"
+}
+
+if [ -n "${INITRD_COPY_INSIDE-}" ]; then
+	abortfile="${INITRD_COPY_ABORTFILE:-}"
+	prefix="${INITRD_COPY_PREFIX:-}"
+	destdir="${INITRD_COPY_DESTDIR:-}"
+	{
+		find -P "$@" -mindepth 0 -maxdepth 0 -printf '%y\t%p\t%l\n' ||
+			abort "unable to generate manifest"
+	} |
+	while read -r type source symlink; do
+		destination="${source#$prefix}"
+		destination="$destdir/${destination#/}"
+
+		[ -z "$symlink" ] ||
+			symlink="${symlink#$prefix}"
+
+		printf '%s\t%s\t%s\t%s\n' "$type" "$destination" "$source" "$symlink"
+	done
+	exit
+fi
+
 . shell-signal
+
+CR="$(printf '\r')"
+ORIG_IFS="$IFS"
 
 prefix=
 destdir=
@@ -76,6 +111,7 @@ show_usage()
 workdir=
 exit_handler()
 {
+	wait
 	[ -z "$workdir" ] || rm -rf -- "$workdir"
 }
 
@@ -84,6 +120,137 @@ debug()
 {
 	[ -n "$debug" ] || return 0
 	message "$@"
+}
+
+
+file_exists()
+{
+	[ ! -e "$1" ] || return 0
+	abort "error: $1: No such file or directory"
+}
+
+glob()
+{
+	[ -e "$1" ]
+}
+
+canonicalize_file() {
+	local __canonicalize_file_name="$1" __canonicalize_file_result
+	__canonicalize_file() {
+		local fn="$1" r='' t=''
+		[ -n "${fn%%./*}" ] ||
+			fn="$PWD/${fn##./}"
+		[ -n "${fn%%../*}" ] ||
+			fn="${PWD%/*}/${fn#../}"
+		while [ "$fn" != "$r" ]; do
+			r="$fn"
+			if [ -z "${fn##*//*}" ]; then
+				fn="${fn%%//*}/${fn#*//}"
+			elif [ -z "${fn##*/./*}" ]; then
+				fn="${fn%%/./*}/${fn#*/./}"
+			elif [ -z "${fn##*/../*}" ]; then
+				t="${fn%%/../*}"
+				t="${t%/*}"
+				fn="$t/${fn#*/../}"
+			elif [ -z "${fn##*/..}" ]; then
+				fn="${fn%/*/..}"
+			elif [ -z "${fn##*/}" ]; then
+				fn="${fn%%/}"
+			fi
+		done
+		__canonicalize_file_result="$fn"
+	}
+	__canonicalize_file "$2"
+	eval "$__canonicalize_file_name=\$__canonicalize_file_result"
+}
+
+print_canonicalize()
+{
+	local f=
+	canonicalize_file f "$1"
+	printf '%s\0' "$f"
+}
+
+expand_directory()
+{
+	find "$1" -mindepth 1 -print0 ||
+		abort "unable to list directory: $1"
+}
+
+binary_file()
+{
+	{
+		ldd "$1" ||
+			abort "unable to print shared object dependencies: $1"
+	} |
+	while read -r f; do
+		case "$f" in
+			/*' (0x'*')')
+				f="${f% (0x*}"
+				;;
+			*' => /'*' (0x'*')')
+				f="${f% (0x*}"
+				f="${f##* => }"
+				;;
+			[!/]*' (0x'*')'|'statically linked') # ignore
+				continue
+				;;
+			*)
+				abort "unsupported ldd output for $1: $f"
+				;;
+		esac
+
+		debug "binary file $1 -> $f"
+		print_canonicalize "$f"
+	done
+}
+
+shebang_file()
+{
+	local f="$1"
+	shift
+
+	local line=
+	read -r line < "$f"
+
+	[ -n "$line" ] && [ -z "${line##\#\!*}" ] ||
+		return 0
+
+	line="${line##\#\!}"
+	line="${line%$CR}"
+
+	local IFS="$ORIG_IFS"
+	set -- $line
+
+	[ "$#" != 0 ] ||
+		return 0
+
+	local exe="$1"
+
+	[ -z "${exe##/*}" ] ||
+		abort "interpreter must be an absolute pathname: $f: $*"
+
+	[ -x "$exe" ] ||
+		abort "interpreter must be executable: $f: $*"
+
+	case "$#,$exe" in
+		2,/usr/bin/env)
+			local arg=
+			arg="$(
+				export PATH=/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin
+				which --skip-alias --skip-functions --skip-dot --skip-tilde "$2"
+			)"
+			debug "script file $f -> $arg"
+			print_canonicalize "$arg"
+			;;
+		[12],*)
+			;;
+		*,/usr/bin/env)
+			fatal "too many arguments: $f: $line"
+			;;
+	esac
+	debug "script file $f -> $exe"
+	print_canonicalize "$exe"
 }
 
 TEMP=`getopt -n "$PROG" -o 'f,l:,r:,h,D,v,V' -l 'dry-run,force,log:,remove-prefix:,help,debug,verbose,version' -- "$@"` ||
@@ -135,316 +302,178 @@ shift
 set_cleanup_handler exit_handler
 workdir="$(mktemp -dt "$PROG.XXXXXXXXX")"
 
-res_manifest="$workdir/manifest"
-cur_manifest="$workdir/manifest-cur"
-new_manifest="$workdir/manifest-new"
-processed_objects="$workdir/done"
+abortfile="$workdir/abort"
+manifest="$workdir/manifest"
+new_files="$workdir/new"
+processed_files="$workdir/done"
+mimetypes="$workdir/mime"
 
-:>"$processed_objects"
+export INITRD_COPY_PREFIX="$prefix"
+export INITRD_COPY_DESTDIR="$destdir"
+export INITRD_COPY_ABORTFILE="$abortfile"
+export INITRD_COPY_INSIDE=1
+export IFS='	'
 
-mark_fs_object_done()
-{
-	printf '%s\n' "$destname" >>"$processed_objects"
-}
-
-print_manifest()
-{
-	printf '%s\t%s\t%s\t%s\n' "$type" "$destname" "$realname" "$linktrgt"
-}
-
-canonicalize_file() {
-	local __canonicalize_file_name="$1" __canonicalize_file_result
-	__canonicalize_file() {
-		local fn="$1" r='' t=''
-		while [ "$fn" != "$r" ]; do
-			r="$fn"
-			if [ -z "${fn##*//*}" ]; then
-				fn="${fn%%//*}/${fn#*//}"
-			elif [ -z "${fn##*/./*}" ]; then
-				fn="${fn%%/./*}/${fn#*/./}"
-			elif [ -z "${fn##*/../*}" ]; then
-				t="${fn%%/../*}"
-				t="${t%/*}"
-				fn="$t/${fn#*/../}"
-			elif [ -z "${fn##./*}" ] || [ -n "${fn##/*}" ]; then
-				fn="$PWD/${fn##./}"
-			elif [ -z "${fn##*/}" ]; then
-				fn="${fn%%/}"
-			fi
-		done
-		__canonicalize_file_result="$fn"
-	}
-	__canonicalize_file "$2"
-	eval "$__canonicalize_file_name=\$__canonicalize_file_result"
-}
-
-process_manifest()
-{
-	find -P "$@" -printf '%y\t%p\t%l\n' |
-	while read -r type destname linktrgt; do
-		case "$type" in
-			b|c|d|f|l|s)
-				;;
-			*)
-				fatal "Unsupported type ($type): $destname"
-				;;
-		esac
-		realname="$destname"
-		destname="${destname#$prefix}"
-		destname="$destdir/${destname#/}"
-		linktrgt="${linktrgt#$prefix}"
-
-		print_manifest
-	done
-}
-
-process_directory_recursively()
-{
-	if [ ! -d "$1" ]; then
-		verbose "$1: No such file or directory"
-		return
-	fi
-	local fn
-	canonicalize_file fn "$1"
-	process_manifest "$fn" -mindepth 1
-}
-
-process_single_fs_object()
-{
-	if [ ! -e "$1" ]; then
-		verbose "$1: No such file or directory"
-		return
-	fi
-	local fn
-	canonicalize_file fn "$1"
-	process_manifest "$fn" -mindepth 0 -maxdepth 0
-}
-
-is_destname_processed()
-{
-	local n
-	while read -r n; do
-		[ "$destname" != "$n" ] ||
-			return 0
-	done <"$processed_objects"
-	return 1
-}
-
-binary_file()
-{
-	local realname="$1"
-
-	ldd "$realname" |
-	while read -r f; do
-		case "$f" in
-			/*' (0x'*')')
-				f="${f% (0x*}"
-				;;
-			*' => /'*' (0x'*')')
-				f="${f% (0x*}"
-				f="${f##* => }"
-				;;
-			[!/]*' (0x'*')'|'statically linked') # ignore
-				continue
-				;;
-			*)
-				fatal "Unsupported ldd output for $realname: $f"
-				;;
-		esac
-		debug "binary file $realname -> $f"
-		process_single_fs_object "$f"
-	done
-}
-
-shebang_file()
-{
-	local CR
-	CR="$(printf '\r')"
-
-	local f="$1"
-	shift
-
-	local line=
-	read -r line < "$f"
-
-	[ -n "$line" ] && [ -z "${line##\#\!*}" ] ||
-		return 0
-
-	line="${line##\#\!}"
-	line="${line%$CR}"
-
-	set -- $line
-
-	[ "$#" != 0 ] ||
-		return 0
-
-	local exe="$1"
-
-	[ -z "${exe##/*}" ] ||
-		fatal "interpreter must be an absolute pathname: $f: $*"
-
-	[ -x "$exe" ] ||
-		fatal "interpreter must be executable: $f: $*"
-
-	case "$#,$exe" in
-		2,/usr/bin/env)
-			local arg=
-			arg="$(
-				export PATH=/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin
-				which --skip-alias --skip-functions --skip-dot --skip-tilde "$2"
-			)"
-			debug "script file $f -> $arg"
-			process_single_fs_object "$arg"
-			;;
-		[12],*)
-			;;
-		*,/usr/bin/env)
-			fatal "too many arguments: $f: $line"
-			;;
-	esac
-
-	debug "script file $f -> $exe"
-	process_single_fs_object "$exe"
-}
-
-log()
-{
-	[ -z "$dryrun" ] && [ -n "$logfile" ] || return 0
-	local destname="/initramfs/${destname#$destdir/}"
-	print_manifest >>"$logfile"
-}
+: >"$processed_files" >"$new_files"
 
 for n; do
-	[ -L "$n" ] || [ ! -d "$n" ] ||
-		process_directory_recursively "$n"
-	process_single_fs_object "$n"
-done >"$cur_manifest"
+	file_exists "$n"
+	print_canonicalize "$n"
+done |
+	xargs -0r "$0" > "$manifest"
 
-cat "$cur_manifest" > "$res_manifest"
+max_procs=${INITRD_COPY_PROCS:-7}
 
-iter=1
 while :; do
-	while read -r type destname realname linktrgt; do
-		! is_destname_processed ||
-			continue
+	# Sort manifest before join. We do not need to sort the processed files
+	# because we get them from this file.
+	sort -k3,3 -uo "$manifest" "$manifest"
 
-		debug "iteration #$iter: processing $realname"
+	# Get the list of unprocessed files.
+	join -1 1 -2 3 -v 2 -t '	' -o 2.1,2.3,2.4 "$processed_files" "$manifest" >"$new_files"
 
-		case "$type" in
-			d)
-				process_directory_recursively "$realname"
-				;;
-			l)
-				target="$(readlink "$realname")"
-				if [ -n "${target##/*}" ]; then
-					target="${realname%/*}/$target"
-				fi
-				[ -L "$target" ] || [ ! -d "$target" ] ||
-					process_directory_recursively "$target"
-
-				debug "symlink $realname -> $target"
-				process_single_fs_object "$target"
-				;;
-			f)
-				mime="$(file -h "$realname")"
-
-				case "$mime" in
-					*' ELF '*' dynamically linked'*)
-						binary_file "$realname"
-						;;
-					*'script text'*)
-						shebang_file "$realname"
-						;;
-				esac
-				;;
-		esac
-
-		mark_fs_object_done
-
-	done < "$cur_manifest" >"$new_manifest"
-
-	[ -s "$new_manifest" ] ||
+	# Nothing to do.
+	[ -s "$new_files" ] ||
 		break
 
-	LC_ALL=C sort -u -o "$cur_manifest" "$new_manifest"
-	cat "$cur_manifest"
+	# Classify regular files.
+	sed -n -e 's/^f	\([^	]\+\)	.*/\1/p' "$new_files" |
+		file -nbhf - > "$mimetypes"
 
-	iter=$(($iter + 1))
+	exec 3<"$new_files" 4<"$mimetypes"
 
-done >> "$res_manifest"
+	eof=
+	while [ -z "$eof" ]; do
+		i=0
+		while [ $i -lt $max_procs ] && [ -z "$eof" ]; do
+			if [ -e "$abortfile" ]; then
+				eof=1
+				break
+			fi
 
-LC_ALL=C sort -u -o "$cur_manifest" "$res_manifest"
+			read -r type source symlink <&3 || eof=1
 
-while read -r type destname realname linktrgt; do
+			[ -n "$type" ] ||
+				break
+
+			# Add file to processed files
+			printf '%s\n' "$source"
+
+			case "$type" in
+				d)
+					expand_directory "$source" >> "$workdir/list.$i" &
+					i=$(($i+1))
+					;;
+				l)
+					target="$symlink"
+					[ -z "${target%%/*}" ] ||
+						target="${source%/*}/$target"
+					if [ ! -e "$target" ]; then
+						message "Warning: symlink `$source' points to the nonexistent `$target'"
+					else
+						print_canonicalize "$target" >> "$workdir/list.$i"
+					fi
+					;;
+				f)
+					read -r mime <&4 ||:
+					case "$mime" in
+						*'ELF '*' dynamically linked'*)
+							binary_file  "$source" >> "$workdir/list.$i" &
+							i=$(($i+1))
+							;;
+						*'script text'*)
+							shebang_file "$source" >> "$workdir/list.$i" &
+							i=$(($i+1))
+							;;
+					esac
+					;;
+			esac
+		done
+		wait
+	done |
+		sort -mo "$processed_files" "$processed_files" -
+
+	[ ! -e "$abortfile" ] ||
+		exit 1
+
+	glob "$workdir/list".* ||
+		break
+
+	sort -zu "$workdir/list".* |
+		xargs -0r "$0" >> "$manifest"
+
+	rm -f -- "$workdir/list".*
+done
+
+# shellcheck disable=SC2094
+# Disable this `Make sure not to read and write the same file in the same pipeline' because
+# is used in a pipeline. The sort must read the entire stdin to sort it and then print it.
+while read -r type destination _; do
+	destination="${destination#$destdir}"
+
 	case "$type" in
 		d)
 			;;
 		c|b|f|l|s)
-			realname="${realname%/*}"
+			destination="${destination%/*}"
 			;;
 	esac
 
-	type='d'
-	linktrgt=
-	realname="${realname#$prefix}"
-
-	while [ -n "$realname" ]; do
-		destname="$destdir/${realname#/}"
-
-		print_manifest
-
-		realname="${realname%/*}"
+	while [ -n "$destination" ]; do
+		printf '%s\0' "$destination"
+		destination="${destination%/*}"
 	done
-done < "$cur_manifest" > "$new_manifest"
+done < "$manifest" |
+	sort -zu |
+	xargs -0r "$0" >> "$manifest"
 
-LC_ALL=C sort -u -d -k1,2 -o "$res_manifest" \
-	"$new_manifest" \
-	"$cur_manifest"
+sort -u -d -k1,2 -o "$manifest" "$manifest"
 
 if [ -n "${SHOW_MANIFEST-}" ]; then
-	cat "$res_manifest"
+	cat "$manifest"
 	exit
 fi
 
-while read -r type destname realname linktrgt; do
+while read -r type destination source symlink; do
 	case "$type" in
 		d)
-			if [ -d "$destname" ]; then
-				verbose "Directory \`$destname' already exists"
+			if [ -d "$destination" ]; then
+				verbose "Directory \`$destination' already exists"
 				continue
 			fi
-			verbose "Make new directory \`$destname'"
-			$dryrun mkdir $debug -- "$destname" >&2
+			verbose "Make new directory \`$destination'"
+			$dryrun mkdir $debug -- "$destination" >&2
 			;;
 		l)
-			if [ -z "$force" ] && [ -L "$destname" ]; then
-				verbose "Symbolic link \`$destname' already exists"
+			if [ -z "$force" ] && [ -L "$destination" ]; then
+				verbose "Symbolic link \`$destination' already exists"
 				continue
 			fi
-			verbose "Create symbolic link \`$destname' -> \`$linktrgt'"
-			$dryrun ln $debug $force -s -- "$linktrgt" "$destname" >&2
+			verbose "Create symbolic link \`$destination' -> \`$symlink'"
+			$dryrun ln $debug $force -s -- "$symlink" "$destination" >&2
 			;;
 		b|c|f|s)
-			if [ -z "$force" ] && [ -e "$destname" ]; then
-				verbose "File \`$destname' already exists"
+			if [ -z "$force" ] && [ -e "$destination" ]; then
+				verbose "File \`$destination' already exists"
 				continue
 			fi
-			verbose "Copy file \`$destname'"
-			$dryrun cp $debug $force -a --remove-destination -- "$realname" "$destname" >&2
+			verbose "Copy file \`$destination'"
+			$dryrun cp $debug $force -a --remove-destination -- "$source" "$destination" >&2
 			;;
 	esac
-	log
-done < "$res_manifest"
+	[ -n "$dryrun" ] || [ -z "$logfile" ] ||
+		printf '%s\t%s\t%s\t%s\n' "$type" "/initramfs/${destination#$destdir/}" "$source" "$symlink" >>"$logfile"
+done < "$manifest"
 
-while read -r type destname realname linktrgt; do
+while read -r type destination source _; do
 	[ "$type" = "d" ] ||
 		break
-	[ -d "$realname" ] ||
+	[ -d "$source" ] ||
 		continue
-	$dryrun chmod $debug --reference="$realname" -- "$destname" >&2
-done < "$res_manifest"
+	$dryrun chmod $debug --reference="$source" -- "$destination" >&2
+done < "$manifest"
 
 exit
 
 # dependency builder requires it.
-chmod; cp; ln; mkdir; sort;
+chmod; cp; ln; mkdir; sed; sort; join; xargs; file;
