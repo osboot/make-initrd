@@ -8,10 +8,10 @@ PUT_FILES += \
 	/sbin/udevadm \
 	/lib/udev/ata_id \
 	/lib/udev/cdrom_id \
-	/lib/udev/edd_id \
 	/lib/udev/scsi_id
 
 UDEV_FILES_OLD = \
+	/lib/udev/edd_id \
 	/lib/udev/vol_id \
 	/lib/udev/path_id \
 	/lib/udev/usb_id \
