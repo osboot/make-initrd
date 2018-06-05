@@ -181,6 +181,8 @@ if [ -z "$no_checks" ]; then
 
 	grep -qs " $SYSFS_PATH sysfs " /proc/mounts ||
 		fatal "$SYSFS_PATH: Not mounted"
+else
+	export IGNORE_PRIV_CHECKS=1
 fi
 
 WORKDIR="${INITRD_WORKDIR-}"

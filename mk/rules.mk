@@ -15,7 +15,7 @@ genimage: install
 	@echo
 
 check-for-root:
-	@if [ "$$(id -u)" != 0 ]; then \
+	@if [ -z "$$IGNORE_PRIV_CHECKS" ] && [ "$$(id -u)" != 0 ]; then \
 	    echo "Only root can do that"; \
 	    exit 1; \
 	fi
