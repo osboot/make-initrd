@@ -46,9 +46,10 @@ INITRD_CONFIG_LIST	?= $(wildcard $(SYSCONFDIR)/initrd.mk $(SYSCONFDIR)/initrd.mk
 RESOLVE_MODALIAS	?= 1
 UDEV_VERSION		?= $(shell udevd --version)
 KERNEL			?= $(shell uname -r)
-KERNEL_CONFIG           ?= $(BOOTDIR)/config-$(KERNEL)
-KERNEL_MODULES          ?= /lib/modules/$(KERNEL)/kernel
-ARCH                    ?= $(shell uname -m)
+KERNEL_CONFIG		?= $(BOOTDIR)/config-$(KERNEL)
+KERNEL_MODULES_DIR	?= /lib/modules/$(KERNEL)
+KERNEL_MODULES		?= $(KERNEL_MODULES_DIR)/kernel
+ARCH			?= $(shell uname -m)
 
 ifeq "$(ARCH)" 'x86_64'
 LIBNAME			= lib64

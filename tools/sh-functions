@@ -22,6 +22,7 @@ export blacklist="${BLACKLIST_MODULES-}"
 export compress_method="${COMPRESS-}"
 export outfile="$workdir/initrd.img"
 export kernel="${KERNEL:?}"
+export kernel_modules_dir="${KERNEL_MODULES_DIR:?}"
 
 kernel_major="${kernel%%.*}"
 kernel_minor="${kernel#*.}"
@@ -38,7 +39,6 @@ then
 	fatal "Invalid kernel version \"$kernel\""
 fi
 
-export kernel_modules_dir="/lib/modules/$kernel"
 [ -d "$kernel_modules_dir" ] ||
 	fatal "Directory \"$kernel_modules_dir\" doesn't exist or not accessible."
 
