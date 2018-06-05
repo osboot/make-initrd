@@ -5,7 +5,7 @@
 # to be sure that microcode loading supported by kernel
 [ -f "$KERNEL_CONFIG" ] &&
 	grep -E -qs "^CONFIG_MICROCODE(|_INTEL|_AMD)=[my]" "$KERNEL_CONFIG" ||
-	error "Microcode loading support is missing in kernel"
+	fatal "Microcode loading support is missing in kernel"
 
 IUCODE_BIN=/usr/sbin/iucode_tool
 
