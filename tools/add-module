@@ -29,15 +29,19 @@ for n; do
 	if [ -n "${n##*[/\[\].*&^\$\\\\/]*}" ]; then
 		n="$(normalize_modname "$n")"
 		add_module "$n"
+		continue
+	fi
 
-	elif [ -n "${KERNEL_MODULES-}" ]; then
-		find "$KERNEL_MODULES" -type f | grep -E -e "$n" |
+	if [ -n "${KERNEL_MODULES-}" ]; then
+		find "$KERNEL_MODULES" -type f | { grep -E -e "$n" || :>"$workdir/abort"; } |
 		while read -r m; do
 			add_module "$m"
 		done
-	else
-		fatal "Unable to handle pattern: $n"
+		[ -e "$workdir/abort" ] ||
+			continue
 	fi
+
+	fatal "Unable to handle pattern: $n"
 done
 
 [ ! -s "$workdir/list" ] ||
