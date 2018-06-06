@@ -29,7 +29,7 @@ start() {
 	mkdir -m 0755 /run/plymouth 2>/dev/null ||:
 	: > /run/systemd/plymouth
 
-	start_daemon --lockfile "$LOCKFILE" -- plymouthd --mode=boot --tty=/dev/tty1 --pid-file=$pid ||
+	start_daemon --lockfile "$LOCKFILE" -- plymouthd --mode=boot --pid-file=$pid ||
 		RETVAL=$?
 
 	[ "$RETVAL" = 0 ] ||
