@@ -51,11 +51,7 @@ KERNEL_MODULES_DIR	?= /lib/modules/$(KERNEL)
 KERNEL_MODULES		?= $(KERNEL_MODULES_DIR)/kernel
 ARCH			?= $(shell uname -m)
 
-ifeq "$(ARCH)" 'x86_64'
-LIBNAME			= lib64
-else
-LIBNAME			= lib
-endif
+LIBNAME			?= $(shell getconf SLIB)
 
 FSTAB			?= /etc/fstab
 PROC_MOUNTS		?= /proc/mounts
