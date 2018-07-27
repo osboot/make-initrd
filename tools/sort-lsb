@@ -96,7 +96,7 @@ append()
 
 parse_services()
 {
-	local f name l block value level type vname
+	local f name='' l block value level type vname
 	local provides S_requires S_suggests S_level S_before K_requires K_suggests K_level K_before
 
 	verbose "Parsing services"
@@ -269,7 +269,7 @@ sort_services()
 	level="$1"; shift
 	type="$1"; shift
 
-	local names name services deps=' ' found
+	local names name services='' deps=' ' found
 	local req requires provides new_serv='' new_prov=''
 	local unmet_name='' unmet_req=''
 
