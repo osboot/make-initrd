@@ -39,7 +39,8 @@ if [ -n "${INITRD_COPY_INSIDE-}" ]; then
 			abort "unable to generate manifest"
 	} |
 	while read -r type source symlink; do
-		destination="${source#$prefix}"
+		destination="${source#$destdir}"
+		destination="${destination#$prefix}"
 		destination="$destdir/${destination#/}"
 
 		[ -z "$symlink" ] ||
@@ -369,7 +370,7 @@ while :; do
 					[ -z "${target%%/*}" ] ||
 						target="${source%/*}/$target"
 					if [ ! -e "$target" ]; then
-						message "Warning: symlink `$source' points to the nonexistent `$target'"
+						message "Warning: symlink \`$source' points to the nonexistent \`$target'"
 					else
 						print_canonicalize "$target" >> "$workdir/list.$i"
 					fi
@@ -420,14 +421,12 @@ while read -r type destination _; do
 	esac
 
 	while [ -n "$destination" ]; do
-		printf '%s\0' "$destination"
+		printf 'd\t%s\t\t\n' "$destdir/${destination#/}"
 		destination="${destination%/*}"
 	done
-done < "$manifest" |
-	sort -zu |
-	xargs -0r "$0" >> "$manifest"
+done < "$manifest" > "$manifest.dirs"
 
-sort -u -d -k1,2 -o "$manifest" "$manifest"
+sort -u -d -k1,2 -o "$manifest" "$manifest" "$manifest.dirs"
 
 if [ -n "${SHOW_MANIFEST-}" ]; then
 	cat "$manifest"
