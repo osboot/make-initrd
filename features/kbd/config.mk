@@ -5,7 +5,7 @@ KBD_FILES = \
 	/bin/loadkeys \
 	/lib/kbd/keymaps/i386 \
 	/lib/kbd/keymaps/include \
-	/lib/kbd/keymaps/consolefonts
+	/lib/kbd/consolefonts
 
 KBD_CONFIGS = \
 	/etc/sysconfig/consolefont \
