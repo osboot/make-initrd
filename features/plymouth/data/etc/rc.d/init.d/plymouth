@@ -1,7 +1,7 @@
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:            plymouth
-# Required-Start:      mountvirtfs
+# Required-Start:      udev
 # Should-Start:
 # Required-Stop:
 # Should-Stop:
