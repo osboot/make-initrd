@@ -34,17 +34,44 @@ if [ -n "${INITRD_COPY_INSIDE-}" ]; then
 	abortfile="${INITRD_COPY_ABORTFILE:-}"
 	prefix="${INITRD_COPY_PREFIX:-}"
 	destdir="${INITRD_COPY_DESTDIR:-}"
-	{
-		find -P "$@" -mindepth 0 -maxdepth 0 -printf '%y\t%p\t%l\n' ||
-			abort "unable to generate manifest"
-	} |
-	while read -r type source symlink; do
+
+	for source; do
+		if [ -z "${source##*	*}" ]; then
+			abort "unable to generate manifest for '$source': filename contains a tab symbol"
+		fi
+		symlink=
+		if [ -h "$source" ]; then
+			type=l
+			symlink="$(readlink -n "$source")"
+			if [ "${#symlink}" != 0 ]; then
+				if [ -z "${symlink##*
+*}" ]; then
+					abort "unable to generate manifest for '$source': symlink contains a newline symbol"
+				fi
+				if [ -z "${symlink##*	*}" ]; then
+					abort "unable to generate manifest for '$source': symlink contains a tab symbol"
+				fi
+				symlink="${symlink#$prefix}"
+			fi
+		elif [ -d "$source" ]; then
+			type=d
+		elif [ -f "$source" ]; then
+			type=f
+		elif [ -b "$source" ]; then
+			type=b
+		elif [ -c "$source" ]; then
+			type=c
+		elif [ -p "$source" ]; then
+			type=p
+		elif [ -S "$source" ]; then
+			type=s
+		else
+			abort "unable to generate manifest for: $source"
+		fi
+
 		destination="${source#$destdir}"
 		destination="${destination#$prefix}"
 		destination="$destdir/${destination#/}"
-
-		[ -z "$symlink" ] ||
-			symlink="${symlink#$prefix}"
 
 		printf '%s\t%s\t%s\t%s\n' "$type" "$destination" "$source" "$symlink"
 	done
@@ -126,13 +153,13 @@ debug()
 
 file_exists()
 {
-	[ ! -e "$1" ] || return 0
+	[ ! -h "$1" ] && [ ! -e "$1" ] || return 0
 	abort "error: $1: No such file or directory"
 }
 
 glob()
 {
-	[ -e "$1" ]
+	[ -h "$1" ] || [ -e "$1" ]
 }
 
 canonicalize_file() {
@@ -444,7 +471,7 @@ while read -r type destination source symlink; do
 			$dryrun mkdir $debug -- "$destination" >&2
 			;;
 		l)
-			if [ -z "$force" ] && [ -L "$destination" ]; then
+			if [ -z "$force" ] && [ -h "$destination" ]; then
 				verbose "Symbolic link \`$destination' already exists"
 				continue
 			fi
