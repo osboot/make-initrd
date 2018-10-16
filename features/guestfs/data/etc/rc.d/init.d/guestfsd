@@ -1,0 +1,62 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            guestfsd
+# Required-Start:      udev
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   guestfsd daemon
+### END INIT INFO
+
+. /.initrd/initenv
+. /etc/init.d/template
+
+NAME=guestfsd
+PIDFILE=/var/run/$NAME.pid
+ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --displayname $NAME"
+GUESTFS_EXTRA_ARGS=
+
+start() {
+
+	mkdir -p /sysroot
+
+	if [ ! -z "${GUESTFS_VERBOSE-}" ] ; then
+		uname -a
+		ls -lR /dev
+		cat /proc/mounts
+		lvm pvs
+		lvm vgs
+		lvm lvs
+		ip a
+		ip r
+		cat /etc/resolv.conf
+		lsmod
+		#hwclock -r
+		date
+		echo -n "clocksource: "
+		cat /sys/devices/system/clocksource/clocksource0/current_clocksource
+		#ping -n -v -c 5 8.8.8.8
+		echo -n "uptime: "; cat /proc/uptime
+	fi
+
+	[ ! -z "$GUESTFS_CHANNEL" ] && GUESTFS_EXTRA_ARGS="$GUESTFS_EXTRA_ARGS --channel $GUESTFS_CHANNEL"
+	[ ! -z "$GUESTFS_VERBOSE" ] && GUESTFS_EXTRA_ARGS="$GUESTFS_EXTRA_ARGS --verbose"
+	[ ! -z "$GUESTFS_NETWORK" ] && GUESTFS_EXTRA_ARGS="$GUESTFS_EXTRA_ARGS --network"
+	# sleep for wait /dev/virtio-ports/org.libguestfs.channel.0
+	sleep 2
+	echo "Run $NAME $GUESTFS_EXTRA_ARGS"
+	start_daemon $ARGS -- $NAME $GUESTFS_EXTRA_ARGS
+	RETVAL=$?
+	return $RETVAL
+}
+
+stop()
+{
+	stop_daemon $ARGS -- $NAME
+	RETVAL=$?
+	return $RETVAL
+}
+
+switch "${1-}"

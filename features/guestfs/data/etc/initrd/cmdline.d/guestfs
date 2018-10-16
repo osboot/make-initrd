@@ -1,0 +1,5 @@
+register_parameter bool GUESTFS_VERBOSE
+register_parameter bool GUESTFS_NETWORK
+register_parameter bool GUESTFS_RESCUE
+register_parameter bool GUESTFS_NOREBOOT
+register_parameter string GUESTFS_CHANNEL

@@ -1,0 +1,3 @@
+IMAGEFILE = /usr/$(LIBNAME)/guestfs/initramfs.$(ARCH).img
+FEATURES += add-modules cleanup compress guestfs
+DISABLE_GUESS += fstab resume root ucode
