@@ -1,11 +1,5 @@
-DISABLE_FEATURES += plymouth ucode
-DISABLE_GUESS += fstab resume root ucode
-FEATURES += add-modules cleanup compress btrfs devmapper luks lvm mdadm qemu
-
-
 GUESTFS_DATADIR = \
 	$(FEATURESDIR)/guestfs/data
-
 
 GUESTFS_FILES = \
 	/usr/sbin/guestfsd \
