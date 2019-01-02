@@ -26,11 +26,15 @@ convert_dev()
 		[0-9]*:[0-9]*)
 			value="/dev/block/$dev"
 			;;
-		[0-9]*)
-			value=$(( 0x$dev ))
-			major=$(( $value / 256 ))
-			minor=$(( $value % 256 ))
-			value="/dev/block/$major:$minor"
+		[0-9A-Fa-f]*)
+			if (_=$(( 0x$dev ))) 2>/dev/null; then
+				value=$(( 0x$dev ))
+				major=$(( $value / 256 ))
+				minor=$(( $value % 256 ))
+				value="/dev/block/$major:$minor"
+			else
+				value="$dev"
+			fi
 			;;
 		*)
 			value="$dev"

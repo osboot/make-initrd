@@ -54,7 +54,8 @@ get_dev() {
 				return 1
 			;;
 		*)
-			value=$(( 0x$name ))
+			(_=$(( 0x$name ))) 2>/dev/null ||
+				return 1
 			[ "$MAJOR" = "$(( $value / 256 ))" ] && [ "$MINOR" = "$(( $value % 256 ))" ] ||
 				return 1
 			;;
