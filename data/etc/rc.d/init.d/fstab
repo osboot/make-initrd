@@ -80,7 +80,14 @@ gen_fstab()
 
 	if [ -n "${ROOT-}" ]; then
 		convert_dev ndev "$ROOT"
-		s0="$ndev $rootmnt ${ROOTFSTYPE:-auto} ${ROOTFLAGS:-defaults} 1 1"
+		ROOTFLAGS="${ROOTFLAGS:-defaults}"
+
+		if [ -z "${ndev##SOURCE=*}" ]; then
+			ndev="${ndev#SOURCE=}"
+			ROOTFLAGS="$ROOTFLAGS,x-initrd-mount-source"
+		fi
+
+		s0="$ndev $rootmnt ${ROOTFSTYPE:-auto} $ROOTFLAGS 1 1"
 	fi
 
 	if [ -z "${s0-}" ]; then
