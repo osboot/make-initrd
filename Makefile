@@ -32,7 +32,7 @@ TOUCH_R = touch -r
 HELP2MAN = env -i help2man -N
 MAKEINFO_FLAGS = -D "VERSION $(VERSION)"
 
-DIRS = data guess features tools kmodule.deps.d
+DIRS = data guess features tools kmodule.deps.d add.new.module.d
 
 CONF = initrd.mk
 

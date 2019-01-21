@@ -1,0 +1,7 @@
+#!/bin/sh -eu
+
+. sh-functions
+
+if [[ ! -z `depinfo "sha256" 2>/dev/null` ]]; then
+    add_module "sha256"
+fi

@@ -1,6 +1,6 @@
 Name: make-initrd
-Version: 0.8.15
-Release: alt1.M80P.8
+Version: 0.8.16
+Release: alt1
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -183,6 +183,9 @@ fi
 %_datadir/%name/features/ucode
 
 %changelog
+* Mon Jan 21 2019 Pavel Moseev <mars@altlinux.ru> 0.8.16-alt1
+- Add-modules: fix sha256 on i586
+
 * Wed Sep 26 2018 Leonid Krivoshein <klark@altlinux.org> 0.8.15-alt1.M80P.8
 - Restored lost commits from p7: add mdadm trouble handler (closes: #34963)
 
