@@ -1,4 +1,8 @@
 #define _GNU_SOURCE
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/utsname.h>
 
@@ -9,6 +13,8 @@
 #include <error.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <fnmatch.h>
 #include <libgen.h>
 #include <libkmod.h>
 
@@ -28,6 +34,212 @@ static char firmware_defaultdir[] = "/lib/firmware/updates:/lib/firmware";
 
 static char **modules   = NULL;
 static size_t n_modules = 0;
+
+struct kernel_builtin {
+	char *name;
+	char **aliases;
+
+	struct kernel_builtin *next;
+};
+
+static struct kernel_builtin *kbuiltin = NULL;
+
+static char *
+is_kernel_builtin_match(const char *str)
+{
+	struct kernel_builtin *next;
+
+	// First we are looking for a name match.
+	next = kbuiltin;
+	while (next) {
+		if (!strcmp(next->name, str))
+			return next->name;
+		next = next->next;
+	}
+
+	// Second we are looking for a match in aliases.
+	next = kbuiltin;
+	while (next) {
+		int i = 0;
+		while (next->aliases && next->aliases[i]) {
+			if (!fnmatch(next->aliases[i], str, FNM_NOESCAPE))
+				return next->name;
+			i++;
+		}
+		next = next->next;
+	}
+
+	return NULL;
+}
+
+static int
+append_kernel_builtin(char *name)
+{
+	struct kernel_builtin *new, *next, *last;
+
+	if (kbuiltin) {
+		last = next = kbuiltin;
+		while (next) {
+			if (!strcmp(next->name, name))
+				return 0;
+			last = next;
+			next = next->next;
+		}
+	}
+
+	new = calloc(1, sizeof(struct kernel_builtin));
+	if (!new)
+		error(EXIT_FAILURE, 0, "malloc: nomem");
+
+	new->name = strdup(name);
+	new->aliases = NULL;
+
+	if (!kbuiltin) {
+		kbuiltin = new;
+		return 0;
+	}
+
+	last->next = new;
+	return 0;
+}
+
+static void
+append_kernel_builtin_alias(char *name, char *alias)
+{
+	struct kernel_builtin *next;
+
+	if (!alias || !strlen(alias))
+		return;
+
+	next = kbuiltin;
+	while (next) {
+		if (strcmp(next->name, name)) {
+			next = next->next;
+			continue;
+		}
+
+		unsigned int i = 0;
+
+		if (next->aliases != NULL) {
+			while (next->aliases[i]) i++;
+			next->aliases = realloc(next->aliases, sizeof(char *) * (i + 2));
+		} else {
+			next->aliases = calloc(2, sizeof(char *));
+		}
+
+		if (next->aliases == NULL)
+			error(EXIT_FAILURE, 0, "memory allocation failed");
+
+		next->aliases[i] = strdup(alias);
+
+		if (next->aliases[i] == NULL)
+			error(EXIT_FAILURE, 0, "strdup: nomem");
+
+		next->aliases[i+1] = 0;
+		break;
+	}
+}
+
+static void
+free_kernel_builtin(void)
+{
+	struct kernel_builtin *p, *next = kbuiltin;
+	while (next) {
+		free(next->name);
+
+		int i = 0;
+		while (next->aliases && next->aliases[i])
+			free(next->aliases[i++]);
+
+		if (next->aliases)
+			free(next->aliases);
+
+		p = next->next;
+		free(next);
+		next = p;
+	}
+}
+
+static int
+read_kernel_builtin(char *module_dir, const char *modinfo)
+{
+	int fd;
+	char filename[MAXPATHLEN];
+	struct stat st;
+
+	snprintf(filename, MAXPATHLEN - 1, "%s/%s", module_dir, modinfo);
+
+	errno = 0;
+	if ((fd = open(filename, O_RDONLY)) < 0) {
+		if (errno == ENOENT)
+			return 0;
+		error(0, errno, "open: %s", filename);
+		return -1;
+	}
+
+	if (fstat(fd, &st) < 0) {
+		error(0, errno, "fstat: %s", filename);
+		return -1;
+	}
+
+	char *addr, *p, *s;
+
+	addr = mmap(NULL, (size_t) st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+	if (addr == MAP_FAILED) {
+		error(0, errno, "mmap: %s", filename);
+		return -1;
+	}
+
+	size_t bytes = 0;
+	p = addr;
+
+	while (bytes < (size_t) st.st_size) {
+		s = strdup(p);
+		if (!s)
+			error(EXIT_FAILURE, 0, "strdup: nomem");
+
+		char *value = strchr(s, '=');
+		if (!value) {
+			error(0, 0, "ERROR: Unexpected file format: %s (ignored).", filename);
+			free(s);
+			goto ignore;
+		}
+		*value = '\0';
+		value++;
+
+		char *field = strrchr(s, '.');
+		if (!field) {
+			error(0, 0, "ERROR: Unexpected file format: %s (ignored).", filename);
+			free(s);
+			goto ignore;
+		}
+		*field = '\0';
+		field++;
+
+		append_kernel_builtin(s);
+
+		if (!strcmp(field, "alias"))
+			append_kernel_builtin_alias(s, value);
+
+		free(s);
+
+		bytes += strlen(p) + 1;
+		p = addr + bytes;
+	}
+
+	munmap(addr, (size_t) st.st_size);
+	close(fd);
+
+	return 0;
+ignore:
+	munmap(addr, (size_t) st.st_size);
+	close(fd);
+
+	free_kernel_builtin();
+	kbuiltin = NULL;
+
+	return 0;
+}
 
 static int
 tracked_module(struct kmod_module *mod)
@@ -212,6 +424,17 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 	struct kmod_module *mod;
 	struct kmod_list *l, *filtered, *list = NULL;
 
+	if (kbuiltin) {
+		char *name = is_kernel_builtin_match(alias);
+
+		if (name != NULL && opts & SHOW_BUILTIN) {
+			if (opts & SHOW_PREFIX)
+				printf("builtin ");
+			printf("%s\n", name);
+			return;
+		}
+	}
+
 	if (kmod_module_new_from_lookup(ctx, alias, &list) < 0)
 		error(EXIT_FAILURE, 0, "ERROR: Module alias %s not found.", alias);
 
@@ -234,10 +457,9 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 
 				kmod_module_unref(mod);
 			}
+			kmod_module_unref_list(list);
+			return;
 		}
-
-		kmod_module_unref_list(list);
-		return;
 	}
 
 	kmod_list_foreach(l, filtered)
@@ -373,6 +595,9 @@ main(int argc, char **argv)
 
 	asprintf(&module_dir, "%s/lib/modules/%s", base_dir, kversion);
 
+	if (read_kernel_builtin(module_dir, "kernel.builtin.modinfo") < 0)
+		error(EXIT_FAILURE, errno, "ERROR: read_kernel_builtin()");
+
 	if (!(ctx = kmod_new(module_dir, NULL)))
 		error(EXIT_FAILURE, errno, "ERROR: kmod_new()");
 
@@ -386,6 +611,7 @@ main(int argc, char **argv)
 
 	kmod_unref(ctx);
 	free_modules();
+	free_kernel_builtin();
 
 	return EXIT_SUCCESS;
 }
