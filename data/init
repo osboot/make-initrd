@@ -1,8 +1,11 @@
 #!/bin/sh -fu
 
 # Save kernel environment and init arguments
-/bin/showenv > /.initrd/kernenv
-echo "$*" > /.initrd/initargs
+[ -f /.initrd/kernenv ] ||
+	/bin/showenv | /bin/grep -vE -e '^(_|PWD|SHLVL)=' > /.initrd/kernenv ||:
+
+[ -f /.initrd/initargs ] ||
+	echo "$*" > /.initrd/initargs
 
 # Create storage for init environment
 :> /.initrd/initenv
