@@ -26,13 +26,13 @@ add_module() {
 	local name n v
 	name="$1"
 
-	local builtin=' ' modules='' firmware=''
+	local builtin='' modules='' firmware=''
 
 	while read -r n v; do
 		case "$n" in
-			builtin)  builtin="$builtin $v "  ;;
-			module)   modules="$modules $v"   ;;
-			firmware) firmware="$firmware $v" ;;
+			builtin)  builtin="${builtin:+$builtin }\"$v\"" ;;
+			module)   modules="$modules $v"                 ;;
+			firmware) firmware="$firmware $v"               ;;
 		esac
 	done <<-EOF
 		`depinfo --set-version="$kernel" "$name" 2>/dev/null |
@@ -40,8 +40,8 @@ add_module() {
 	EOF
 
 	if [ -z "$modules" ]; then
-		if [ -z "${builtin##* $name *}" ]; then
-			verbose "Builtin module \"$name\""
+		if [ -n "$builtin" ]; then
+			verbose "Builtin module $builtin for \"$name\""
 			return 0
 		fi
 
