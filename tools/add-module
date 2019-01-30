@@ -32,16 +32,26 @@ for n; do
 		continue
 	fi
 
-	if [ -n "${KERNEL_MODULES-}" ]; then
-		find "$KERNEL_MODULES" -type f | { grep -E -e "$n" || :>"$workdir/abort"; } |
-		while read -r m; do
-			add_module "$m"
-		done
-		[ -e "$workdir/abort" ] ||
-			continue
+	if [ -z "${n##/*}" ] && [ -f "$n" ]; then
+		add_module "$n"
+		continue
 	fi
 
-	fatal "Unable to handle pattern: $n"
+	if [ -n "${kernel_modules_dir-}" ]; then
+		[ -f "$workdir/modules" ] ||
+			find "$kernel_modules_dir" -type f -a \( -name '*.ko' -o -name '*.ko.*' \) >"$workdir/modules"
+
+		grep -E -e "$n" "$workdir/modules" >"$workdir/pattern.modules" ||
+			fatal "Unable to handle pattern: $n"
+
+		while read -r m; do
+			add_module "$m"
+		done <"$workdir/pattern.modules"
+
+		continue
+	fi
+
+	fatal "Unable to find module: $n"
 done
 
 [ ! -s "$workdir/list" ] ||
