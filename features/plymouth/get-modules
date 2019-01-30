@@ -4,7 +4,7 @@
 
 printf '%s\n' drivers/char/agp
 
-f=/sys/class/graphics/fb0/device/modalias
+f="$SYSFS_PATH"/class/graphics/fb0/device/modalias
 [ -e "$f" ] ||
 	exit 0
 
