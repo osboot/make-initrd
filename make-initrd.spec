@@ -1,6 +1,6 @@
 Name: make-initrd
 Version: 0.8.16
-Release: alt1
+Release: alt2
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -183,6 +183,9 @@ fi
 %_datadir/%name/features/ucode
 
 %changelog
+* Thu Jan 31 2019 Sergey V Turchin <zerg@altlinux.org> 0.8.16-alt2
+- Fix inappropriate function usage.
+
 * Mon Jan 21 2019 Pavel Moseev <mars@altlinux.ru> 0.8.16-alt1
 - Add-modules: fix sha256 on i586
 

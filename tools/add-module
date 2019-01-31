@@ -72,7 +72,7 @@ for n; do
 	if [ -n "${n##*[/\[\].*&^\$\\\\/]*}" ]; then
 		n="$(normalize_modname "$n")"
         if [ -x "$kmodnewdir"/"add-new-$n" ]; then
-            "$kmodnewdir"/"add-new-$n"
+            "$kmodnewdir"/"add-new-$n" && add_module "$n" ||:
         else
             add_module "$n"
         fi
