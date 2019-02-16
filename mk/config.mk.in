@@ -44,7 +44,7 @@ INITRD_CONFIG_LIST	?= $(wildcard $(SYSCONFDIR)/initrd.mk $(SYSCONFDIR)/initrd.mk
 
 # Global variables
 RESOLVE_MODALIAS	?= 1
-UDEV_VERSION		?= $(shell udevd --version)
+UDEV_VERSION		?= $(shell $(TOOLSDIR)/udev-version)
 KERNEL			?= $(shell uname -r)
 KERNEL_CONFIG		?= $(BOOTDIR)/config-$(KERNEL)
 KERNEL_MODULES_DIR	?= /lib/modules/$(KERNEL)

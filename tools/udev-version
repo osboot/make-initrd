@@ -1,0 +1,36 @@
+#!/bin/sh -efu
+
+. shell-error
+
+get_bin()
+{
+	local n f
+	n="$1"; shift
+	for f in "$@"; do
+		if [ -x "$f" ]; then
+			eval "$n=\"\$f\""
+			return
+		fi
+	done
+	fatal "$n not found"
+}
+
+udevd_binary()
+{
+	local udevd
+	get_bin udevd /sbin/udevd
+	"$udevd" --version
+}
+
+udevadm_binary()
+{
+	local udevadm
+	get_bin udevadm /sbin/udevadm
+	"$udevadm" --version
+}
+
+v="$(udevd_binary --version)"
+[ -n "${v##*[!0-9]*}" ] || v="$(udevadm_binary --version)"
+[ -n "${v##*[!0-9]*}" ] || v="0"
+
+echo "$v"
