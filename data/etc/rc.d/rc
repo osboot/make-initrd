@@ -20,6 +20,8 @@ rcd="/etc/rc.d/rc$runlevel.d"
 [ -d "$rcd" ] ||
 	exit 0
 
+msg "INIT: Entering runlevel: $runlevel"
+
 export INITLOG_FILE='/var/log/boot.log'
 
 # First, run the KILL scripts.

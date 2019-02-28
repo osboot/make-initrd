@@ -9,11 +9,18 @@
 # Set the initial default search path for use by startup scripts.
 export PATH="/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin"
 
+. shell-var
+
 SourceIfExists()     { [ -f "$1" ] && . "$@"; }
 SourceIfExecutable() { [ -x "$1" ] && . "$@"; }
 SourceIfNotEmpty()   { [ -s "$1" ] && . "$@"; }
 ExecIfExecutable()   { [ -x "$1" ] && "$@"; }
 absolute() { which "$@" 2>/dev/null; }
+
+SHOW_TIMESTAMP=1
+QUIET=
+
+SourceIfNotEmpty /etc/sysconfig/init
 
 LANG=POSIX
 LANGUAGE=POSIX
@@ -26,10 +33,6 @@ COLOR_INFO=
 COLOR_NORMAL=
 COLOR_SUCCESS=
 COLOR_WARNING=
-
-SHOW_TIMESTAMP=1
-
-SourceIfNotEmpty /etc/sysconfig/init
 
 BOOTUP="${BOOTUP:-color}"
 CONSOLETYPE=$(absolute consoletype) && [ "$($CONSOLETYPE)" = serial ] &&
@@ -151,7 +154,6 @@ start_daemon()
 	if [ $STATUS != 0 ]; then
 		[ -z "$ANNOUNCE" ] || msg_already_running "$DISPNAME"
 		passed "$BASENAME startup"
-		echo_newline
 		return $STATUS
 	fi
 
@@ -169,7 +171,6 @@ start_daemon()
 	else
 		failure "$BASENAME startup"
 	fi
-	echo_newline
 
 	return $STATUS
 }
@@ -277,7 +278,6 @@ stop_daemon()
 		[ -z "$ANNOUNCE" ] || msg_not_running "$DISPNAME"
 		[ -z "$LOCKFILE" ] || rm -f "$LOCKFILE"
 		passed "$MESSAGE"
-		echo_newline
 		return $STATUS
 	fi
 
@@ -307,7 +307,6 @@ stop_daemon()
 	else
 		failure "$MESSAGE"
 	fi
-	echo_newline
 
 	return $STATUS
 }
@@ -403,31 +402,66 @@ status()
 	return 3
 }
 
+show_tstamp()
+{
+	[ -z "${SHOW_TIMESTAMP-}" ] || /sbin/monotonic-timestamp
+}
+
+is_quiet()
+{
+	! shell_var_is_no "$QUIET"
+}
+
+msg()
+{
+	! is_quiet || return 0
+	show_tstamp
+	printf '%s\n' "$*"
+}
+
+__SERVICE_MESSAGE=
+__SERVICE_STATUS=
+
 echo_msg()
 {
 	[ -n "$*" ] || return 0
-	show_tstamp
-	printf '%s ' "$*"
+	__msg()
+	{
+		show_tstamp
+		printf '%s ' "$*"
+	}
+	is_quiet && __SERVICE_MESSAGE="$(__msg "$@")" && return ||:
+	__msg "$@"
 }
 
 echo_newline()
 {
+	! is_quiet || [ "$__SERVICE_STATUS" = failure ] || return 0
+	__SERVICE_STATUS=
 	echo
 }
 
 echo_success()
 {
+	__SERVICE_STATUS=success
+	! is_quiet || return 0
+	[ "${#__SERVICE_MESSAGE}" = 0 ] || printf '%s ' "$__SERVICE_MESSAGE"
 	printf '%s[ %sDONE%s ]\r' "$TO_COL" "$COLOR_SUCCESS" "$COLOR_NORMAL"
 }
 
 echo_failure()
 {
+	__SERVICE_STATUS=failure
+	[ "${#__SERVICE_MESSAGE}" = 0 ] || printf '%s ' "$__SERVICE_MESSAGE"
 	printf '%s[%sFAILED%s]\r' "$TO_COL" "$COLOR_FAILURE" "$COLOR_NORMAL"
 	return 1
 }
 
 echo_passed()
 {
+	__SERVICE_STATUS=passed
+	! is_quiet || return 1
+	[ "${#__SERVICE_MESSAGE}" = 0 ] || printf '%s ' "$__SERVICE_MESSAGE"
 	printf '%s[%sPASSED%s]\r' "$TO_COL" "$COLOR_WARNING" "$COLOR_NORMAL"
 	return 1
 }
@@ -437,6 +471,7 @@ success()
 {
 	$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 1
 	echo_success
+	echo_newline
 	return 0
 }
 
@@ -446,6 +481,7 @@ failure()
 	local rc=$?
 	$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 2
 	echo_failure
+	echo_newline
 	return $rc
 }
 
@@ -455,20 +491,20 @@ passed()
 	local rc=$?
 	$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 1
 	echo_passed
+	echo_newline
 	return $rc
 }
 
 # Run some action. Log its output.
 action()
 {
-	local STRING
+	local STRING rc
 	STRING="$1"
 	shift
 	echo_msg "$STRING"
 	$INITLOG $INITLOG_ARGS -c "$*"
-	local rc=$?
+	rc=$?
 	[ $rc -eq 0 ] && success "$STRING" || failure "$STRING"
-	echo_newline
 	return $rc
 }
 
@@ -478,41 +514,36 @@ action_shell()
 	STRING="$1"
 	shift
 	echo_msg "$STRING"
-	"$@"
+	("$@")
 	rc=$?
 	[ $rc -eq 0 ] && success "$STRING" || failure "$STRING"
-	echo_newline
 	return $rc
 }
 
 msg_starting()
 {
-	show_tstamp
-	printf "Starting %s service: " "$1"
+	echo_msg "Starting $1 service: "
 }
 
 msg_already_running()
 {
-	show_tstamp
-	printf "Service %s is already running." "$1"
+	echo_msg "Service $1 is already running."
 }
+
 
 msg_stopping()
 {
-	show_tstamp
-	printf "Stopping %s service: " "$1"
+	echo_msg "Stopping $1 service: "
 }
 
 msg_not_running()
 {
-	show_tstamp
-	printf "Service %s is not running." "$1"
+	echo_msg "Service $1 is not running."
 }
 
 msg_reloading()
 {
-	show_tstamp
-	printf "Reloading %s service: " "$1"
+	echo_msg "Reloading $1 service: "
 }
 
 msg_usage()
@@ -561,9 +592,4 @@ dsort()
 	}
 	__sort "$@"
 	eval "$1=\"\$__list\""
-}
-
-show_tstamp()
-{
-	[ -z "${SHOW_TIMESTAMP-}" ] || /sbin/monotonic-timestamp
 }

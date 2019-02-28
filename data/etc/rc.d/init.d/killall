@@ -22,7 +22,7 @@ fi
 echo_end()
 {
 	[ $1 = 0 ] && echo_success || echo_failure
-	echo
+	echo_newline
 }
 
 omitpid=
@@ -38,7 +38,7 @@ rc=$?
 
 if [ $rc = 2 ]; then
 	echo_success
-	echo
+	echo_newline
 	exit 0
 fi
 echo_end "$rc"
@@ -58,7 +58,7 @@ rc=$?
 
 if [ $rc = 2 ]; then
 	echo_success
-	echo
+	echo_newline
 	exit 0
 fi
 echo_end "$rc"

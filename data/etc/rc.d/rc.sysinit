@@ -1,14 +1,33 @@
 #!/bin/sh
 
+. shell-cmdline
+. shell-var
+
 # Fix console loglevel
 LOGLEVEL=1
 dmesg -n "$LOGLEVEL"
 
-. /etc/initrd-release
+mount -t proc -o nodev,noexec,nosuid proc /proc
 
-[ -z "${VERSION_ID-}" ] || {
-	/sbin/monotonic-timestamp
-	echo "INITRAMFS: version $VERSION_ID"
+quiet=n
+__set_quiet()
+{
+	[ "$1" = 'quiet' ] ||
+		return 0
+	quiet=y
+	[ -z "$2" ] || ! shell_var_is_no "$2" || quiet=n
 }
 
-mount -t proc -o nodev,noexec,nosuid proc /proc
+read -r CMDLINE < /proc/cmdline
+cmdline_foreach "$CMDLINE" __set_quiet
+
+echo "QUIET=$quiet" >>/etc/sysconfig/init
+
+if shell_var_is_no "$quiet"; then
+	. /etc/initrd-release
+
+	[ -z "${VERSION_ID-}" ] || {
+		/sbin/monotonic-timestamp
+		echo "INITRAMFS: version $VERSION_ID"
+	}
+fi

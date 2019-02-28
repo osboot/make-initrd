@@ -11,9 +11,6 @@
 		printf '%s\n' "$s"
 	done > /.initrd/kernenv
 
-[ -f /.initrd/initargs ] ||
-	echo "$*" > /.initrd/initargs
-
 # Create storage for init environment
 :> /.initrd/initenv
 
@@ -29,13 +26,9 @@ trap : INT TSTP QUIT HUP
 x=/etc/rc.d/rc.sysinit
 [ ! -x "$x" ] || setsid "$x" ||:
 
-msg() {
-	/sbin/monotonic-timestamp
-	echo "INIT: $*"
-}
-
 lock=/tmp/rc.lock
-lock() {
+lock()
+{
 	while ! mkdir -- "$lock" >/dev/null 2>&1; do
 		sleep 0.1
 	done
@@ -44,7 +37,8 @@ lock() {
 	done
 }
 
-unlock() {
+unlock()
+{
 	console_unlock
 	rmdir -- "$lock"
 }
@@ -71,8 +65,6 @@ while :; do
 				[ -z "$rc_pid" ] ||
 					rm -f -- "$rc_pid"
 
-				msg "Entering runlevel: $level"
-
 				setsid /etc/rc.d/rc "$level" ||:
 				unlock
 			} &
@@ -84,16 +76,7 @@ while :; do
 			;;
 		9)
 			lock
-
-			. /.initrd/initenv
-
-			! mountpoint -q /proc ||
-				umount -fl /proc
-
-			msg "Running init ($INIT)"
-
-			# Run system init with arguments. Goodbye!
-			exec runas /sbin/init /bin/run-init -e /.initrd/kernenv "$rootmnt" "$INIT" "$@"
+			exec /etc/rc.d/rc.sysexec "$@"
 			;;
 	esac
 done

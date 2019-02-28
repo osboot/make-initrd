@@ -146,7 +146,9 @@ __set_var()
 ignored()
 {
 	case "$1" in
-		INITLOG_FILE|RUNLEVEL|runlevel)
+		INITLOG_FILE|RUNLEVEL|runlevel|PWD|SHLVL)
+			return 0 ;;
+		_*)
 			return 0 ;;
 	esac
 	return 1
