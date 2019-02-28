@@ -116,6 +116,8 @@ __set_var()
 					message "$n: $v: invalid bool"
 					return 1
 				fi
+			else
+				v="1"
 			fi
 			;;
 		*)
