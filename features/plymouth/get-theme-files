@@ -1,0 +1,82 @@
+#!/bin/sh -efu
+
+[ "$#" -gt 0 ] ||
+	exit 0
+
+libname=${LIBNAME?}
+
+name="$1"; shift
+themedir="/usr/share/plymouth/themes/$name"
+
+[ -f "$themedir/$name.plymouth" ] ||
+	exit 0
+
+. shell-error
+
+newline="
+"
+dirs="$newline$themedir$newline"
+
+get_files()
+{
+	find "$1" -type f
+}
+
+get_module()
+{
+	local fn l sect=
+	while read -r l; do
+		case "$l" in
+			'[Plymouth Theme]') sect=1  ;;
+			'['*)               sect='' ;;
+			ModuleName*=*)
+				[ -n "$sect" ] ||
+					continue
+
+				set -- ${l%%=*}
+
+				[ "$*" = 'ModuleName' ] ||
+					continue
+
+				set -- ${l#*=}
+
+				fn="/usr/$libname/plymouth/$*.so"
+
+				[ -f "$fn" ] ||
+					fatal "ModuleName: file not found: $fn"
+
+				printf '%s\n' "$fn"
+				;;
+		esac
+	done < "$themedir/$name.plymouth"
+}
+
+get_imagedir()
+{
+	local l
+	while read -r l; do
+		[ -n "$l" ] && [ -z "${l##ImageDir*=*}" ] ||
+			continue
+
+		set -- ${l%%=*}
+
+		[ "$*" = 'ImageDir' ] ||
+			continue
+
+		set -- ${l#*=}
+
+		[ -d "$*" ] ||
+			fatal "ImageDir: directory not found: $fn"
+
+		[ -n "${dirs##*$newline$1$newline*}" ] ||
+			continue
+
+		dirs="$dirs$*$newline"
+
+		get_files "$*"
+	done < "$themedir/$name.plymouth"
+}
+
+get_files "$themedir"
+get_imagedir
+get_module
