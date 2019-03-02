@@ -149,14 +149,6 @@ stop()
 	}
 	UnmountFilesystems 3 5 non_proc_all noproc
 
-	proc_only()
-	{
-		! mountpoint -q /proc ||
-			echo /proc
-	}
-
-	UnmountFilesystems 3 5 proc_only
-
 	rm -f "$LOCKFILE"
 }
 
