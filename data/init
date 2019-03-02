@@ -18,7 +18,8 @@
 x=/sbin/init-bin
 [ ! -x "$x" ] || exec "$x"
 
-trap : CHLD INT TSTP QUIT HUP
+trap wait CHLD
+trap : INT TSTP QUIT HUP
 
 . rdshell-sh-functions
 
