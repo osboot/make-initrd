@@ -2,7 +2,11 @@
 
 # Save kernel environment and init arguments
 [ -f /.initrd/kernenv ] ||
-	/bin/showenv | /bin/grep -vE -e '^(_|PWD|SHLVL)=' > /.initrd/kernenv ||:
+	/bin/showenv |
+	while read -r s; do
+		case "${s%%=*}" in (_|PWD|SHLVL) continue ;; esac
+		printf '%s\n' "$s"
+	done > /.initrd/kernenv
 
 [ -f /.initrd/initargs ] ||
 	echo "$*" > /.initrd/initargs
