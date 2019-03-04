@@ -1,53 +1,100 @@
-#!/bin/sh -eu
+#!/bin/sh -efu
 
-. rdshell-sh-functions
+PROG="${0##*/}"
+PID="$$"
 
-for f in /.initrd/initenv /etc/sysconfig/rdshell; do
-	[ ! -f "$f" ] || . "$f"
-done
-
-msg=
-if [ -z "${RDSHELL_NOMESSAGE-}" ]; then
-	if [ -z "${RDSHELL_MESSAGE-}" ]; then
-		if [ -e "$rdshell_fifo" ]; then
-			read -r msg < "$rdshell_fifo" ||:
-		fi
-	else
-		msg="$RDSHELL_MESSAGE"
+if [ -n "${RDSHELL_FOREVER-}" ]; then
+	if [ -z "${__session-}" ]; then
+		export __session=1
+		exec setsid "$0" "$@"
 	fi
+	unset __session
+
+	mkdir -p -- /var/run
+	echo "$PID" > "/var/run/$PROG.pid"
 fi
 
-while ! console_lock; do
-	sleep 0.5
-done
+. shell-source
+
+exit_handler()
+{
+	trap - EXIT
+	retry=
+	rm -f -- "$rdshell_fifo"
+	kill -15 -$PID >/dev/null 2>&1
+	exit $1
+}
+
+recv_command()
+{
+	[ -z "${RDSHELL_NOMESSAGE-}" ] ||
+		return 0
+	{
+		read -r msg
+		read -r withlock
+	} < "$rdshell_fifo" ||:
+}
 
 exec </dev/console >/dev/console 2>&1
 
-[ -z "${msg-}" ] || printf '%s: %s\n' "${0##*/}" "$msg"
+. rdshell-sh-functions
+
+[ -e "$rdshell_fifo" ] ||
+	mkfifo -- "$rdshell_fifo"
+
+trap 'exit_handler $?' EXIT
+
+source_if_exists /.initrd/initenv
 
 RDSHELL_MODE="${RDSHELL_MODE:-shell}"
+source_if_exists /etc/sysconfig/rdshell
 
 # Disallow console access
 [ "${PANIC-}" != 0 ] || [ "$RDSHELL_MODE" != shell ] || RDSHELL_MODE=disable
 
-shcmd='/bin/sh -l'
-case "${RDSHELL_MODE-}" in
-	shell)
-		;;
-	login)
-		printf '\n'
-		shcmd='sulogin'
-		;;
-	disable)
-		printf 'Shell access is not allowed.\n'
-		while sleep 1; do :; done
-		;;
-esac
+retry=1
+while [ -n "$retry" ]; do
+	msg=
+	withlock=
 
-for f in /lib/shell/*; do
-	[ -x "$f" ] || break
-	"$f" ||:
+	recv_command
+
+	[ "${#withlock}" = 0 ] ||
+		while [ -n "$retry" ] && ! console_lock; do
+			sleep 0.1
+		done
+
+	[ ${#msg} = 0 ] ||
+		printf '%s: %s\n' "${0##*/}" "$msg"
+
+	shcmd='/bin/sh -l'
+	case "${RDSHELL_MODE-}" in
+		shell)
+			;;
+		login)
+			printf '\n'
+			shcmd='sulogin'
+			;;
+		disable)
+			printf 'Shell access is not allowed.\n'
+			retry=
+			continue
+			;;
+	esac
+
+	(
+		set +f
+		for f in /lib/shell/*; do
+			[ -x "$f" ] || break
+			"$f" ||:
+		done
+	)
+
+	setsid -c $shcmd
+
+	[ "${#withlock}" = 0 ] ||
+		console_unlock
+
+	[ -n "${RDSHELL_FOREVER-}" ] ||
+		retry=
 done
-
-setsid -c $shcmd
-console_unlock

@@ -14,6 +14,17 @@ console_unlock()
 	rmdir "$_console_lock"
 }
 
-console_inactive() {
+console_inactive()
+{
 	[ ! -d "$_console_lock" ]
+}
+
+console_open()
+{
+	[ -e "$rdshell_fifo" ] ||
+		return 0
+	local a
+	for a; do
+		printf '%s\n' "$a"
+	done > "$rdshell_fifo"
 }

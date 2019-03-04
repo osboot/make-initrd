@@ -1,5 +1,0 @@
-#!/bin/sh
-
-while :; do
-	/bin/rdshell
-done

@@ -1,7 +1,34 @@
 #!/bin/sh -efu
 
-. /.initrd/initenv
 . rdshell-sh-functions
+
+PID="$$"
+
+exit_handler()
+{
+	trap - EXIT
+	[ "$1" = 0 ] ||
+		kill -15 -$PID >/dev/null 2>&1
+	exit "$1"
+}
+
+trap 'exit_handler $?' EXIT
+
+mkdir -p /var/run
+echo $PID > /var/run/rootdelay.pid
+
+while :; do
+	# Waiting for cmdline service
+	. /.initrd/initenv
+	[ -z "${ROOTDELAY-}" ] ||
+		break
+	sleep 0.2
+done
+
+if [ -n "${RDSHELL-}" ]; then
+	console_open "Emergency shell" withlock
+	exit
+fi
 
 delay=${ROOTDELAY:-180}
 while [ "$delay" -gt 0 ] && [ ! -x "$rootmnt/$INIT" ]; do
@@ -15,4 +42,4 @@ done
 # Disallow console access
 [ "${PANIC-}" != "0" ] || reboot -f
 
-echo "The waiting time expired!" > "$rdshell_fifo"
+console_open "The waiting time expired!" withlock

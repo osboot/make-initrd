@@ -8,6 +8,7 @@
 #
 
 . /etc/init.d/functions
+. rdshell-sh-functions
 
 # Get first argument. Set new runlevel to this argument.
 [ $# -eq 0 ] ||
@@ -23,6 +24,12 @@ rcd="/etc/rc.d/rc$runlevel.d"
 msg "INIT: Entering runlevel: $runlevel"
 
 export INITLOG_FILE='/var/log/boot.log'
+
+. rdshell-sh-functions
+
+while ! console_lock; do
+	sleep 0.5
+done
 
 # First, run the KILL scripts.
 for i in "$rcd"/K*; do
@@ -48,8 +55,10 @@ for i in "$rcd"/S*; do
 	SourceIfExists /.initrd/initenv
 
 	interactive=
-	[ -z "${STOP-}" ] || [ -n "${STOP##*,all,*}" ] || [ -n "${STOP##*,$subsys,*}" ] ||
-			interactive=1
+	[ -z "${STOP-}" ] ||
+		for n in all "$subsys"; do
+			[ -n "${STOP##*,$n,*}" ] || interactive=1
+		done
 
 	if [ -n "$interactive" ]; then
 		while :; do
@@ -61,8 +70,8 @@ for i in "$rcd"/S*; do
 					break
 					;;
 				s|shell)
-					RDSHELL_MESSAGE='This shell remains here for debug purposes. Press Ctrl-D to continue.' \
-					/bin/rdshell
+					printf 'This shell remains here for debug purposes. Press Ctrl-D to continue.\n'
+					RDSHELL_NOMESSAGE=1 rdshell
 					;;
 				n|no)
 					continue 2
@@ -80,3 +89,5 @@ for i in "$rcd"/S*; do
 
 	"$i" start
 done
+
+console_unlock

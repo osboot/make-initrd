@@ -186,13 +186,6 @@ parse()
 		[ -z "${s##*[!A-Za-z0-9_]*}" ] || ignored "$s" ||
 			printf 'export %s\n' "$l"
 	done > /.initrd/initenv
-
-	if [ -n "${RDSHELL-}" ]; then
-		echo "Emergency shell" > "$rdshell_fifo"
-		return
-	fi
-
-	setsid /lib/initrd/rootdelay &
 }
 
 action_shell 'Parsing cmdline arguments:' parse
