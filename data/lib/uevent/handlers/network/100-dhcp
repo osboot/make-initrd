@@ -1,0 +1,99 @@
+#!/bin/sh
+
+. /.initrd/initenv
+
+. shell-error
+. uevent-sh-functions
+. network-sh-functions
+
+message_time=1
+dhcp_packets_pause=5
+dhcp_number_packets=3
+
+handler()
+{
+	local pidfile="/var/run/udcpc$ip_version.$NET_IF.pid"
+
+	case "$ev_action" in
+		update)
+			local states=
+
+			for ip_version in 4 6; do
+				need_dhcp=
+				for dir in "$net_confdir/ifaces/$NET_IF" "$net_confdir/default"; do
+					[ ! -e "$dir/ipv${ip_version}dhcp" ] ||
+						need_dhcp=1
+				done
+
+				[ -n "$need_dhcp" ] ||
+					continue
+
+				[ "$ip_version" != 6 ] ||
+					load_ipv6
+
+				[ ! -d "/proc/sys/net/ipv$ip_version" ] || [ -f "$pidfile" ] ||
+					states="$states $ip_version"
+			done
+
+			[ -n "$states" ] ||
+				return 0
+
+			message "$NET_IF: trying to obtain configuration from dhcp ..."
+
+			ip_cmd link set dev "$NET_IF" up ||:
+			wait_for_link_up "$NET_IF" ||
+				fatal "$NET_IF: could not bring interface up (timeout)"
+
+			for v in $states; do
+				case "$v" in
+					4) cmd=udhcpc ;;
+					6) cmd=udhcpc6 ;;
+				esac
+				set -- $cmd -v -n \
+					-i "$NET_IF" \
+					-t "$dhcp_number_packets" \
+					-T "$dhcp_packets_pause" \
+					-s "/lib/network/udhcpc$v.script" \
+					-p "$pidfile"
+
+				message "run: $*"
+				"$@" >>"/var/log/udhcpc$v.$NET_IF.log" 2>&1 &
+			done
+
+			secs=$((1 + ($dhcp_number_packets * $dhcp_packets_pause) ))
+			message "$NET_IF: waiting $secs seconds for configuration by dhcp ..."
+
+			i=$(($secs * 10))
+			while [ $i -ge 0 ]; do
+				i=$(($i-1))
+				sleep 0.1
+				for v in $states; do
+					[ -e "$net_statedir/dhcp/$NET_IF/ipv$v" ] ||
+						continue 2
+				done
+				i=-1
+			done
+
+			message "$NET_IF: dhcp done"
+			;;
+		remove)
+			for ip_version in 4 6; do
+				local pid=
+				{ read -r pid < "$pidfile" ||:; } >/dev/null 2>&1
+
+				[ -z "$pid" ] ||
+					kill "$pid" 2>/dev/null ||:
+			done
+			;;
+	esac
+}
+
+ev_type='config'
+for e in "$1/network.$ev_type".*; do
+	[ -e "$e" ] || break
+
+	ev_action="${e##*/network.$ev_type.}"
+	ev_action="${ev_action%%.*}"
+
+	( . "$e"; handler; ) ||:
+done

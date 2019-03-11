@@ -2,6 +2,8 @@
 
 . uevent-sh-functions
 
+message_time=1
+
 handler() {
 	if [ ! -e /sys/power/resume ]; then
 		message "Kernel does not support resume - doing normal boot"

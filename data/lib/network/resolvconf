@@ -1,0 +1,22 @@
+#!/bin/sh -efu
+
+. shell-error
+. network-sh-functions
+
+[ "$NET_EV_ACTION" = update ] ||
+	exit 0
+
+while ! mkdir -- "/tmp/$PROG.lock" >/dev/null 2>&1; do
+	sleep 0.1
+done
+trap "rmdir /tmp/$PROG.lock" EXIT
+
+PROG="$PROG: $NET_IF"
+message_time=1
+
+get_iface_confdir &&
+	[ -f "$confdir/resolv.conf" ] ||
+	exit 0
+
+message "write resolv.conf"
+cat "$confdir/resolv.conf" >> /etc/resolv.conf

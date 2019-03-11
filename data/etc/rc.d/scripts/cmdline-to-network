@@ -1,0 +1,227 @@
+#!/bin/sh -efu
+
+exec >/var/log/cmdline-to-network.log 2>&1
+
+. /.initrd/initenv
+
+. shell-ip-address
+. network-sh-functions
+
+ip_to_var()
+{
+	local i v="$1:"
+	set --
+
+	while [ -n "$v" ]; do
+		if [ -z "${v##\[*:*:*\]:*}" ]; then
+			# handle IPv6 address
+			i="${v%%\]:*}"
+			i="${i##\[}"
+
+			set -- "$@" "$i"
+			v=${v#\[$i\]:}
+		else
+			set -- "$@" "${v%%:*}"
+			v=${v#*:}
+		fi
+	done
+
+	ipaddr='' srv='' gw='' netmask='' hostname='' interface='' autoconf='' macaddr='' mtu='' dns1='' dns2=''
+
+	if [ $# -eq 0 ]; then
+		autoconf="error"
+		return 0
+	fi
+
+	# format: ip=<autoconf>
+
+	if [ $# -eq 1 ]; then
+		autoconf="$1"
+		return 0
+	fi
+
+	# format: ip=<interface>:<autoconf>[:[<mtu>][:<macaddr>]]
+
+	case "${2-}" in
+		on|any|dhcp|auto|dhcp4|auto4|dhcp6|auto6)
+			interface="$1"
+			autoconf="$2"
+			shift 2
+			[ $# -eq 0 ] ||
+				{ mtu="$1"; shift; }
+			[ $# -ne 6 ] ||
+				{ macaddr="$1:$2:$3:$4:$5:$6"; shift 6; }
+			[ $# -eq 0 ] ||
+				fatal "syntax error: macaddr must contain 6 components"
+			[ -n "$interface" ] ||
+				fatal "interface name must be non-empty"
+			return 0
+			;;
+	esac
+
+	# format: ip=<ipaddr>:[<peer>]:<gw>:<netmask>:<hostname>:<interface>:<autoconf>[:[<mtu>][:<macaddr>]]
+
+	ipaddr="$1" srv="$2" gw="$3" netmask="$4" hostname="$5" interface="$6" autoconf="$7"
+	shift 7
+
+	[ -n "$interface" ] ||
+		fatal "interface name must be non-empty"
+
+	[ $# -gt 0 ] ||
+		return 0
+
+	if [ -z "$1" ] || [ -n "${1##*[!0-9]*}" ]; then
+		mtu="$1"; shift
+		[ $# -ne 6 ] ||
+			{ macaddr="$1:$2:$3:$4:$5:$6"; shift 6; }
+		[ $# -eq 0 ] ||
+			fatal "syntax error: macaddr must contain 6 components"
+		return 0
+	fi
+
+	# format: ip=<ipaddr>:[<peer>]:<gw>:<netmask>:<hostname>:<interface>:<autoconf>[:[<dns1>][:<dns2>]]
+
+	dns1="$1"; shift
+	[ $# -eq 0 ] || dns2="$1"
+}
+
+route_to_var()
+{
+	local i v="$1:"
+	set --
+	while [ -n "$v" ]; do
+		if [ "${v#\[*:*:*\]:}" != "$v" ]; then
+			# handle IPv6 address
+			i="${v%%\]:*}"
+			i="${i##\[}"
+			set -- "$@" "$i"
+			v=${v#\[$i\]:}
+		else
+			set -- "$@" "${v%%:*}"
+			v=${v#*:}
+		fi
+	done
+
+	# format: route=<net>/<netmask>:<gateway>[:<interface>]
+
+	route_mask='' route_gw='' interface=''
+
+	case "$#" in
+		2)
+			route_mask="$1"
+			route_gw="$2"
+			;;
+		3)
+			route_mask="$1"
+			route_gw="$2"
+			interface="$3"
+			;;
+		*)
+			return 1
+			;;
+	esac
+}
+
+get_version()
+{
+	local i="${2-}"
+	case "$1" in
+	*.*.*.*) i=4 ;;
+	*:*:*)   i=6 ;;
+	esac
+	ip_version=$i
+}
+
+i=0
+while [ $i -lt ${IP:-0} ]; do
+	eval "OPTS=\"\$IP$i\""
+	ip_to_var "$OPTS"
+
+	dir=
+	[ "${#interface}" != 0 ] &&
+		dir="$net_confdir/ifaces/$interface" ||
+		dir="$net_confdir/default"
+
+	rm -rf -- "$dir"
+	mkdir -p -- "$dir"
+
+	case "$autoconf" in
+		none|off|static)
+			;;
+		on|any|dhcp)
+			:> "$dir/ipv4dhcp"
+			:> "$dir/ipv6dhcp"
+			;;
+		dhcp4)
+			:> "$dir/ipv4dhcp"
+			;;
+		dhcp6)
+			:> "$dir/ipv6dhcp"
+			;;
+		*)
+			fatal "unknown autoconf value: $autoconf"
+			;;
+	esac
+
+	:> "$dir/options"
+
+	if [ "${#macaddr}" != 0 ] && [ "${#interface}" != 0 ]; then
+		macaddr="$(replace -s= '[A-Z]' '[a-z]' "$macaddr")"
+		printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", NAME="%s"\n' \
+			"$macaddr" "$interface" >> /etc/udev/rules.d/60-persistent-net.rules
+	fi
+
+	[ -z "$hostname" ] ||
+		printf '%s\n' "$hostname" > "$dir/hostname"
+
+	[ -z "$mtu" ] ||
+		printf 'mtu %s\n' "$mtu" > "$dir/iplink"
+
+	mask=
+	if [ -n "$netmask" ]; then
+		[ -z "${netmask##*[!0-9]*}" ] ||
+			mask="$netmask"
+		[ -n "${netmask##*.*.*.*}" ] ||
+			mask=$(ipv4_mask2prefix "$netmask") ||
+			fatal "unable to convert prefix to mask: $netmask"
+	fi
+
+	if [ -n "$ipaddr" ]; then
+		get_version "$ipaddr" 4
+		printf '%s\n' "$ipaddr${mask:+/$mask}${srv:+ peer $srv}" > "$dir/ipv${ip_version}address"
+	fi
+
+	if [ -n "$mask" ] && [ -n "$gw" ]; then
+		get_version "$gw" 4
+		printf 'default via %s\n' "$gw" > "$dir/ipv${ip_version}route"
+	fi
+
+	[ -z "$dns1" ] && [ -z "$dns2" ] ||
+		printf 'nameserver %s\n' $dns1 $dns2 > "$dir/resolv.conf"
+
+	i=$(($i+1))
+done
+
+i=0
+while [ $i -lt ${ROURE:-0} ]; do
+	eval "OPTS=\"\$ROUTE$i\""
+	route_to_var "$OPTS"
+
+	[ "${#interface}" != 0 ] &&
+		dir="$net_confdir/ifaces/$interface" ||
+		dir="$net_confdir/default"
+
+	mkdir -p -- "$dir"
+
+	get_version "$route_gw" 4
+	printf '%s\n' "$route_mask${route_gw:+ via $route_gw}" >> "$dir/ipv${ip_version}route"
+
+	i=$(($i+1))
+done
+
+i=0
+while [ $i -lt ${NAMESERVER:-0} ]; do
+	eval "OPTS=\"\$NAMESERVER$i\""
+	printf 'nameserver %s\n' $OPTS >> /etc/resolv.conf
+	i=$(($i+1))
+done

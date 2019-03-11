@@ -1,0 +1,140 @@
+#!/bin/sh -efu
+
+. shell-error
+. network-sh-functions
+
+PROG="$PROG: $NET_IF"
+message_time=1
+
+in_list()
+{
+	local a n="$1"
+	for a; do
+		[ "$n" != "$a" ] || return 0
+	done
+	return 1
+}
+
+set_route()
+{
+	local ip_version="$1" action="$2" rc=0
+	__handler()
+	{
+		set -- $*
+		local suffix=
+		in_list throw "$@" || in_list unreachable "$@" || in_list prohibit "$@" || in_list blackhole "$@" || in_list dev "$@" ||
+			suffix="dev $NET_IF"
+		local first="$1"; shift
+		case "$first" in
+			add|change|append|replace)
+				[ "$action" != del ] || first=del ;;
+			del)
+				[ "$action" != del ] || first=add ;;
+			*)
+				[ "$action" = add ] &&
+					first="append $first" ||
+					first="$action $first"
+				;;
+		esac
+		ip_cmd route $first "$@" $suffix
+	}
+
+	case "$action" in
+		add)
+			cat_config "$confdir/ipv${ip_version}route" __handler &&
+				add_iface_state "$NET_IF" "ipv${ip_version}route" ||
+				rc=1
+			;;
+		del)
+			tac_config "$net_statedir/ifaces/$NET_IF/ipv${ip_version}route" __handler &&
+				del_iface_state "$NET_IF" "ipv${ip_version}route" ||
+				rc=1
+			;;
+		*)
+			fatal "unexpected action value: $action"
+			;;
+	esac
+
+	return $rc
+}
+
+set_rule()
+{
+	local ip_version="$1" action="$2" rc=0
+	__handler()
+	{
+		set -- $*
+		local first="$1"; shift
+		case "$first" in
+			add)
+				[ "$action" != del ] || first=del ;;
+			del)
+				[ "$action" != del ] || first=add ;;
+			*)
+				first="$action $first" ;;
+		esac
+		ip_cmd rule $first "$@"
+	}
+
+	case "$action" in
+		add)
+			cat_config "$confdir/ipv${ip_version}rule" __handler &&
+				add_iface_state "$NET_IF" "ipv${ip_version}rule" ||
+				rc=1
+			;;
+		del)
+			tac_config "$net_statedir/ifaces/$NET_IF/ipv${ip_version}rule" __handler &&
+				del_iface_state "$NET_IF" "ipv${ip_version}rule" ||
+				rc=1
+			;;
+		*)
+			fatal "unexpected action value: $action"
+			;;
+	esac
+
+	return $rc
+}
+
+update()
+{
+	local v n rc=0
+
+	get_iface_confdir ||
+		return 0
+
+	for v in 4 6; do
+		[ -d "/proc/sys/net/ipv$v" ] ||
+			continue
+		for n in route rule; do
+			if iface_state_changed "$NET_IF" "ipv$v$n"; then
+				set_$n $v del && set_$n $v add || rc=1
+			fi
+		done
+	done
+
+	[ "$rc" = 0 ] ||
+		return $rc
+
+	message "create event: network.$NET_EV_TYPE.$NET_EV_ACTION -> network.route.updated"
+	net_event "network.route.updated" "$NET_IF"
+}
+
+remove()
+{
+	local v rc=0
+
+	for v in 4 6; do
+		set_route $v del || rc=1
+		set_rule  $v del || rc=1
+	done
+
+	[ "$rc" = 0 ] ||
+		return $rc
+
+	message "create event: network.$NET_EV_TYPE.$NET_EV_ACTION -> network.route.removed"
+	net_event "network.route.removed" "$NET_IF"
+}
+
+case "$NET_EV_ACTION" in
+	update|remove) "$NET_EV_ACTION" ;;
+esac

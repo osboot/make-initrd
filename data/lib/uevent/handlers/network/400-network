@@ -1,0 +1,59 @@
+#!/bin/sh
+
+. /.initrd/initenv
+
+. shell-error
+. uevent-sh-functions
+. network-sh-functions
+
+message_time=1
+
+handler()
+{
+	export NET_IF="$NET_IF"
+	export NET_EV_TYPE="$ev_type"
+	export NET_EV_ACTION="$ev_action"
+
+	message "$NET_IF: process event: network.$ev_type.$ev_action"
+
+	case "$ev_type" in
+		link|addr|route|hostname|resolvconf|config)
+			"/lib/network/$ev_type"
+			;;
+		*)
+			fatal "$NET_IF: unknown event type: $ev_type"
+			;;
+	esac
+
+	case "$ev_action" in
+		updated) mkdir -p -- "$net_statedir/up/$NET_IF/$ev_type" ;;
+		removed) rm -rf   -- "$net_statedir/up/$NET_IF/$ev_type" ;;
+	esac
+
+	online=1
+	for n in link addr route; do
+		[ -d "$net_statedir/up/$NET_IF/$n" ] || online=
+	done
+
+	if [ -n "$online" ]; then
+		message "$NET_IF: online"
+		echo online > "/sys/class/net/$NET_IF/uevent"
+	fi
+}
+
+rc=0
+for ev_type in $net_event_list config; do
+	for e in "$1/network.$ev_type".*; do
+		[ -e "$e" ] || break
+
+		ev_action="${e##*/network.$ev_type.}"
+		ev_action="${ev_action%%.*}"
+
+		( . "$e"; handler; ) ||
+			rc=1
+
+		done_event "$e"
+	done
+done
+
+exit $rc

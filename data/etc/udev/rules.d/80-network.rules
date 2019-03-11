@@ -1,2 +1,2 @@
+SUBSYSTEM=="net", ACTION=="add", RUN+="/lib/uevent/filters/network"
 SUBSYSTEM=="net", ACTION=="online", RUN+="/lib/uevent/filters/mountdev"
-SUBSYSTEM=="net", ACTION!="remove", RUN+="/lib/uevent/filters/netdev"

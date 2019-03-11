@@ -1,5 +1,8 @@
 #!/bin/sh -eu
 
+if [ -z "${__rdshell_sh_functions-}" ]; then
+__rdshell_sh_functions=1
+
 _console_lock=/.initrd/rdshell.lock
 rdshell_fifo=/.initrd/rdshell
 
@@ -28,3 +31,5 @@ console_open()
 		printf '%s\n' "$a"
 	done > "$rdshell_fifo"
 }
+
+fi

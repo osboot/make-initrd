@@ -1,5 +1,8 @@
 #!/bin/sh
 
+if [ -z "${__initrd_sh_functions-}" ]; then
+__initrd_sh_functions=1
+
 omit_pid() {
 	: > "/.initrd/killall/$1"
 }
@@ -63,3 +66,5 @@ get_dev() {
 	[ -z "$retval" ] ||
 		eval "$retval=\"\$DEVNAME\""
 }
+
+fi

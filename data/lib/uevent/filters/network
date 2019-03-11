@@ -1,0 +1,11 @@
+#!/bin/sh -e
+
+. network-sh-functions
+
+ev_action=
+case "$ACTION" in
+	add)    ev_action='update' ;;
+	remove) ev_action='remove' ;;
+esac
+
+net_event "network.config.$ev_action" "$INTERFACE"

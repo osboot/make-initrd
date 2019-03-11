@@ -1,0 +1,27 @@
+#!/bin/sh -efu
+
+. shell-error
+. network-sh-functions
+
+[ "$NET_EV_ACTION" = update ] ||
+	exit 0
+
+while ! mkdir -- "/tmp/$PROG.lock" >/dev/null 2>&1; do
+	sleep 0.1
+done
+trap "rmdir /tmp/$PROG.lock" EXIT
+
+PROG="$PROG: $NET_IF"
+message_time=1
+
+get_iface_confdir &&
+	[ -f "$confdir/hostname" ] ||
+	exit 0
+
+name=
+read -r name < "$confdir/hostname" ||:
+
+if [ -n "$name" ]; then
+	message "set hostname: $name"
+	printf '%s\n' "$name" > /proc/sys/kernel/hostname
+fi

@@ -1,5 +1,8 @@
 #!/bin/sh
 
+if [ -z "${__uevent_sh_functions-}" ]; then
+__uevent_sh_functions=1
+
 . shell-error
 
 debugdir='/.initrd/uevent/debug'
@@ -29,3 +32,5 @@ release_event() {
 done_event() {
 	mv -f -- "$1" "${1%/*}/done.${1##*/}"
 }
+
+fi

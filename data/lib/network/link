@@ -1,0 +1,40 @@
+#!/bin/sh -efu
+
+. shell-error
+. network-sh-functions
+
+PROG="$PROG: $NET_IF"
+message_time=1
+
+update()
+{
+	get_iface_confdir &&
+		iface_state_changed "$NET_IF" "iplink" ||
+		return 0
+
+	cat_config "$confdir/iplink" ip_cmd link dev "$NET_IF" &&
+		ip_cmd link set dev "$NET_IF" up ||
+		return 0
+
+	add_iface_state "$NET_IF" "iplink"
+
+	if wait_for_link_up "$NET_IF"; then
+		message "create event: network.$NET_EV_TYPE.$NET_EV_ACTION -> network.link.updated"
+		net_event "network.link.updated" "$NET_IF"
+	fi
+}
+
+remove()
+{
+	ip_cmd link set dev "$NET_IF" down ||
+		exit
+
+	del_iface_state "$NET_IF" "iplink"
+
+	message "create event: network.$NET_EV_TYPE.$NET_EV_ACTION -> network.link.removed"
+	net_event "network.link.removed" "$NET_IF"
+}
+
+case "$NET_EV_ACTION" in
+	update|remove) "$NET_EV_ACTION" ;;
+esac

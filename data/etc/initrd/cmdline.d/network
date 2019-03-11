@@ -1,0 +1,3 @@
+register_array string IP
+register_array string ROUTE
+register_array string NAMESERVER

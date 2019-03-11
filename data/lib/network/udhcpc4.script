@@ -1,0 +1,127 @@
+#!/bin/sh -efu
+
+STATE="$1"
+
+PROG="${0##*/}"
+CMDNAME="${PROG%.script}"
+V="${CMDNAME##udhcpc}"
+
+INTERFACE="${interface-}"
+
+lock="/tmp/$CMDNAME.$INTERFACE.lock"
+while ! mkdir -- "$lock" >/dev/null 2>&1; do
+	sleep 0.1
+done
+trap "rmdir $lock" EXIT
+
+exec >>"/var/log/$CMDNAME.$INTERFACE.log" 2>&1
+
+. network-sh-functions
+
+cfg="$net_confdir/ifaces/$INTERFACE/ipv${V}dhcp"
+[ ! -e "$cfg" ] || . "$cfg"
+
+[ -z "${IGNORE_HOSTNAME-}" ] || unset hostname
+[ -z "${IGNORE_DNS-}"      ] || unset search dns
+
+ADDRESS="${ip-}${ipv6-}"
+BROADCAST="${broadcast:-+}"
+DNS="${dns-}"
+DOMAINS="${search-}"
+HOSTNAME="${hostname-}"
+IPV6PREFIX="${ipv6prefix-}"
+MASK="${mask-}"
+MTU="${mtu-}"
+ROUTER="${router-}"
+
+dir="$net_autoconfdir/ifaces/$INTERFACE"
+statedir="$net_statedir/dhcp/$INTERFACE/ipv$V"
+state="$statedir/state"
+suffix=".new"
+
+resolvconf_update()
+{
+	local hb he dst tmp
+
+	hb="# $INTERFACE: DHCP$V start"
+	he="# $INTERFACE: DHCP$V end"
+
+	dst="$dir/resolv.conf$suffix"
+	tmp="$(mktemp "$dst.XXXXXX")"
+	{
+		[ ! -f "$dst" ] || sed -n -e "0,/^$hb\$/{ /^$hb\$/q; p; }" "$dst"
+		printf '%s\n' "$hb"
+		cat
+		printf '%s\n\n' "$he"
+		[ ! -f "$dst" ] || sed -n -e "/^$he\$/,\${ /^$he\$/q; p; }" "$dst"
+	} > "$tmp"
+	mv -f -- "$tmp" "$dst"
+}
+
+env_to_configs()
+{
+	mkdir -p -- "$dir" "$statedir"
+	echo ready > "$state"
+
+	[ "${#MTU}" = 0 ] ||
+		printf 'mtu %s\n' "$MTU" > "$dir/iplink$suffix"
+
+	[ "${#HOSTNAME}" = 0 ] ||
+		printf '%s\n' "$HOSTNAME" > "$dir/hostname$suffix"
+
+	{
+		printf '%s\n' "$ADDRESS${MASK:+/$MASK}${BROADCAST:+ broadcast $BROADCAST}"
+		[ "${#IPV6PREFIX}" = 0 ] ||
+			printf '%s\n' $IPV6PREFIX
+	} > "$dir/ipv${V}address$suffix"
+
+	if [ "${#ROUTER}" != 0 ]; then
+		metric=0
+		for n in $ROUTER; do
+			printf 'default via %s metric %s\n' "$n" "$metric"
+			metric=$(($metric + 1))
+		done > "$dir/ipv${V}route$suffix"
+	fi
+
+	if [ "${#DOMAINS}" != 0 ] || [ "${#DNS}" != 0 ]; then
+		{
+			[ "${#DOMAINS}" = 0 ] || printf 'search %s\n' $DOMAINS
+			[ "${#DNS}" = 0     ] || printf 'nameserver %s\n' $DNS
+		} |resolvconf_update
+	fi
+}
+
+gen_net_event()
+{
+	if [ -e "$1" ] && cmp -s "$1" "$1$suffix" 2>/dev/null; then
+		rm -f -- "$1$suffix"
+		return 0
+	fi
+	mv -f -- "$1$suffix" "$1"
+	net_event "$2" "$INTERFACE"
+}
+
+case "$STATE" in
+	renew)
+		env_to_configs
+		gen_net_event "$dir/iplink" "network.link.update"
+		gen_net_event "$dir/ipv${V}address" "network.addr.update"
+		gen_net_event "$dir/ipv${V}route" "network.route.update"
+		gen_net_event "$dir/resolv.conf" "network.resolvconf.update"
+		gen_net_event "$dir/hostname" "network.hostname.update"
+		;;
+	bound)
+		suffix=
+		env_to_configs
+		;;
+	leasefail)
+		mkdir -p -- "$statedir"
+		echo failed > "$state"
+		;;
+	deconfig)
+		rm -rf -- "$statedir"
+		;;
+	*)
+		exit 0
+		;;
+esac

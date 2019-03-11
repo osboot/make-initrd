@@ -161,13 +161,22 @@ parse()
 
 	defaults
 
-	read -r CMDLINE < /proc/cmdline
+	[ -n "${CMDLINE-}" ] ||
+		read -r CMDLINE < /proc/cmdline
 	export CMDLINE
 
 	cmdline_foreach "$CMDLINE" __set_var
 
 	[ -z "$DEBUG" ] || QUIET=
 	STOP=",$STOP,"
+
+	if [ -z "$IP" ] || [ "$IP" = 0 ]; then
+		# Special case for nfsroot.
+		if [ -n "$NFSROOT" ] || [ "$ROOT" = '/dev/nfs' ]; then
+			export IP0=dhcp
+			export IP=1
+		fi
+	fi
 
 	{
 		echo __initrd_initenv=1
@@ -176,3 +185,6 @@ parse()
 }
 
 action_shell 'Parsing cmdline arguments:' parse
+
+[ "$IP" = 0 ] && [ "$ROUTE" = 0 ] && [ "$NAMESERVER" = 0 ] ||
+	action 'Generating network configuration:' /etc/rc.d/scripts/cmdline-to-network

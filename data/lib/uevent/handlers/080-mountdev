@@ -3,6 +3,8 @@
 . /.initrd/initenv
 . uevent-sh-functions
 
+message_time=1
+
 handler() {
 	[ -d "$MOUNTPOINT" ] ||
 		return 1

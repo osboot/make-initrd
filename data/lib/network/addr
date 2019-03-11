@@ -1,0 +1,58 @@
+#!/bin/sh -efu
+
+. shell-error
+. network-sh-functions
+
+PROG="$PROG: $NET_IF"
+message_time=1
+
+update()
+{
+	get_iface_confdir ||
+		return 0
+
+	local rc=0
+	for ip_version in 4 6; do
+		[ "$ip_version" != 6 ] ||
+			load_ipv6
+
+		[ -d "/proc/sys/net/ipv$ip_version" ] &&
+			iface_state_changed "$NET_IF" "ipv${ip_version}address" ||
+			continue
+
+		cat_config "$net_statedir/ifaces/$NET_IF/ipv${ip_version}address" ip_cmd address del dev "$NET_IF" &&
+			del_iface_state "$NET_IF" "ipv${ip_version}address" ||
+			rc=1
+
+		cat_config "$confdir/ipv${ip_version}address" ip_cmd address add dev "$NET_IF" &&
+			add_iface_state "$NET_IF" "ipv${ip_version}address" ||
+			rc=1
+	done
+
+	[ $rc = 0 ] ||
+		return $rc
+
+	message "create event: network.$NET_EV_TYPE.$NET_EV_ACTION -> network.addr.updated"
+	net_event "network.addr.updated" "$NET_IF"
+}
+
+remove()
+{
+	local rc=0
+
+	for ip_version in 4 6; do
+		cat_config "$net_statedir/ifaces/$NET_IF/ipv${ip_version}address" ip_cmd address del dev "$NET_IF" &&
+			del_iface_state "$NET_IF" "ipv${ip_version}address" ||
+			rc=1
+	done
+
+	[ $rc = 0 ] ||
+		return $rc
+
+	message "create event: network.$NET_EV_TYPE.$NET_EV_ACTION -> network.addr.removed"
+	net_event "network.addr.removed" "$NET_IF"
+}
+
+case "$NET_EV_ACTION" in
+	update|remove) "$NET_EV_ACTION" ;;
+esac
