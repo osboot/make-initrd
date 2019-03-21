@@ -212,21 +212,12 @@ binary_file()
 			abort "unable to print shared object dependencies: $1"
 	} |
 	while read -r f; do
-		case "$f" in
-			/*' (0x'*')')
-				f="${f% (0x*}"
-				;;
-			*' => /'*' (0x'*')')
-				f="${f% (0x*}"
-				f="${f##* => }"
-				;;
-			[!/]*' (0x'*')'|'statically linked') # ignore
-				continue
-				;;
-			*)
-				abort "unsupported ldd output for $1: $f"
-				;;
-		esac
+		f="${f% (0x*)}"
+		f="${f##* => }"
+		f="${f##[!/]*}"
+
+		[ -n "$f" ] ||
+			continue
 
 		debug "binary file $1 -> $f"
 		print_canonicalize "$f"
