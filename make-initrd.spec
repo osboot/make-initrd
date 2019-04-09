@@ -1,6 +1,6 @@
 Name: make-initrd
 Version: 0.8.16
-Release: alt2
+Release: alt3
 
 Summary: Creates an initramfs image
 License: GPL3
@@ -183,6 +183,9 @@ fi
 %_datadir/%name/features/ucode
 
 %changelog
+* Tue Apr  9 2019 Leonid Krivoshein <klark@altlinux.org> 0.8.16-alt3
+- mdadm future: try to make problem array writable.
+
 * Thu Jan 31 2019 Sergey V Turchin <zerg@altlinux.org> 0.8.16-alt2
 - Fix inappropriate function usage.
 
