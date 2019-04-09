@@ -3,8 +3,19 @@
 
 inactive=
 for md in /sys/block/md*/md/array_state; do
+	[ "$md" != '/sys/block/md*/md/array_state' ] ||
+		break
 	read state < "$md"
-	[ "$state" != "inactive" ] || inactive=1
+	[ "$state" != "inactive" ] ||
+		inactive=1
 done
 
 [ -z "$inactive" ] || mdadm -IRs
+
+for md in /sys/block/md*/md/array_state; do
+	[ "$md" != '/sys/block/md*/md/array_state' ] ||
+		break
+	read state < "$md"
+	[ "$state" != "read-auto" ] ||
+		mdadm -w /dev/$(echo "$md" | cut -f4 -d/) ||:
+done
