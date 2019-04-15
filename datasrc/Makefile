@@ -14,7 +14,7 @@ CFLAGS += -Os
 bin_PROGS = \
 	$(out_bindir)/halt \
 	$(out_bindir)/replace \
-	$(out_bindir)/showenv
+	$(out_bindir)/environ
 
 sbin_PROGS = \
 	$(out_sbindir)/ueventd \
@@ -24,7 +24,7 @@ ueventd_SRCS = ueventd.c uevent-epoll.c uevent-logging.c uevent-pidfile.c uevent
 monotonic_timestamp_SRCS = monotonic-timestamp.c
 halt_SRCS = halt.c
 replace_SRCS = replace.c
-showenv_SRCS = showenv.c
+environ_SRCS = environ.c
 
 DEPS = $(call get_depends,$(bin_PROGS) $(sbin_PROGS),)
 OBJS = $(call get_objects,$(bin_PROGS) $(sbin_PROGS),)
@@ -52,7 +52,7 @@ $(out_bindir)/halt: prepare $(call get_objects,halt)
 $(out_bindir)/replace:  prepare $(call get_objects,replace)
 	$(LINK) $(realpath $^) -o $@
 
-$(out_bindir)/showenv: prepare $(call get_objects,showenv)
+$(out_bindir)/environ: prepare $(call get_objects,environ)
 	$(LINK) $(realpath $^) -o $@
 
 install: $(bin_PROGS) $(sbin_PROGS)
@@ -60,3 +60,4 @@ install: $(bin_PROGS) $(sbin_PROGS)
 	$(STRIP) $^
 	$(INSTALL) -p -m755 $(bin_PROGS)  $(DESTDIR)$(helper_bindir)/
 	$(INSTALL) -p -m755 $(sbin_PROGS) $(DESTDIR)$(helper_sbindir)/
+	ln -s -- environ  $(DESTDIR)$(helper_bindir)/showenv
