@@ -143,17 +143,6 @@ __set_var()
 	fi
 }
 
-ignored()
-{
-	case "$1" in
-		INITLOG_FILE|RUNLEVEL|runlevel|PWD|SHLVL)
-			return 0 ;;
-		_*)
-			return 0 ;;
-	esac
-	return 1
-}
-
 parse()
 {
 	local x __vars=' ' __aliases=' ' CMDLINE_PARAMS=''
@@ -180,12 +169,10 @@ parse()
 	[ -z "$DEBUG" ] || QUIET=
 	STOP=",$STOP,"
 
-	showenv -q |
-	while read -r l; do
-		s="${l%%=*}"
-		[ -z "${s##*[!A-Za-z0-9_]*}" ] || ignored "$s" ||
-			printf 'export %s\n' "$l"
-	done > /.initrd/initenv
+	{
+		echo __initrd_initenv=1
+		environ -q -s -p 'export ' -u '_*,INITLOG_FILE,RUNLEVEL,runlevel,PWD,SHLVL'
+	} > /.initrd/initenv
 }
 
 action_shell 'Parsing cmdline arguments:' parse

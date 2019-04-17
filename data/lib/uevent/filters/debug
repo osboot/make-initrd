@@ -7,4 +7,4 @@
 mkdir -p -- "$debugdir"
 pid="$$"
 event="$(printf '%020d' "$pid")"
-showenv -q > "$debugdir/$event"
+environ -q > "$debugdir/$event"

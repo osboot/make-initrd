@@ -51,6 +51,7 @@ PUT_FILES += \
 	/sbin/lsmod \
 	/sbin/modprobe \
 	/sbin/start-stop-daemon \
+	/sbin/switch_root \
 	/usr/bin/logger \
 	/usr/bin/setsid \
 	/usr/bin/which \

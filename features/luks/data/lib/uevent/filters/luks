@@ -37,6 +37,6 @@ fi
 	exit 0
 
 event="$(make_event)"
-showenv -q > "$event"
+environ -q > "$event"
 echo "LUKS_ROOT='$devluks'" >> "$event"
 release_event luks "$event"

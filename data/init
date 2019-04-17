@@ -5,11 +5,7 @@
 
 # Save kernel environment and init arguments
 [ -f /.initrd/kernenv ] ||
-	/bin/showenv |
-	while read -r s; do
-		case "${s%%=*}" in (_|PWD|SHLVL) continue ;; esac
-		printf '%s\n' "$s"
-	done > /.initrd/kernenv
+	/bin/environ -q -u _,PWD,SHLVL > /.initrd/kernenv
 
 # Create storage for init environment
 :> /.initrd/initenv

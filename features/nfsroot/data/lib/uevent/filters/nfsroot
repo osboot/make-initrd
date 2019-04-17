@@ -10,5 +10,5 @@
 	exit 0
 
 event="$(make_event)"
-showenv -q > "$event"
+environ -q > "$event"
 release_event nfsroot "$event"

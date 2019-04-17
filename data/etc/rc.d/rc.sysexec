@@ -9,4 +9,4 @@
 msg "INIT: Running init ($INIT)"
 
 # Run system init with arguments. Goodbye!
-exec runas /sbin/init /bin/run-init -e /.initrd/kernenv "$rootmnt" "$INIT" "$@"
+exec runas /sbin/init /bin/environ -cf /.initrd/kernenv /sbin/switch_root "$rootmnt" "$INIT" "$@"
