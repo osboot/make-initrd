@@ -1,5 +1,8 @@
 #!/bin/sh -fu
 
+[ -d /.initrd ] ||
+	mkdir -p /.initrd
+
 # Save kernel environment and init arguments
 [ -f /.initrd/kernenv ] ||
 	/bin/showenv |
