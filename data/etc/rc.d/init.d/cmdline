@@ -101,7 +101,7 @@ __set_var()
 		*$VAR_S)
 			;;
 		*$VAR_N)
-			if ! shell_var_is_number "$v"; then
+			if [ -z "${v##*[!0-9]*}" ]; then
 				message "$n: $v: invalid number"
 				return 0
 			fi
