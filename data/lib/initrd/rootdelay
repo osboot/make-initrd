@@ -13,6 +13,6 @@ done
 	exit 0
 
 # Disallow console access
-[ "${PANIC-}" != 0 ] || reboot
+[ "${PANIC-}" != "0" ] || reboot -f
 
 echo "The waiting time expired!" > "$rdshell_fifo"
