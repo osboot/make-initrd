@@ -1,0 +1,5 @@
+#!/bin/sh -efu
+
+. guess-functions
+
+guess_feature "network"

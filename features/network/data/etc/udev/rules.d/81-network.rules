@@ -1,0 +1,1 @@
+SUBSYSTEM=="net", ACTION=="add", RUN+="/lib/uevent/filters/network"
