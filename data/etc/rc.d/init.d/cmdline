@@ -105,6 +105,7 @@ __set_var()
 				message "$n: $v: invalid number"
 				return 0
 			fi
+			v=$(( $v ))
 			;;
 		*$VAR_B)
 			if [ -n "$v" ]; then
