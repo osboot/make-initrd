@@ -336,10 +336,17 @@ export IFS='	'
 : >"$processed_files" >"$new_files"
 
 for n; do
+	if [ -z "$force" ] && [ ! -d "$n" ]; then
+		[ ! -h "$destdir/$n" ] && [ ! -e "$destdir/$n" ] ||
+			continue
+	fi
 	file_exists "$n"
 	print_canonicalize "$n"
 done |
 	xargs -0r "$0" > "$manifest"
+
+[ ! -e "$abortfile" ] ||
+	exit 1
 
 max_procs=${INITRD_COPY_PROCS:-7}
 
