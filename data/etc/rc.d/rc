@@ -87,7 +87,9 @@ for i in "$rcd"/S*; do
 	[ ! -f "$locksys/$subsys" ] ||
 		continue
 
+	ExecIfExecutable "/lib/initrd/pre/$subsys"
 	"$i" start
+	ExecIfExecutable "/lib/initrd/post/$subsys" "$?"
 done
 
 console_unlock

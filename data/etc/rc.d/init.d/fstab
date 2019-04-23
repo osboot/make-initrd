@@ -46,7 +46,6 @@ convert_dev()
 gen_fstab()
 {
 	local i=1 n dev path str s0 ndev
-
 	local have_sys='' have_run=''
 
 	for conf in /etc/fstab /etc/fstab.d/*.conf; do
