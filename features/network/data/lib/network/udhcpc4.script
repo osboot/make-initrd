@@ -64,7 +64,7 @@ env_to_configs()
 	echo ready > "$state"
 
 	[ "${#MTU}" = 0 ] ||
-		printf 'mtu %s\n' "$MTU" > "$dir/iplink$suffix"
+		printf 'set mtu %s\n' "$MTU" > "$dir/iplink$suffix"
 
 	[ "${#HOSTNAME}" = 0 ] ||
 		printf '%s\n' "$HOSTNAME" > "$dir/hostname$suffix"
@@ -78,7 +78,7 @@ env_to_configs()
 	if [ "${#ROUTER}" != 0 ]; then
 		metric=0
 		for n in $ROUTER; do
-			printf 'default via %s metric %s\n' "$n" "$metric"
+			printf 'add default via %s metric %s\n' "$n" "$metric"
 			metric=$(($metric + 1))
 		done > "$dir/ipv${V}route$suffix"
 	fi
