@@ -363,6 +363,10 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 	if (tracked_module(mod))
 		return;
 
+	if ((ret = kmod_module_get_info(mod, &list)) < 0)
+		error(EXIT_FAILURE, ret, "ERROR: Could not get information from '%s'",
+		      kmod_module_get_name(mod));
+
 	if (opts & SHOW_MODULES) {
 		int i = show_tree;
 
@@ -380,10 +384,6 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 		if (show_tree)
 			show_tree++;
 	}
-
-	if ((ret = kmod_module_get_info(mod, &list)) < 0)
-		error(EXIT_FAILURE, ret, "ERROR: Could not get information from '%s'",
-		      kmod_module_get_name(mod));
 
 	kmod_list_foreach(l, list)
 	{
@@ -471,6 +471,23 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 
 	kmod_module_unref_list(filtered);
 	kmod_module_unref_list(list);
+}
+
+static int
+is_filename(const char *path)
+{
+	struct stat sb;
+
+	if (strlen(path) < 2 || (path[1] != '/' && path[0] != '.' && path[0] != '/'))
+		return 1;
+
+	if (!strchr(path, '.'))
+		return 1;
+
+	if (stat(path, &sb) < 0 || !S_ISREG(sb.st_mode))
+		return 1;
+
+	return 0;
 }
 
 static const char cmdopts_s[]        = "k:b:f:tDMFPBVh";
@@ -604,7 +621,7 @@ main(int argc, char **argv)
 	free(module_dir);
 
 	for (i = optind; i < argc; i++) {
-		access(argv[i], F_OK)
+		is_filename(argv[i])
 		    ? depinfo_alias(ctx, argv[i])
 		    : depinfo_path(ctx, argv[i]);
 	}
