@@ -135,6 +135,9 @@ remove()
 	net_event "network.route.removed" "$NET_IF"
 }
 
+! is_loopback "$NET_IF" ||
+	exit 0
+
 case "$NET_EV_ACTION" in
 	update|remove) "$NET_EV_ACTION" ;;
 esac

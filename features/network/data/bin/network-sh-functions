@@ -133,6 +133,14 @@ is_set()
 		return 1
 }
 
+is_loopback()
+{
+	local state=0
+	{ read -r state < "/sys/class/net/$1/flags" ||:; } >/dev/null 2>&1
+
+	is_set "$state" "$IFF_LOOPBACK"
+}
+
 wait_for_link_up()
 {
 	local i=30
