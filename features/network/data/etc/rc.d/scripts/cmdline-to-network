@@ -122,6 +122,26 @@ route_to_var()
 	esac
 }
 
+ifname_to_var()
+{
+	local IFS=:
+
+	# format: ifname=<interface>:<macaddr>
+	set :$1
+
+	interface='' macaddr=''
+
+	case "$#" in
+		7)
+			interface="${1#:}"
+			macaddr="$2:$3:$4:$5:$6:$7"
+			;;
+		*)
+			fatal "syntax error: ifname must contain 7 components"
+			;;
+	esac
+}
+
 get_version()
 {
 	local i="${2-}"
@@ -138,6 +158,20 @@ while [ $i -lt ${NAMESERVER:-0} ]; do
 	OPTS="${OPTS#[}"
 	OPTS="${OPTS%]}"
 	printf 'nameserver %s\n' $OPTS >> /etc/resolv.conf
+	i=$(($i+1))
+done
+
+i=0
+while [ $i -lt ${IFNAME:-0} ]; do
+	eval "OPTS=\"\$IFNAME$i\""
+	ifname_to_var "$OPTS"
+
+	# udev requires MAC addresses to be lower case
+	macaddr="$(replace -s= '[A-Z]' '[a-z]' "$macaddr")"
+
+	printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", NAME="%s"\n' \
+		"$macaddr" "$interface" >> /etc/udev/rules.d/60-persistent-net.rules
+
 	i=$(($i+1))
 done
 
@@ -173,18 +207,19 @@ while [ $i -lt ${IP:-0} ]; do
 	esac
 
 	:> "$dir/options"
+	:> "$dir/iplink"
 
-	if [ "${#macaddr}" != 0 ] && [ "${#interface}" != 0 ]; then
-		macaddr="$(replace -s= '[A-Z]' '[a-z]' "$macaddr")"
-		printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", NAME="%s"\n' \
-			"$macaddr" "$interface" >> /etc/udev/rules.d/60-persistent-net.rules
-	fi
+	[ "${#macaddr}" = 0 ] || [ "${#interface}" = 0 ] ||
+		printf "set address %s\n" "$(replace -s= '[A-Z]' '[a-z]' "$macaddr")" >> "$dir/iplink"
+
+	[ -z "$mtu" ] ||
+		printf 'set mtu %s\n' "$mtu" >> "$dir/iplink"
+
+	[ -s "$dir/iplink" ] ||
+		rm -f -- "$dir/iplink"
 
 	[ -z "$hostname" ] ||
 		printf '%s\n' "$hostname" > "$dir/hostname"
-
-	[ -z "$mtu" ] ||
-		printf 'mtu %s\n' "$mtu" > "$dir/iplink"
 
 	mask=
 	if [ -n "$netmask" ]; then
