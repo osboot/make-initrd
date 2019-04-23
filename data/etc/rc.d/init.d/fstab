@@ -49,7 +49,10 @@ gen_fstab()
 
 	local have_sys='' have_run=''
 
-	[ ! -s /etc/fstab ] ||
+	for conf in /etc/fstab /etc/fstab.d/*.conf; do
+		[ -s "$conf" ] ||
+			continue
+
 		while read -r dev path str; do
 			[ -n "${dev##\#*}" ] && [ -z "${path##/*}" ] ||
 				continue
@@ -76,7 +79,8 @@ gen_fstab()
 			convert_dev ndev "$dev"
 
 			eval "local s$n=\"\$ndev \$rootmnt\$path \$str\""
-		done < /etc/fstab
+		done < "$conf"
+	done
 
 	if [ -n "${ROOT-}" ]; then
 		convert_dev ndev "$ROOT"
