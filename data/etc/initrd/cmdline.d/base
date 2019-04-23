@@ -6,6 +6,7 @@ register_parameter bool READONLY 1
 register_parameter bool RO
 register_parameter bool ROOTONLY
 register_parameter bool RW
+register_parameter bool RD_DEPMOD
 register_parameter bool RD_PRELOAD_MODULES 1
 register_parameter number IPTIMEOUT 30
 register_parameter number PANIC

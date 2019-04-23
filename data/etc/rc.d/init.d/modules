@@ -15,6 +15,9 @@
 
 . /.initrd/initenv
 
+[ -z "${RD_DEPMOD-}" ] ||
+	depmod -a
+
 [ -n "${RD_PRELOAD_MODULES-}" ] ||
 	exit 0
 
