@@ -135,6 +135,8 @@ get_version()
 i=0
 while [ $i -lt ${NAMESERVER:-0} ]; do
 	eval "OPTS=\"\$NAMESERVER$i\""
+	OPTS="${OPTS#[}"
+	OPTS="${OPTS%]}"
 	printf 'nameserver %s\n' $OPTS >> /etc/resolv.conf
 	i=$(($i+1))
 done
