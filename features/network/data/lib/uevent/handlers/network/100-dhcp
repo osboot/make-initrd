@@ -12,6 +12,12 @@ dhcp_number_packets=3
 
 handler()
 {
+	local state=0
+	{ read -r state < "/sys/class/net/$NET_IF/flags" ||:; } >/dev/null 2>&1
+
+	! is_set "$state" "$IFF_LOOPBACK" ||
+		return 0
+
 	local pidfile="/var/run/udcpc$ip_version.$NET_IF.pid"
 
 	case "$ev_action" in
