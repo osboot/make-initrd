@@ -34,6 +34,9 @@ MASK="${mask-}"
 MTU="${mtu-}"
 ROUTER="${router-}"
 
+# broadcast can be set only for IPv4 addresses
+[ "$V" = 4 ] || BROADCAST=
+
 dir="$net_autoconfdir/ifaces/$INTERFACE"
 statedir="$net_statedir/dhcp/$INTERFACE/ipv$V"
 state="$statedir/state"
