@@ -176,8 +176,7 @@ done
 
 i=0
 while [ $i -lt ${IP:-0} ]; do
-	eval "OPTS=\"\$IP$i\""
-	ip_to_var "$OPTS"
+	eval "ip_to_var \"\$IP$i\""
 
 	dir=
 	[ "${#interface}" != 0 ] &&
@@ -236,7 +235,7 @@ while [ $i -lt ${IP:-0} ]; do
 
 	if [ -n "$mask" ] && [ -n "$gw" ]; then
 		get_version "$gw" 4
-		printf 'add default via %s\n' "$gw" > "$dir/ipv${ip_version}route"
+		printf 'default via %s\n' "$gw" > "$dir/ipv${ip_version}route"
 	fi
 
 	[ -z "$dns1" ] && [ -z "$dns2" ] ||
@@ -246,18 +245,14 @@ while [ $i -lt ${IP:-0} ]; do
 done
 
 i=0
-while [ $i -lt ${ROURE:-0} ]; do
-	eval "OPTS=\"\$ROUTE$i\""
-	route_to_var "$OPTS"
+while [ $i -lt ${ROUTE:-0} ]; do
+	eval "route_to_var \"\$ROUTE$i\""
 
-	[ "${#interface}" != 0 ] &&
-		dir="$net_confdir/ifaces/$interface" ||
-		dir="$net_confdir/default"
-
+	dir="$net_confdir/ifaces/$interface"
 	mkdir -p -- "$dir"
 
 	get_version "$route_gw" 4
-	printf '%s\n' "add $route_mask${route_gw:+ via $route_gw}" >> "$dir/ipv${ip_version}route"
+	printf '%s\n' "$route_mask${route_gw:+ via $route_gw}" >> "$dir/ipv${ip_version}route"
 
 	i=$(($i+1))
 done
