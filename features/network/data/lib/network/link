@@ -12,7 +12,12 @@ update()
 		iface_state_changed "$NET_IF" "iplink" ||
 		return 0
 
-	cat_config "$confdir/iplink" ip_cmd link dev "$NET_IF" &&
+	__handler()
+	{
+		ip_cmd link "$@" dev "$NET_IF"
+	}
+
+	cat_config "$confdir/iplink" __handler &&
 		ip_cmd link set dev "$NET_IF" up ||
 		return 0
 
