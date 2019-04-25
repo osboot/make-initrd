@@ -102,22 +102,18 @@ route_to_var()
 		fi
 	done
 
-	# format: route=<net>/<netmask>:<gateway>[:<interface>]
+	# format: route=<net>/<netmask>:<gateway>:<interface>
 
 	route_mask='' route_gw='' interface=''
 
 	case "$#" in
-		2)
-			route_mask="$1"
-			route_gw="$2"
-			;;
 		3)
 			route_mask="$1"
 			route_gw="$2"
 			interface="$3"
 			;;
 		*)
-			return 1
+			fatal "syntax error: route must contain 3 components"
 			;;
 	esac
 }

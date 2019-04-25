@@ -12,10 +12,9 @@ Feature gives the ability to configure network interfaces in initrd.
 - `ip=<ipaddr>:[<peer>]:<gw>:<netmask>:<hostname>:<interface>:<autoconf>[:[<mtu>][:<macaddr>]]` describes the network configuration explicitly. If you want do define a IPv6 address, put it in brackets (e.g. `[2001:DB8::1]`). The `<peer>` is optional and is the address of the remote endpoint for pointopoint interfaces and it may be followed by a slash and a decimal number, encoding the network prefix length. Optionally set `<macaddr>` on the `<interface>`.
 - `ip=<ipaddr>:[<peer>]:<gw>:<netmask>:<hostname>:<interface>:<autoconf>[:[<dns1>][:<dns2>]]` another way to describe the network configuration explicitly.
 - `ifname=<interface>:<macaddr>` assigns network device name `<interface>` to the NIC with MAC `<macaddr>`.
-- `route=<net>/<netmask>:<gateway>[:<interface>]` adds a static route with route options, which are separated by a colon. IPv6 addresses have to be put in brackets. Example:
+- `route=<net>/<netmask>:<gateway>:<interface>` adds a static route with route options, which are separated by a colon. IPv6 addresses have to be put in brackets. Example:
 ```
     route=192.168.200.0/24:192.168.100.222:eth0
-    route=192.168.200.0/24:192.168.100.222
     route=192.168.200.0/24::eth0
     route=[2001:DB8:3::/8]:[2001:DB8:2::1]:eth0
 ```
