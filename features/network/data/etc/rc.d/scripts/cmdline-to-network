@@ -148,19 +148,22 @@ get_version()
 	ip_version=$i
 }
 
-i=0
-while [ $i -lt ${NAMESERVER:-0} ]; do
-	eval "OPTS=\"\$NAMESERVER$i\""
-	OPTS="${OPTS#[}"
-	OPTS="${OPTS%]}"
-	printf 'nameserver %s\n' $OPTS >> /etc/resolv.conf
-	i=$(($i+1))
-done
+if [ "${NAMESERVER:-0}" != 0 ]; then
+	printf '# cmdline nameservers start\n' > /etc/resolv.conf
+	i=0
+	while [ $i -lt ${NAMESERVER:-0} ]; do
+		eval "OPTS=\"\$NAMESERVER$i\""
+		OPTS="${OPTS#[}"
+		OPTS="${OPTS%]}"
+		printf 'nameserver %s\n' "$OPTS"
+		i=$(($i+1))
+	done >> /etc/resolv.conf
+	printf '# cmdline nameservers end\n' >> /etc/resolv.conf
+fi
 
 i=0
 while [ $i -lt ${IFNAME:-0} ]; do
-	eval "OPTS=\"\$IFNAME$i\""
-	ifname_to_var "$OPTS"
+	eval "ifname_to_var \"\$IFNAME$i\""
 
 	# udev requires MAC addresses to be lower case
 	macaddr="$(replace -s= '[A-Z]' '[a-z]' "$macaddr")"
