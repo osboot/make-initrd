@@ -188,6 +188,6 @@ action_shell 'Parsing cmdline arguments:' parse
 
 c=/etc/rc.d/scripts/cmdline-to-network
 if [ -x "$c" ]; then
-	[ "$IP" = 0 ] && [ "$ROUTE" = 0 ] && [ "$NAMESERVER" = 0 ] ||
+	[ "$IP" = 0 ] && [ "$ROUTE" = 0 ] && [ "$NAMESERVER" = 0 ] && [ "$IFNAME" = 0 ] ||
 		action 'Generating network configuration:' "$c"
 fi
