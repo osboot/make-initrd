@@ -37,6 +37,7 @@ ROUTER="${router-}"
 # broadcast can be set only for IPv4 addresses
 [ "$V" = 4 ] || BROADCAST=
 
+confdir="$net_confdir/ifaces/$INTERFACE"
 dir="$net_autoconfdir/ifaces/$INTERFACE"
 statedir="$net_statedir/dhcp/$INTERFACE/ipv$V"
 state="$statedir/state"
@@ -66,8 +67,13 @@ env_to_configs()
 	mkdir -p -- "$dir" "$statedir"
 	echo ready > "$state"
 
+	for n in "iplink" "ipv${V}address" "ipv${V}rule" "ipv${V}route" "hostname" "resolv.conf"; do
+		[ ! -f "$confdir/$n" ] ||
+			cp -f -- "$confdir/$n" "$dir/$n$suffix"
+	done
+
 	[ "${#MTU}" = 0 ] ||
-		printf 'set mtu %s\n' "$MTU" > "$dir/iplink$suffix"
+		printf 'set mtu %s\n' "$MTU" >> "$dir/iplink$suffix"
 
 	[ "${#HOSTNAME}" = 0 ] ||
 		printf '%s\n' "$HOSTNAME" > "$dir/hostname$suffix"
@@ -83,7 +89,7 @@ env_to_configs()
 		for n in $ROUTER; do
 			printf 'add default via %s metric %s\n' "$n" "$metric"
 			metric=$(($metric + 1))
-		done > "$dir/ipv${V}route$suffix"
+		done >> "$dir/ipv${V}route$suffix"
 	fi
 
 	if [ "${#DOMAINS}" != 0 ] || [ "${#DNS}" != 0 ]; then
