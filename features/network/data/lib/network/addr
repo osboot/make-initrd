@@ -16,7 +16,7 @@ update()
 		[ "$ip_version" != 6 ] ||
 			load_ipv6
 
-		[ -d "/proc/sys/net/ipv$ip_version" ] &&
+		ipv${ip_version}_enabled &&
 			iface_state_changed "$NET_IF" "ipv${ip_version}address" ||
 			continue
 

@@ -64,8 +64,7 @@ resolvconf_update()
 
 env_to_configs()
 {
-	mkdir -p -- "$dir" "$statedir"
-	echo ready > "$state"
+	mkdir -p -- "$dir"
 
 	for n in "iplink" "ipv${V}address" "ipv${V}rule" "ipv${V}route" "hostname" "resolv.conf"; do
 		[ ! -f "$confdir/$n" ] ||
@@ -118,10 +117,14 @@ case "$STATE" in
 		gen_net_event "$dir/ipv${V}route" "network.route.update"
 		gen_net_event "$dir/resolv.conf" "network.resolvconf.update"
 		gen_net_event "$dir/hostname" "network.hostname.update"
+		mkdir -p -- "$statedir"
+		echo ready > "$state"
 		;;
 	bound)
 		suffix=
 		env_to_configs
+		mkdir -p -- "$statedir"
+		echo ready > "$state"
 		;;
 	leasefail)
 		mkdir -p -- "$statedir"

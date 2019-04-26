@@ -103,7 +103,7 @@ update()
 		return 0
 
 	for v in 4 6; do
-		[ -d "/proc/sys/net/ipv$v" ] ||
+		ipv${v}_enabled ||
 			continue
 		for n in route rule; do
 			if iface_state_changed "$NET_IF" "ipv$v$n"; then

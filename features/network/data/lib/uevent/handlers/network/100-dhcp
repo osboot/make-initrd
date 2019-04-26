@@ -9,59 +9,71 @@
 message_time=1
 dhcp_packets_pause=5
 dhcp_number_packets=3
+piddir=/var/run
+
+need_dhcp()
+{
+	local n
+	for n in "ifaces/$NET_IF" "default"; do
+		[ ! -e "$net_confdir/$n/ipv${ip_version}dhcp" ] ||
+			return 0
+	done
+	return 1
+}
+
+run_dhcp()
+{
+	local pidfile="$piddir/udhcpc$ip_version.$NET_IF.pid"
+
+	[ ! -f "$pidfile" ] && need_dhcp ||
+		return 1
+
+	[ "$ip_version" != 6 ] ||
+		load_ipv6
+
+	ipv${ip_version}_enabled ||
+		return 1
+
+	if ! is_link_up "$NET_IF"; then
+		message "$NET_IF: trying to obtain configuration from dhcp ..."
+
+		ip_cmd link set dev "$NET_IF" up ||:
+
+		wait_for_link_up "$NET_IF" ||
+			fatal "$NET_IF: could not bring interface up (timeout)"
+	fi
+
+	set -- "$1" -v -n \
+		-i "$NET_IF" \
+		-t "$dhcp_number_packets" \
+		-T "$dhcp_packets_pause" \
+		-s "/lib/network/udhcpc$ip_version.script" \
+		-p "$pidfile"
+
+	message "run: $*"
+
+	"$@" >>"/var/log/udhcpc$ip_version.$NET_IF.log" 2>&1 &
+}
 
 handler()
 {
 	! is_loopback "$NET_IF" ||
 		return 0
 
-	local pidfile="/var/run/udcpc$ip_version.$NET_IF.pid"
-
 	case "$ev_action" in
 		update)
-			local states=
-
+			states=
 			for ip_version in 4 6; do
-				need_dhcp=
-				for dir in "$net_confdir/ifaces/$NET_IF" "$net_confdir/default"; do
-					[ ! -e "$dir/ipv${ip_version}dhcp" ] ||
-						need_dhcp=1
-				done
-
-				[ -n "$need_dhcp" ] ||
-					continue
-
-				[ "$ip_version" != 6 ] ||
-					load_ipv6
-
-				[ ! -d "/proc/sys/net/ipv$ip_version" ] || [ -f "$pidfile" ] ||
+				case "$ip_version" in
+					4) cmd=udhcpc ;;
+					6) cmd=udhcpc6 ;;
+				esac
+				! run_dhcp "$cmd" ||
 					states="$states $ip_version"
 			done
 
 			[ -n "$states" ] ||
 				return 0
-
-			message "$NET_IF: trying to obtain configuration from dhcp ..."
-
-			ip_cmd link set dev "$NET_IF" up ||:
-			wait_for_link_up "$NET_IF" ||
-				fatal "$NET_IF: could not bring interface up (timeout)"
-
-			for v in $states; do
-				case "$v" in
-					4) cmd=udhcpc ;;
-					6) cmd=udhcpc6 ;;
-				esac
-				set -- $cmd -v -n \
-					-i "$NET_IF" \
-					-t "$dhcp_number_packets" \
-					-T "$dhcp_packets_pause" \
-					-s "/lib/network/udhcpc$v.script" \
-					-p "$pidfile"
-
-				message "run: $*"
-				"$@" >>"/var/log/udhcpc$v.$NET_IF.log" 2>&1 &
-			done
 
 			secs=$((1 + ($dhcp_number_packets * $dhcp_packets_pause) ))
 			message "$NET_IF: waiting $secs seconds for configuration by dhcp ..."
@@ -81,8 +93,8 @@ handler()
 			;;
 		remove)
 			for ip_version in 4 6; do
-				local pid=
-				{ read -r pid < "$pidfile" ||:; } >/dev/null 2>&1
+				pid=
+				{ read -r pid < "$piddir/udhcpc$ip_version.$NET_IF.pid" ||:; } >/dev/null 2>&1
 
 				[ -z "$pid" ] ||
 					kill "$pid" 2>/dev/null ||:
