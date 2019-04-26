@@ -16,11 +16,16 @@
 . initrd-sh-functions
 
 load_modules() {
-	local m
+	local modname args
 	# shellcheck disable=SC2162
 	[ ! -e /etc/initrd/modules-"$1" ] ||
-	while read m; do
-		[ -z "${m##\#*}" ] || modprobe $m
+	while read modname args; do
+		[ -n "${modname##\#*}" ] ||
+			continue
+		check="/lib/initrd/kmodules/check-$modname"
+		[ ! -x "$check" ] || "$check" ||
+			continue
+		modprobe "$modname" $args ||:
 	done < /etc/initrd/modules-"$1" 2>"/var/log/udev-$1.log"
 }
 

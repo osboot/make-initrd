@@ -48,8 +48,10 @@ for n in $modules_list; do
 	add-module "$n"
 	printf '%s\n' "$n" >> "$rootdir/$modules_file"
 
-	[ -z "$modules_check" ] ||
-		cp -a -- "$modules_check" "$rootdir/scripts/kmodules/check-$n"
+	if [ -n "$modules_check" ]; then
+		mkdir -p -- "$rootdir/lib/initrd/kmodules"
+		cp -a -- "$modules_check" "$rootdir/lib/initrd/kmodules/check-$n"
+	fi
 done
 
 [ ! -s "$workdir/list" ] ||

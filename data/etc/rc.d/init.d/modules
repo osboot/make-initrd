@@ -25,12 +25,17 @@
 
 preload_modules()
 {
-	local conf modname rc=0
+	local check conf modname rc=0
 	for conf in /etc/modules-load.d/*.conf /run/modules-load.d/*.conf /lib/modules-load.d/*.conf /etc/initrd/modules-preudev; do
 		# shellcheck disable=SC2162
 		[ ! -e "$conf" ] ||
-		while read modname; do
-			[ -z "${modname##\#*}" ] || modprobe $modname || rc=1
+		while read modname args; do
+			[ -n "${modname##[\#;]*}" ] ||
+				continue
+			check="/lib/initrd/kmodules/check-$modname"
+			[ ! -x "$check" ] || "$check" ||
+				continue
+			modprobe "$modname" $args || rc=1
 		done < "$conf"
 	done 2>"/var/log/preload-modules.log"
 	return $rc
