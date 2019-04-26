@@ -31,6 +31,14 @@ while ! console_lock; do
 	sleep 0.5
 done
 
+run_scripts() {
+	local s n="$1"
+	shift
+	for s in /lib/initrd/all/* /lib/initrd/"$n"/*; do
+		ExecIfExecutable "$s" "$@"
+	done
+}
+
 # First, run the KILL scripts.
 for i in "$rcd"/K*; do
 	[ -x "$i" ] ||
@@ -42,7 +50,12 @@ for i in "$rcd"/K*; do
 	[ -f "$locksys/$subsys" ] ||
 		continue
 
+	run_scripts "pre/$subsys" stop "$subsys"
+
 	"$i" stop
+	rc="$?"
+
+	run_scripts "post/$subsys" stop "$subsys" "$rc"
 done
 
 # Now run the START scripts.
@@ -87,9 +100,12 @@ for i in "$rcd"/S*; do
 	[ ! -f "$locksys/$subsys" ] ||
 		continue
 
-	ExecIfExecutable "/lib/initrd/pre/$subsys"
+	run_scripts "pre/$subsys" start "$subsys"
+
 	"$i" start
-	ExecIfExecutable "/lib/initrd/post/$subsys" "$?"
+	rc="$?"
+
+	run_scripts "post/$subsys" start "$subsys" "$rc"
 done
 
 console_unlock
