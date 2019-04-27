@@ -7,9 +7,7 @@ MULTIPATH_PRELOAD = \
 	scsi_dh_emc \
 	scsi_dh_rdac
 
-MULTIPATH_MODULES = \
-	scsi_dh scsi_dh_alua scsi_dh_emc \
-	scsi_dh_hp_sw scsi_dh_rdac
+MULTIPATH_PATTERN_SET = name:^scsi_dh
 
 MULTIPATH_BIN     = /sbin/multipath /sbin/kpartx /lib/udev/kpartx_id
 MULTIPATH_CONF    = /etc/multipath.conf /etc/multipath
