@@ -1,0 +1,85 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            console
+# Required-Start:
+# Should-Start:        $local_fs
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Sets up a localised console.
+# Description:         Sets up fonts and language settings for the user's
+#                      local as defined by /etc/sysconfig/console.
+# X-LFS-Provided-By:   LFS
+### END INIT INFO
+
+[ "$1" = start ] || exit 0
+
+. /etc/init.d/functions
+. shell-var
+
+[ ! -r /etc/sysconfig/console ] ||
+	. /etc/sysconfig/console
+
+foreach_ttys()
+{
+	local t
+	for t in $CONSOLE_TTYS; do
+		t="/dev/tty$t"
+		[ ! -c "$t" ] || "$@" "$t"
+	done
+
+	[ -z "$CONSOLE_TTYS" ] || return 0
+
+	for t in /dev/tty[0-9]*; do
+		[ ! -c "$t" ] || "$@" "$t"
+	done
+}
+
+setsysfont()
+{
+	:>>"$1"
+	setfont -C "$1" "$CONSOLE_FONT" ${CONSOLE_FONT_UNIMAP:+-u "$CONSOLE_FONT_UNIMAP"}
+}
+
+setsyskeymap()
+{
+	:>>"$1"
+
+	# Set the keyboard driver in Unicode mode
+	kbd_mode -u -C "$1"
+
+	# Tell the console output driver that the bytes arriving are UTF-8
+	# encoded multibyte sequences.
+	printf '\033%%G' >> "$1"
+
+	[ "$CONSOLE_KEYMAP" = "bogus" ] ||
+		loadkeys -C "$1" "$CONSOLE_KEYMAP"
+
+	local FILE
+
+	[ "$CONSOLE_BACKSPACE" = "BackSpace" ] &&
+		FILE="backspace.inc" ||
+		FILE="delete.inc"
+
+	loadkeys -C "$1" "$FILE"
+
+	[ -z "$CONSOLE_GRP_TOGGLE" ] ||
+		loadkeys -C "$1" "$CONSOLE_GRP_TOGGLE.inc"
+}
+
+if ! shell_var_is_no "$FRAMEBUFFER_ENABLE"; then
+	FBSET=/usr/sbin/fbset
+
+	[ -z "$FRAMEBUFFER_MODULE" ] ||
+		action "Loading framebuffer module: $FRAMEBUFFER_MODULE" modprobe "$FRAMEBUFFER_MODULE"
+
+	[ -z "$FRAMEBUFFER_MODE" ] || [ ! -x "$FBSET" ] ||
+		action "Setting framebuffer device settings:" "$FBSET" -a "$FRAMEBUFFER_MODE"
+fi
+
+[ -z "$CONSOLE_FONT" ] ||
+	action_shell "Loading font: $CONSOLE_FONT" foreach_ttys setsysfont
+
+[ -z "$CONSOLE_KEYMAP" ] ||
+	action_shell "Loading keymap: $CONSOLE_KEYMAP" foreach_ttys setsyskeymap

@@ -1,16 +1,15 @@
 KBD_DATADIR = $(FEATURESDIR)/kbd/data
 
-KBD_FONTS_DIR   = /lib/kbd/consolefonts
-KBD_KEYMAPS_DIR = /lib/kbd/keymaps
+KBD_DATA_DIR   ?= /lib/kbd
+KBD_FONTS_DIR   = $(KBD_DATA_DIR)/consolefonts
+KBD_UNIMAPS_DIR = $(KBD_DATA_DIR)/unimaps
+KBD_KEYMAPS_DIR = $(KBD_DATA_DIR)/keymaps
 
 KBD_FILES = \
 	/bin/kbd_mode \
 	/bin/setfont \
 	/bin/loadkeys \
-	$(KBD_KEYMAPS_DIR)/i386 \
-	$(KBD_KEYMAPS_DIR)/include \
-	$(KBD_FONTS_DIR)
+	$(wildcard /usr/[s]bin/fbset)
 
-KBD_CONFIGS = \
-	/etc/sysconfig/consolefont \
-	/etc/sysconfig/keyboard
+KBD_FRAMEBUFFER_MODULE = uvesafb
+KBD_FRAMEBUFFER_MODE   = 800x600-80
