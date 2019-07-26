@@ -1,0 +1,8 @@
+#!/bin/sh -efu
+
+. guess-functions
+
+! grep -qs -E '^[[:space:]]*(KEYTABLE|SYSFONT)=' \
+		/etc/sysconfig/consolefont \
+		/etc/sysconfig/keyboard ||
+	guess_feature kbd
