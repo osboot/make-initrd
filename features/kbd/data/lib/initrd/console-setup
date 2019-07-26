@@ -1,0 +1,47 @@
+#!/bin/sh -efu
+
+exec >> "/var/log/console-setup.log" 2>&1
+
+. shell-error
+. /etc/sysconfig/console
+
+if [ -n "$CONSOLE_TTYS" ]; then
+	found=
+
+	for t in $CONSOLE_TTYS; do
+		t="/dev/tty$t"
+		[ ! -c "$t" ] || [ "$t" != "$DEVNAME" ] || found=1
+	done
+
+	[ -n "$found" ] ||
+		exit 0
+else
+	[ -n "${DEVNAME##/dev/ttyS*}" ] ||
+		exit 0
+fi
+
+message "$DEVNAME: Setup ..."
+:>>"$DEVNAME"
+
+if [ -n "$CONSOLE_FONT" ]; then
+	message "$DEVNAME: Loading font $CONSOLE_FONT ..."
+	setfont -C "$DEVNAME" "$CONSOLE_FONT" ${CONSOLE_FONT_UNIMAP:+-u "$CONSOLE_FONT_UNIMAP"}
+fi
+
+message "$DEVNAME: Setting the keyboard driver in Unicode mode ..."
+kbd_mode -u -C "$DEVNAME"
+
+# Tell the console output driver that the bytes arriving are UTF-8
+# encoded multibyte sequences.
+printf '\033%%G' >> "$DEVNAME"
+
+[ "$CONSOLE_BACKSPACE" = "BackSpace" ] &&
+	FILE="backspace.inc" ||
+	FILE="delete.inc"
+
+if [ "$CONSOLE_KEYMAP" != "bogus" ]; then
+	message "$DEVNAME: Loading keymap $CONSOLE_KEYMAP, $FILE${CONSOLE_GRP_TOGGLE:+, $CONSOLE_GRP_TOGGLE.inc} ..."
+	loadkeys -C "$DEVNAME" "$CONSOLE_KEYMAP" "$FILE" ${CONSOLE_GRP_TOGGLE:+"$CONSOLE_GRP_TOGGLE.inc"}
+fi
+
+message "$DEVNAME: Setup done"

@@ -8,8 +8,6 @@ KBD_KEYMAPS_DIR = $(KBD_DATA_DIR)/keymaps
 KBD_FILES = \
 	/bin/kbd_mode \
 	/bin/setfont \
-	/bin/loadkeys \
-	$(wildcard /usr/[s]bin/fbset)
+	/bin/loadkeys
 
-KBD_FRAMEBUFFER_MODULE = uvesafb
-KBD_FRAMEBUFFER_MODE   = 800x600-80
+KBD_TTYS = '0 1 2 3 4 5 6 12'
