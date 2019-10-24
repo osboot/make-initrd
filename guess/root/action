@@ -32,7 +32,7 @@ process_mpoint() {
 	local t_fsname='' t_fstype=''
 
 	for f in "${FSTAB:-/etc/fstab}" "${PROC_MOUNTS:-$PROCFS_PATH/mounts}"; do
-		[ -f "$f" ] ||
+		[ -L "$f" ] || [ -f "$f" ] ||
 			continue
 
 		local fsname fsdir fstype opts freq passno
