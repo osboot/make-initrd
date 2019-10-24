@@ -51,9 +51,31 @@ guess_device() {
 	done
 }
 
-modalias() {
-	[ -f "$SYSFS_PATH$1"/modalias ] ||
+# mmc_block module does not have a "modalias" file in the sysfs,
+# but it has "MODALIAS=mmc:block" in the "uevent" file.
+uevent_modalias() {
+	[ -f "$SYSFS_PATH$1"/uevent ] ||
 		return 0
+
+	local string eof
+
+	eof=
+	while [ -z "$eof" ]; do
+		string=
+		read -r string ||
+			eof=1
+		[ -n "$string" ] ||
+			continue
+		[ -n "${string##MODALIAS=*}" ] ||
+			guess_modalias "${string#MODALIAS=}"
+	done < "$SYSFS_PATH$1"/uevent
+}
+
+modalias() {
+	if [ ! -f "$SYSFS_PATH$1"/modalias ]; then
+		uevent_modalias "$1"
+		return $?
+	fi
 	local alias=
 	readline alias "$SYSFS_PATH$1"/modalias
 	[ -z "$alias" ] || guess_modalias "$alias"
