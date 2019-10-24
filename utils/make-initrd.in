@@ -8,6 +8,7 @@ PROG="${0##*/}"
 TEMPDIR=
 BOOTDIR="@BOOTDIR@"
 SYSFS_PATH="${SYSFS_PATH:-/sys}"
+PROCFS_PATH="${PROCFS_PATH:-/proc}"
 KERNEL="$(uname -r)"
 VERBOSE=
 no_depmod=
@@ -176,10 +177,10 @@ if [ -z "$no_checks" ]; then
 	[ -e "/dev/null" ] ||
 		fatal "/dev: Not available"
 
-	[ -r "/proc/mounts" ] ||
-		fatal "/proc/mounts: Not readable"
+	[ -r "$PROCFS_PATH/mounts" ] ||
+		fatal "$PROCFS_PATH/mounts: Not readable"
 
-	grep -qs " $SYSFS_PATH sysfs " /proc/mounts ||
+	grep -qs " $SYSFS_PATH sysfs " "$PROCFS_PATH/mounts" ||
 		fatal "$SYSFS_PATH: Not mounted"
 else
 	export IGNORE_PRIV_CHECKS=1

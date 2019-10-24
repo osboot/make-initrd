@@ -34,6 +34,7 @@ STATEDIR	?= @STATEDIR@
 BOOTDIR		?= /boot
 SYSCONFDIR	?= /etc
 SYSFS_PATH	?= /sys
+PROCFS_PATH	?= /proc
 
 PATH		= $(UTILSDIR):$(TOOLSDIR):$(shell echo $$PATH)
 
@@ -54,7 +55,7 @@ ARCH			?= $(shell uname -m)
 LIBNAME			?= $(shell getconf SLIB)
 
 FSTAB			?= /etc/fstab
-PROC_MOUNTS		?= /proc/mounts
+PROC_MOUNTS		?= $(PROCFS_PATH)/mounts
 MOUNTPOINTS		?= /
 DEVICES			?=
 DISABLE_FEATURES	?= systemd

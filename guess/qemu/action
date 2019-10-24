@@ -31,7 +31,7 @@ find_qemu() {
 ! grep -qs 'linux,dummy-virt' "$SYSFS_PATH"/firmware/devicetree/base/compatible ||
 	found
 
-! grep -qsi 'QEMU' /proc/cpuinfo ||
+! grep -qsi 'QEMU' "$PROCFS_PATH"/cpuinfo ||
 	found
 
 ! (lspci -vv |grep -qsi 'QEMU') 2>/dev/null ||

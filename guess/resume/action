@@ -4,7 +4,7 @@
 . guess-functions
 
 cmdline=
-readline cmdline /proc/cmdline
+readline cmdline "$PROCFS_PATH/cmdline"
 
 resume=
 for x in $cmdline; do

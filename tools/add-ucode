@@ -21,7 +21,7 @@ if [ -z "$cpu_vendor" ]; then
 		-e '1,/^processor[[:cntrl:]]\:.*/ d' \
 		-e '/^model[[:space:]]+[[:cntrl:]]\:.*/,$ d' \
 		-e 's/.*[[:cntrl:]]\:[[:space:]](.*)/\1/ip' \
-		/proc/cpuinfo
+		"$PROCFS_PATH/cpuinfo"
 	)"
 	if [ -n "$cpu" ]; then
 		cpu_vendor="${cpu%%

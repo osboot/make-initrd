@@ -9,7 +9,7 @@ process_mpoint() {
 	local mpoint="$1"
 	local t_fsname='' t_fstype='' t_opts=''
 
-	for f in "${FSTAB:-/etc/fstab}" "${PROC_MOUNTS:-/proc/mounts}"; do
+	for f in "${FSTAB:-/etc/fstab}" "${PROC_MOUNTS:-$PROCFS_PATH/mounts}"; do
 		[ -f "$f" ] ||
 			continue
 
