@@ -17,10 +17,8 @@ bin_PROGS = \
 	$(out_bindir)/environ
 
 sbin_PROGS = \
-	$(out_sbindir)/ueventd \
 	$(out_sbindir)/monotonic-timestamp
 
-ueventd_SRCS = ueventd.c uevent-epoll.c uevent-logging.c uevent-pidfile.c uevent-worker.c
 monotonic_timestamp_SRCS = monotonic-timestamp.c
 halt_SRCS = halt.c
 replace_SRCS = replace.c
@@ -39,9 +37,6 @@ include $(TOPDIR)/Makefile.common
 prepare:
 	$(MKDIR_P) -- $(out_bindir)
 	$(MKDIR_P) -- $(out_sbindir)
-
-$(out_sbindir)/ueventd: prepare $(call get_objects,ueventd)
-	$(LINK) $(realpath $^) -o $@
 
 $(out_sbindir)/monotonic-timestamp: prepare $(call get_objects,monotonic_timestamp)
 	$(LINK) $(realpath $^) -o $@

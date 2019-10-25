@@ -1,0 +1,129 @@
+#!/bin/sh -eu
+
+. shell-error
+. shell-signal
+
+. /.initrd/initenv
+. uevent-sh-functions
+
+pidfile="/var/run/$PROG.pid"
+logfile="/var/log/$PROG.log"
+inotifyd='/sbin/inotifyd'
+
+UEVENT_MODE="${UEVENT_MODE:-server}"
+
+if [ "$UEVENT_MODE" = 'server' ]; then
+	exec >"$logfile" 2>&1
+
+	message "Starting server ..."
+
+	[ -d "$filterdir" ] ||
+		fatal "$filterdir: bad directory"
+
+	echo "$$" > "$pidfile"
+
+	exit_handler()
+	{
+		local d rc="$?"
+		trap - EXIT
+		for d in "$filterdir"/*; do
+			[ ! -d "$d" ] || [ ! -f "$d.pid" ] ||
+				rm -f -- "$d.pid"
+		done
+		[ ! -f "$pidfile" ] ||
+			rm -f -- "$pidfile"
+		exit $rc
+	}
+	set_cleanup_handler exit_handler
+
+	export UEVENT_MODE='queue-processor'
+
+	for d in "$filterdir"/*; do
+		[ ! -d "$d" ] || "$0" "n" "${d%/*}" "${d##*/}"
+	done
+
+	"$inotifyd" "$0" "$pidfile:x" "$filterdir:nd" &
+	wait
+
+	exit 0
+fi
+
+evtype="$1"
+name="${3-}"
+event="$2${name:+/$name}"
+
+if [ "$UEVENT_MODE" = 'queue-processor' ]; then
+	case "$evtype" in
+		n)
+			[ -d "$event" ] && [ -n "${name##.*}" ] ||
+				exit 0
+
+			export UEVENT_MODE='queue-handler'
+			export QUEUE="$name"
+
+			message "$QUEUE: Starting sub-process ..."
+
+			mkdir -p -- "$ueventdir/$QUEUE"
+
+			:> "$event.pid"
+			"$inotifyd" "$0" "$pidfile:x" "$event.pid:x" "$event:ny" &
+			echo "$!" >"$event.pid"
+			;;
+		d)
+			[ ! -d "$event" ] || [ ! -f "$event.pid" ] ||
+				rm -f -- "$event.pid"
+			;;
+		x)
+			kill "$PPID"
+			;;
+	esac
+	exit 0
+fi
+
+[ "$UEVENT_MODE" = 'queue-handler' ] ||
+	fatal "unexpected mode: $UEVENT_MODE"
+
+if [ "$evtype" = 'x' ]; then
+	kill "$PPID"
+	exit 0
+fi
+
+glob()
+{
+	[ -e "$1" ]
+}
+
+glob "$2"/* || exit 0
+
+queuedir="$ueventdir/$QUEUE"
+mv -f -- "$2"/* "$queuedir" 2>/dev/null || exit 0
+
+message "$QUEUE: Processing events ..."
+
+get_name()
+{
+	[ -x "$fn" ] || return 1
+	name="${fn##*/}"
+	name="${name#[0-9][0-9][0-9]-}"
+}
+
+for fn in "$handlerdir/$QUEUE"/*; do
+	get_name || continue
+
+	message "$QUEUE: Running queue-specific $name handler ..."
+	"$fn" "$queuedir" || message "$QUEUE: Event handler failed: $name"
+done
+
+for fn in "$handlerdir"/*; do
+	get_name && glob "$queuedir/$name".* || continue
+
+	message "$QUEUE: Running $name handler ..."
+	"$fn" || message "$QUEUE: Event handler failed: $name"
+done
+
+for fn in "$extendir"/*; do
+	get_name || continue
+
+	message "$QUEUE: Running $name extender ..."
+	"$fn" || message "$QUEUE: Extender failed: $name"
+done

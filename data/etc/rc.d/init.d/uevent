@@ -16,21 +16,16 @@
 
 NAME=ueventd
 PIDFILE=/var/run/$NAME.pid
-ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE"
+ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --displayname $NAME"
 
 start() {
-	start_daemon $ARGS -- \
-		"$NAME" \
-		    ${RDUEVENT_TIMEOUT:+--timeout=$RDUEVENT_TIMEOUT} \
-		    --pidfile "$PIDFILE" \
-		    --logfile "/var/log/$NAME.log" \
-		    "$filterdir" /sbin/uevent-handler
+	start_daemon --background $ARGS -- "$NAME"
 	RETVAL=$?
 	return $RETVAL
 }
 
 stop() {
-	stop_daemon $ARGS -- "$NAME"
+	stop_daemon $ARGS -- /bin/sh "$NAME"
 	RETVAL=$?
 	return $RETVAL
 }

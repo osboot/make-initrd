@@ -2,15 +2,18 @@
 
 . shell-error
 
-ueventd_pid=
-debugdir='/.initrd/udev-events'
-filterdir='/.initrd/uevent-udev'
-eventdir='/.initrd/uevent-events'
+debugdir='/.initrd/uevent/debug'
+filterdir='/.initrd/uevent/queues'
+ueventdir='/.initrd/uevent/events'
+
+# backward compatibility
+eventdir='/.initrd/uevent/events/udev'
+
 extendir='/lib/uevent/extenders'
 handlerdir='/lib/uevent/handlers'
 
 make_event() {
-	mktemp "$filterdir/.tmp/.XXXXXXXXX"
+	mktemp "$filterdir/${1:-udev}/.tmp/.XXXXXXXXX"
 }
 
 publish_event() {
