@@ -120,10 +120,3 @@ for fn in "$handlerdir"/*; do
 	message "$QUEUE: Running $name handler ..."
 	"$fn" || message "$QUEUE: Event handler failed: $name"
 done
-
-for fn in "$extendir"/*; do
-	get_name || continue
-
-	message "$QUEUE: Running $name extender ..."
-	"$fn" || message "$QUEUE: Extender failed: $name"
-done

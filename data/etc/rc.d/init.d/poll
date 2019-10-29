@@ -1,0 +1,34 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            poll
+# Required-Start:      cmdline
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   The process for periodically starting scripts.
+# Description:         The process for periodically starting scripts.
+# X-LFS-Provided-By:   LFS
+### END INIT INFO
+
+. /etc/init.d/template
+
+NAME=polld
+PIDFILE="/var/run/$NAME.pid"
+ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --name $NAME --displayname $NAME"
+
+start() {
+	start_daemon --background $ARGS "$NAME"
+	RETVAL=$?
+	return $RETVAL
+}
+
+stop() {
+	stop_daemon $ARGS "$NAME"
+	RETVAL=$?
+	[ ! -f "$PIDFILE" ] || rm -f -- "$PIDFILE"
+	return $RETVAL
+}
+
+switch "${1-}"

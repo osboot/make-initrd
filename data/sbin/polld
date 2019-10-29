@@ -1,0 +1,38 @@
+#!/bin/sh -eu
+
+. shell-error
+. shell-signal
+
+. /.initrd/initenv
+. uevent-sh-functions
+
+pidfile="/var/run/$PROG.pid"
+
+exit_handler()
+{
+	local rc="$?"
+	trap - EXIT
+	rm -f -- "$pidfile"
+	exit $rc
+}
+
+[ ! -f "$pidfile" ] ||
+	fatal "already running"
+
+set_cleanup_handler exit_handler
+echo "$$" >"$pidfile"
+
+exec >"/var/log/$PROG.log" 2>&1
+
+while [ -f "$pidfile" ]; do
+	for fn in "$extendir"/*; do
+		[ -x "$fn" ] || continue
+		name="${fn##*/}"
+		name="${name#[0-9][0-9][0-9]-}"
+
+		message "Running $name extender ..."
+		"$fn" || message "Extender failed: $name"
+	done
+
+	sleep 0.1
+done
