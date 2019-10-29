@@ -8,7 +8,7 @@
 . uevent-sh-functions
 . rdshell-sh-functions
 
-[ -z "${ROOTFS_FOUND-}" ] && [ -z "${RDSHELL-}" ] && console_inactive && have_mountpoints && have_rootfs ||
+[ -z "${ROOTFS_FOUND-}" ] && console_inactive && have_mountpoints && have_rootfs ||
 	exit 0
 
 echo ROOTFS_FOUND=1 >> /.initrd/initenv
