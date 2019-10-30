@@ -23,6 +23,7 @@ set_cleanup_handler exit_handler
 echo "$$" >"$pidfile"
 
 exec >"/var/log/$PROG.log" 2>&1
+message "Starting server ..."
 
 while [ -f "$pidfile" ]; do
 	for fn in "$extendir"/*; do
@@ -33,6 +34,11 @@ while [ -f "$pidfile" ]; do
 		message "Running $name extender ..."
 		"$fn" || message "Extender failed: $name"
 	done
+
+	if { read -r method < /etc/initrd/method; } >/dev/null 2>&1; then
+		d="/lib/poll/method/$method"
+		[ ! -x "$d/check" ] || ! ( . "$d/check" ) || ( . "$d/action" ) ||:
+	fi
 
 	sleep 0.1
 done

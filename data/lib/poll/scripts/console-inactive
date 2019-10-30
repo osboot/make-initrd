@@ -1,0 +1,6 @@
+#!/bin/sh
+
+. rdshell-sh-functions
+
+console_inactive ||
+	exit

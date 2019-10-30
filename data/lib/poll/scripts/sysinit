@@ -1,0 +1,7 @@
+#!/bin/sh
+
+. shell-error
+. /.initrd/initenv
+
+[ -e "$rootmnt/$INIT" ] ||
+	fatal "Unable to mount root"
