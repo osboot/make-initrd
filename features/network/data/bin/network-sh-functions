@@ -66,16 +66,16 @@ tac_config()
 
 iface_state_changed()
 {
-	set -- "$confdir/ifaces/$1/$2" "$net_statedir/ifaces/$1/$2"
+	set -- "$confdir/$2" "$net_statedir/ifaces/$1/$2"
 	[ ! -e "$1" ] || [ ! -e "$2" ] || ! cmp -s "$1" "$2"
 }
 
 add_iface_state()
 {
-	[ -e "$confdir/ifaces/$1/$2" ] ||
+	[ -e "$confdir/$2" ] ||
 		return 0
-	mkdir -p -- "$confdir/state/$1"
-	cp -f -- "$confdir/ifaces/$1/$2" "$net_statedir/ifaces/$1/"
+	mkdir -p -- "$net_statedir/ifaces/$1"
+	cp -f -- "$confdir/$2" "$net_statedir/ifaces/$1/"
 }
 
 del_iface_state()
