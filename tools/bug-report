@@ -52,13 +52,15 @@ if [ -n "$kver" ]; then
 	done
 fi
 
+mkdir -p -- "$reportdir"/dev
+LANG=C find /dev \! -type d -exec ls -lad '{}' '+' >"$reportdir"/dev/list
+progress "$c"
+
 blkid -c /dev/null >"$reportdir"/etc/blkid.out
 progress "$c"
 
 copy \
 	/etc/blkid.tab \
-	/etc/blkid.tab \
-	/etc/fstab \
 	/etc/fstab \
 	/proc/cmdline \
 	/proc/config.gz \
