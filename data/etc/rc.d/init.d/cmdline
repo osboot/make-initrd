@@ -82,7 +82,7 @@ register_alias()
 
 __set_var()
 {
-	local n="$1" v="$2" flags
+	local n="$1" v="$2" flags x
 
 	n="$(replace -s= "[a-z]-." "[A-Z]__" "$n")"
 
@@ -101,7 +101,8 @@ __set_var()
 		*$VAR_S)
 			;;
 		*$VAR_N)
-			if [ -z "${v##*[!0-9]*}" ]; then
+			x="${v#-}"
+			if [ -z "${x##*[!0-9]*}" ]; then
 				message "$n: $v: invalid number"
 				return 0
 			fi
