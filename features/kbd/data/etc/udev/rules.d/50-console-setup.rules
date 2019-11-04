@@ -1,2 +1,3 @@
 SUBSYSTEM=="tty", ACTION=="add", ENV{MAJOR}=="4",                  RUN+="/lib/initrd/console-setup"
 SUBSYSTEM=="tty", ACTION=="add", ENV{MAJOR}=="5", ENV{MINOR}=="1", RUN+="/lib/initrd/console-setup"
+SUBSYSTEM=="graphics", ACTION=="add", KERNEL=="fb[0-9]",           RUN+="/lib/initrd/console-setup"
