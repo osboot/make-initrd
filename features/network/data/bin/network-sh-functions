@@ -114,7 +114,7 @@ ipv6_enabled()
 	if [ -n "${NET_IF-}" ]; then
 		f="/proc/sys/net/ipv6/conf/$NET_IF/disable_ipv6"
 		[ ! -f "$f" ] ||
-			read v < "$f"
+			read -r v < "$f"
 		[ "$v" = 0 ] ||
 			return 1
 	fi
@@ -122,7 +122,7 @@ ipv6_enabled()
 	for n in disable disable_ipv6; do
 		f="/sys/module/ipv6/parameters/$n"
 		[ ! -f "$f" ] ||
-			read v < "$f"
+			read -r v < "$f"
 		[ "$v" = 0 ] ||
 			return 1
 	done

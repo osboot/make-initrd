@@ -12,7 +12,8 @@ lock="/tmp/$CMDNAME.$INTERFACE.lock"
 while ! mkdir -- "$lock" >/dev/null 2>&1; do
 	sleep 0.1
 done
-trap "rmdir $lock" EXIT
+unlock() { rmdir "$lock"; }
+trap unlock EXIT
 
 exec >>"/var/log/$CMDNAME.$INTERFACE.log" 2>&1
 

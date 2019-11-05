@@ -27,7 +27,7 @@ show_output() {
 start() {
 	mkdir -p /sysroot
 
-	if [ ! -z "${GUESTFS_VERBOSE-}" ] ; then
+	if [ -n "${GUESTFS_VERBOSE-}" ] ; then
 		show_output date
 		show_output uname -a
 		show_output cat /proc/uptime
@@ -43,9 +43,9 @@ start() {
 		show_output cat /sys/devices/system/clocksource/clocksource0/current_clocksource
 	fi
 
-	[ ! -z "$GUESTFS_CHANNEL" ] && GUESTFS_EXTRA_ARGS="$GUESTFS_EXTRA_ARGS --channel $GUESTFS_CHANNEL"
-	[ ! -z "$GUESTFS_VERBOSE" ] && GUESTFS_EXTRA_ARGS="$GUESTFS_EXTRA_ARGS --verbose"
-	[ ! -z "$GUESTFS_NETWORK" ] && GUESTFS_EXTRA_ARGS="$GUESTFS_EXTRA_ARGS --network"
+	[ -z "$GUESTFS_CHANNEL" ] || GUESTFS_EXTRA_ARGS="$GUESTFS_EXTRA_ARGS --channel $GUESTFS_CHANNEL"
+	[ -z "$GUESTFS_VERBOSE" ] || GUESTFS_EXTRA_ARGS="$GUESTFS_EXTRA_ARGS --verbose"
+	[ -z "$GUESTFS_NETWORK" ] || GUESTFS_EXTRA_ARGS="$GUESTFS_EXTRA_ARGS --network"
 	# sleep for wait /dev/virtio-ports/org.libguestfs.channel.0
 	sleep 2
 	echo "Run $NAME $GUESTFS_EXTRA_ARGS"

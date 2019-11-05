@@ -87,10 +87,10 @@ UnmountFilesystems()
 	while [ -n "$points" ] && [ "$retry" -gt 0 ]; do
 		dsort points $points
 
-		[ "$retry" -eq 3 ] || msg='(retry) '
+		[ "$retry" -eq 3 ] || msg=' (retry)'
 
 		for point in $points; do
-			action "Unmounting filesystem $msg[$point]:" umount -fl ${umount_types:+-t $umount_types} "$point"
+			action "Unmounting filesystem$msg [$point]:" umount -fl ${umount_types:+-t $umount_types} "$point"
 		done
 
 		points="$($findmnt)"

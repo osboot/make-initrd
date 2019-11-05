@@ -56,6 +56,7 @@ done
 for n in ${PUT_PROGS-}; do
 	n="$(
 		export PATH=/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin
+		# shellcheck disable=SC2230
 		which --skip-alias --skip-functions --skip-dot --skip-tilde "$n"
 	)"
 	[ -z "$n" ] || put-file . $n

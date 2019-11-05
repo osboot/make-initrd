@@ -6,10 +6,12 @@
 [ "$NET_EV_ACTION" = update ] ||
 	exit 0
 
-while ! mkdir -- "/tmp/$PROG.lock" >/dev/null 2>&1; do
+lock="/tmp/$PROG.lock"
+while ! mkdir -- "$lock" >/dev/null 2>&1; do
 	sleep 0.1
 done
-trap "rmdir /tmp/$PROG.lock" EXIT
+unlock() { rmdir "$lock"; }
+trap unlock EXIT
 
 PROG="$PROG: $NET_IF"
 message_time=1

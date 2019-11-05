@@ -15,7 +15,7 @@ SourceIfExists()     { [ -f "$1" ] && . "$@"; }
 SourceIfExecutable() { [ -x "$1" ] && . "$@"; }
 SourceIfNotEmpty()   { [ -s "$1" ] && . "$@"; }
 ExecIfExecutable()   { [ -x "$1" ] && "$@"; }
-absolute() { which "$@" 2>/dev/null; }
+absolute() { { command -v "$@"; } 2>/dev/null; }
 
 SHOW_TIMESTAMP=1
 QUIET=
@@ -53,7 +53,7 @@ start_daemon()
 	# Process options.
 	local ANNOUNCE=1 BACKGROUND='' BASENAME='' CHECK='' CMDNAME='' DISPNAME='' EXPECT='' FLAGS='' LOCKFILE='' MAKE_PIDFILE='' NICE=0 PIDFILE='' STATUS='' SU='' WHICH=''
 
-	while [ "$1" != "${1##-}" ] || [ "$1" != "${1##+}" ]; do
+	while [ "$1" != "${1##[-+]}" ]; do
 		case "$1" in
 		--) shift
 			break

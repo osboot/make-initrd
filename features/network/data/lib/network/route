@@ -20,6 +20,7 @@ set_route()
 	local ip_version="$1" action="$2" rc=0
 	__handler()
 	{
+		# shellcheck disable=SC2048
 		set -- $*
 		local suffix=
 		in_list throw "$@" || in_list unreachable "$@" || in_list prohibit "$@" || in_list blackhole "$@" || in_list dev "$@" ||
@@ -63,6 +64,7 @@ set_rule()
 	local ip_version="$1" action="$2" rc=0
 	__handler()
 	{
+		# shellcheck disable=SC2048
 		set -- $*
 		local first="$1"; shift
 		case "$first" in

@@ -257,6 +257,7 @@ shebang_file()
 			local arg=
 			arg="$(
 				export PATH=/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin
+				# shellcheck disable=SC2230
 				which --skip-alias --skip-functions --skip-dot --skip-tilde "$2"
 			)"
 			debug "script file $f -> $arg"
