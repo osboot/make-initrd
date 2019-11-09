@@ -1,10 +1,10 @@
-group: Runtime changes
-regexp: ^(initrd|runtime):
-filter: s/^[^:]+: //
-
 group: New feature
 regexp: ^New feature:
 filter: s/^[^:]+: //
+
+group: Feature changes
+regexp: ^Feature [^:]+:
+filter: s/^Feature //
 
 group: NFS feature changes
 regexp: ^nfs:
@@ -30,6 +30,10 @@ group: Ucode feature changes
 regexp: ^ucode:
 filter: s/^[^:]+: //
 
+group: Runtime changes
+regexp: ^(initrd|runtime):
+filter: s/^[^:]+: //
+
 group: Documentation
 regexp: ^doc:
 filter: s/^[^:]+: //
@@ -41,12 +45,12 @@ group: Utilities
 regexp: ^(make-initrd|mkinitrd-make-initrd|depinfo|gen_init_cpio|initrd-cp|initrd-diff|initrd-ls|initrd-scanmod):
 #filter: s/^[^:]+: //
 
-group: Feature changes
-regexp: ^Feature [^:]+:
-filter: s/^Feature //
+group: Documentation
+regexp: ^Doc(s|umentation):
+filter: s/^Doc(s|umentation): //
 
 group: Other fixes
 regexp: ^Fix
 
-group: New
+group: Misc
 regexp: .*
