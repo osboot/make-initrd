@@ -349,6 +349,11 @@ done |
 [ ! -e "$abortfile" ] ||
 	exit 1
 
+file_bin="@LIBEXECDIR@/mi-file"
+
+[ -x "$file_bin" ] ||
+	file_bin="file"
+
 max_procs=${INITRD_COPY_PROCS:-7}
 
 while :; do
@@ -365,7 +370,7 @@ while :; do
 
 	# Classify regular files.
 	sed -n -e 's/^f	\([^	]\+\)	.*/\1/p' "$new_files" |
-		file -nbhf - > "$mimetypes"
+		"$file_bin" -nbhf - > "$mimetypes"
 
 	exec 3<"$new_files" 4<"$mimetypes"
 
@@ -501,4 +506,4 @@ done < "$manifest"
 exit
 
 # dependency builder requires it.
-chmod; cp; ln; mkdir; sed; sort; join; xargs; file;
+chmod; cp; ln; mkdir; sed; sort; join; xargs;

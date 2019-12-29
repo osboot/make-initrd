@@ -5,6 +5,9 @@ CFLAGS = $(warning_CFLAGS) \
 
 CFLAGS += -DHAVE_GZIP -DHAVE_BZIP2 -DHAVE_LZMA -DHAVE_ZSTD
 
+mi_file_SRCS = mi-file.c
+mi_file_LIBS = $(shell pkg-config --libs libelf)
+
 gen_init_cpio_SRCS = gen_init_cpio.c
 gen_init_cpio_LIBS =
 
@@ -49,13 +52,16 @@ bin_PROGS  = \
 
 sbin_PROGS = \
 	depinfo \
-	initrd-scanmod \
 	initrd-cp \
-	initrd-ls \
-	initrd-extract \
 	initrd-diff \
+	initrd-extract \
+	initrd-ls \
+	initrd-scanmod \
 	make-initrd \
 	mkinitrd-make-initrd
+
+libexec_PROGS = \
+	mi-file
 
 DEPS = $(call get_depends,$(bin_PROGS) $(sbin_PROGS),)
 OBJS = $(call get_objects,$(bin_PROGS) $(sbin_PROGS),)
@@ -66,6 +72,10 @@ C_SOURCES = *.h $(depinfo_SRCS) $(initrd_ls_SRCS) $(initrd_extract_SRCS) $(initr
 all: $(bin_PROGS) $(sbin_PROGS)
 
 include $(TOPDIR)/Makefile.common
+
+mi-file: $(call get_objects,mi-file)
+	echo $(libexecdir)
+	$(LINK) $^ $(mi_file_LIBS) -o $@
 
 gen_init_cpio: $(call get_objects,gen_init_cpio)
 	$(LINK) $^ $(gen_init_cpio_LIBS) -o $@
@@ -82,8 +92,10 @@ initrd-ls: $(call get_objects,initrd-ls)
 initrd-extract: $(call get_objects,initrd-extract)
 	$(LINK) $^ $(initrd_extract_LIBS) -o $@
 
-install: $(bin_PROGS) $(sbin_PROGS)
+install: $(bin_PROGS) $(sbin_PROGS) $(libexec_PROGS)
 	$(MKDIR_P) -- $(DESTDIR)$(bindir)
 	$(INSTALL) -p -m755 $(bin_PROGS) $(DESTDIR)$(bindir)/
 	$(MKDIR_P) -- $(DESTDIR)$(sbindir)
 	$(INSTALL) -p -m755 $(sbin_PROGS) $(DESTDIR)$(sbindir)/
+	$(MKDIR_P) -- $(DESTDIR)$(libexecdir)
+	$(INSTALL) -p -m755 $(libexec_PROGS) $(DESTDIR)$(libexecdir)/

@@ -7,5 +7,6 @@ initrd-ls
 initrd-scanmod
 make-initrd
 mkinitrd-make-initrd
+mi-file
 *.d
 *.o

@@ -8,6 +8,7 @@ bootdir    ?= /boot
 bindir     ?= /usr/bin
 sbindir    ?= /usr/sbin
 datadir    ?= /usr/share
+libexecdir ?= /usr/libexec/$(PROJECT)
 statedir   ?= /var/lib
 infodir    ?= $(datadir)/info
 mandir     ?= $(datadir)/man
@@ -27,6 +28,7 @@ VERSION       = $(shell git describe HEAD)
 prefix        = $(TOPDIR)
 bindir        = $(TOPDIR)/utils
 sbindir       = $(TOPDIR)/utils
+libexecdir    = $(TOPDIR)/utils
 localbuilddir = $(TOPDIR)/datasrc/_out
 statedir      = $(tmpdir)
 endif
@@ -75,6 +77,7 @@ warning_CFLAGS = \
 		-e 's,@PREFIX@,$(prefix),g' \
 		-e 's,@BINDIR@,$(bindir),g' \
 		-e 's,@SBINDIR@,$(sbindir),g' \
+		-e 's,@LIBEXECDIR@,$(libexecdir),g' \
 		-e 's,@TMPDIR@,$(tmpdir),g' \
 		-e 's,@LOCALBUILDDIR@,$(localbuilddir),g' \
 		<$< >$@
