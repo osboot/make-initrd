@@ -102,7 +102,7 @@ message "$QUEUE: Processing events ..."
 
 get_name()
 {
-	[ -x "$fn" ] || return 1
+	[ ! -d "$fn" ] && [ -x "$fn" ] || return 1
 	name="${fn##*/}"
 	name="${name#[0-9][0-9][0-9]-}"
 }
