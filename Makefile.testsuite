@@ -1,0 +1,129 @@
+include $(TOPDIR)/Makefile.common
+
+.EXPORT_ALL_VARIABLES:
+
+TESTDIR := $(TOPDIR)/.tests
+TESTSDATA_URL = https://raw.githubusercontent.com/legionus/make-initrd-testdata/master
+
+ifdef MKLOCAL
+TESTSDATA_URL = file:///$(HOME)/scm/.initrd/make-initrd-testdata
+endif
+
+ROOTFS_VENDOR  = altlinux
+ROOTFS_VERSION = 20200101
+KERN_FLAVOR    = un-def
+KERN_VERSION   = 5.4.7-alt1
+STAGE0_VERSION = 20200101
+
+QEMU_STAGE0_VMLINUZ   = $(TESTDIR)/vmlinuz
+QEMU_STAGE0_INITRAMFS = $(TESTDIR)/initramfs-stage0-$(STAGE0_VERSION).cpio
+QEMU_STAGE0_CMDLINE   = console=ttyS0
+
+QEMU_BIN = qemu-system-x86_64
+
+QEMU_ARGUMENTS =
+QEMU_ARGUMENTS += -enable-kvm
+QEMU_ARGUMENTS += -machine 'type=q35,accel=kvm:tcg'
+QEMU_ARGUMENTS += -cpu 'host'
+QEMU_ARGUMENTS += -smp '4'
+QEMU_ARGUMENTS += -m '1G'
+#QEMU_ARGUMENTS += -chardev 'stdio,mux=on,id=stdio,signal=off'
+#QEMU_ARGUMENTS += -mon 'chardev=stdio,mode=readline'
+#QEMU_ARGUMENTS += -serial 'chardev:stdio'
+#QEMU_ARGUMENTS += -rtc 'base=utc'
+QEMU_ARGUMENTS += -no-reboot
+QEMU_ARGUMENTS += -nographic
+
+QEMU_STAGE0_ARGUMENTS = $(QEMU_ARGUMENTS)
+QEMU_STAGE0_ARGUMENTS += -drive 'media=disk,index=0,file=$(TESTDIR)/data/rootfs-$(ROOTFS_VENDOR)-$(ROOTFS_VERSION).qcow2'
+QEMU_STAGE0_ARGUMENTS += -fsdev 'local,id=virtfs-0,security_model=none,path=$(TOPDIR)'
+QEMU_STAGE0_ARGUMENTS += -device 'virtio-9p-pci,fsdev=virtfs-0,mount_tag=project'
+
+TRAVIS_START = :
+TRAVIS_STOP  = :
+TRAVIS_Q     = $(Q)
+TRAVIS_LOG  ?= | tee
+
+ifneq "$(IN_TRAVIS)" ''
+TRAVIS_START = $(TOPDIR)/tests/travis-command-start
+TRAVIS_STOP  = $(TOPDIR)/tests/travis-command-stop
+TRAVIS_Q     =
+endif
+
+GREP_IT_WORKS = grep -qs '^IT WORKS!'
+
+TESTCASE           ?= $(notdir $(CURDIR))
+TESTCASE_VMLINUZ   ?= $(QEMU_STAGE0_VMLINUZ)
+TESTCASE_INITRAMFS ?= $(TESTDIR)/boot/initramfs-$(TESTCASE).img
+TESTCASE_CMDLINE   ?= testcase=$(TESTCASE) console=ttyS0 root=LABEL=ROOT rootonly=1 rootdelay=10 panic=1
+TESTCASE_TIMEOUT   ?= 30s
+TESTCASE_COMMAND   ?= false
+
+check-prepare:
+	$(Q)mkdir -p -- $(TESTDIR)
+	$(Q)mkdir -p -- $(TESTDIR)/boot
+	$(Q)mkdir -p -- $(TESTDIR)/data
+
+$(TESTDIR)/data/%.cpio: check-prepare
+	@$(TRAVIS_START) "get.$(@F)"
+	@echo "$(TESTCASE): Obtaining $(@F) ... "
+	$(TRAVIS_Q)$(TOPDIR)/tests/file-get.sh "$(TESTSDATA_URL)" "$@.SHA256SUMS" "$(TESTDIR)/data"
+	@$(TRAVIS_STOP)
+
+$(TESTDIR)/data/%.qcow2: check-prepare
+	@$(TRAVIS_START) "get.$(@F)"
+	@echo "$(TESTCASE): Obtaining $(@F) ... "
+	$(TRAVIS_Q)$(TOPDIR)/tests/file-get.sh "$(TESTSDATA_URL)" "$@.SHA256SUMS" "$(TESTDIR)/data"
+	@$(TRAVIS_STOP)
+
+$(QEMU_STAGE0_VMLINUZ): check-prepare
+	@$(TRAVIS_START) "prepare.kernel-$(KERN_FLAVOR)-$(KERN_VERSION)"
+	@echo "$(TESTCASE): Unpacking $(@F) ... "
+	$(TRAVIS_Q)cpio \
+	        -i --to-stdout '*/vmlinuz-*' \
+	        < "$(TESTDIR)/data/kernel-$(KERN_FLAVOR)-$(KERN_VERSION).cpio" \
+	    > "$@" 2>/dev/null
+	@$(TRAVIS_STOP)
+
+$(QEMU_STAGE0_VMLINUZ): $(TESTDIR)/data/kernel-$(KERN_FLAVOR)-$(KERN_VERSION).cpio
+
+$(QEMU_STAGE0_INITRAMFS): check-prepare
+	@$(TRAVIS_START) "prepare.initramfs-stage0"
+	@echo "$(TESTCASE): Generating $(@F) ... "
+	$(TRAVIS_Q)cat \
+	        "$(TESTDIR)/data/initramfs-stage0-20200101.cpio" \
+	        "$(TESTDIR)/data/kernel-$(KERN_FLAVOR)-$(KERN_VERSION).cpio" \
+	    > "$@"
+	@$(TRAVIS_STOP)
+
+$(QEMU_STAGE0_INITRAMFS): $(TESTDIR)/data/initramfs-stage0-$(STAGE0_VERSION).cpio
+$(QEMU_STAGE0_INITRAMFS): $(TESTDIR)/data/kernel-$(KERN_FLAVOR)-$(KERN_VERSION).cpio
+
+qemu-stage0: check-prepare
+qemu-stage0: $(QEMU_STAGE0_VMLINUZ)
+qemu-stage0: $(QEMU_STAGE0_INITRAMFS)
+qemu-stage0: $(TESTDIR)/data/rootfs-$(ROOTFS_VENDOR)-$(ROOTFS_VERSION).qcow2
+
+$(TESTCASE_INITRAMFS): check-prepare qemu-stage0
+	@$(TRAVIS_START) "build.$(@F)"
+	@echo "$(TESTCASE): Building $(@F) ... "
+	$(TRAVIS_Q)echo "$(TESTCASE)" > $(TESTDIR)/cur;
+	$(TRAVIS_Q)timeout --foreground 2m \
+	$(QEMU_BIN) \
+	    $(QEMU_STAGE0_ARGUMENTS) \
+	    -kernel '$(QEMU_STAGE0_VMLINUZ)' \
+	    -initrd '$(QEMU_STAGE0_INITRAMFS)' \
+	    -append '$(QEMU_STAGE0_CMDLINE)' \
+	    $(TRAVIS_LOG) $(TESTDIR)/log.$(TESTCASE).build;
+	$(TRAVIS_Q)$(GREP_IT_WORKS) $(TESTDIR)/log.$(TESTCASE).build;
+	$(TRAVIS_Q)touch "$@"
+	@$(TRAVIS_STOP)
+
+check: qemu-stage0
+	@$(TRAVIS_START) "check.$(TESTCASE)"
+	@echo "$(TESTCASE): Testing ... "
+	$(TRAVIS_Q)echo "$(TESTCASE)" > $(TESTDIR)/cur;
+	$(TRAVIS_Q)timeout --foreground $(TESTCASE_TIMEOUT) $(TESTCASE_COMMAND) \
+	    $(TRAVIS_LOG) $(TESTDIR)/log.$(TESTCASE).boot;
+	$(TRAVIS_Q)$(GREP_IT_WORKS) $(TESTDIR)/log.$(TESTCASE).boot;
+	@$(TRAVIS_STOP)

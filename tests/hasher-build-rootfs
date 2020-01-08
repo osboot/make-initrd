@@ -1,0 +1,38 @@
+#!/bin/sh -efux
+
+hsh --init --excludedocs
+
+hsh-install --excludedocs gcc make git-core
+hsh-install --excludedocs expect
+hsh-install --excludedocs libkmod-devel zlib-devel bzlib-devel liblzma-devel libzstd-devel
+hsh-install --excludedocs libshell
+hsh-install --excludedocs help2man tar cpio kinit-utils pciutils
+hsh-install --excludedocs dmsetup lvm2
+hsh-install --excludedocs cryptsetup
+hsh-install --excludedocs mdadm
+hsh-install --excludedocs e2fsprogs
+hsh-install --excludedocs ash-static
+hsh-install --excludedocs fdisk
+hsh-install --excludedocs strace
+hsh-install --excludedocs gzip xz
+
+cat >"$0.exec"<<EOF
+#!/bin/sh -efu
+
+find / \
+	\( \
+		\! -path '/.*'                 -a \
+		\! -path '/usr/lib/locale/*'   -a \
+		\! -path '/usr/share/locale/*' -a \
+		\! -path '/usr/share/doc/*'    -a \
+		\! -path '/usr/share/man/*'    -a \
+		\! -path '/usr/share/info/*'   -a \
+		\! -path '/usr/share/icons/*'  -a \
+		\! -path '/usr/share/zsh/*'    -a \
+		\! -path '/rootfs.cpio'           \
+	\) \
+	-print0 |
+	cpio -H newc -ov0
+EOF
+
+hsh-run --root --execute="$0.exec" > "rootfs-altlinux-$(date +'%Y%m%d').cpio"

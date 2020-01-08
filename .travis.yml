@@ -1,0 +1,16 @@
+dist: bionic
+sudo: required
+language: c
+env:
+  - IN_TRAVIS=1
+install:
+  - sudo apt-get update -qq
+  - sudo apt-get install coreutils cpio curl expect qemu-kvm
+  - |
+    sudo modprobe kvm-intel nested=1 ||:
+    sudo modprobe kvm-amd   nested=1 ||:
+    sudo chmod 666 /dev/kvm ||:
+  - sudo mount -t devpts devpts /dev/pts
+
+script:
+  - sudo make -C tests build check
