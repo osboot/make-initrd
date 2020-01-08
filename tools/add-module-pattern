@@ -11,7 +11,7 @@ exit_handler() {
 		rm -rf -- "$rulesdir"
 }
 
-rulesdir="$(mktemp -d "$rulesdir/$PROG.XXXXXXXXX")"
+rulesdir="$(mktemp -d "$workdir/$PROG.XXXXXXXXX")"
 set_cleanup_handler exit_handler
 
 i=0
