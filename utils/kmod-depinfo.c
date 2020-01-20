@@ -615,6 +615,9 @@ main(int argc, char **argv)
 	if (read_kernel_builtin(module_dir, "kernel.builtin.modinfo") < 0)
 		error(EXIT_FAILURE, errno, "ERROR: read_kernel_builtin()");
 
+	if (read_kernel_builtin(module_dir, "modules.builtin.modinfo") < 0)
+		error(EXIT_FAILURE, errno, "ERROR: read_kernel_builtin()");
+
 	if (!(ctx = kmod_new(module_dir, NULL)))
 		error(EXIT_FAILURE, errno, "ERROR: kmod_new()");
 
