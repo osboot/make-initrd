@@ -1,0 +1,60 @@
+#!/bin/sh -efu
+
+op="$1"; shift
+kernel="$1"; shift
+pattern="$1"; shift
+
+case "$op" in
+	eq|ne|ge|gt|le|lt)
+		;;
+	*)
+		echo "unknown operation: $op" >&2
+		exit 1
+		;;
+esac
+
+for n in kernel pattern; do
+	eval "v=\"\$$n\""
+
+	major="${v%%.*}"
+	minor=X
+	patch=X
+
+	v="${v#$major}"
+	v="${v#.}"
+
+	if [ -n "$v" ]; then
+		minor="${v%%.*}"
+		v="${v#$minor}"
+		v="${v#.}"
+	fi
+
+	if [ -n "$v" ]; then
+		patch="${v%%[!0-9]*}"
+	fi
+
+	[ -n "${major##*[!0-9]*}" ] || major=X
+	[ -n "${minor##*[!0-9]*}" ] || minor=X
+	[ -n "${patch##*[!0-9]*}" ] || patch=X
+
+	eval "${n}_major=\"\$major\""
+	eval "${n}_minor=\"\$minor\""
+	eval "${n}_patch=\"\$patch\""
+done
+
+for n in major minor patch; do
+	eval "v=\"\${kernel_$n}\${pattern_$n}\""
+	case "$v" in
+		X*|*X)
+			eval "kernel_$n=0"
+			eval "pattern_$n=0"
+			;;
+	esac
+done
+
+kernel_ver=$((  ($kernel_major  * 1000000000) + ($kernel_minor  * 1000000) + $kernel_patch  ))
+pattern_ver=$(( ($pattern_major * 1000000000) + ($pattern_minor * 1000000) + $pattern_patch ))
+
+test "$kernel_ver" "-$op" "$pattern_ver" &&
+	echo true ||
+	echo false

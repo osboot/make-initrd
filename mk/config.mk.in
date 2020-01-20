@@ -36,6 +36,9 @@ SYSCONFDIR	?= /etc
 SYSFS_PATH	?= /sys
 PROCFS_PATH	?= /proc
 
+GET_KERNEL_VERSION = $(TOOLSDIR)/kernel-version
+IS_KERNEL_VERSION  = $(TOOLSDIR)/kernel-compare
+
 PATH		= $(UTILSDIR):$(TOOLSDIR):$(shell echo $$PATH)
 
 # Config file locations

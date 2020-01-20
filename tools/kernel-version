@@ -1,0 +1,30 @@
+#!/bin/sh -efu
+
+v="${KERNEL:-$(uname -r)}"
+
+major="${v%%.*}"
+minor=X
+patch=X
+
+v="${v#$major}"
+v="${v#.}"
+
+if [ -n "$v" ]; then
+	minor="${v%%.*}"
+	v="${v#$minor}"
+	v="${v#.}"
+fi
+
+if [ -n "$v" ]; then
+	patch="${v%%[!0-9]*}"
+fi
+
+[ -n "${major##*[!0-9]*}" ] || major=0
+[ -n "${minor##*[!0-9]*}" ] || minor=0
+[ -n "${patch##*[!0-9]*}" ] || patch=0
+
+case "$1" in
+	major|minor|patch)
+		eval "echo \$$1"
+		;;
+esac
