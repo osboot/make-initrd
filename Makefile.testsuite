@@ -108,7 +108,7 @@ $(TESTCASE_INITRAMFS): check-prepare qemu-stage0
 	@$(TRAVIS_START) "build.$(@F)"
 	@echo "$(TESTCASE): Building $(@F) ... "
 	$(TRAVIS_Q)echo "$(TESTCASE)" > $(TESTDIR)/cur;
-	$(TRAVIS_Q)timeout --foreground 2m \
+	$(TRAVIS_Q)timeout --foreground 4m \
 	$(QEMU_BIN) \
 	    $(QEMU_STAGE0_ARGUMENTS) \
 	    -kernel '$(QEMU_STAGE0_VMLINUZ)' \
