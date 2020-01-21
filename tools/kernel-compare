@@ -55,6 +55,4 @@ done
 kernel_ver=$((  ($kernel_major  * 1000000000) + ($kernel_minor  * 1000000) + $kernel_patch  ))
 pattern_ver=$(( ($pattern_major * 1000000000) + ($pattern_minor * 1000000) + $pattern_patch ))
 
-test "$kernel_ver" "-$op" "$pattern_ver" &&
-	echo true ||
-	echo false
+test "$kernel_ver" "-$op" "$pattern_ver"
