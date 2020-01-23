@@ -9,14 +9,13 @@ build: qemu-stage0
 	@$(TRAVIS_START) "build.make-initrd"
 	@echo "$(TESTCASE): Building make-initrd ... "
 	$(TRAVIS_Q)echo "$(TESTCASE)" > $(TESTDIR)/cur;
-	$(TRAVIS_Q)timeout --foreground 5m \
+	$(TRAVIS_Q)timeout --foreground -- 5m \
+	$(QEMU_FILTER) --logfile=$(TESTDIR)/log.build -- \
 	$(QEMU_BIN) \
 	    $(QEMU_STAGE0_ARGUMENTS) \
 	    -kernel '$(QEMU_STAGE0_VMLINUZ)' \
 	    -initrd '$(QEMU_STAGE0_INITRAMFS)' \
-	    -append '$(QEMU_STAGE0_CMDLINE)' \
-	    $(TRAVIS_LOG) "$(TESTDIR)/log.build"
-	$(TRAVIS_QQ)$(GREP_IT_WORKS) $(TESTDIR)/log.build;
+	    -append '$(QEMU_STAGE0_CMDLINE)';
 	@$(TRAVIS_STOP)
 
 shell: qemu-stage0
