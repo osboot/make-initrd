@@ -1,4 +1,13 @@
-MODULES_ADD	+= \
-	usb-storage sdhci sdhci-pci \
-	usbhid hid-apple \
-	ehci-hcd ohci-hcd uhci-hcd
+MODULES_TRY_ADD += \
+	ehci-hcd    \
+	hci-pci     \
+	hid-apple   \
+	ohci-hcd    \
+	ohci-pci    \
+	sdhci       \
+	sdhci-pci   \
+	uas         \
+	uhci-hcd    \
+	usbhid      \
+	usb-storage \
+	xhci-pci
