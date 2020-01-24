@@ -1,4 +1,4 @@
-MODULES_ADD += \
+MODULES_TRY_ADD += \
         /drivers/net/phy/ \
         /drivers/net/team/ \
         /drivers/net/ethernet/ \

@@ -2,7 +2,7 @@ DISABLE_FEATURES += plymouth ucode
 DISABLE_GUESS += fstab resume root ucode
 FEATURES += add-modules cleanup compress btrfs devmapper luks lvm mdadm qemu
 
-MODULES_ADD += drivers/scsi/ drivers/ata/ fs/
+MODULES_TRY_ADD += drivers/scsi/ drivers/ata/ fs/
 MODULES_PRELOAD += virtio_console
 
 guestfs: create
