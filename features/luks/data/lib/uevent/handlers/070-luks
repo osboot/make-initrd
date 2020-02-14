@@ -6,6 +6,7 @@
 . rdshell-sh-functions
 
 mnt="/mnt/luks-key"
+tab='	'
 
 match_dev_in_array() {
 	[ "$#" = 2 ] || return 2
@@ -42,24 +43,40 @@ freekey() {
 }
 
 findkey() {
-	local path keydev luksdev prefix
+	local path keydev luksdev prefix s v
 
 	[ -f /etc/luks.keys ] ||
 		return 2
 
-	while IFS='	' read -r path keydev luksdev; do
+	while IFS='' read -r s; do
+		for n in path keydev luksdev; do
+			v=
+			if [ -n "$s" ] && [ -z "${s##*$tab*}" ]; then
+				v="${s%%$tab*}"
+				s="${s#*$tab}"
+			else
+				v="$s"
+				s=
+			fi
+			eval "$n=\"\$v\""
+		done
+
+		if [ -z "$path" ]; then
+			printf "ERROR(luks): path required.\n" >&2
+			return 1
+		fi
+
 		if [ -n "$luksdev" ]; then
 			get_dev "$luksdev" ||
 				continue
 		fi
 
+		prefix=
 		if [ -n "$keydev" ]; then
 			mkdir -p -- "$mnt"
 			mount -r "$keydev" "$mnt" ||
 				return 1
 			prefix=$mnt
-		else
-			prefix=
 		fi
 
 		if [ ! -f "$prefix/$path" ]; then
