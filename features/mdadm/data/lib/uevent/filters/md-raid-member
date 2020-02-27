@@ -1,0 +1,8 @@
+#!/bin/sh -efu
+
+. /.initrd/initenv
+. uevent-sh-functions
+
+event="$(make_event md-raid-member)"
+release_event resume "$event"
+

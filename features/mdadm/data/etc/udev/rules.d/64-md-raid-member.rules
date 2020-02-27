@@ -1,0 +1,1 @@
+SUBSYSTEM=="block", ACTION=="add", ENV{ID_FS_TYPE}=="linux_raid_member", RUN+="/lib/uevent/filters/md-raid-member"
