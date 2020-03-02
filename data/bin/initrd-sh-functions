@@ -67,4 +67,12 @@ get_dev() {
 		eval "$retval=\"\$DEVNAME\""
 }
 
+readline()
+{
+        local __v=
+        # shellcheck disable=SC2162
+        read __v < "$2" ||:
+        eval "$1=\"\$__v\""
+}
+
 fi
