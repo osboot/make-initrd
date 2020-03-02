@@ -26,7 +26,7 @@ touch -d "@$(($now + $delay))" "$tsfile"
 	done
 
 	# inactive mdraid salvation (#28879)
-
+	inactive=
 	for md in /sys/block/md*/md/array_state; do
 		[ -e "$md" ] ||
 			break
@@ -34,8 +34,11 @@ touch -d "@$(($now + $delay))" "$tsfile"
 		read -r state < "$md" ||:
 
 		[ "$state" != "inactive" ] ||
-			mdadm -IRs
+			inactive=1
 	done
+
+	[ -z "$inactive" ] ||
+		mdadm -IRs ||:
 ) &
 
 echo "$!" > "$pidfile"
