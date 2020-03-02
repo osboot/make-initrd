@@ -9,7 +9,7 @@ build: qemu-stage0
 	@$(TRAVIS_START) "build.make-initrd"
 	@echo "$(TESTCASE): Building make-initrd ... "
 	$(TRAVIS_Q)echo "$(TESTCASE)" > $(TESTDIR)/cur;
-	$(TRAVIS_Q)timeout --foreground -- 5m \
+	$(TRAVIS_Q)timeout --foreground -- 10m \
 	$(QEMU_FILTER) --logfile=$(TESTDIR)/log.build -- \
 	$(QEMU_BIN) \
 	    $(QEMU_STAGE0_ARGUMENTS) \
