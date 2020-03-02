@@ -11,7 +11,8 @@ check_SUBDIRS := \
 	test-lukskey \
 	test-lvm \
 	test-partition \
-	test-raid1
+	test-raid1 \
+	test-degraded-raid1
 
 .PHONY: build $(check_SUBDIRS)
 
