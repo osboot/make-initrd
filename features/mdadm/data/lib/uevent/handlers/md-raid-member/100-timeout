@@ -27,7 +27,7 @@ touch -d "@$(($now + $delay))" "$tsfile"
 
 	# inactive mdraid salvation (#28879)
 	inactive=
-	for md in /sys/block/md*/md/array_state; do
+	for md in /sys/block/*/md/array_state; do
 		[ -e "$md" ] ||
 			break
 
@@ -39,6 +39,20 @@ touch -d "@$(($now + $delay))" "$tsfile"
 
 	[ -z "$inactive" ] ||
 		mdadm -IRs ||:
+
+	for md in /sys/block/*/md/array_state; do
+		[ -e "$md" ] ||
+			break
+
+		read -r state < "$md" ||:
+
+		[ "$state" = "read-auto" ] ||
+			continue
+
+		read -r dev < "${md%/md/array_state}/dev" ||:
+
+		mdadm -w "/dev/block/$dev" ||:
+	done
 ) &
 
 echo "$!" > "$pidfile"
