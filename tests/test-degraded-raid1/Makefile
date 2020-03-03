@@ -16,7 +16,10 @@ include $(TOPDIR)/Makefile.testsuite
 
 QEMU_STAGE0_DRIVES  += -drive 'media=disk,index=1,file=$(TESTCASE_DISK0)'
 QEMU_STAGE0_DRIVES  += -drive 'media=disk,index=2,file=$(TESTCASE_DISK1)'
+
 QEMU_RUNTIME_DRIVES += -drive 'media=disk,index=1,file=$(TESTCASE_DISK0)'
+
+TESTCASE_CMDLINE += raid-member-delay=3
 
 $(TESTCASE_INITRAMFS):       $(TESTCASE_DISK0) $(TESTCASE_DISK1)
 check: $(TESTCASE_INITRAMFS) $(TESTCASE_DISK0) $(TESTCASE_DISK1)
