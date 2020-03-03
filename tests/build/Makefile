@@ -3,7 +3,7 @@ TESTDIR ?= $(TOPDIR)/.tests
 
 include $(TOPDIR)/Makefile.testsuite
 
-#QEMU_STAGE0_ARGUMENTS += -hdb '$(CURDIR)/disk0.qcow2'
+#QEMU_STAGE0_DRIVES += -hdb '$(CURDIR)/disk0.qcow2'
 
 build: qemu-stage0
 	@$(TRAVIS_START) "build.make-initrd"
@@ -13,6 +13,7 @@ build: qemu-stage0
 	$(QEMU_FILTER) --logfile=$(TESTDIR)/log.build -- \
 	$(QEMU_BIN) \
 	    $(QEMU_STAGE0_ARGUMENTS) \
+	    $(QEMU_STAGE0_DRIVES) \
 	    -kernel '$(QEMU_STAGE0_VMLINUZ)' \
 	    -initrd '$(QEMU_STAGE0_INITRAMFS)' \
 	    -append '$(QEMU_STAGE0_CMDLINE)';
@@ -21,6 +22,7 @@ build: qemu-stage0
 shell: qemu-stage0
 	$(QEMU_BIN) \
 	    $(QEMU_STAGE0_ARGUMENTS) \
+	    $(QEMU_STAGE0_DRIVES) \
 	    -kernel '$(QEMU_STAGE0_VMLINUZ)' \
 	    -initrd '$(QEMU_STAGE0_INITRAMFS)' \
 	    -append '$(QEMU_STAGE0_CMDLINE)'

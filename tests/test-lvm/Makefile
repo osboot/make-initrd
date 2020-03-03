@@ -6,13 +6,17 @@ TESTCASE_DISK0 = $(TESTDIR)/data/$(TESTCASE)-0.qcow2
 TESTCASE_COMMAND = \
 	$(QEMU_BIN) \
 	    $(QEMU_ARGUMENTS) \
+	    $(QEMU_RUNTIME_DRIVES) \
 	    -kernel '$(TESTCASE_VMLINUZ)' \
 	    -initrd '$(TESTCASE_INITRAMFS)' \
 	    -append '$(TESTCASE_CMDLINE)'
 
 include $(TOPDIR)/Makefile.testsuite
 
-QEMU_ARGUMENTS += -drive 'media=disk,index=1,file=$(TESTCASE_DISK0)'
+TESTCASE_DRIVES = -drive 'media=disk,index=1,file=$(TESTCASE_DISK0)'
+
+QEMU_STAGE0_DRIVES  += $(TESTCASE_DRIVES)
+QEMU_RUNTIME_DRIVES += $(TESTCASE_DRIVES)
 
 $(TESTCASE_INITRAMFS):       $(TESTCASE_DISK0)
 check: $(TESTCASE_INITRAMFS) $(TESTCASE_DISK0)
