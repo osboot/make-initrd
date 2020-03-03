@@ -4,5 +4,5 @@
 . uevent-sh-functions
 
 event="$(make_event md-raid-member)"
-release_event resume "$event"
+release_event md-raid-member "$event"
 
