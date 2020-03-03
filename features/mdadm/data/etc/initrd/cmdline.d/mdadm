@@ -1,2 +1,2 @@
-register_parameter number RAID_MEMBDER_DELAY 10
+register_parameter number RAID_MEMBER_DELAY 10
 
