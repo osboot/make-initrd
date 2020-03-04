@@ -5,43 +5,48 @@ exec >> "/var/log/console-setup.log" 2>&1
 . shell-error
 . /etc/sysconfig/console
 
+dev=
 if [ -n "$CONSOLE_TTYS" ]; then
-	found=
-
-	for t in $CONSOLE_TTYS; do
-		t="/dev/tty$t"
-		[ ! -c "$t" ] || [ "$t" != "$DEVNAME" ] || found=1
+	for n in $CONSOLE_TTYS; do
+		[ "$MINOR" = "$n" ] ||
+			continue
+		dev="$DEVNAME"
+		[ ! -c "$dev" ] ||
+			break
+		dev=
 	done
-
-	[ -n "$found" ] ||
-		exit 0
 else
 	[ -n "${DEVNAME##/dev/ttyS*}" ] ||
 		exit 0
+	dev="$DEVNAME"
 fi
 
-message "$DEVNAME: Setup ..."
-:>>"$DEVNAME"
+[ -n "$dev" ] ||
+	exit 0
 
-if [ -n "$CONSOLE_FONT" ]; then
-	message "$DEVNAME: Loading font $CONSOLE_FONT ..."
-	setfont -C "$DEVNAME" "$CONSOLE_FONT" ${CONSOLE_FONT_UNIMAP:+-u "$CONSOLE_FONT_UNIMAP"}
-fi
+message "$dev: Setup ..."
+exec 3<"$dev" 4>>"$dev"
 
-message "$DEVNAME: Setting the keyboard driver in Unicode mode ..."
-kbd_mode -u -C "$DEVNAME"
+message "$dev: Setting the keyboard driver in Unicode mode ..."
+kbd_mode -u -C "$dev"
 
 # Tell the console output driver that the bytes arriving are UTF-8
 # encoded multibyte sequences.
-printf '\033%%G' >> "$DEVNAME"
+printf '\033%%G' >&4
+stty -F "$dev" iutf8
+
+if [ -n "$CONSOLE_FONT" ]; then
+	message "$dev: Loading font $CONSOLE_FONT${CONSOLE_FONT_UNIMAP:+ (unimap $CONSOLE_FONT_UNIMAP)} ..."
+	setfont -C "$dev" "$CONSOLE_FONT" ${CONSOLE_FONT_UNIMAP:+-u "$CONSOLE_FONT_UNIMAP"}
+fi
 
 [ "$CONSOLE_BACKSPACE" = "BackSpace" ] &&
 	FILE="backspace.inc" ||
 	FILE="delete.inc"
 
 if [ "$CONSOLE_KEYMAP" != "bogus" ]; then
-	message "$DEVNAME: Loading keymap $CONSOLE_KEYMAP, $FILE${CONSOLE_GRP_TOGGLE:+, $CONSOLE_GRP_TOGGLE.inc} ..."
-	loadkeys -C "$DEVNAME" "$CONSOLE_KEYMAP" "$FILE" ${CONSOLE_GRP_TOGGLE:+"$CONSOLE_GRP_TOGGLE.inc"}
+	message "$dev: Loading keymap $CONSOLE_KEYMAP, $FILE${CONSOLE_GRP_TOGGLE:+, $CONSOLE_GRP_TOGGLE.inc} ..."
+	loadkeys -C "$dev" "$CONSOLE_KEYMAP" "$FILE" ${CONSOLE_GRP_TOGGLE:+"$CONSOLE_GRP_TOGGLE.inc"}
 fi
 
-message "$DEVNAME: Setup done"
+message "$dev: Setup done"
