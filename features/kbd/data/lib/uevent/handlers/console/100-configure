@@ -1,0 +1,77 @@
+#!/bin/sh -eu
+
+. /.initrd/initenv
+
+. shell-error
+. uevent-sh-functions
+
+exec >> "/var/log/console-setup.log" 2>&1
+
+for e in "$1/ev".*; do
+	[ -e "$e" ] || break
+	done_event "$e"
+done
+
+. /etc/sysconfig/console
+
+foreach_ttys()
+{
+	local t
+	for t in $CONSOLE_TTYS; do
+		t="/dev/char/4:$t"
+		[ ! -c "$t" ] || "$@" "$t"
+	done
+
+	[ -z "$CONSOLE_TTYS" ] || return 0
+
+	for t in /dev/char/4:[0-9]*; do
+		[ ! -c "$t" ] || "$@" "$t"
+	done
+}
+
+set_keyboard_mode()
+{
+	message "$1: Setting the keyboard driver in Unicode mode ..."
+	kbd_mode -u -C "$1"
+}
+
+setup_terminal()
+{
+	# Tell the console output driver that the bytes arriving are UTF-8
+	# encoded multibyte sequences.
+	printf '\033%%G' >>"$1"
+	stty -F "$1" iutf8
+}
+
+set_font()
+{
+	[ -n "$CONSOLE_FONT" ] ||
+		return 0
+	message "$1: Loading font $CONSOLE_FONT${CONSOLE_FONT_UNIMAP:+ (unimap $CONSOLE_FONT_UNIMAP)} ..."
+	setfont -C "$1" "$CONSOLE_FONT" ${CONSOLE_FONT_UNIMAP:+-u "$CONSOLE_FONT_UNIMAP"}
+}
+
+set_keymap()
+{
+	[ -n "$CONSOLE_KEYMAP" ] && [ "$CONSOLE_KEYMAP" != "bogus" ] ||
+		return 0
+
+	local FILE
+
+	[ "$CONSOLE_BACKSPACE" = "BackSpace" ] &&
+		FILE="backspace.inc" ||
+		FILE="delete.inc"
+
+	message "$1: Loading keymap $CONSOLE_KEYMAP, $FILE${CONSOLE_GRP_TOGGLE:+, $CONSOLE_GRP_TOGGLE.inc} ..."
+	loadkeys -C "$1" "$CONSOLE_KEYMAP" "$FILE" ${CONSOLE_GRP_TOGGLE:+"$CONSOLE_GRP_TOGGLE.inc"}
+}
+
+setup_tty()
+{
+	set_keyboard_mode "$1"
+	setup_terminal "$1"
+	set_font "$1"
+	set_keymap "$1"
+}
+
+foreach_ttys setup_tty
