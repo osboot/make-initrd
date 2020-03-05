@@ -1,0 +1,10 @@
+#!/bin/sh -e
+
+. sh-functions
+. guess-functions
+
+for p in "$SYSFS_PATH"/class/drm/*; do
+	[ -e "$p" ] ||
+		break
+	guess_device "${p#$SYSFS_PATH}"
+done
