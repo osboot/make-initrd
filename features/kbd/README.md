@@ -10,11 +10,13 @@ Feature adds keymap and console fonts to initramfs.
 - **KBD_FONT** -- Name or full path to console font;
 - **KBD_FONT_UNIMAP** -- Unimap for console font (optional);
 - **KBD_TTYS** -- TTY numbers to which you want to adjust the font and keymap.
+- **KBD_UNICODE** -- defines whether ttys should be in UNICODE mode.
 
 System config files:
 
 - `/etc/sysconfig/consolefont`
 - `/etc/sysconfig/keyboard`
+- `/etc/sysconfig/i18n`
 
 Initramfs config file:
 

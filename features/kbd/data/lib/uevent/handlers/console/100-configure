@@ -31,16 +31,29 @@ foreach_ttys()
 
 set_keyboard_mode()
 {
-	message "$1: Setting the keyboard driver in Unicode mode ..."
-	kbd_mode -u -C "$1"
+	local mode arg
+	if [ -n "$CONSOLE_UNICODE" ]; then
+		mode="Unicode"
+		arg=-u
+	else
+		mode="ASCII"
+		arg=-a
+	fi
+	message "$1: Setting the keyboard driver in $mode mode ..."
+	kbd_mode $arg -C "$1"
 }
 
 setup_terminal()
 {
 	# Tell the console output driver that the bytes arriving are UTF-8
 	# encoded multibyte sequences.
-	printf '\033%%G' >>"$1"
-	stty -F "$1" iutf8
+	if [ -n "$CONSOLE_UNICODE" ]; then
+		printf '\033%%G' >>"$1"
+		stty -F "$1" iutf8
+	else
+		printf '\033%%@' >>"$1"
+		stty -F "$1" -iutf8
+	fi
 }
 
 set_font()
@@ -56,14 +69,17 @@ set_keymap()
 	[ -n "$CONSOLE_KEYMAP" ] && [ "$CONSOLE_KEYMAP" != "bogus" ] ||
 		return 0
 
-	local FILE
+	local FILE arg=''
 
 	[ "$CONSOLE_BACKSPACE" = "BackSpace" ] &&
 		FILE="backspace.inc" ||
 		FILE="delete.inc"
 
+	[ -z "$CONSOLE_UNICODE" ] ||
+		arg=-u
+
 	message "$1: Loading keymap $CONSOLE_KEYMAP, $FILE${CONSOLE_GRP_TOGGLE:+, $CONSOLE_GRP_TOGGLE.inc} ..."
-	loadkeys -C "$1" "$CONSOLE_KEYMAP" "$FILE" ${CONSOLE_GRP_TOGGLE:+"$CONSOLE_GRP_TOGGLE.inc"}
+	loadkeys -C "$1" $arg "$CONSOLE_KEYMAP" "$FILE" ${CONSOLE_GRP_TOGGLE:+"$CONSOLE_GRP_TOGGLE.inc"}
 }
 
 setup_tty()

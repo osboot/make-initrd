@@ -26,6 +26,7 @@ CONSOLE_FONT_UNIMAP
 CONSOLE_GRP_TOGGLE
 CONSOLE_KEYMAP
 CONSOLE_TTYS
+CONSOLE_UNICODE
 EOF
 
 eval_names <<EOF
@@ -45,12 +46,20 @@ eval_names <<EOF
 EOF
 
 eval_names <<EOF
+`	sed -rn \
+		-e 's#^[[:space:]]*LANG=[^#[:space:]]+\.(utf-8|UTF-8)[[:space:]]*$#CONSOLE_UNICODE 1#p' \
+		/etc/sysconfig/i18n
+`
+EOF
+
+eval_names <<EOF
 ${KBD_KEYMAP:+             CONSOLE_KEYMAP      $KBD_KEYMAP}
 ${KBD_BACKSPACE:+          CONSOLE_BACKSPACE   $KBD_BACKSPACE}
 ${KBD_GRP_TOGGLE:+         CONSOLE_GRP_TOGGLE  $KBD_GRP_TOGGLE}
 ${KBD_FONT:+               CONSOLE_FONT        $KBD_FONT}
 ${KBD_FONT_UNIMAP:+        CONSOLE_FONT_UNIMAP $KBD_FONT_UNIMAP}
 ${KBD_TTYS:+               CONSOLE_TTYS        $KBD_TTYS}
+${KBD_UNICODE:+            CONSOLE_UNICODE     $KBD_UNICODE}
 EOF
 
 for n in $NAMES; do
