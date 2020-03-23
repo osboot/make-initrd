@@ -57,6 +57,18 @@ process_mpoint() {
 		done < "$f"
 	done
 
+	if [ -z "$t_fsname" ]; then
+		local devnum fsname
+		if
+			devnum="$(stat -c '%d' "$mpoint")"
+			devnum="${devnum:-0}"
+			fsname="/dev/block/$(($devnum / 256)):$(($devnum % 256))"
+			process_devices "$fsname"
+		then
+			t_fsname="$fsname"
+		fi
+	fi
+
 	[ -n "$t_fsname" ] ||
 		fatal "Unable to find device for '$mpoint' mount point"
 }

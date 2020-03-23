@@ -43,7 +43,7 @@ process_mpoint() {
 	done
 
 	[ -n "$t_fsname" ] ||
-		fatal "Unable to find device for '$mpoint' mount point"
+		return 0
 
 	printf '%s\t%s\t%s\t%s 0 0\n' "$t_fsname" "$mpoint" "$t_fstype" "$t_opts"
 }
