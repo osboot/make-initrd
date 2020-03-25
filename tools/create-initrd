@@ -100,7 +100,7 @@ for d in lib etc; do
 	fi
 done
 
-for n in builtin order; do
+for n in builtin order builtin.modinfo; do
 	[ ! -f "$kernel_modules_dir/modules.$n" ] ||
 		cp -aLt ./"$kernel_modules_dir" -- "$kernel_modules_dir/modules.$n"
 done
