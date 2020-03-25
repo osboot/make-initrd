@@ -28,11 +28,12 @@ pack: pre-pack
 all: check-for-root
 	@rc=0; \
 	for c in $(INITRD_CONFIG_LIST); do \
-		echo "Config file: $$c"; \
 		wsuffix="$${c##*/}"; \
 		wsuffix="$${wsuffix%.mk}"; \
 		export WORKDIR_SUFFIX="$$wsuffix"; \
 		export INITRD_CONFIG="$$c"; \
+		export STARTUP_TIME="$$(date +'%s')"; \
+		$(MSG) "Config file: $$c"; \
 		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @PREFIX@/mk/make-initrd.mk guess    || { rc=1; break; }; \
 		export IGNORE_DEPMOD=1; \
 		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @PREFIX@/mk/make-initrd.mk genimage || { rc=1; break; }; \

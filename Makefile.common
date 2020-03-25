@@ -37,6 +37,8 @@ Q = @
 VERBOSE ?= $(V)
 ifeq ($(VERBOSE),1)
     Q =
+else
+    MAKEFLAGS += --no-print-directory
 endif
 
 quiet_cmd = \

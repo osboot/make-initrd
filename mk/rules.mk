@@ -10,8 +10,7 @@ if_feature = \
 	$(filter-out $(DISABLE_FEATURES),$(1))
 
 genimage: install
-	@echo
-	@echo "Image is saved as $(IMAGEFILE)"
+	@$(MSG) "Image is saved as $(IMAGEFILE)"
 	@echo
 
 check-for-root:
@@ -75,8 +74,8 @@ install: pack
 	    exit 1; \
 	else \
 	    $(MSG) "Installing image ..."; \
-	    echo "Unpacked size: `du -sh "$(WORKDIR)" |cut -f1 ||:`"; \
-	    echo "Image size: `du -sh "$(WORKDIR)/initrd.img" |cut -f1 ||:`"; \
+	    $(MSG) "Unpacked size: `du -sh "$(WORKDIR)" |cut -f1 ||:`"; \
+	    $(MSG) "Image size: `du -sh "$(WORKDIR)/initrd.img" |cut -f1 ||:`"; \
 	    chmod 600 -- "$(WORKDIR)/initrd.img"; \
 	    mv -f $(verbose) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"; \
 	    echo "$(IMAGEFILE)" >> "$(TEMPDIR)/images"; \

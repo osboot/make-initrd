@@ -1,0 +1,3 @@
+#!/bin/sh -efu
+
+echo "[$(date -u -d "@$(($(date +'%s') - ${STARTUP_TIME:-0}))" +"%T")]"
