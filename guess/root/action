@@ -3,81 +3,25 @@
 . sh-functions
 . guess-functions
 
-process_fstype() {
-	local device="$1"
-
-	fstype="$(blkid -o value -s TYPE -c /dev/null "$device")"
-	guess_fstype "$device" "$fstype"
-}
-
-process_devices() {
-	local rc=1
-
-	for device_file; do
-		majmin="$(get_majmin "$device_file")" ||
-			continue
-
-		# kernel >= 2.6.27
-		guess_device "/dev/block/$majmin"
-
-		process_fstype "$device_file"
-		rc=0
-	done
-
-	return $rc
-}
-
-process_mpoint() {
-	local mpoint="$1"
-	local t_fsname='' t_fstype=''
-
-	for f in "${FSTAB:-/etc/fstab}" "${PROC_MOUNTS:-$PROCFS_PATH/mounts}"; do
-		[ -L "$f" ] || [ -f "$f" ] ||
-			continue
-
-		local fsname fsdir fstype opts freq passno
-		local device_list
-		local eof=
-		while [ -z "$eof" ]; do
-			read -r fsname fsdir fstype opts freq passno ||
-				eof=1
-
-			[ -n "${fsname##\#*}" ] && [ "$fsdir" = "$mpoint" ] && [ "$fstype" != 'rootfs' ] ||
-				continue
-
-			device_list="$(get_device "$fsname")" ||
-				continue
-
-			process_devices $device_list ||
-				continue
-
-			t_fsname="$fsname"
-			t_fstype="$fstype"
-			break 2
-		done < "$f"
-	done
-
-	if [ -z "$t_fsname" ]; then
-		local devnum fsname
-		if
-			devnum="$(stat -c '%d' "$mpoint")"
-			devnum="${devnum:-0}"
-			fsname="/dev/block/$(($devnum / 256)):$(($devnum % 256))"
-			process_devices "$fsname"
-		then
-			t_fsname="$fsname"
-		fi
-	fi
-
-	[ -n "$t_fsname" ] ||
-		fatal "Unable to find device for '$mpoint' mount point"
-}
+export LIBMOUNT_FSTAB="${FSTAB:-/etc/fstab}"
+export LIBMOUNT_MTAB="${PROC_MOUNTS:-$PROCFS_PATH/mounts}"
 
 pass=' '
-for m in ${MOUNTPOINTS-}; do
-	[ -n "${pass##* $m *}" ] ||
+for dir in ${MOUNTPOINTS-}; do
+	[ -n "${pass##* $dir *}" ] ||
 		continue
-	process_mpoint "$m"
+
+	out="$(findmnt -n -o MAJ:MIN,FSTYPE,SOURCE --target "$dir")" ||
+		fatal "Unable to find device for '$dir' mount point"
+
+	printf '%s\n' "$out" |
+	while read -r majmin fstype device; do
+		# kernel >= 2.6.27
+		guess_device "/dev/block/$majmin"
+		guess_fstype "$device" "$fstype"
+	done
+
 	guess_feature rootfs
-	pass="$pass$m "
+
+	pass="$pass$dir "
 done
