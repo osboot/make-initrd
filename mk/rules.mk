@@ -22,7 +22,7 @@ check-for-root:
 depmod-host: check-for-root
 	@if [ -z "$$IGNORE_DEPMOD" ]; then \
 	   $(MSG) "Generating module dependencies on host ..."; \
-	   depmod -a -F "/boot/System.map-$(KERNEL)" "$(KERNEL)"; \
+	   depmod -a -F "$(BOOTDIR)/System.map-$(KERNEL)" "$(KERNEL)"; \
 	fi
 
 # We should use it here because WORKDIR should be in the same

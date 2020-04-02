@@ -6,7 +6,7 @@
 BIN_SPLASH=/sbin/splash
 
 [ -x "$BIN_SPLASH" ] &&
-	grep -qs '[[:space:]]splash_' "/boot/System.map-$kernel" ||
+	grep -qs '[[:space:]]splash_' "$BOOTDIR/System.map-$kernel" ||
 	exit 0
 
 config="/etc/sysconfig/bootsplash"
