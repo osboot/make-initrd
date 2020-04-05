@@ -152,8 +152,6 @@ case "${1-}" in
 		DEVICES=
 
 		if [ -d "$2" ]; then
-			mountpoint -q "$2" ||
-				fatal "$2: Not mountpoint"
 			MOUNTPOINTS="$2"
 		elif [ -b "$2" ]; then
 			DEVICES="$2"
