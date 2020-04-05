@@ -1,6 +1,9 @@
-#!/bin/sh -efu
+#!/bin/sh -eu
 
 read -r testcase < "$HOME/src/.tests/cur"
+
+cp -vf -- /boot/System* "$HOME/src/.tests/boot/"
+cp -vf -- /boot/config* "$HOME/src/.tests/boot/"
 
 set -- "$HOME/src/utils/make-initrd" \
 	-D \
