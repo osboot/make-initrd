@@ -1,8 +1,10 @@
 dist: bionic
 sudo: required
 language: c
-env:
-  - IN_TRAVIS=1
+branches:
+  only:
+  - master
+  - travis
 install:
   - sudo apt-get update -qq
   - sudo apt-get install coreutils cpio curl qemu-kvm
@@ -10,6 +12,45 @@ install:
     sudo modprobe kvm-intel nested=1 ||:
     sudo modprobe kvm-amd   nested=1 ||:
     sudo chmod 666 /dev/kvm ||:
-
+matrix:
+  include:
+    - name: "Root on LUKS"
+      arch: amd64
+      os: linux
+      env:
+         - TRAVIS_TESTCASE="test-luks"
+         - IN_TRAVIS=1
+    - name: "Root on LUKS with separate key"
+      arch: amd64
+      os: linux
+      env:
+         - TRAVIS_TESTCASE="test-lukskey"
+         - IN_TRAVIS=1
+    - name: "Root on LVM"
+      arch: amd64
+      os: linux
+      env:
+         - TRAVIS_TESTCASE="test-lvm"
+         - IN_TRAVIS=1
+    - name: "Root on RAID1"
+      arch: amd64
+      os: linux
+      env:
+         - TRAVIS_TESTCASE="test-raid1"
+         - IN_TRAVIS=1
+    - name: "Root on degraded RAID1"
+      arch: amd64
+      os: linux
+      env:
+         - TRAVIS_TESTCASE="test-degraded-raid1"
+         - IN_TRAVIS=1
+    - name: "Root on partition"
+      arch: amd64
+      os: linux
+      env:
+         - TRAVIS_TESTCASE="test-partition"
+         - IN_TRAVIS=1
 script:
-  - sudo make -C tests build check
+  - |
+    sudo make -C tests build
+    sudo make -C tests $TRAVIS_TESTCASE

@@ -1,6 +1,6 @@
 # make-initrd
 
-[![Build Status](https://travis-ci.org/legionus/make-initrd.svg?branch=master)](https://travis-ci.org/legionus/make-initrd)
+[![Build Status](https://travis-ci.org/osboot/make-initrd.svg?branch=master)](https://travis-ci.org/osboot/make-initrd)
 
 make-initrd is a new, uevent-driven initramfs infrastructure based around udev.
 
