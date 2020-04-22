@@ -1,0 +1,2 @@
+register_parameter bool NO_FSCK
+register_parameter bool FASKBOOT
