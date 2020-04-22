@@ -1,5 +1,6 @@
 #!/bin/sh -efu
 
+. initrd-sh-functions
 . rdshell-sh-functions
 
 PID="$$"
@@ -32,7 +33,8 @@ fi
 
 delay=${ROOTDELAY:-180}
 while [ "$delay" -gt 0 ] && [ ! -x "$rootmnt/$INIT" ]; do
-	delay=$(($delay - 1))
+	rootdelay_paused ||
+		delay=$(($delay - 1))
 	sleep 1
 done
 

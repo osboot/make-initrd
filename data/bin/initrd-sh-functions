@@ -75,4 +75,21 @@ readline()
         eval "$1=\"\$__v\""
 }
 
+_rootdelay_pause=/.initrd/rootdelay/pause
+
+rootdelay_pause()
+{
+	mkdir -p "$_rootdelay_pause"
+}
+
+rootdelay_unpause()
+{
+	rm -rf "$_rootdelay_pause"
+}
+
+rootdelay_paused()
+{
+	[ -d "$_rootdelay_pause" ]
+}
+
 fi
