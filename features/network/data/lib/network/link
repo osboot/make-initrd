@@ -17,11 +17,19 @@ update()
 		ip_cmd link "$@" dev "$NET_IF"
 	}
 
+	#
+	# `ip link ...` may but should not change the name of the interface.
+	#
+	cd "/sys/class/net/$NET_IF"
+
 	cat_config "$confdir/iplink" __handler &&
 		ip_cmd link set dev "$NET_IF" up ||
 		return 0
 
+	printf '%s mac %s\n' "$NET_IF" "$(cat ./address)" > "$confdir/iftab"
+
 	add_iface_state "$NET_IF" "iplink"
+	add_iface_state "$NET_IF" "iftab"
 
 	if wait_for_link_up "$NET_IF"; then
 		message "create event: network.$NET_EV_TYPE.$NET_EV_ACTION -> network.link.updated"
