@@ -4,6 +4,8 @@
 
 . shell-error
 . uevent-sh-functions
+. initrd-sh-functions
+. state-sh-functions
 
 exec >> "/var/log/console-setup.log" 2>&1
 
@@ -31,7 +33,7 @@ foreach_ttys()
 
 set_keyboard_mode()
 {
-	local mode arg
+	local mode arg rc=0
 	if [ -n "$CONSOLE_UNICODE" ]; then
 		mode="Unicode"
 		arg=-u
@@ -40,7 +42,13 @@ set_keyboard_mode()
 		arg=-a
 	fi
 	message "$1: Setting the keyboard driver in $mode mode ..."
-	kbd_mode $arg -C "$1"
+	kbd_mode $arg -C "$1" ||
+		rc=$?
+
+	[ "$rc" = 0 ] ||
+		return 0
+
+	printf '%s\n' "$mode" | statefs_write "/devices/char/$majmin/mode"
 }
 
 setup_terminal()
@@ -60,8 +68,17 @@ set_font()
 {
 	[ -n "$CONSOLE_FONT" ] ||
 		return 0
+
+	local rc=0
+
 	message "$1: Loading font $CONSOLE_FONT${CONSOLE_FONT_UNIMAP:+ (unimap $CONSOLE_FONT_UNIMAP)} ..."
-	setfont -C "$1" "$CONSOLE_FONT" ${CONSOLE_FONT_UNIMAP:+-u "$CONSOLE_FONT_UNIMAP"}
+	setfont -C "$1" "$CONSOLE_FONT" ${CONSOLE_FONT_UNIMAP:+-u "$CONSOLE_FONT_UNIMAP"} ||
+		rc=$?
+
+	[ "$rc" = 0 ] ||
+		return 0
+
+	printf '%s\n' "$CONSOLE_FONT" | statefs_write "/devices/char/$majmin/font"
 }
 
 set_keymap()
@@ -69,7 +86,7 @@ set_keymap()
 	[ -n "$CONSOLE_KEYMAP" ] && [ "$CONSOLE_KEYMAP" != "bogus" ] ||
 		return 0
 
-	local FILE arg=''
+	local FILE arg='' rc=0
 
 	[ "$CONSOLE_BACKSPACE" = "BackSpace" ] &&
 		FILE="backspace.inc" ||
@@ -79,11 +96,20 @@ set_keymap()
 		arg=-u
 
 	message "$1: Loading keymap $CONSOLE_KEYMAP, $FILE${CONSOLE_GRP_TOGGLE:+, $CONSOLE_GRP_TOGGLE.inc} ..."
-	loadkeys -C "$1" $arg "$CONSOLE_KEYMAP" "$FILE" ${CONSOLE_GRP_TOGGLE:+"$CONSOLE_GRP_TOGGLE.inc"}
+
+	loadkeys -C "$1" $arg "$CONSOLE_KEYMAP" "$FILE" ${CONSOLE_GRP_TOGGLE:+"$CONSOLE_GRP_TOGGLE.inc"} ||
+		rc=$?
+
+	[ "$rc" = 0 ] ||
+		return 0
+
+	printf '%s\n' "$CONSOLE_KEYMAP" | statefs_write "/devices/char/$majmin/keymap"
 }
 
 setup_tty()
 {
+	majmin="$(get_majmin "$1")" ||
+		return 0
 	set_keyboard_mode "$1"
 	setup_terminal "$1"
 	set_font "$1"

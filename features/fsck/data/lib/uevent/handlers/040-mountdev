@@ -4,6 +4,7 @@
 . uevent-sh-functions
 . rdshell-sh-functions
 . initrd-sh-functions
+. state-sh-functions
 
 message_time=1
 
@@ -24,6 +25,10 @@ handler()
 
 	if [ "$rc" = 0 ] || [ "$rc" = 1 ]; then
 		rootdelay_unpause
+
+		majmin="$(get_majmin "$MOUNTDEV")" &&
+			echo done | statefs_write "/devices/block/$majmin/fcsk" ||:
+
 		return 0
 	fi
 

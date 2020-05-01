@@ -1,0 +1,19 @@
+#!/bin/sh
+
+if [ -z "${__state_sh_functions-}" ]; then
+__state_sh_functions=1
+
+statefs=/dev/initramfs
+
+statefs_mkdir()
+{
+	mkdir -p -- "$statefs/$1"
+}
+
+statefs_write()
+{
+	statefs_mkdir "${1%/*}"
+	cat > "$statefs/$1"
+}
+
+fi

@@ -16,6 +16,13 @@ devlinks_check() {
 	return 1
 }
 
+get_majmin() {
+	local v
+	v="$(stat -L -c '%02t:%02T' "$1" 2>/dev/null)" &&
+		printf '%d:%d\n' "0x${v%:*}" "0x${v#*:}" ||
+		return 1
+}
+
 get_dev() {
 	local name retval value
 
