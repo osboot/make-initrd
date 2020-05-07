@@ -27,7 +27,7 @@ handler()
 		rootdelay_unpause
 
 		majmin="$(get_majmin "$MOUNTDEV")" &&
-			echo done | statefs_write "/devices/block/$majmin/fcsk" ||:
+			echo done | statefs_write "/devices/block/$majmin/fsck" ||:
 
 		return 0
 	fi
