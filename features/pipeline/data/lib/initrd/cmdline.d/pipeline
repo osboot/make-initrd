@@ -1,0 +1,6 @@
+#!/bin/sh -efu
+
+. /.initrd/initenv
+
+[ "${ROOT-}" != pipeline ] ||
+	echo pipeline > /etc/initrd/method

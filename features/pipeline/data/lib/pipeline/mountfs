@@ -1,0 +1,11 @@
+#!/bin/sh -efu
+
+check_parameter MOUNTFS
+target="$(get_parameter MOUNTFS)"
+target="$(resolve_target "$target")"
+
+opts=
+[ ! -c "$target" ] && [ ! -b "$target" ] ||
+	opts='ro,loop'
+
+mount ${opts:+-o $opts} "$target" "$destdir"

@@ -1,0 +1,18 @@
+#!/bin/sh -efu
+
+check_parameter GETIMAGE
+url="$(get_parameter GETIMAGE)"
+
+if [ -n "${url##file://*}" ]; then
+	# FIXME: make a better waiting for network
+	n=0
+	while [ "$n" != 5 ]; do
+		! wget -O "$datadir/image" "$url" ||
+			break
+		n=$(($n + 1))
+		sleep 3
+	done
+else
+	cp -f -- "${url#file://}" "$datadir/image"
+fi
+mount -o ro,loop "$datadir/image" "$destdir"

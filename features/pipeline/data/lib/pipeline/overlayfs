@@ -1,0 +1,22 @@
+#!/bin/sh -efu
+
+target="$(get_parameter OVERLAYFS)"
+target="${target:-$prevdir}"
+
+pipe="$target"
+lowerdirs=
+
+while [ -n "$pipe" ]; do
+	name="${pipe%%,*}"
+
+	dir="$(resolve_target "$name")"
+	lowerdirs="${lowerdirs:+$lowerdirs,}$dir"
+
+	pipe="${pipe#$name}"
+	pipe="${pipe#,}"
+done
+
+mkdir -p -- "$datadir/rw" "$datadir/work"
+
+mount -o "lowerdir=$lowerdirs,upperdir=$datadir/rw,workdir=$datadir/work" \
+	-t overlay overlay "$destdir"

@@ -1,0 +1,36 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            pipeline
+# Required-Start:      uevent
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# X-LFS-Provided-By:   LFS
+### END INIT INFO
+
+. /.initrd/initenv
+. /etc/init.d/template
+
+NAME=pipelined
+PIDFILE="/var/run/$NAME.pid"
+ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --name $NAME --displayname $NAME"
+
+start() {
+	RETVAL=0
+	if [ "${ROOT-}" = pipeline ]; then
+		start_daemon --background $ARGS "$NAME"
+		RETVAL=$?
+	fi
+	return $RETVAL
+}
+
+stop() {
+	stop_daemon $ARGS "$NAME"
+	RETVAL=$?
+	[ ! -f "$PIDFILE" ] || rm -f -- "$PIDFILE"
+	return $RETVAL
+}
+
+switch "${1-}"

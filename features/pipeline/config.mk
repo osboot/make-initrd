@@ -1,0 +1,1 @@
+PIPELINE_DATADIR = $(FEATURESDIR)/pipeline/data
