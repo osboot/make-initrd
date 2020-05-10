@@ -1,0 +1,1 @@
+SUBSYSTEM=="block", ACTION!="remove", RUN+="/lib/uevent/filters/pipeline-waitdev"

@@ -8,6 +8,7 @@ the previous elements.
 - `getimage` receives and mounts the remote image.
 - `mountfs` mounts file from the previous pipe element.
 - `overlayfs` combines one or more pipe elements using overlayfs.
+- `waitdev` waits for the local device to appear.
 - `rootfs` uses the result of the previous element as a root.
 
 ## Boot parameters
@@ -17,6 +18,8 @@ the previous elements.
 - `getimage` specifies an URL to fetch and mount.
 - `mountfs` specifies a file to mount.
 - `overlayfs` defines a list of elements to be combined.
+- `waitdev` describes the local device to wait. The format of this parameter is
+   the same as `root=`.
 
 The separator between the elements is a comma (`,`).
 
