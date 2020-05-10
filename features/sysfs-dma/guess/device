@@ -1,0 +1,13 @@
+#!/bin/sh -eu
+
+. guess-functions
+
+#
+# bcm2835 uses bcm2835-dma, but DMA is not present in the sysfs tree except as
+# the dma:rx-tx symlink which is not a public API. Well this is better than
+# nothing.
+#
+for n in "$SYSFS_PATH$1"/dma:*; do
+	[ ! -e "$n" ] ||
+		guess_device "$1/${n##*/}"
+done
