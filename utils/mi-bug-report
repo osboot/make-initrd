@@ -1,0 +1,103 @@
+#!/bin/sh -efu
+
+. shell-error
+
+if [ "$#" = 0 ]; then
+	printf 'Usage: %s bug-report.archive.tar\n' "$PROG"
+	exit 1
+fi
+
+create()
+{
+	[ ! -d /tmp/report ] ||
+		fatal "/tmp/report already exists"
+
+	archive="$1"; shift
+
+	tar -C /tmp -xf "$archive"
+
+	cd /tmp/report
+
+	kver=$(set +f; echo boot/config-* |sed -e 's#^.*/config-##')
+	mv -f -- lib libinfo
+
+	mkdir -p -- \
+		.host \
+		dev \
+		sys \
+		proc \
+		tmp \
+		root \
+		var/lib \
+		var/resolv
+
+	makenod() { [ -e dev/$1 ] || mknod dev/$1 $2 $3 $4; }
+	makenod ram     b 1 1
+	makenod null    c 1 3
+	makenod zero    c 1 5
+	makenod full    c 1 7
+	makenod random  c 1 8
+	makenod ptmx    c 5 2
+
+	mount --bind -o ro / .host
+
+	for n in \
+		etc/protocols \
+		etc/rpc \
+		etc/services \
+		home \
+		bin \
+		sbin \
+		usr \
+		lib \
+		lib64;
+	do
+		[ -e "./$n" ] || [ -L "./$n" ] ||
+			ln -s -- "/.host/$n" "./$n"
+	done
+
+	touch "boot/System.map-$kver"
+
+	[ -f etc/passwd ] ||
+		printf 'root:x:0:0:root:/root:/bin/sh\n' > etc/passwd
+
+	[ -f etc/group ] ||
+		printf 'root:x:0:\n' > etc/group
+
+	[ -f etc/initrd.mk ] ||
+		cat > etc/initrd.mk <<-EOF
+		AUTODETECT = all
+		FEATURES += qemu
+		KERNEL = $kver
+		EOF
+}
+
+destroy()
+{
+	findmnt -n -l -o TARGET |grep /tmp/report |
+		xargs -r umount
+	rm -rf -- /tmp/report
+}
+
+shell()
+{
+	export MAKE_INITRD_BUG_REPORT=1
+	export HOME=/root
+	export TMPDIR=/tmp
+	export PS1='[report \W]# '
+	chroot /tmp/report
+}
+
+action="$1"; shift
+
+case "$action" in
+	create)
+		"$action" "$1"
+		;;
+	destroy)
+		"$action"
+		;;
+	shell)
+		"$action"
+		;;
+esac
