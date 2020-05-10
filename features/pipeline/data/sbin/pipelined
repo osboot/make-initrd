@@ -1,9 +1,10 @@
 #!/bin/sh -efu
 
-export PATH="$PWD:$PATH"
-
+. /.initrd/initenv
 . shell-error
-. initenv
+
+handlerdir="/lib/pipeline"
+mntdir="/mnt/pipeline"
 
 check_parameter()
 {
@@ -34,11 +35,6 @@ resolve_target()
 	printf '%s' "$target"
 }
 
-handlerdir="/lib/pipeline"
-mntdir="/mnt/pipeline"
-
-handlerdir="$PWD/pipeline.d"
-mntdir="$PWD/mnt"
 mkdir -p -- "$mntdir"
 
 mountpoint -q "$mntdir" ||
