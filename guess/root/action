@@ -6,12 +6,186 @@
 export LIBMOUNT_FSTAB="${FSTAB:-/etc/fstab}"
 export LIBMOUNT_MTAB="${PROC_MOUNTS:-$PROCFS_PATH/mounts}"
 
+if [ -n "${MAKE_INITRD_BUG_REPORT-}" ]; then
+
+BLKID_OUT="/etc/blkid.out"
+LIST_FILE="/dev/list"
+DEVLIST_FILE="/dev/devlist"
+
+unquote()
+{
+	local s="$1"
+	s="${s#\"}"
+	s="${s%\"}"
+	printf '%s' "$s"
+}
+
+report_devlist_majmin()
+{
+	local devname
+
+	devname="$1"; shift
+
+	local perm dev
+
+	while read -r perm maj min dev; do
+		case "$perm" in
+			[bc]*)
+				maj=$(( 0x$maj ))
+				min=$(( 0x$min ))
+
+				printf '%s %s %s\n' "$maj" "$min" "$dev"
+
+				[ "$devname" != "$dev" ] ||
+					return 0
+				;;
+		esac
+
+	done < "$DEVLIST_FILE"
+	return 1
+}
+
+report_ls_majmin()
+{
+	local devname
+
+	devname="$1"; shift
+
+	local line perm ndev rdev
+
+	while read -r line; do
+		set -- $line
+
+		perm="$1" ndev="" rdev="" maj="" min=""
+		shift 4
+
+		case "$perm" in
+			l*)
+				ndev="${5}"
+				rdev="${7}"
+				;;
+			[bc]*)
+				maj="${1%,}"
+				min="${2}"
+				ndev="${6}"
+				rdev="${6}"
+
+				[ "$devname" != "$ndev" ] ||
+					return 0
+				;;
+		esac
+
+	done < "$LIST_FILE"
+	return 1
+}
+
+report_get_devinfo()
+{
+	local spec line
+
+	spec="$1"; shift
+
+	while read -r line; do
+		set -- $line
+
+		devname="${1%:}"
+		uuid=
+		label=
+		fstype=
+
+		for a; do
+			case "$a" in
+				UUID=*)
+					a="${a#UUID=}"
+					uuid="$(unquote "$a")"
+					;;
+				LABEL=*)
+					a="${a#LABEL=}"
+					label="$(unquote "$a")"
+					;;
+				TYPE=*)
+					a="${a#TYPE=}"
+					fstype="$(unquote "$a")"
+					;;
+			esac
+		done
+
+		case "$spec" in
+			UUID=*)
+				[ "${spec#UUID=}" = "$uuid" ] ||
+					continue
+				;;
+			LABEL=*)
+				[ "${spec#LABEL=}" = "$label" ] ||
+					continue
+				;;
+			/*)
+				[ "$spec" = "$devname" ] ||
+					continue
+				;;
+			*)
+				fatal "not supported: $spec"
+				;;
+		esac
+
+		return 0
+
+	done < "$BLKID_OUT"
+
+	return 1
+}
+
+report_findmnt()
+{
+	local dir
+
+	dir="$1"; shift
+
+	local fs_spec fs_file fs_vfstype fs_mntops fs_freq fs_passno
+
+	while read -r fs_spec fs_file fs_vfstype fs_mntops fs_freq fs_passno; do
+		[ "$dir" = "$fs_file" ] ||
+			continue
+
+		report_get_devinfo "$fs_spec" ||
+			return 1
+
+		maj="" min=""
+
+		if [ -e "$DEVLIST_FILE" ]; then
+			report_devlist_majmin "$devname" ||
+				return 1
+		else
+			report_ls_majmin "$devname" ||
+				return 1
+		fi
+
+		echo "$maj:$min $fstype $devname"
+		return 0
+
+	done < "$LIBMOUNT_FSTAB"
+	return 1
+}
+
+else	# MAKE_INITRD_BUG_REPORT
+
+system_findmnt()
+{
+	findmnt -n -o MAJ:MIN,FSTYPE,SOURCE --target "$1"
+}
+
+fi	# MAKE_INITRD_BUG_REPORT
+
 pass=' '
 for dir in ${MOUNTPOINTS-}; do
 	[ -n "${pass##* $dir *}" ] ||
 		continue
 
-	out="$(findmnt -n -o MAJ:MIN,FSTYPE,SOURCE --target "$dir")" ||
+	[ -z "${MAKE_INITRD_BUG_REPORT-}" ] &&
+		findmnt='system_findmnt' ||
+		findmnt='report_findmnt'
+
+	out="$($findmnt "$dir")" ||
 		fatal "Unable to find device for '$dir' mount point"
 
 	printf '%s\n' "$out" |

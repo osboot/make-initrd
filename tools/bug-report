@@ -56,6 +56,14 @@ mkdir -p -- "$reportdir"/dev
 LANG=C find /dev \! -type d -exec ls -lad '{}' '+' >"$reportdir"/dev/list
 progress "$c"
 
+(
+	export LANG=C;
+	find /dev -type d -exec stat -L -c '%A %t %T %n' '{}' '+' 2>/dev/null |
+		sort >"$reportdir"/dev/devlist
+) ||
+	rm -f -- "$reportdir"/dev/devlist
+progress "$c"
+
 blkid -c /dev/null >"$reportdir"/etc/blkid.out
 progress "$c"
 
