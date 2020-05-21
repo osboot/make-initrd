@@ -30,9 +30,14 @@ QEMU_ARGUMENTS += -machine 'type=q35,accel=kvm:tcg'
 QEMU_ARGUMENTS += -cpu 'host'
 QEMU_ARGUMENTS += -smp '4'
 QEMU_ARGUMENTS += -m '1G'
-QEMU_ARGUMENTS += -chardev pipe,id=stdio,path=$(TESTDIR)/qemu.fifo
-QEMU_ARGUMENTS += -serial 'chardev:stdio'
+ifeq ($(MAKECMDGOALS),check-shell)
+QEMU_ARGUMENTS += -chardev stdio,mux=on,id=stdio,signal=off
+QEMU_ARGUMENTS += -mon "chardev=stdio,mode=readline"
+else
 QEMU_ARGUMENTS += -monitor none
+QEMU_ARGUMENTS += -chardev pipe,id=stdio,path=$(TESTDIR)/qemu.fifo
+endif
+QEMU_ARGUMENTS += -serial 'chardev:stdio'
 QEMU_ARGUMENTS += -no-reboot
 QEMU_ARGUMENTS += -nographic
 
@@ -133,3 +138,8 @@ check: qemu-stage0
 	$(QEMU_FILTER) --logfile=$(TESTDIR)/log.$(TESTCASE).boot -- \
 	    $(TESTCASE_COMMAND);
 	@$(TRAVIS_STOP)
+
+check-shell:
+	@echo "$(TESTCASE): Testing ... "
+	@echo "$(TESTCASE)" > $(TESTDIR)/cur;
+	$(TESTCASE_COMMAND);
