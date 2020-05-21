@@ -18,5 +18,5 @@ done
 
 mkdir -p -- "$datadir/rw" "$datadir/work"
 
-mount -o "lowerdir=$lowerdirs,upperdir=$datadir/rw,workdir=$datadir/work" \
+run mount -o "lowerdir=$lowerdirs,upperdir=$datadir/rw,workdir=$datadir/work" \
 	-t overlay overlay "$destdir"

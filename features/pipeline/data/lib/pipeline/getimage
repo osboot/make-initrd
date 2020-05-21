@@ -15,4 +15,4 @@ if [ -n "${url##file://*}" ]; then
 else
 	cp -f -- "${url#file://}" "$datadir/image"
 fi
-mount -o ro,loop "$datadir/image" "$destdir"
+run mount -o ro,loop "$datadir/image" "$destdir"

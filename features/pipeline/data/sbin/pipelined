@@ -1,10 +1,31 @@
 #!/bin/sh -efu
 
-. /.initrd/initenv
 . shell-error
+. shell-signal
 
 handlerdir="/lib/pipeline"
 mntdir="/mnt/pipeline"
+
+pidfile="/var/run/$PROG.pid"
+
+exit_handler()
+{
+	local rc="$?"
+	trap - EXIT
+	rm -f -- "$pidfile"
+	exit $rc
+}
+
+[ ! -f "$pidfile" ] ||
+	fatal "already running"
+
+set_cleanup_handler exit_handler
+echo "$$" >"$pidfile"
+
+. /.initrd/initenv
+
+exec >"/var/log/$PROG.log" 2>&1
+message "Starting server ..."
 
 check_parameter()
 {
@@ -35,6 +56,12 @@ resolve_target()
 	printf '%s' "$target"
 }
 
+run()
+{
+	[ -z "${DEBUG-}" ] || message "[$callnum] RUN: $*"
+	"$@"
+}
+
 mkdir -p -- "$mntdir"
 
 mountpoint -q "$mntdir" ||
@@ -61,7 +88,7 @@ while [ -n "$pipe" ]; do
 		mkdir -p -- "$datadir" "$destdir"
 
 		if ! mountpoint -q "$destdir"; then
-			message "Handler: $exe"
+			message "[$callnum] Handler: $exe"
 
 			rc=0
 			( . "$exe" ) || rc=$?
@@ -69,12 +96,12 @@ while [ -n "$pipe" ]; do
 			if [ "$rc" != 0 ]; then
 				[ "$rc" != 2 ] ||
 					break
-				message "Handler failed (rc=$rc)"
+				message "[$callnum] Handler failed (rc=$rc)"
 				sleep 1
 				continue
 			fi
 		else
-			message "Handler: $exe skipped"
+			message "[$callnum] Handler: $exe skipped"
 		fi
 
 		prevdir="$destdir"

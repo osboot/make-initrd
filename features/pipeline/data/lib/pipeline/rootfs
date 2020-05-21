@@ -1,5 +1,5 @@
 #!/bin/sh -efu
 
-mount --move "$prevdir" "$rootmnt"
+run mount --move "$prevdir" "$rootmnt"
 echo localdev > /etc/initrd/method
 exit 2

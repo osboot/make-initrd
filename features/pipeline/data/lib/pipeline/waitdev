@@ -13,7 +13,7 @@ while [ -n "$devspec" ]; do
 		if [ -n "$devfile" ]; then
 			if [ ! -e "$destdir/dev" ]; then
 				target="$(readlink -f "$devfile")"
-				cp -a -- "$target" "$destdir/dev"
+				run cp -a -- "$target" "$destdir/dev"
 			fi
 			break
 		fi
