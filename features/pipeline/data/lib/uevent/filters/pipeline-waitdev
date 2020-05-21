@@ -5,16 +5,16 @@
 
 export WAITDEV_FILE=0
 while [ "$WAITDEV_FILE" -lt "${WAITDEV:-0}" ]; do
-	eval "spec=\"\${WAITDEV_$i-}\""
+	eval "spec=\"\${WAITDEV$WAITDEV_FILE-}\""
 	dev=
 	[ -z "$spec" ] ||
 		get_dev dev "$spec" ||:
-	eval "export WAITDEV_FILE_$WAITDEV_FILE=\"\$dev\""
+	eval "export WAITDEV_FILE$WAITDEV_FILE=\"\$dev\""
 	WAITDEV_FILE=$(($WAITDEV_FILE + 1))
 done
 
 mkdir -p -- /.initrd/pipeline
 cd /.initrd/pipeline
 
-environ -q -i 'WAITDEV_FILE,WAITDEV_FILE_*' >waitdev.env
+environ -q -i 'WAITDEV_FILE*' >waitdev.env
 mv -f -- waitdev.env waitdev

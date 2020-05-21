@@ -16,7 +16,7 @@ check_parameter()
 
 get_parameter()
 {
-	eval "printf '%s' \"\${${1}_$callnum-}\""
+	eval "printf '%s' \"\${${1}$callnum-}\""
 }
 
 resolve_target()
@@ -88,7 +88,3 @@ while [ -n "$pipe" ]; do
 
 	pipenum=$(($pipenum + 1))
 done
-
-if [ -n "$destdir" ]; then
-	#
-fi
