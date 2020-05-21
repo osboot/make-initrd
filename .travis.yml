@@ -50,6 +50,12 @@ matrix:
       env:
          - TRAVIS_TESTCASE="test-partition"
          - IN_TRAVIS=1
+    - name: "Root on squashfs from isofs"
+      arch: amd64
+      os: linux
+      env:
+         - TRAVIS_TESTCASE="test-pipeline-iso-squash"
+         - IN_TRAVIS=1
 script:
   - |
     sudo make -C tests build

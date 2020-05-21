@@ -87,6 +87,12 @@ $(TESTDIR)/data/%.qcow2: check-prepare
 	$(TRAVIS_Q)$(TOPDIR)/tests/file-get.sh "$(TESTSDATA_URL)" "$@.SHA256SUMS" "$(TESTDIR)/data"
 	@$(TRAVIS_STOP)
 
+$(TESTDIR)/data/%.iso: check-prepare
+	@$(TRAVIS_START) "get.$(@F)"
+	@echo "$(TESTCASE): Obtaining $(@F) ... "
+	$(TRAVIS_Q)$(TOPDIR)/tests/file-get.sh "$(TESTSDATA_URL)" "$@.SHA256SUMS" "$(TESTDIR)/data"
+	@$(TRAVIS_STOP)
+
 $(QEMU_STAGE0_VMLINUZ): check-prepare
 	@$(TRAVIS_START) "prepare.kernel-$(KERN_FLAVOR)-$(KERN_VERSION)"
 	@echo "$(TESTCASE): Unpacking $(@F) ... "

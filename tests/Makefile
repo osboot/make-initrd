@@ -12,7 +12,8 @@ check_SUBDIRS := \
 	test-lvm \
 	test-partition \
 	test-raid1 \
-	test-degraded-raid1
+	test-degraded-raid1 \
+	test-pipeline-iso-squash
 
 .PHONY: build $(check_SUBDIRS)
 
