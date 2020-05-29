@@ -8,7 +8,7 @@ Feature adds the ability to boot from LUKS partition.
 
 - `luks-key=<keypath>[:<keydev>][:<luksdev>]` key for luks device on removable device
   - `keypath` is a path to key file to look for.
-  - `keydev` is a device on which key file resides (see [device spec](../../docs/DeviceSpec.md)).
+  - `keydev` is a device on which key file resides (see [device spec](../../Documentation/DeviceSpec.md)).
   - If `luksdev` is given, the specified key will only be applied for that LUKS device.
     Possible values are the same as for keydev. Unless you have several LUKS devices,
     you don’t have to specify this parameter.
@@ -22,7 +22,7 @@ Feature adds the ability to boot from LUKS partition.
 - `luks-ignore` specifies which luks device should be ignored by initrd to decrypt.
 
 - `luks-dev` - the parameter allows you to specify a device if there are more
-  than one partitions in the luks system (see [device spec](../../docs/DeviceSpec.md)).
+  than one partitions in the luks system (see [device spec](../../Documentation/DeviceSpec.md)).
 
 ## Configuration file
 
