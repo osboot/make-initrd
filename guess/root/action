@@ -191,7 +191,8 @@ for dir in ${MOUNTPOINTS-}; do
 	printf '%s\n' "$out" |
 	while read -r majmin fstype device; do
 		# kernel >= 2.6.27
-		guess_device "/dev/block/$majmin"
+		[ -z "${majmin##0:*}" ] ||
+			guess_device "/dev/block/$majmin"
 		guess_fstype "$device" "$fstype"
 	done
 
