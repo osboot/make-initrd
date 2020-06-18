@@ -26,6 +26,7 @@ PUT_FILES += \
 	/bin/cp \
 	/bin/dmesg \
 	/bin/findmnt \
+	/bin/grep \
 	/bin/kill \
 	/bin/ln \
 	/bin/ls \
