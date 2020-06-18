@@ -1,5 +1,5 @@
 dist: bionic
-sudo: required
+os: linux
 language: c
 branches:
   only:
@@ -11,8 +11,7 @@ install:
   - |
     sudo modprobe kvm-intel nested=1 ||:
     sudo modprobe kvm-amd   nested=1 ||:
-    sudo chmod 666 /dev/kvm ||:
-matrix:
+jobs:
   include:
     - name: "Root on LUKS"
       arch: amd64
@@ -55,6 +54,12 @@ matrix:
       os: linux
       env:
          - TRAVIS_TESTCASE="test-pipeline-iso-squash"
+         - IN_TRAVIS=1
+    - name: "Root on btrfs"
+      arch: amd64
+      os: linux
+      env:
+         - TRAVIS_TESTCASE="test-btrfs-multi-device"
          - IN_TRAVIS=1
 script:
   - |

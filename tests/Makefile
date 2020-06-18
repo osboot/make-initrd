@@ -13,7 +13,8 @@ check_SUBDIRS := \
 	test-partition \
 	test-raid1 \
 	test-degraded-raid1 \
-	test-pipeline-iso-squash
+	test-pipeline-iso-squash \
+	test-btrfs-multi-device
 
 .PHONY: build $(check_SUBDIRS)
 

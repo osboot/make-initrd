@@ -2,4 +2,4 @@
 
 #/bin/bash
 
-mount /dev/sdb2 "$HOME/rootfs"
+mount LABEL=ROOT "$HOME/rootfs"

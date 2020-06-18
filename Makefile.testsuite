@@ -3,14 +3,14 @@ include $(TOPDIR)/Makefile.common
 .EXPORT_ALL_VARIABLES:
 
 TESTDIR := $(TOPDIR)/.tests
-TESTSDATA_URL = https://raw.githubusercontent.com/legionus/make-initrd-testdata/master
+TESTSDATA_URL = https://raw.githubusercontent.com/osboot/make-initrd-testdata/master
 
 ifdef MKLOCAL
 TESTSDATA_URL = file:///$(HOME)/scm/.initrd/make-initrd-testdata
 endif
 
 ROOTFS_VENDOR  = altlinux
-ROOTFS_VERSION = 20200101
+ROOTFS_VERSION = 20200618
 KERN_FLAVOR    = un-def
 KERN_VERSION   = 5.4.7-alt1
 STAGE0_VERSION = 20200101

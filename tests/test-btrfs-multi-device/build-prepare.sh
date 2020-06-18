@@ -1,5 +1,6 @@
 #!/bin/sh -efux
 
-#/bin/bash
+modprobe btrfs
+btrfs device scan --all-devices
 
 mount LABEL=ROOT "$HOME/rootfs"
