@@ -19,7 +19,7 @@ TESTCASE_COMMAND = \
 	    -initrd '$(TESTCASE_INITRAMFS)' \
 	    -append '$(TESTCASE_CMDLINE)'
 
-include $(TOPDIR)/Makefile.testsuite
+include $(TOPDIR)/tests/Makefile.testsuite
 
 TESTCASE_DRIVES =
 TESTCASE_DRIVES += -drive 'media=disk,index=1,file=$(TESTCASE_DISK0)'

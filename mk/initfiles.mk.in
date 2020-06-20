@@ -62,4 +62,8 @@ PUT_FILES += \
 PUT_FILES += $(wildcard /bin/shell-*)
 
 # initrd specific utilities
-PUT_DIRS += $(DATADIR) /lib/initrd
+PUT_DIRS += $(DATADIR)
+ifneq ($(LOCALBUILDDIR),)
+PUT_DIRS += $(LOCALBUILDDIR)/lib/initrd
+endif
+PUT_DIRS += /lib/initrd

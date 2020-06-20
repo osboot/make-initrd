@@ -1,5 +1,3 @@
-include $(TOPDIR)/Makefile.common
-
 .EXPORT_ALL_VARIABLES:
 
 TESTDIR := $(TOPDIR)/.tests
@@ -8,6 +6,9 @@ TESTSDATA_URL = https://raw.githubusercontent.com/osboot/make-initrd-testdata/ma
 ifdef MKLOCAL
 TESTSDATA_URL = file:///$(HOME)/scm/.initrd/make-initrd-testdata
 endif
+
+VERBOSE ?= $(V)
+Q = $(if $(VERBOSE),,@)
 
 ROOTFS_VENDOR  = altlinux
 ROOTFS_VERSION = 20200622

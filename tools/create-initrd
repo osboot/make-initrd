@@ -62,12 +62,6 @@ for n in ${PUT_PROGS-}; do
 	[ -z "$n" ] || put-file . $n
 done
 
-if [ -n "${LOCALBUILDDIR:+1}" ]; then
-	tree=$(readlink -ev "$LOCALBUILDDIR")
-	verbose "Copying '$tree' recursively (with force) ..."
-	put-file -f -r "$tree" "." "$tree"
-fi
-
 :>>./etc/fstab
 
 if [ ! -x ./bin/sh ]; then

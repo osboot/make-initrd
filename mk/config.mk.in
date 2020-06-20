@@ -23,21 +23,28 @@ GUESSDIR	 = $(WORKDIR)/guess
 # This is directory used for bug-report target.
 REPORTDIR	 = $(WORKDIR)/report
 
-UTILSDIR	 = @PREFIX@/utils
-TOOLSDIR	 = @PREFIX@/tools
-LOCALBUILDDIR	 = @LOCALBUILDDIR@
-DATADIR		?= @PREFIX@/data
-SCRIPTDIR	?= @PREFIX@/scripts.d
-FEATURESDIR	?= @PREFIX@/features
-DETECTDIR	?= @PREFIX@/guess
-KMODDEPSDIR	?= @PREFIX@/kmodule.deps.d
-STATEDIR	?= @STATEDIR@
+UTILSDIR	:= $(realpath @PREFIX@/utils)
+TOOLSDIR	:= $(realpath @PREFIX@/tools)
+LOCALBUILDDIR	:= @LOCALBUILDDIR@
+DATADIR		:= $(realpath @PREFIX@/data)
+FEATURESDIR	:= $(realpath @PREFIX@/features)
+DETECTDIR	:= $(realpath @PREFIX@/guess)
+KMODDEPSDIR	:= $(realpath @PREFIX@/kmodule.deps.d)
+STATEDIR	:= @STATEDIR@
 BOOTDIR		?= /boot
 SYSCONFDIR	?= /etc
 SYSFS_PATH	?= /sys
 PROCFS_PATH	?= /proc
 
-PATH		= $(UTILSDIR):$(TOOLSDIR):$(shell echo $$PATH)
+SYSTEM_PATH := $(shell echo $$PATH)
+BUILDDIR_PATH =
+
+ifneq ($(LOCALBUILDDIR),)
+BUILDDIR_PATH := :$(LOCALBUILDDIR)/sbin:$(LOCALBUILDDIR)/usr/sbin:$(LOCALBUILDDIR)/bin:$(LOCALBUILDDIR)/usr/bin
+endif
+
+PATH = $(UTILSDIR):$(TOOLSDIR)$(BUILDDIR_PATH):$(SYSTEM_PATH)
+
 
 # Config file locations
 INITRD_CONFIG		?=

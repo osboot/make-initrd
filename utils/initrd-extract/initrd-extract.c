@@ -16,7 +16,7 @@
 #include "initrd-cpio.h"
 #include "initrd-decompress.h"
 #include "initrd-parse.h"
-#include "initrd-ls.h"
+//#include "initrd-ls.h"
 
 int opts = 0;
 

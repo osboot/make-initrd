@@ -12,7 +12,7 @@ TESTCASE_COMMAND = \
 	    -initrd '$(TESTCASE_INITRAMFS)' \
 	    -append '$(TESTCASE_CMDLINE)'
 
-include $(TOPDIR)/Makefile.testsuite
+include $(TOPDIR)/tests/Makefile.testsuite
 
 QEMU_STAGE0_DRIVES  += -drive 'media=disk,index=1,file=$(TESTCASE_DISK0)'
 QEMU_STAGE0_DRIVES  += -drive 'media=disk,index=2,file=$(TESTCASE_DISK1)'

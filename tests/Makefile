@@ -3,8 +3,11 @@
 # qemu-based tests cannot be run in parallel.
 .NOTPARALLEL:
 
-TOPDIR  ?= $(realpath $(CURDIR)/..)
-TESTDIR ?= $(TOPDIR)/.tests
+TOPDIR  = $(realpath $(CURDIR)/..)
+TESTDIR = $(TOPDIR)/.tests
+
+VERBOSE ?= $(V)
+Q = $(if $(VERBOSE),,@)
 
 check_SUBDIRS := \
 	test-luks \
@@ -18,8 +21,6 @@ check_SUBDIRS := \
 
 .PHONY: build $(check_SUBDIRS)
 
-include $(TOPDIR)/Makefile.common
-
 build:
 	$(Q)$(MAKE) --no-print-directory -C "$(CURDIR)/$@" build;
 
@@ -28,6 +29,6 @@ $(check_SUBDIRS):
 
 check: $(check_SUBDIRS)
 
-check-clean:
+clean:
 	@echo "Cleanup tests ..."
 	$(Q)rm -rf -- $(TESTDIR)

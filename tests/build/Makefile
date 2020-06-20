@@ -1,7 +1,7 @@
 TOPDIR  ?= $(realpath $(CURDIR)/../..)
 TESTDIR ?= $(TOPDIR)/.tests
 
-include $(TOPDIR)/Makefile.testsuite
+include $(TOPDIR)/tests/Makefile.testsuite
 
 TESTCASE_COMMAND = \
 	$(QEMU_BIN) \
