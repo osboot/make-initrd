@@ -10,7 +10,8 @@ TESTCASE_COMMAND = \
 	    -kernel '$(QEMU_STAGE0_VMLINUZ)' \
 	    -initrd '$(QEMU_STAGE0_INITRAMFS)' \
 	    -append '$(QEMU_STAGE0_CMDLINE)' \
-	    -drive 'media=disk,file=$(CURDIR)/rootfs-altlinux-20200618.qcow2'
+
+#-drive 'media=disk,file=$(CURDIR)/rootfs-altlinux-20200622.qcow2'
 
 build: qemu-stage0
 	@$(TRAVIS_START) "build.make-initrd"

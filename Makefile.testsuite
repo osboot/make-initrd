@@ -10,7 +10,7 @@ TESTSDATA_URL = file:///$(HOME)/scm/.initrd/make-initrd-testdata
 endif
 
 ROOTFS_VENDOR  = altlinux
-ROOTFS_VERSION = 20200618
+ROOTFS_VERSION = 20200622
 KERN_FLAVOR    = un-def
 KERN_VERSION   = 5.4.7-alt1
 STAGE0_VERSION = 20200101

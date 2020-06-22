@@ -4,7 +4,7 @@ hsh --init --excludedocs
 
 hsh-install --excludedocs gcc make git-core
 hsh-install --excludedocs expect
-hsh-install --excludedocs libkmod-devel zlib-devel bzlib-devel liblzma-devel libzstd-devel
+hsh-install --excludedocs libkmod-devel zlib-devel bzlib-devel liblzma-devel libzstd-devel libelf-devel
 hsh-install --excludedocs libshell
 hsh-install --excludedocs help2man tar cpio kinit-utils pciutils
 hsh-install --excludedocs dmsetup lvm2
