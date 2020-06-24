@@ -96,8 +96,7 @@ CFLAGS = \
 	-Wmissing-prototypes -Wmissing-declarations -Wmissing-noreturn \
 	-Wmissing-format-attribute -Wredundant-decls -Wdisabled-optimization \
 	-Wno-pointer-arith \
-	-Werror=shadow \
-	-Werror=implicit-function-declaration
+	-Werror=shadow -Werror=missing-prototypes -Werror=implicit-function-declaration
 
 CPPFLAGS = \
 	-DPACKAGE=\"$(PROJECT)\" -DVERSION=\"$(VERSION)\" \
