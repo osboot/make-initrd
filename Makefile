@@ -114,7 +114,9 @@ COMPILE  = $(call quiet_cmd,CC,$<,$(COMPILE.c))
 LINK     = $(call quiet_cmd,CCLD,$@,$(LINK.o))
 DEP      = $(call quiet_cmd,DEP,$<,$(CC))
 
-all: build-progs build-rules build-manpages build-data
+all: build
+
+build: build-progs build-rules build-manpages build-data
 
 build-progs: $(OBJS) $(PROGS) $(SCRIPTS)
 
