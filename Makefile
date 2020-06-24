@@ -1,5 +1,5 @@
 PROJECT = make-initrd
-VERSION = $(shell sed '/^Version: */!d;s///;q' .gear/$(PROJECT).spec)
+VERSION = 2.7.0
 
 sysconfdir ?= /etc
 bootdir    ?= /boot
