@@ -20,43 +20,27 @@ UDEV_FILES_OLD = \
 PUT_FILES += $(wildcard $(UDEV_FILES_OLD))
 
 # System utilities
-PUT_FILES += \
-	/bin/cat \
-	/bin/chmod \
-	/bin/cp \
-	/bin/dmesg \
-	/bin/findmnt \
-	/bin/grep \
-	/bin/kill \
-	/bin/ln \
-	/bin/ls \
-	/bin/mkdir \
-	/bin/mknod \
-	/bin/mktemp \
-	/bin/mount \
-	/bin/mountpoint \
-	/bin/mv \
-	/bin/readlink \
-	/bin/rm \
-	/bin/rmdir \
-	/bin/runas \
-	/bin/sh \
-	/bin/sleep \
-	/bin/touch \
-	/bin/umount \
-	/sbin/blkid \
-	/sbin/chroot \
-	/sbin/depmod \
-	/sbin/killall5 \
-	/sbin/lsmod \
-	/sbin/modprobe \
-	/sbin/start-stop-daemon \
-	/sbin/switch_root \
-	/usr/bin/logger \
-	/usr/bin/setsid \
-	/usr/bin/which \
-	/usr/share/terminfo/l \
-	/var/resolv
+REQUIRED_UTILITIES = \
+	blkid cat chmod chroot cp depmod dmesg findmnt grep kill killall5 ln logger ls \
+	lsmod mkdir mknod mktemp modprobe mount mountpoint mv readlink rm rmdir runas \
+	setsid sh sleep start-stop-daemon switch_root touch umount which
+
+define append_PUT_FILES =
+$(eval fullname = $(shell "$(TOOLSDIR)/which.sh" "$(1)"))
+PUT_FILES += $(if $(fullname),\
+		$(fullname),\
+		$(error Required utility not found: '$(1)'))
+endef
+
+$(foreach name,$(REQUIRED_UTILITIES), $(eval $(call append_PUT_FILES,$(name))))
+
+ifneq ($(realpath /usr/share/terminfo/l),)
+PUT_FILES += /usr/share/terminfo/l
+endif
+
+ifneq ($(realpath /var/resolv),)
+PUT_FILES += /var/resolv
+endif
 
 # Add libshell
 PUT_FILES += $(wildcard /bin/shell-*)
