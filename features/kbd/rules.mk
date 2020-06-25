@@ -1,7 +1,7 @@
 kbd:
 	@$(MSG) "Adding kbd support ..."
 	@mkdir -p -- "$(ROOTDIR)/etc/sysconfig"
-	@$(FEATURESDIR)/kbd/get-config > "$(ROOTDIR)/etc/sysconfig/console"
+	@$(FEATURESDIR)/kbd/bin/get-config > "$(ROOTDIR)/etc/sysconfig/console"
 	@put-file "$(ROOTDIR)" $(KBD_FILES)
 	@put-tree "$(ROOTDIR)" $(KBD_DATADIR)
 	@. "$(ROOTDIR)/etc/sysconfig/console"; \

@@ -1,4 +1,4 @@
 rootfs: create
-	$Q$(TOOLSDIR)/create-fstab
+	$Q$(FEATURESDIR)/rootfs/bin/create-fstab
 
 pack: rootfs

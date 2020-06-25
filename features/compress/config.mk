@@ -1,4 +1,4 @@
-COMPRESS_IMAGE	 = $(TOOLSDIR)/compress-image
+COMPRESS_IMAGE	 = $(FEATURESDIR)/compress/bin/compress-image
 COMPRESS	?= gzip
 
 .PHONY: compress

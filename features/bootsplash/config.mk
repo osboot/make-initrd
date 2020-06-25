@@ -1,1 +1,1 @@
-ADD_BOOTSPLASH = $(TOOLSDIR)/add-bootsplash
+ADD_BOOTSPLASH = $(FEATURESDIR)/bootsplash/bin/add-bootsplash
