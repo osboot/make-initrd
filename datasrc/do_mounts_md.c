@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include <unistd.h>
 #include <inttypes.h>
 #include <sys/sysmacros.h>
@@ -36,7 +37,7 @@
 static int raid_noautodetect, raid_autopart;
 
 static struct {
-	int minor;
+	unsigned int minor;
 	int partitioned;
 	int level;
 	int chunk;
@@ -61,11 +62,16 @@ static int md_setup_ents;
 
 static int get_option(char **str, int *pint)
 {
+	long int n;
 	char *cur = *str;
 
 	if (!cur || !(*cur))
 		return 0;
-	*pint = strtol(cur, str, 0);
+	errno = 0;
+	n = strtol(cur, str, 0);
+	if (errno == ERANGE || n < INT_MIN || n > INT_MAX)
+		return 0;
+	*pint = (int) n;
 	if (cur == *str)
 		return 0;
 	if (**str == ',') {
@@ -81,12 +87,13 @@ static int get_option(char **str, int *pint)
  * to be done dynamically instead of using a registered number.
  * Sigh.  Double sigh.
  */
-static int mdp_major(void)
+static unsigned int mdp_major(void)
 {
-	static int found = 0;
+	static unsigned int found = 0;
 	FILE *f;
 	char line[512], *p;
-	int is_blk, major_no;
+	unsigned int is_blk, major_no;
+	long int n;
 
 	if (found)
 		return found;
@@ -97,7 +104,14 @@ static int mdp_major(void)
 		if (!strcmp(line, "Block devices:\n"))
 			is_blk = 1;
 		if (is_blk) {
-			major_no = strtol(line, &p, 10);
+			errno = 0;
+			n = strtol(line, &p, 10);
+			if (errno == ERANGE || n < INT_MIN || n > INT_MAX) {
+				fprintf(stderr,
+					"Error: mdp device numner is out of range.\n");
+				exit(1);
+			}
+			major_no = (unsigned int) n;
 			while (*p && isspace(*p))
 				p++;
 
@@ -142,7 +156,8 @@ static int mdp_major(void)
  */
 static int md_setup(char *str)
 {
-	int minor_num, level, factor, fault, partitioned = 0;
+	int level, factor, fault, partitioned = 0;
+	int minor_num;
 	const char *pername = "";
 	char *str1;
 	int ent;
@@ -156,13 +171,18 @@ static int md_setup(char *str)
 		return 0;
 	}
 	str1 = str;
+	if (minor_num < 0) {
+		fprintf(stderr, "md: md=%d, Minor device number must be positive.\n",
+			minor_num);
+		return 0;
+	}
 	if (minor_num >= MAX_MD_DEVS) {
 		fprintf(stderr, "md: md=%d, Minor device number too high.\n",
 			minor_num);
 		return 0;
 	}
 	for (ent = 0; ent < md_setup_ents; ent++)
-		if (md_setup_args[ent].minor == minor_num &&
+		if (md_setup_args[ent].minor == (unsigned) minor_num &&
 		    md_setup_args[ent].partitioned == partitioned) {
 			fprintf(stderr,
 				"md: md=%s%d, Specified more than once. "
@@ -207,7 +227,7 @@ static int md_setup(char *str)
 		partitioned ? "_d" : "", minor_num, pername, str);
 	md_setup_args[ent].device_names = str;
 	md_setup_args[ent].partitioned = partitioned;
-	md_setup_args[ent].minor = minor_num;
+	md_setup_args[ent].minor = (unsigned) minor_num;
 
 	return 1;
 }
@@ -216,7 +236,8 @@ static int md_setup(char *str)
 
 static void md_setup_drive(void)
 {
-	int dev_minor, i, ent, partitioned;
+	int i, ent, partitioned;
+	unsigned int dev_minor;
 	dev_t dev;
 	dev_t devices[MD_SB_DISKS + 1];
 
@@ -293,7 +314,7 @@ static void md_setup_drive(void)
 			ainfo.raid_disks = 0;
 			while (devices[ainfo.raid_disks])
 				ainfo.raid_disks++;
-			ainfo.md_minor = dev_minor;
+			ainfo.md_minor = (int) dev_minor;
 			ainfo.not_persistent = 1;
 
 			ainfo.state = (1 << MD_SB_CLEAN);
@@ -308,8 +329,8 @@ static void md_setup_drive(void)
 				dinfo.raid_disk = i;
 				dinfo.state =
 				    (1 << MD_DISK_ACTIVE) | (1 << MD_DISK_SYNC);
-				dinfo.major = major(dev);
-				dinfo.minor = minor(dev);
+				dinfo.major = (int) major(dev);
+				dinfo.minor = (int) minor(dev);
 				err = ioctl(fd, ADD_NEW_DISK, &dinfo);
 			}
 		} else {
@@ -318,8 +339,8 @@ static void md_setup_drive(void)
 				dev = devices[i];
 				if (!dev)
 					break;
-				dinfo.major = major(dev);
-				dinfo.minor = minor(dev);
+				dinfo.major = (int) major(dev);
+				dinfo.minor = (int) minor(dev);
 				ioctl(fd, ADD_NEW_DISK, &dinfo);
 			}
 		}
@@ -353,7 +374,7 @@ static int raid_setup(char *str)
 		char *comma = strchr(str + pos, ',');
 		size_t wlen;
 		if (comma)
-			wlen = (comma - str) - pos;
+			wlen = (size_t)(comma - str) - pos;
 		else
 			wlen = (len - 1) - pos;
 
