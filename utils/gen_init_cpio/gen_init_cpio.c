@@ -21,7 +21,7 @@
 #define xstr(s) #s
 #define str(s) xstr(s)
 
-static unsigned int offset;
+static size_t offset;
 static unsigned int ino = 721;
 static time_t default_mtime;
 
@@ -32,7 +32,7 @@ struct file_handler {
 
 static void push_string(const char *name)
 {
-	unsigned int name_len = strlen(name) + 1;
+	size_t name_len = strlen(name) + 1;
 
 	fputs(name, stdout);
 	putchar(0);
@@ -49,8 +49,8 @@ static void push_pad (void)
 
 static void push_rest(const char *name)
 {
-	unsigned int name_len = strlen(name) + 1;
-	unsigned int tmp_ofs;
+	size_t name_len = strlen(name) + 1;
+	size_t tmp_ofs;
 
 	fputs(name, stdout);
 	putchar(0);
@@ -136,8 +136,8 @@ static int cpio_mkslink_line(const char *line)
 	char name[PATH_MAX + 1];
 	char target[PATH_MAX + 1];
 	unsigned int mode;
-	int uid;
-	int gid;
+	uid_t uid;
+	gid_t gid;
 	int rc = -1;
 
 	if (5 != sscanf(line, "%" str(PATH_MAX) "s %" str(PATH_MAX) "s %o %d %d", name, target, &mode, &uid, &gid)) {
@@ -207,8 +207,8 @@ static int cpio_mkgeneric_line(const char *line, enum generic_types gt)
 {
 	char name[PATH_MAX + 1];
 	unsigned int mode;
-	int uid;
-	int gid;
+	uid_t uid;
+	gid_t gid;
 	int rc = -1;
 
 	if (4 != sscanf(line, "%" str(PATH_MAX) "s %o %d %d", name, &mode, &uid, &gid)) {
@@ -275,8 +275,8 @@ static int cpio_mknod_line(const char *line)
 {
 	char name[PATH_MAX + 1];
 	unsigned int mode;
-	int uid;
-	int gid;
+	uid_t uid;
+	gid_t gid;
 	char dev_type;
 	unsigned int maj;
 	unsigned int min;
@@ -299,11 +299,11 @@ static int cpio_mkfile(const char *name, const char *location,
 	char s[256];
 	char *filebuf = NULL;
 	struct stat buf;
-	long size;
+	size_t size;
 	int file = -1;
-	int retval;
+	ssize_t retval;
 	int rc = -1;
-	int namesize;
+	size_t namesize;
 	unsigned int i;
 
 	mode |= S_IFREG;
@@ -320,13 +320,13 @@ static int cpio_mkfile(const char *name, const char *location,
 		goto error;
 	}
 
-	filebuf = malloc(buf.st_size);
+	filebuf = malloc((size_t) buf.st_size);
 	if (!filebuf) {
 		fprintf (stderr, "out of memory\n");
 		goto error;
 	}
 
-	retval = read (file, filebuf, buf.st_size);
+	retval = read (file, filebuf, (size_t) buf.st_size);
 	if (retval < 0) {
 		fprintf (stderr, "Can not read %s file\n", location);
 		goto error;
@@ -335,13 +335,13 @@ static int cpio_mkfile(const char *name, const char *location,
 	size = 0;
 	for (i = 1; i <= nlinks; i++) {
 		/* data goes on last link */
-		if (i == nlinks) size = buf.st_size;
+		if (i == nlinks) size = (size_t) buf.st_size;
 
 		if (name[0] == '/')
 			name++;
 		namesize = strlen(name) + 1;
 		sprintf(s,"%s%08X%08X%08lX%08lX%08X%08lX"
-		       "%08lX%08X%08X%08X%08X%08X%08X",
+		       "%08lX%08X%08X%08X%08X%08lX%08X",
 			"070701",		/* magic */
 			ino,			/* ino */
 			mode,			/* mode */
@@ -403,10 +403,11 @@ static int cpio_mkfile_line(const char *line)
 	char *dname = NULL; /* malloc'ed buffer for hard links */
 	char location[PATH_MAX + 1];
 	unsigned int mode;
-	int uid;
-	int gid;
-	int nlinks = 1;
-	int end = 0, dname_len = 0;
+	uid_t uid;
+	gid_t gid;
+	unsigned int nlinks = 1;
+	int end = 0;
+	size_t dname_len = 0;
 	int rc = -1;
 
 	if (5 > sscanf(line, "%" str(PATH_MAX) "s %" str(PATH_MAX)
@@ -416,12 +417,12 @@ static int cpio_mkfile_line(const char *line)
 		goto fail;
 	}
 	if (end && isgraph(line[end])) {
-		int len;
+		size_t len;
 		int nend;
 
 		dname = malloc(strlen(line));
 		if (!dname) {
-			fprintf (stderr, "out of memory (%d)\n", dname_len);
+			fprintf (stderr, "out of memory (%ld)\n", dname_len);
 			goto fail;
 		}
 
