@@ -35,8 +35,8 @@ SYSCONFDIR	?= /etc
 SYSFS_PATH	?= /sys
 PROCFS_PATH	?= /proc
 
-BUSYBOX_PATH := /lib/initrd/usr/sbin:/lib/initrd/usr/bin:/lib/initrd/sbin:/lib/initrd/bin
-SYSTEM_PATH  := /usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin
+BUSYBOX_PATH := /lib/initrd/sbin:/lib/initrd/usr/sbin:/lib/initrd/bin:/lib/initrd/usr/bin
+SYSTEM_PATH  := /sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin
 CURRENT_PATH := $(shell echo $$PATH)
 BUILDDIR_PATH =
 
@@ -109,8 +109,9 @@ FIRMWARE_DIRS		?= /lib/firmware/updates /lib/firmware /lib/firmware/$(KERNEL)/up
 VERBOSE			?=
 BLACKLIST_MODULES	?=
 
-# Load system configuration
-include @PREFIX@/mk/initfiles.mk
+PUT_DIRS  ?=
+PUT_FILES ?=
+PUT_PROGS ?=
 
 # Load user configuration
 include $(INITRD_CONFIG)

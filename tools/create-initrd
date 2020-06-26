@@ -50,17 +50,45 @@ for n in group gshadow passwd shadow; do
 	:> ./etc/$n
 done
 
-[ -z "${PUT_DIRS-}"  ] || put-tree . $PUT_DIRS
-[ -z "${PUT_FILES-}" ] || put-file . $PUT_FILES
+which_args='--skip-alias --skip-functions --skip-dot --skip-tilde'
+# shellcheck disable=SC2230
+which="$(which $which_args which)"
 
-for n in ${PUT_PROGS-}; do
-	n="$(
-		export PATH=/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin
-		# shellcheck disable=SC2230
-		which --skip-alias --skip-functions --skip-dot --skip-tilde "$n"
-	)"
-	[ -z "$n" ] || put-file . $n
-done
+UDEV_FILES='
+	/sbin/udevd
+	/sbin/udevadm
+	/lib/udev/ata_id
+	/lib/udev/cdrom_id
+	/lib/udev/scsi_id'
+
+UDEV_FILES_OLD='
+	/lib/udev/edd_id
+	/lib/udev/vol_id
+	/lib/udev/path_id
+	/lib/udev/usb_id
+	/lib/udev/firmware'
+
+PUT_FILES="${PUT_FILES-} $UDEV_FILES $(
+printf '%s\n' \
+	blkid cat chmod chroot cp depmod dmesg findmnt grep kill killall5 ln \
+	logger ls lsmod mkdir mknod mktemp modprobe mount mountpoint mv \
+	readlink rm rmdir runas setsid sh sleep start-stop-daemon switch_root \
+	touch umount which ${PUT_PROGS-} |
+	PATH="$BUSYBOX_PATH:$SYSTEM_PATH" xargs -r $which $which_args |
+	sed -e 's#^/lib/initrd##';
+
+for n in $UDEV_FILES_OLD /bin/shell-* /usr/share/terminfo/l /var/resolv; do
+	[ ! -e "$n" ] || printf '%s\n' "$n"
+done;
+)"
+
+[ -z "${LOCALBUILDDIR-}" ] ||
+	PUT_DIRS="${PUT_DIRS-} ${LOCALBUILDDIR-}/lib/initrd"
+
+PUT_DIRS="${PUT_DIRS-} $DATADIR /lib/initrd"
+
+put-tree . $PUT_DIRS
+put-file . $PUT_FILES
 
 :>>./etc/fstab
 
