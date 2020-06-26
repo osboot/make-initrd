@@ -1,13 +1,19 @@
 #!/bin/sh
 
 . /.initrd/initenv
-. uevent-sh-functions
 
 [ -n "$NFSROOT" ] || [ "$ROOT" != '/dev/nfs' ] ||
 	NFSROOT='auto'
 
 [ -n "$NFSROOT" ] ||
 	exit 0
+
+. network-sh-functions
+
+! is_loopback "$INTERFACE" ||
+       exit 0
+
+. uevent-sh-functions
 
 event="$(make_event)"
 environ -q > "$event"

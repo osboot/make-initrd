@@ -30,14 +30,17 @@ handler()
 		removed) rm -rf   -- "$net_statedir/up/$NET_IF/$ev_type" ;;
 	esac
 
-	online=1
-	for n in link addr route; do
-		[ -d "$net_statedir/up/$NET_IF/$n" ] || online=
-	done
+	if [ ! -e "/.initrd/online/$NET_IF" ]; then
+		online=1
+		for n in link addr route; do
+			[ -d "$net_statedir/up/$NET_IF/$n" ] || online=
+		done
 
-	if [ -n "$online" ]; then
-		message "$NET_IF: online"
-		echo online > "/sys/class/net/$NET_IF/uevent"
+		if [ -n "$online" ]; then
+			message "$NET_IF: online"
+			echo online > "/sys/class/net/$NET_IF/uevent"
+			touch "/.initrd/online/$NET_IF"
+		fi
 	fi
 }
 

@@ -6,6 +6,7 @@ ev_action=
 case "$ACTION" in
 	add)    ev_action='update' ;;
 	remove) ev_action='remove' ;;
+	*) exit 0 ;;
 esac
 
 net_event "network.config.$ev_action" "$INTERFACE"

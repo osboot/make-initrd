@@ -225,9 +225,9 @@ configure()
 		if [ -n "$netmask" ]; then
 			[ -z "${netmask##*[!0-9]*}" ] ||
 				mask="$netmask"
-							[ -n "${netmask##*.*.*.*}" ] ||
-								mask=$(ipv4_mask2prefix "$netmask") ||
-								fatal "unable to convert prefix to mask: $netmask"
+			[ -n "${netmask##*.*.*.*}" ] ||
+				mask=$(ipv4_mask2prefix "$netmask") ||
+				fatal "unable to convert prefix to mask: $netmask"
 		fi
 
 		if [ -n "$ipaddr" ]; then

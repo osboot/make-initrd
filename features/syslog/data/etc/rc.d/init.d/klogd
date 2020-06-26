@@ -2,11 +2,8 @@
 ### BEGIN INIT INFO
 # Provides:            klogd
 # Required-Start:      $syslog
-# Should-Start:
-# Required-Stop:       mountfs localnet
-# Should-Stop:
+# Required-Stop:       mountfs
 # Default-Start:       3 4 5
-# Default-Stop:
 # Short-Description:   Starts klogd.
 # Description:         klogd is kernel message trapping daemon.
 ### END INIT INFO

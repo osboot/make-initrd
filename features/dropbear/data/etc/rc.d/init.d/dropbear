@@ -1,10 +1,8 @@
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          dropbear
-# Required-Start:    $syslog localnet
-# Required-Stop:
+# Required-Start:    $syslog network-up
 # Default-Start:     3 4 5
-# Default-Stop:
 ### END INIT INFO
 
 . /etc/init.d/template

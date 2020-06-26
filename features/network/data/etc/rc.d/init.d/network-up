@@ -1,0 +1,38 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:            network-up
+# Required-Start:      uevent udev
+# Default-Start:       3 4 5
+### END INIT INFO
+
+[ "$1" = start ] ||
+	exit 0
+
+. /etc/init.d/functions
+. network-sh-functions
+
+while :; do
+	all_ifaces_up=1
+
+	for d in /sys/class/net/*; do
+		NET_IF="${d##*/}"
+
+		[ -e "$d" ] && get_iface_confdir ||
+			continue
+
+		if ! is_link_up "$NET_IF"; then
+			all_ifaces_up=
+			break
+		fi
+
+		m="Network($NET_IF) up"
+
+		echo_msg "$m"
+		success "$m"
+	done
+
+	[ -z "$all_ifaces_up" ] ||
+		break
+
+	sleep 0.1
+done

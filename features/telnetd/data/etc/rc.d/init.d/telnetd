@@ -1,10 +1,8 @@
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          telnetd
-# Required-Start:    localnet
-# Required-Stop:
+# Required-Start:    network-up
 # Default-Start:     3 4 5
-# Default-Stop:
 ### END INIT INFO
 
 . /etc/init.d/template
