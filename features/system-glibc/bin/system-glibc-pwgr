@@ -2,24 +2,37 @@
 
 . sh-functions
 
-cd "$rootdir"
+case "${1-}" in
+	files)
+		;;
+	dirs)
+		DIR="$TEMPDIR/root"
 
-mkdir -p -- ./etc
+		mkdir -p -- "$DIR"/etc
 
-while IFS=: read -r name pass gid dummy; do
-	[ -n "$name" ] && [ "$gid" -lt 500 ] ||
-		continue
-	printf '%s\n' "$name:x:$gid:$dummy" >> ./etc/group
-	printf '%s\n' "$name:x::$dummy" >> ./etc/gshadow
-done < /etc/group
+		while IFS=: read -r name pass gid dummy; do
+			[ -n "$name" ] && [ "$gid" -lt 500 ] ||
+				continue
+			printf '%s\n' "$name:x:$gid:$dummy" >> "$DIR"/etc/group
+			printf '%s\n' "$name:x::$dummy" >> "$DIR"/etc/gshadow
+		done < /etc/group
 
-while IFS=: read -r name pass uid gid dummy; do
-	[ -n "$name" ] && [ "$uid" -lt 500 ] ||
-		continue
-	{
-		[ "$name" = "root" ] &&
-			printf '%s\n' "root:x:$uid:$gid::/home/root:/bin/sh" ||
-			printf '%s\n' "$name:x:$uid:$gid:$dummy"
-	} >> ./etc/passwd
-	printf '%s\n' "$name:*:13957::::::" >> ./etc/shadow
-done < /etc/passwd
+		for n in passwd shadow; do
+			touch "$DIR/etc/$n"
+			sed -i -e '/^root:/d' "$DIR/etc/$n"
+		done
+
+		while IFS=: read -r name pass uid gid dummy; do
+			[ -n "$name" ] && [ "$uid" -lt 500 ] ||
+				continue
+			{
+				[ "$name" = "root" ] &&
+					printf '%s\n' "root:x:$uid:$gid::/home/root:/bin/sh" ||
+					printf '%s\n' "$name:x:$uid:$gid:$dummy"
+			} >> "$DIR"/etc/passwd
+			printf '%s\n' "$name:*:13957::::::" >> "$DIR"/etc/shadow
+		done < /etc/passwd
+
+		printf '%s\n' "$DIR"
+		;;
+esac

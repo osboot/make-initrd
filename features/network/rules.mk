@@ -1,10 +1,6 @@
 MODULES_ADD += $(NETWORK_MODULES)
 
+PUT_FEATURE_DIRS  += $(NETWORK_DATADIR)
+PUT_FEATURE_FILES += $(NETWORK_FILES)
+
 $(call require,depmod-image)
-
-network:
-	@$(MSG) "Adding network support ..."
-	@put-file "$(ROOTDIR)" $(NETWORK_FILES)
-	@put-tree "$(ROOTDIR)" $(NETWORK_DATADIR)
-
-depmod-image: network

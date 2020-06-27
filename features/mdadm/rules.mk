@@ -1,6 +1,2 @@
-mdadm:
-	@$(MSG) "Adding mdadm support ..."
-	@put-file "$(ROOTDIR)" $(MDADM_FILES)
-	@put-tree "$(ROOTDIR)" $(MDADM_DATADIR)
-
-pack: mdadm
+PUT_FEATURE_DIRS  += $(MDADM_DATADIR)
+PUT_FEATURE_FILES += $(MDADM_FILES)

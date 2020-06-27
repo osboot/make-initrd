@@ -1,16 +1,35 @@
-system-glibc-libnss: create
-	$(Q)[ -n "$(INITRD_NO_LIBNSS)" ] || $(FEATURESDIR)/system-glibc/bin/$@
+ifeq ($(INITRD_NO_LIBNSS),)
+SYSTEM_GLIBC_LIBNSS_BIN   := $(FEATURESDIR)/system-glibc/bin/system-glibc-libnss
+SYSTEM_GLIBC_LIBNSS_FILES := $(shell $(SYSTEM_GLIBC_LIBNSS_BIN) files)
+SYSTEM_GLIBC_LIBNSS_DIRS  := $(shell $(SYSTEM_GLIBC_LIBNSS_BIN) dirs)
 
-system-glibc-libgcc_s: create
-	$(Q)[ -n "$(INITRD_NO_LIBGCC_S)" ] || $(FEATURESDIR)/system-glibc/bin/$@
+PUT_FEATURE_FILES += $(SYSTEM_GLIBC_LIBNSS_FILES)
+PUT_FEATURE_DIRS  += $(SYSTEM_GLIBC_LIBNSS_DIRS)
+endif
 
-system-glibc-pwgr: create
-	$(Q)[ -n "$(INITRD_NO_PWGR)" ] || $(FEATURESDIR)/system-glibc/bin/$@
+ifeq ($(INITRD_NO_LIBGCC_S),)
+SYSTEM_GLIBC_LIBGCC_S_BIN   := $(FEATURESDIR)/system-glibc/bin/system-glibc-libgcc_s
+SYSTEM_GLIBC_LIBGCC_S_FILES := $(shell $(SYSTEM_GLIBC_LIBGCC_S_BIN) files)
+SYSTEM_GLIBC_LIBGCC_S_DIRS  := $(shell $(SYSTEM_GLIBC_LIBGCC_S_BIN) dirs)
 
-system-glibc-network: create
-	$(Q)[ -n "$(INITRD_NO_NETWORK)" ] || $(FEATURESDIR)/system-glibc/bin/$@
+PUT_FEATURE_FILES += $(SYSTEM_GLIBC_LIBGCC_S_FILES)
+PUT_FEATURE_DIRS  += $(SYSTEM_GLIBC_LIBGCC_S_DIRS)
+endif
 
-pack: system-glibc-libnss
-pack: system-glibc-libgcc_s
-pack: system-glibc-pwgr
-pack: system-glibc-network
+ifeq ($(INITRD_NO_PWGR),)
+SYSTEM_GLIBC_PWGR_BIN   := $(FEATURESDIR)/system-glibc/bin/system-glibc-pwgr
+SYSTEM_GLIBC_PWGR_FILES := $(shell $(SYSTEM_GLIBC_PWGR_BIN) files)
+SYSTEM_GLIBC_PWGR_DIRS  := $(shell $(SYSTEM_GLIBC_PWGR_BIN) dirs)
+
+PUT_FEATURE_FILES += $(SYSTEM_GLIBC_PWGR_FILES)
+PUT_FEATURE_DIRS  += $(SYSTEM_GLIBC_PWGR_DIRS)
+endif
+
+ifeq ($(INITRD_NO_NETWORK),)
+SYSTEM_GLIBC_NETWORK_BIN   := $(FEATURESDIR)/system-glibc/bin/system-glibc-network
+SYSTEM_GLIBC_NETWORK_FILES := $(shell $(SYSTEM_GLIBC_NETWORK_BIN) files)
+SYSTEM_GLIBC_NETWORK_DIRS  := $(shell $(SYSTEM_GLIBC_NETWORK_BIN) dirs)
+
+PUT_FEATURE_FILES += $(SYSTEM_GLIBC_NETWORK_FILES)
+PUT_FEATURE_DIRS  += $(SYSTEM_GLIBC_NETWORK_DIRS)
+endif

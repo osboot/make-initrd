@@ -1,9 +1,7 @@
 MODULES_PRELOAD += $(BTRFS_PRELOAD)
 MODULES_ADD     += $(BTRFS_MODULES)
 
-btrfs:
-	@$(MSG) "Adding btrfs support ..."
-	@put-file "$(ROOTDIR)" $(BTRFS_FILES)
-	@put-tree "$(ROOTDIR)" $(BTRFS_DATADIR)
+PUT_FEATURE_DIRS  += $(BTRFS_DATADIR)
+PUT_FEATURE_FILES += $(BTRFS_FILES)
 
-pack: btrfs
+$(call require,depmod-image)

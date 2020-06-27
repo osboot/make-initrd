@@ -225,6 +225,6 @@ rc=0
 make $output_sync -r -f @PREFIX@/mk/make-initrd.mk -- "$@" || rc=$?
 
 [ -z "$TEMPDIR" ] ||
-	rmdir -- "$TEMPDIR" 2>/dev/null ||:
+	rm -rf -- "$TEMPDIR" 2>/dev/null ||:
 
 exit $rc

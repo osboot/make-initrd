@@ -1,8 +1,4 @@
 $(call require,devmapper)
 
-lvm: devmapper
-	@$(MSG) "Adding LVM support ..."
-	@put-file "$(ROOTDIR)" $(LVM_BIN) $(LVM_CONF)
-	@put-tree "$(ROOTDIR)" $(LVM_DATADIR)
-
-pack: lvm
+PUT_FEATURE_DIRS  += $(LVM_DATADIR)
+PUT_FEATURE_FILES += $(LVM_BIN) $(LVM_CONF)

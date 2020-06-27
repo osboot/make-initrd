@@ -1,10 +1,6 @@
 MODULES_PRELOAD	+= $(NFS_PRELOAD)
 
+PUT_FEATURE_DIRS  += $(NFS_DATADIR)
+
 $(call require,network)
 $(call require,depmod-image)
-
-nfsroot: create network
-	@$(MSG) "Adding NFS root support ..."
-	@put-tree "$(ROOTDIR)" $(NFS_DATADIR)
-
-depmod-image: nfsroot

@@ -1,13 +1,9 @@
 MODULES_PRELOAD	+= $(MULTIPATH_PRELOAD)
 
+MULTIPATH_PATTERN_SET = name:^scsi_dh
 MODULES_PATTERN_SETS += MULTIPATH_PATTERN_SET
 
+PUT_FEATURE_FILES += $(MULTIPATH_BIN) $(MULTIPATH_CONF) $(MULTIPATH_DATA)
+
 $(call require,devmapper)
-
-multipath: devmapper
-	@$(MSG) "Adding multipath support ..."
-	@put-file "$(ROOTDIR)" $(MULTIPATH_BIN)
-	@put-file "$(ROOTDIR)" $(MULTIPATH_CONF)
-	@put-file "$(ROOTDIR)" $(MULTIPATH_DATA)
-
-pack: multipath
+$(call require,depmod-image)

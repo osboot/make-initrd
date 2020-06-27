@@ -1,0 +1,38 @@
+#!/bin/sh -efu
+
+DIR="$TEMPDIR/root"
+mkdir -p -- "$DIR/etc"
+
+if mkdir -- "$DIR/etc/sysconfig" 2>/dev/null; then
+	$FEATURESDIR/kbd/bin/get-config > "$DIR/etc/sysconfig/console.$$"
+	mv -f -- "$DIR/etc/sysconfig/console.$$" "$DIR/etc/sysconfig/console"
+fi
+
+. "$DIR/etc/sysconfig/console"
+
+case "${1-}" in
+	files)
+		[ -z "${CONSOLE_FONT##/*}" ] ||
+			find "$KBD_FONTS_DIR"   -name "$CONSOLE_FONT.*"
+
+		[ -z "${CONSOLE_FONT_UNIMAP##/*}" ] ||
+			find "$KBD_UNIMAPS_DIR" -name "$CONSOLE_FONT_UNIMAP.*"
+
+		[ -z "${CONSOLE_KEYMAP##/*}" ] ||
+			find "$KBD_KEYMAPS_DIR" -name "$CONSOLE_KEYMAP.*"
+
+		find "$KBD_KEYMAPS_DIR" -name 'include'
+
+		which_args='--skip-alias --skip-functions --skip-dot --skip-tilde'
+		# shellcheck disable=SC2230
+		which="$(which $which_args which)"
+
+		for s in gzip:gz bzip2:bz2 xz:xz; do
+			[ -z "$(find "$KBD_DATA_DIR" -type f -name "*.${s#*:}" -print -quit)" ] ||
+				"$which" $which_args "${s%:*}"
+		done
+		;;
+	dirs)
+		printf '%s\n' "$DIR"
+		;;
+esac

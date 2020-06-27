@@ -1,10 +1,16 @@
 # Features include helper: skip a feature which has already loaded
 # and skip globally disabled features
+define include_rules =
+$(eval FEATURES = $(sort $(FEATURES) $(req)))
+$(eval include $(1))
+endef
+
 require = \
 	$(foreach req,$(1), \
-		$(eval include $(filter-out \
+		$(foreach inc,$(filter-out \
 			$(MAKEFILE_LIST) $(foreach exl,$(DISABLE_FEATURES),$(realpath $(exl:%=$(FEATURESDIR)/%/rules.mk))), \
-			$(realpath $(req:%=$(FEATURESDIR)/%/rules.mk)))))
+			$(realpath $(req:%=$(FEATURESDIR)/%/rules.mk))), \
+			$(call include_rules,$(inc))))
 
 if_feature = \
 	$(filter-out $(DISABLE_FEATURES),$(1))
@@ -45,13 +51,17 @@ create: depmod-host show-guessed
 	@mkdir -m 755 -p $(verbose) -- $(ROOTDIR)
 	@$(TOOLSDIR)/create-initrd
 
+show-features:
+	@$(MSG_N) 'Used features: $(FEATURES)'
+	@printf '\n'
+
 show-modules:
 	@$(MSG_N) 'Packed modules: '
 	@find $(ROOTDIR)/lib/modules/$(KERNEL) -type f \( -name '*.ko'  -o -name '*.ko.*' \) -printf '%f\n' 2>/dev/null | \
 	    sed -e 's/\.ko\(\.[^\.]\+\)\?$$//' | sort | tr '\n' ' '
 	@printf '\n'
 
-pre-pack: show-modules
+pre-pack: show-features show-modules
 
 sort-services:
 	@$(MSG) "Sorting sysvinit services ..."

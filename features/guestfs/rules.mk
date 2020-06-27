@@ -5,9 +5,5 @@ FEATURES += add-modules cleanup compress btrfs devmapper luks lvm mdadm qemu
 MODULES_TRY_ADD += drivers/scsi/ drivers/ata/ fs/
 MODULES_PRELOAD += virtio_console
 
-guestfs: create
-	@$(MSG) "Adding guestfs support ..."
-	@put-tree "$(ROOTDIR)" $(GUESTFS_DATADIR)
-	@put-file "$(ROOTDIR)" $(GUESTFS_FILES)
-
-pack: guestfs
+PUT_FEATURE_DIRS  += $(GUESTFS_DATADIR)
+PUT_FEATURE_FILES += $(GUESTFS_FILES)

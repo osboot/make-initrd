@@ -4,24 +4,30 @@
 
 verbose "Copying files from libnss_files.so* ..."
 
-cd "$rootdir"
+case "${1-}" in
+	files)
+		find_libs \
+			-mindepth 1 -maxdepth 1 \
+			\( \
+				-name 'libnss_files.so*' -o \
+				-name 'libnss_dns.so*' \
+			\)
+		;;
+	dirs)
+		DIR="$TEMPDIR/root"
 
-find_libs \
-	-mindepth 1 -maxdepth 1 \
-	\( \
-		-name 'libnss_files.so*' -o \
-		-name 'libnss_dns.so*' \
-	\) \
-	-exec put-file . '{}' '+'
+		mkdir -p -- "$DIR"/etc
+		cat >"$DIR"/etc/nsswitch.conf <<-EOF
+			passwd:    files
+			group:     files
+			shadow:    files
+			hosts:     files dns
+			networks:  files
+			rpc:       files
+			services:  files
+			protocols: files
+		EOF
 
-mkdir -p -- ./etc
-cat >./etc/nsswitch.conf <<EOF
-passwd:    files
-group:     files
-shadow:    files
-hosts:     files dns
-networks:  files
-rpc:       files
-services:  files
-protocols: files
-EOF
+		printf '%s\n' "$DIR"
+		;;
+esac

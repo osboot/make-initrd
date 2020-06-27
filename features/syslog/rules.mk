@@ -1,6 +1,2 @@
-syslog:
-	@$(MSG) "Adding syslog support ..."
-	@put-tree "$(ROOTDIR)" $(SYSLOG_DATADIR)
-	@put-file "$(ROOTDIR)" $(SYSLOG_FILES)
-
-pack: syslog
+PUT_FEATURE_DIRS  += $(SYSLOG_DATADIR)
+PUT_FEATURE_FILES += $(SYSLOG_FILES)

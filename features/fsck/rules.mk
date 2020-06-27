@@ -1,6 +1,6 @@
-fsck: create
-	@$(MSG) "Adding fsck support ..."
-	@put-tree "$(ROOTDIR)" $(FSCK_DATADIR)
-	@put-file "$(ROOTDIR)" $(FSCK_FILES)
+FSCK_RUNTIME_FILES := $(shell $(FEATURESDIR)/fsck/bin/find-files)
 
-pack: fsck
+FSCK_FILES ?= $(FSCK_RUNTIME_FILES)
+
+PUT_FEATURE_DIRS  += $(FSCK_DATADIR)
+PUT_FEATURE_FILES += $(FSCK_FILES)

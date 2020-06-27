@@ -1,8 +1,4 @@
 $(call require,syslog)
 
-dropbear:
-	@$(MSG) "Adding dropbear server ..."
-	@put-tree "$(ROOTDIR)" $(DROPBEAR_DATADIR)
-	@put-file "$(ROOTDIR)" $(DROPBEAR_FILES)
-
-pack: dropbear
+PUT_FEATURE_DIRS  += $(DROPBEAR_DATADIR)
+PUT_FEATURE_FILES += $(DROPBEAR_FILES)

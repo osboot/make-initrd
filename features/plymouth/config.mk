@@ -1,5 +1,7 @@
-PLYMOUTH_THEME  ?= $(shell plymouth-set-default-theme 2>/dev/null ||:)
-PLYMOUTH_MODULES = $(FEATURESDIR)/plymouth/bin/get-modules
+PLYMOUTH_DEFAULT_THEME := $(shell plymouth-set-default-theme 2>/dev/null ||:)
+
+PLYMOUTH_THEME  ?= $(PLYMOUTH_DEFAULT_THEME)
+PLYMOUTH_GET_MODULES = $(FEATURESDIR)/plymouth/bin/get-modules
 PLYMOUTH_DATADIR = $(FEATURESDIR)/plymouth/data
 PLYMOUTH_FILES = \
 	/bin/plymouth \

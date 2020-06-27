@@ -1,8 +1,6 @@
 MODULES_TRY_ADD += $(PIPELINE_MODULES)
 
-pipeline: create
-	@$(MSG) "Adding pipeline support ..."
-	@put-file "$(ROOTDIR)" $(PIPELINE_FILES)
-	@put-tree "$(ROOTDIR)" $(PIPELINE_DATADIR)
+PUT_FEATURE_DIRS  += $(PIPELINE_DATADIR)
+PUT_FEATURE_FILES += $(PIPELINE_FILES)
 
-pack: pipeline
+$(call require,depmod-image)

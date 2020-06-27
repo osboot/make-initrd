@@ -1,10 +1,9 @@
-MODULES_ADD += $(shell $(PLYMOUTH_MODULES))
+PLYMOUTH_MODULES := $(shell $(PLYMOUTH_GET_MODULES))
+
+MODULES_ADD += $(PLYMOUTH_MODULES)
 MODULES_TRY_ADD += drivers/char/agp
 
-plymouth: create
-	@$(MSG) "Adding plymouth support ..."
-	@put-file "$(ROOTDIR)" $(PLYMOUTH_FILES) $(PLYMOUTH_RULES)
-	@put-tree "$(ROOTDIR)" $(PLYMOUTH_DATADIR)
+PUT_FEATURE_DIRS  += $(PLYMOUTH_DATADIR)
+PUT_FEATURE_FILES += $(PLYMOUTH_FILES) $(PLYMOUTH_RULES)
 
-pack: plymouth
-depmod-image: plymouth
+$(call require,depmod-image)

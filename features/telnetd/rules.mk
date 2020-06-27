@@ -1,5 +1,1 @@
-telnetd:
-	@$(MSG) "Adding telnet server ..."
-	@put-tree "$(ROOTDIR)" $(TELNET_DATADIR)
-
-pack: telnetd
+PUT_FEATURE_DIRS  += $(TELNET_DATADIR)

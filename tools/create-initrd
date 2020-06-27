@@ -38,18 +38,6 @@ initrd-release
 mkfifo ./.initrd/telinit
 mkfifo ./.initrd/rdshell
 
-for i in rc0 rc1 rc2 rc3 rc4 rc5 rc6 init; do
-	mkdir -p "./etc/rc.d/$i.d"
-	ln -s "rc.d/$i.d" "./etc/$i.d"
-done
-
-# No shell access inside initramfs by default.
-printf 'RDSHELL_MODE=disable\n' >./etc/sysconfig/rdshell
-
-for n in group gshadow passwd shadow; do
-	:> ./etc/$n
-done
-
 which_args='--skip-alias --skip-functions --skip-dot --skip-tilde'
 # shellcheck disable=SC2230
 which="$(which $which_args which)"
@@ -69,11 +57,12 @@ UDEV_FILES_OLD='
 	/lib/udev/firmware'
 
 PUT_FILES="${PUT_FILES-} $UDEV_FILES $(
+
 printf '%s\n' \
 	blkid cat chmod chroot cp depmod dmesg findmnt grep kill killall5 ln \
 	logger ls lsmod mkdir mknod mktemp modprobe mount mountpoint mv \
 	readlink rm rmdir runas setsid sh sleep start-stop-daemon switch_root \
-	touch umount which ${PUT_PROGS-} |
+	touch umount which ${PUT_FEATURE_PROGS-} ${PUT_PROGS-} |
 	PATH="$BUSYBOX_PATH:$SYSTEM_PATH" xargs -r $which $which_args |
 	sed -e 's#^/lib/initrd##';
 
@@ -87,10 +76,21 @@ done;
 
 PUT_DIRS="${PUT_DIRS-} $DATADIR /lib/initrd"
 
-put-tree . $PUT_DIRS
-put-file . $PUT_FILES
+printf '%s\n' ${PUT_FEATURE_DIRS-} $PUT_DIRS   |xargs -r put-tree .
+printf '%s\n' ${PUT_FEATURE_FILES-} $PUT_FILES |xargs -r put-file .
 
-:>>./etc/fstab
+for i in rc0 rc1 rc2 rc3 rc4 rc5 rc6 init; do
+	mkdir -p "./etc/rc.d/$i.d"
+	ln -s -f "rc.d/$i.d" "./etc/$i.d"
+done
+
+for n in group gshadow passwd shadow fstab; do
+	touch "./etc/$n"
+done
+
+# No shell access inside initramfs by default.
+[ -s ./etc/sysconfig/rdshell ] ||
+	printf 'RDSHELL_MODE=disable\n' >./etc/sysconfig/rdshell
 
 if [ ! -x ./bin/sh ]; then
 	for n in bash dash mksh ash; do

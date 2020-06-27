@@ -116,6 +116,10 @@ PUT_PROGS ?=
 # Load user configuration
 include $(INITRD_CONFIG)
 
+PUT_FEATURE_DIRS  =
+PUT_FEATURE_FILES =
+PUT_FEATURE_PROGS =
+
 ifeq "$(MAKECMDGOALS)" 'guess'
 unknown_features = \
 	$(filter-out \

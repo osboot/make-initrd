@@ -2,18 +2,26 @@
 
 . sh-functions
 
-cd "$rootdir"
+case "${1-}" in
+	files)
+		;;
+	dirs)
+		DIR="$TEMPDIR/root"
 
-mkdir -p -- ./etc
+		mkdir -p -- "$DIR"/etc
 
-echo '127.0.0.1 localhost.localdomain localhost' >./etc/hosts
-echo ''                                          >./etc/resolv.conf
+		echo '127.0.0.1 localhost.localdomain localhost' >"$DIR"/etc/hosts
+		echo ''                                          >"$DIR"/etc/resolv.conf
 
-for n in protocols rpc services; do
-	grep -E -v '^[[:space:]]*(#.*)?$' "/etc/$n" > "./etc/$n" ||:
-done
+		for n in protocols rpc services; do
+			grep -E -v '^[[:space:]]*(#.*)?$' "/etc/$n" > "$DIR/etc/$n" ||:
+		done
 
-cat >./etc/host.conf <<EOF
-order hosts,bind
-multi on
-EOF
+		cat >"$DIR"/etc/host.conf <<-EOF
+			order hosts,bind
+			multi on
+		EOF
+
+		printf '%s\n' "$DIR"
+		;;
+esac

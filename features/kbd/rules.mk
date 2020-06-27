@@ -1,22 +1,15 @@
-kbd:
-	@$(MSG) "Adding kbd support ..."
-	@mkdir -p -- "$(ROOTDIR)/etc/sysconfig"
-	@$(FEATURESDIR)/kbd/bin/get-config > "$(ROOTDIR)/etc/sysconfig/console"
-	@put-file "$(ROOTDIR)" $(KBD_FILES)
-	@put-tree "$(ROOTDIR)" $(KBD_DATADIR)
-	@. "$(ROOTDIR)/etc/sysconfig/console"; \
-	[ -z "$$FRAMEBUFFER_MODULE" ] || \
-		$(TOOLSDIR)/add-module "$$FRAMEBUFFER_MODULE"; \
-	[ -z "$${CONSOLE_FONT##/*}" ] || \
-		find "$(KBD_FONTS_DIR)"   -name "$$CONSOLE_FONT.*"        -exec put-file "$(ROOTDIR)" '{}' '+'; \
-	[ -z "$${CONSOLE_FONT_UNIMAP##/*}" ] || \
-		find "$(KBD_UNIMAPS_DIR)" -name "$$CONSOLE_FONT_UNIMAP.*" -exec put-file "$(ROOTDIR)" '{}' '+'; \
-	[ -z "$${CONSOLE_KEYMAP##/*}" ] || \
-		find "$(KBD_KEYMAPS_DIR)" -name "$$CONSOLE_KEYMAP.*"      -exec put-file "$(ROOTDIR)" '{}' '+'; \
-	find "$(KBD_KEYMAPS_DIR)" -name 'include' -exec put-file "$(ROOTDIR)" '{}' '+';
-	@for s in gzip:gz bzip2:bz2 xz:xz; do \
-		[ -z "$$(find "$(ROOTDIR)$(KBD_DATA_DIR)" -type f -name "*.$${s#*:}" -print -quit)" ] || \
-			put-file "$(ROOTDIR)" `which $${s%:*}`; \
-	done
+KBD_MODULES := $(shell $(FEATURESDIR)/kbd/bin/get-modules)
+KBD_DIRS    := $(shell $(FEATURESDIR)/kbd/bin/get-data dirs)
+KBD_FILES   := $(shell env \
+	"KBD_DATA_DIR=$(KBD_DATA_DIR)" \
+	"KBD_FONTS_DIR=$(KBD_FONTS_DIR)" \
+	"KBD_UNIMAPS_DIR=$(KBD_UNIMAPS_DIR)" \
+	"KBD_KEYMAPS_DIR=$(KBD_KEYMAPS_DIR)" \
+	$(FEATURESDIR)/kbd/bin/get-data files)
 
-pack: kbd
+MODULES_ADD += $(KBD_MODULES)
+
+PUT_FEATURE_DIRS  += $(KBD_DATADIR) $(KBD_DIRS)
+PUT_FEATURE_FILES += $(KBD_FILES) $(KBD_UTILITIES)
+
+$(call require,depmod-image)

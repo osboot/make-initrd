@@ -4,8 +4,3 @@ MODULES_TRY_ADD += \
 	virtio.*
 
 $(call require,depmod-image)
-
-qemu: create
-	@$(MSG) "Adding modules to run inside qemu ..."
-
-depmod-image: qemu

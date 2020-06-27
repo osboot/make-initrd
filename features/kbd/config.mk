@@ -5,7 +5,7 @@ KBD_FONTS_DIR   = $(KBD_DATA_DIR)/consolefonts
 KBD_UNIMAPS_DIR = $(KBD_DATA_DIR)/unimaps
 KBD_KEYMAPS_DIR = $(KBD_DATA_DIR)/keymaps
 
-KBD_FILES = \
+KBD_UTILITIES = \
 	/bin/kbd_mode \
 	/bin/setfont \
 	/bin/loadkeys
