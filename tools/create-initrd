@@ -76,8 +76,8 @@ done;
 
 PUT_DIRS="${PUT_DIRS-} $DATADIR /lib/initrd"
 
-printf '%s\n' ${PUT_FEATURE_DIRS-} $PUT_DIRS   |xargs -r put-tree .
-printf '%s\n' ${PUT_FEATURE_FILES-} $PUT_FILES |xargs -r put-file .
+printf '%s\n' ${PUT_FEATURE_DIRS-} $PUT_DIRS   |sort -u |xargs -r put-tree .
+printf '%s\n' ${PUT_FEATURE_FILES-} $PUT_FILES |sort -u |xargs -r put-file .
 
 for i in rc0 rc1 rc2 rc3 rc4 rc5 rc6 init; do
 	mkdir -p "./etc/rc.d/$i.d"
