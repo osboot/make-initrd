@@ -9,7 +9,7 @@ require = \
 	$(foreach req,$(1), \
 		$(foreach inc,$(filter-out \
 			$(MAKEFILE_LIST) $(foreach exl,$(DISABLE_FEATURES),$(realpath $(exl:%=$(FEATURESDIR)/%/rules.mk))), \
-			$(realpath $(req:%=$(FEATURESDIR)/%/rules.mk))), \
+			$(abspath $(req:%=$(FEATURESDIR)/%/rules.mk))), \
 			$(call include_rules,$(inc))))
 
 if_feature = \
