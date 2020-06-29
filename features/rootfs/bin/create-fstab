@@ -1,17 +1,24 @@
 #!/bin/sh -efu
 
-. shell-error
-. sh-functions
-
 export LIBMOUNT_FSTAB="${FSTAB:-/etc/fstab}"
 export LIBMOUNT_MTAB="${PROC_MOUNTS:-$PROCFS_PATH/mounts}"
 
-mkdir -p -- "$rootdir"/etc
+case "${1-}" in
+	files)
+		;;
+	dirs)
+		DIR="$TEMPDIR/root"
 
-for dir in ${MOUNTPOINTS-}; do
-	out="$(findmnt -n -o UUID,TARGET,FSTYPE,OPTIONS --target "$dir")" ||
-		continue
-	printf 'UUID=%s 0 0\n' "$out"
-done >"$rootdir"/etc/fstab
+		mkdir -p -- "$DIR"/etc
 
-sort -uo "$rootdir"/etc/fstab "$rootdir"/etc/fstab
+		for d in ${MOUNTPOINTS-}; do
+			out="$(findmnt -n -o UUID,TARGET,FSTYPE,OPTIONS --target "$d")" ||
+				continue
+			printf 'UUID=%s 0 0\n' "$out"
+		done >"$DIR"/etc/fstab
+
+		sort -uo "$DIR"/etc/fstab "$DIR"/etc/fstab
+
+		printf '%s\n' "$DIR"
+		;;
+esac
