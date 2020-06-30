@@ -2,30 +2,23 @@
 
 . shell-error
 
-get_bin()
-{
-	local n f
-	n="$1"; shift
-	for f in "$@"; do
-		if [ -x "$f" ]; then
-			eval "$n=\"\$f\""
-			return
-		fi
-	done
-	fatal "$n not found"
-}
+which_args='--skip-alias --skip-functions --skip-dot --skip-tilde'
+# shellcheck disable=SC2230
+which="$(which $which_args which)"
 
 udevd_binary()
 {
 	local udevd
-	get_bin udevd /sbin/udevd
+	udevd="$($which $which_args udevd)" ||
+		return 0
 	"$udevd" --version
 }
 
 udevadm_binary()
 {
 	local udevadm
-	get_bin udevadm /sbin/udevadm
+	udevadm="$($which $which_args udevadm)" ||
+		return 0
 	"$udevadm" --version
 }
 
