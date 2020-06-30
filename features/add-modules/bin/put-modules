@@ -1,0 +1,181 @@
+#!/bin/sh -efu
+
+. shell-error
+. shell-signal
+. sh-functions
+
+tempdir=
+exit_handler()
+{
+	[ -z "$tempdir" ] || rm -rf -- "$tempdir"
+}
+
+set_cleanup_handler exit_handler
+
+tempdir="${TEMPDIR:-/tmp}/modules"
+mkdir -p -- "$tempdir"
+
+in_blacklist() {
+	local m f="$1"
+	for m in ${blacklist-}; do
+		[ "$f" != "$m" ] || return 0
+	done
+	return 1
+}
+
+find_modules()
+{
+	local errfunc a
+
+	a="$1"; shift
+
+	case "$a" in
+		required) errfunc=fatal ;;
+		optional) errfunc=:     ;;
+	esac
+
+	for n; do
+		if [ -n "${n##*[/\[\].*&^\$\\\\/]*}" ]; then
+			normalize_modname "$n"
+			continue
+		fi
+
+		if [ -z "${n##/*}" ] && [ -f "$n" ]; then
+			printf '%s\n' "$n"
+			continue
+		fi
+
+		if [ -n "${kernel_modules_dir-}" ]; then
+			[ -f "$tempdir/kmodules" ] ||
+				find "$kernel_modules_dir" \
+					-type f \
+					-a \( -name '*.ko' -o -name '*.ko.*' \) \
+					> "$tempdir/kmodules"
+
+			grep -E -e "$n" "$tempdir/kmodules" ||
+				$errfunc "Unable to handle pattern: $n"
+
+			continue
+		fi
+
+		$errfunc "Unable to find module: $n"
+	done > "$tempdir/mods.$a"
+}
+
+load_modules()
+{
+	[ "$#" -gt 1 ] ||
+		return 0
+
+	local n m modules_file
+
+	modules_file="/etc/initrd/modules-$1"
+	shift
+
+	mkdir -p -- "$rootdir/etc/initrd"
+
+	for n; do
+		m="${n##*/}"
+		m="$(normalize_modname "${m%.ko*}")"
+		! in_blacklist "$m" ||
+			continue
+		printf '%s\n' "$n"
+	done >> "$rootdir/$modules_file"
+
+	sort -uo "$rootdir/$modules_file" "$rootdir/$modules_file"
+}
+
+get_depinfo()
+{
+	[ -s "$1" ] ||
+		return 0
+	local rc=0
+	sort -u "$1" |xargs -r depinfo --set-version="$kernel" || rc=$?
+	:> "$1"
+	return $rc
+}
+
+find_modules required ${MODULES_ADD-} ${RESCUE_MODULES-} ${MODULES_PRELOAD-} ${MODULES_LOAD-}
+find_modules optional ${MODULES_TRY_ADD-}
+
+if [ -n "${MODULES_PATTERN_SETS-}" ]; then
+	i=0
+	for var in $MODULES_PATTERN_SETS; do
+		eval "MODULES_PATTERN=\"\${$var-}\""
+		for pattern in $MODULES_PATTERN; do
+			[ -z "${pattern##*:*}" ] ||
+				fatal "unexpected pattern format: $pattern"
+
+			keyword="${pattern%%:*}"
+			regexp="${pattern#*:}"
+
+			prefix="${keyword%%-*}"
+			if [ "$prefix" != "$keyword" ]; then
+				keyword="${keyword#*-}"
+			else
+				prefix=
+			fi
+
+			case "$keyword" in
+				alias|author|depends|description|filename|firmware|license|name|symbol)
+					;;
+				*)
+					fatal "unknown keyword: $keyword"
+			esac
+
+			printf '%s %s\n' "${prefix:+$prefix-}$keyword" "$regexp"
+		done > "$tempdir/filter-$i"
+		i=$(($i + 1))
+	done
+
+	find "$tempdir" \
+		-name 'filter-*' \
+		-exec initrd-scanmod --set-version="$kernel" '{}' '+' \
+		>> "$tempdir/mods.required"
+fi
+
+:> "$tempdir/firmwares"
+
+while [ -s "$tempdir/mods.required" ] || [ -s "$tempdir/mods.optional" ]; do
+	{
+		get_depinfo "$tempdir/mods.optional" 2>/dev/null ||:
+		get_depinfo "$tempdir/mods.required"
+	} > "$tempdir/depinfo"
+
+	while read -r keyword path; do
+		modname="${path##*/}"
+		modname="${modname%.ko*}"
+
+		! in_blacklist "$modname" ||
+			continue
+
+		case "$keyword" in
+			builtin)
+				verbose "Builtin module \"$modname\""
+				;;
+			module)
+				printf '%s\t%s\n' "$modname" "$path"
+				;;
+			firmware)
+				printf 'none\t%s\n' "$path" >> "$tempdir/firmwares"
+				;;
+		esac
+	done < "$tempdir/depinfo" > "$tempdir/more-modules"
+
+	[ -s "$tempdir/more-modules" ] ||
+		break
+
+	sort -uo "$tempdir/more-modules" "$tempdir/more-modules"
+	cat "$tempdir/more-modules"
+
+	find "$kmoddepsdir" -type f -executable \
+		-exec '{}' "$tempdir/more-modules" ';' > "$tempdir/mods.required"
+
+done > "$tempdir/modules"
+
+cut -f2- -- "$tempdir/firmwares" "$tempdir/modules" |
+	sort -u |
+	xargs -r put-file "$rootdir"
+
+load_modules postudev ${MODULES_PRELOAD-}
+load_modules postudev ${MODULES_LOAD-}

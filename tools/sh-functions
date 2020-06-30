@@ -42,7 +42,7 @@ fi
 	fatal "Directory \"$kernel_modules_dir\" doesn't exist or not accessible."
 
 normalize_modname() {
-	printf '%s' "$*" |tr '-' '_'
+	printf '%s\n' "$*" |tr '-' '_'
 }
 
 [ -z "$blacklist" ] ||
