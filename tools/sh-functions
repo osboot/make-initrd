@@ -65,14 +65,10 @@ readline() {
 	eval "$1=\"\$__v\""
 }
 
-find_libs() {
-	libdirs='/lib64 /lib'
-	slib="$(getconf SLIB 2>/dev/null)" &&
-		libdirs="/$slib" ||:
-	for lib in $libdirs; do
-		[ ! -d "$lib" ] ||
-			find "$lib" "$@"
-	done
+list_libs() {
+	local ldconfig
+	ldconfig="$($WHICH $WHICH_ARGS ldconfig)"
+	$ldconfig -p | sed -n -e 's,.* => ,,p'
 }
 
 fi #__included_make_initrd_sh_functions

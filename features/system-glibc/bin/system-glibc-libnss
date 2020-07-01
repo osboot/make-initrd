@@ -6,12 +6,10 @@ verbose "Copying files from libnss_files.so* ..."
 
 case "${1-}" in
 	files)
-		find_libs \
-			-mindepth 1 -maxdepth 1 \
-			\( \
-				-name 'libnss_files.so*' -o \
-				-name 'libnss_dns.so*' \
-			\)
+		list_libs |
+			grep \
+				-e '/libnss_files\.so.*' \
+				-e '/libnss_dns\.so.*'
 		;;
 	dirs)
 		DIR="$TEMPDIR/root"

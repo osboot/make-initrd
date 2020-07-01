@@ -6,9 +6,8 @@ verbose "Copying files from libgcc_s.so* ..."
 
 case "${1-}" in
 	files)
-		find_libs \
-			-mindepth 1 -maxdepth 1 \
-			-name 'libgcc_s.so*'
+		list_libs |
+			grep -e '/libgcc_s\.so.*'
 		;;
 	dirs)
 		;;
