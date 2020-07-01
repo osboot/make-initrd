@@ -13,6 +13,8 @@
 
 #include <gelf.h>
 
+#include "config.h"
+
 static size_t read_bufsize = 4;
 static int need_prefix = 1;
 static char *separator = (char *) ":";
@@ -52,7 +54,7 @@ print_version_and_exit(void)
 	       "This is free software; see the source for copying conditions.  There is NO\n"
 	       "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
 	       "\n"
-	       , program_invocation_short_name, VERSION);
+	       , program_invocation_short_name, PACKAGE_VERSION);
 	exit(EXIT_SUCCESS);
 }
 

@@ -3,10 +3,8 @@
 [ "$#" -gt 0 ] ||
 	exit 0
 
-libname=${LIBNAME?}
-
 name="$1"; shift
-themedir="/usr/share/plymouth/themes/$name"
+themedir="$DATADIR/plymouth/themes/$name"
 
 [ -f "$themedir/$name.plymouth" ] ||
 	exit 0
@@ -40,7 +38,7 @@ get_module()
 
 				set -- ${l#*=}
 
-				fn="/usr/$libname/plymouth/$*.so"
+				fn="$LIBDIR/plymouth/$*.so"
 
 				[ -f "$fn" ] ||
 					fatal "ModuleName: file not found: $fn"

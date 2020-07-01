@@ -18,6 +18,8 @@
 #include <libgen.h>
 #include <libkmod.h>
 
+#include "config.h"
+
 enum show_flags {
 	SHOW_DEPS     = (1 << 1),
 	SHOW_MODULES  = (1 << 2),
@@ -535,7 +537,7 @@ print_help(const char *progname)
 static void __attribute__((noreturn))
 print_version(const char *progname)
 {
-	printf("%s version " VERSION "\n"
+	printf("%s version " PACKAGE_VERSION "\n"
 	       "Written by Alexey Gladkov <gladkov.alexey@gmail.com>\n"
 	       "\n"
 	       "Copyright (C) 2012  Alexey Gladkov <gladkov.alexey@gmail.com>\n"

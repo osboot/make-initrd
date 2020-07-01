@@ -1,6 +1,6 @@
 #!/bin/sh -efu
 
-export LIBMOUNT_FSTAB="${FSTAB:-/etc/fstab}"
+export LIBMOUNT_FSTAB="${FSTAB:-$SYSCONFDIR/fstab}"
 export LIBMOUNT_MTAB="${PROC_MOUNTS:-$PROCFS_PATH/mounts}"
 
 case "${1-}" in

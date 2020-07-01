@@ -16,7 +16,7 @@
 #include "initrd-cpio.h"
 #include "initrd-decompress.h"
 #include "initrd-parse.h"
-//#include "initrd-ls.h"
+#include "config.h"
 
 int opts = 0;
 
@@ -49,7 +49,7 @@ print_help(void)
 static void __attribute__((noreturn))
 print_version(void)
 {
-	printf("%s version " VERSION "\n"
+	printf("%s version " PACKAGE_VERSION "\n"
 	       "Written by Alexey Gladkov <gladkov.alexey@gmail.com>\n"
 	       "\n"
 	       "Copyright (C) 2017  Alexey Gladkov <gladkov.alexey@gmail.com>\n"

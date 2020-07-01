@@ -6,7 +6,7 @@
 
 PROG="${0##*/}"
 TEMPDIR=
-BOOTDIR="@BOOTDIR@"
+BOOTDIR="@bootdir@"
 SYSFS_PATH="${SYSFS_PATH:-/sys}"
 PROCFS_PATH="${PROCFS_PATH:-/proc}"
 KERNEL="$(uname -r)"
@@ -17,7 +17,7 @@ config=
 
 print_version() {
 	cat <<-EOF
-	make-initrd version @VERSION@
+	make-initrd version @PACKAGE_VERSION@
 	Written by Alexey Gladkov, Kirill Shutemov.
 
 	Copyright (C) 2009,2010  Alexey Gladkov <gladkov.alexey@gmail.com>
@@ -59,7 +59,7 @@ show_help() {
 	   -N, --no-checks        don't check /dev, /proc and the kernel
 	                          modules directory;
 	   -c, --config=FILE      set custom config file;
-	   -b, --bootdir=DIR      set boot directory (default: @BOOTDIR@);
+	   -b, --bootdir=DIR      set boot directory (default: @bootdir@);
 	   -k, --kernel=VERSION   set kernel version (default: currently
 	                          running kernel);
 	   -v, --verbose          print a message for each action;
@@ -222,7 +222,7 @@ case "$make_version" in
 esac
 
 rc=0
-make $output_sync -r -f @PREFIX@/mk/make-initrd.mk -- "$@" || rc=$?
+make $output_sync -r -f @projectdir@/mk/make-initrd.mk -- "$@" || rc=$?
 
 [ -z "$TEMPDIR" ] ||
 	rm -rf -- "$TEMPDIR" 2>/dev/null ||:

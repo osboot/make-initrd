@@ -11,6 +11,7 @@
 #include <errno.h>
 
 #include "initrd-scanmod.h"
+#include "config.h"
 
 const char short_opts[]         = "Vhb:k:";
 const struct option long_opts[] = {
@@ -42,7 +43,7 @@ usage(int code)
 static inline void __attribute__((noreturn))
 print_version_and_exit(void)
 {
-	dprintf(STDOUT_FILENO, "%s version %s\n", program_invocation_short_name, VERSION);
+	dprintf(STDOUT_FILENO, "%s version %s\n", program_invocation_short_name, PACKAGE_VERSION);
 	dprintf(STDOUT_FILENO,
 	        "Written by Alexey Gladkov.\n\n"
 	        "Copyright (C) 2018  Alexey Gladkov <gladkov.alexey@gmail.com>\n"

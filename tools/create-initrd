@@ -38,16 +38,12 @@ initrd-release
 mkfifo ./.initrd/telinit
 mkfifo ./.initrd/rdshell
 
-which_args='--skip-alias --skip-functions --skip-dot --skip-tilde'
-# shellcheck disable=SC2230
-which="$(which $which_args which)"
-
-UDEV_FILES='
-	/sbin/udevd
-	/sbin/udevadm
+UDEV_FILES="
+	$UDEVD
+	$UDEVADM
 	/lib/udev/ata_id
 	/lib/udev/cdrom_id
-	/lib/udev/scsi_id'
+	/lib/udev/scsi_id"
 
 UDEV_FILES_OLD='
 	/lib/udev/edd_id
@@ -63,7 +59,7 @@ printf '%s\n' \
 	logger ls lsmod mkdir mknod mktemp modprobe mount mountpoint mv \
 	readlink rm rmdir runas setsid sh sleep start-stop-daemon switch_root \
 	touch umount which ${PUT_FEATURE_PROGS-} ${PUT_PROGS-} |
-	PATH="$BUSYBOX_PATH:$SYSTEM_PATH" xargs -r $which $which_args |
+	PATH="$BUSYBOX_PATH:$SYSTEM_PATH" xargs -r $WHICH $WHICH_ARGS |
 	sed -e 's#^/lib/initrd##';
 
 for n in $UDEV_FILES_OLD /bin/shell-* /usr/share/terminfo/l /var/resolv; do
@@ -74,10 +70,13 @@ done;
 [ -z "${LOCALBUILDDIR-}" ] ||
 	PUT_DIRS="${PUT_DIRS-} ${LOCALBUILDDIR-}/lib/initrd"
 
-PUT_DIRS="${PUT_DIRS-} $DATADIR /lib/initrd"
+PUT_DIRS="${PUT_DIRS-} $RUNTIMEDATADIR /lib/initrd"
 
 printf '%s\n' ${PUT_FEATURE_DIRS-} $PUT_DIRS   |sort -u |xargs -r put-tree .
 printf '%s\n' ${PUT_FEATURE_FILES-} $PUT_FILES |sort -u |xargs -r put-file .
+
+[ ".$UDEVD" = "./sbin/udevd" ]     || mv -f -- ".$UDEVD" "./sbin/udevd"
+[ ".$UDEVADM" = "./sbin/udevadm" ] || mv -f -- ".$UDEVADM" "./sbin/udevadm"
 
 for i in rc0 rc1 rc2 rc3 rc4 rc5 rc6 init; do
 	mkdir -p "./etc/rc.d/$i.d"

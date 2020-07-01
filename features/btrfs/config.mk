@@ -1,4 +1,4 @@
 BTRFS_DATADIR = $(FEATURESDIR)/btrfs/data
-BTRFS_FILES   = /sbin/btrfs
+BTRFS_PROGS   = btrfs
 BTRFS_PRELOAD = btrfs
 BTRFS_MODULES = crc32c

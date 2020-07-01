@@ -92,7 +92,7 @@ logfile=
 print_version()
 {
 	cat <<-EOF
-	$PROG version @VERSION@
+	$PROG version @PACKAGE_VERSION@
 	Written by Alexey Gladkov.
 
 	Copyright (C) 2012-2017  Alexey Gladkov <gladkov.alexey@gmail.com>
@@ -255,11 +255,7 @@ shebang_file()
 	case "$#,$exe" in
 		2,/usr/bin/env)
 			local arg=
-			arg="$(
-				export PATH=/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin
-				# shellcheck disable=SC2230
-				which --skip-alias --skip-functions --skip-dot --skip-tilde "$2"
-			)"
+			arg="$(@WHICH@ --skip-alias --skip-functions --skip-dot --skip-tilde "$2")"
 			debug "script file $f -> $arg"
 			print_canonicalize "$arg"
 			;;
@@ -349,7 +345,7 @@ done |
 [ ! -e "$abortfile" ] ||
 	exit 1
 
-file_bin="@LIBEXECDIR@/mi-file"
+file_bin="@execdir@/mi-file"
 
 [ -x "$file_bin" ] ||
 	file_bin="file"

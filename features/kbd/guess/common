@@ -3,6 +3,7 @@
 . guess-functions
 
 ! grep -qs -E '^[[:space:]]*(KEYTABLE|SYSFONT)=' \
-		/etc/sysconfig/consolefont \
-		/etc/sysconfig/keyboard ||
+		"$SYSCONFDIR/sysconfig/consolefont" \
+		"$SYSCONFDIR/sysconfig/keyboard" \
+		2>/dev/null ||
 	guess_feature kbd

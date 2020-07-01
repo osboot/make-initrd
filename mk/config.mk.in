@@ -1,5 +1,5 @@
-PROJECT = @PROJECT@
-VERSION = @VERSION@
+PROJECT = @PACKAGE_NAME@
+VERSION = @PACKAGE_VERSION@
 
 # Temprary directory used for processing all images.
 # It is created once when the make-initrd starts.
@@ -23,17 +23,25 @@ GUESSDIR	 = $(WORKDIR)/guess
 # This is directory used for bug-report target.
 REPORTDIR	 = $(WORKDIR)/report
 
-TOOLSDIR	:= $(realpath @PREFIX@/tools)
-LOCALBUILDDIR	:= @LOCALBUILDDIR@
-DATADIR		:= $(realpath @PREFIX@/data)
-FEATURESDIR	:= $(realpath @PREFIX@/features)
-DETECTDIR	:= $(realpath @PREFIX@/guess)
-KMODDEPSDIR	:= $(realpath @PREFIX@/kmodule.deps.d)
-STATEDIR	:= @STATEDIR@
-BOOTDIR		?= /boot
-SYSCONFDIR	?= /etc
+TOOLSDIR	:= @projectdir@/tools
+LOCALBUILDDIR	:= @localbuilddir@
+RUNTIMEDATADIR	:= @projectdir@/data
+FEATURESDIR	:= @projectdir@/features
+DETECTDIR	:= @projectdir@/guess
+KMODDEPSDIR	:= @projectdir@/kmodule.deps.d
+STATEDIR	:= @statedir@
+BOOTDIR		:= @bootdir@
+SYSCONFDIR	:= @sysconfdir@
+DATADIR		:= @datadir@
+LIBDIR		:= @libdir@
 SYSFS_PATH	?= /sys
 PROCFS_PATH	?= /proc
+
+WHICH		:= @WHICH@
+WHICH_ARGS	:= @WHICH_ARGS@
+EGREP		:= @EGREP@
+UDEVD		:= @UDEVD@
+UDEVADM		:= @UDEVADM@
 
 BUSYBOX_PATH := /lib/initrd/sbin:/lib/initrd/usr/sbin:/lib/initrd/bin:/lib/initrd/usr/bin
 SYSTEM_PATH  := /sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin
@@ -54,14 +62,12 @@ INITRD_CONFIG_LIST	?= $(wildcard $(SYSCONFDIR)/initrd.mk $(SYSCONFDIR)/initrd.mk
 
 # Global variables
 RESOLVE_MODALIAS	?= 1
-UDEV_VERSION		?= $(shell $(TOOLSDIR)/udev-version)
+UDEV_VERSION		?= $(shell env "UDEVD=$(UDEVD)" "UDEVADM=$(UDEVADM)" $(TOOLSDIR)/udev-version)
 KERNEL			?= $(shell uname -r)
 KERNEL_CONFIG		?= $(BOOTDIR)/config-$(KERNEL)
 KERNEL_MODULES_DIR	?= /lib/modules/$(KERNEL)
 KERNEL_MODULES		?= $(KERNEL_MODULES_DIR)/kernel
 ARCH			?= $(shell uname -m)
-
-LIBNAME			?= $(shell getconf SLIB)
 
 FSTAB			?= /etc/fstab
 PROC_MOUNTS		?= $(PROCFS_PATH)/mounts

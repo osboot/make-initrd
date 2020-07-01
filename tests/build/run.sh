@@ -2,17 +2,22 @@
 
 #exec /bin/bash
 
-export MKLOCAL=1
+cd "$HOME/src"
 
-echo
-echo "Cleanup make-initrd ..."
-echo
-make -C "$HOME/src" clean
+echo "RUN: ./autogen.sh"
+./autogen.sh
 
-echo
-echo "Building make-initrd ..."
-echo
-make -C "$HOME/src"
+echo "RUN: ./configure --enable-local-build"
+./configure --enable-local-build
+
+echo "RUN: make clean"
+make clean
+
+echo "RUN: make"
+make
+
+echo "LIST"
+find .build/dest -type f -printf '%m %p\n'
 
 echo
 echo "IT WORKS!"

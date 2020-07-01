@@ -9,7 +9,7 @@ initrd_scanmod_SRCS = \
 	utils/initrd-scanmod/initrd-scanmod-walk.c \
 	$(NULL)
 
-initrd_scanmod_LIBS = $(shell pkg-config --libs libkmod)
+initrd_scanmod_LIBS = $(HAVE_LIBKMOD_LIBS)
 
 PROGS     += $(initrd_scanmod_DEST)
 C_SOURCES += $(initrd_scanmod_SRCS)

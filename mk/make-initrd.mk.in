@@ -2,9 +2,9 @@
 .EXPORT_ALL_VARIABLES:
 .DEFAULT_GOAL := all
 
-include @PREFIX@/mk/config.mk
-include @PREFIX@/mk/rules.mk
-include @PREFIX@/mk/guess.mk
+include @projectdir@/mk/config.mk
+include @projectdir@/mk/rules.mk
+include @projectdir@/mk/guess.mk
 
 ifneq "$(strip $(INITRD_CONFIG))" ''
 
@@ -34,9 +34,9 @@ all: check-for-root
 		export INITRD_CONFIG="$$c"; \
 		export STARTUP_TIME="$$(date +'%s')"; \
 		$(MSG) "Config file: $$c"; \
-		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @PREFIX@/mk/make-initrd.mk guess    || { rc=1; break; }; \
+		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk guess    || { rc=1; break; }; \
 		export IGNORE_DEPMOD=1; \
-		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @PREFIX@/mk/make-initrd.mk genimage || { rc=1; break; }; \
+		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk genimage || { rc=1; break; }; \
 	done; \
 	rm -f -- $(TEMPDIR)/images; \
 	exit $$rc

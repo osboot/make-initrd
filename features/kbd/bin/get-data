@@ -23,13 +23,9 @@ case "${1-}" in
 
 		find "$KBD_KEYMAPS_DIR" -name 'include'
 
-		which_args='--skip-alias --skip-functions --skip-dot --skip-tilde'
-		# shellcheck disable=SC2230
-		which="$(which $which_args which)"
-
 		for s in gzip:gz bzip2:bz2 xz:xz; do
 			[ -z "$(find "$KBD_DATA_DIR" -type f -name "*.${s#*:}" -print -quit)" ] ||
-				"$which" $which_args "${s%:*}"
+				"$WHICH" $WHICH_ARGS "${s%:*}"
 		done
 		;;
 	dirs)

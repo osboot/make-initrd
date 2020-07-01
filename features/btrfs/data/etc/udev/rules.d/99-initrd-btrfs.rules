@@ -1,1 +1,1 @@
-SUBSYSTEM=="block", ACTION!="remove", ENV{ID_FS_TYPE}=="btrfs", RUN+="/sbin/btrfs device scan $env{DEVNAME}"
+SUBSYSTEM=="block", ACTION!="remove", ENV{ID_FS_TYPE}=="btrfs", RUN+="btrfs device scan $env{DEVNAME}"

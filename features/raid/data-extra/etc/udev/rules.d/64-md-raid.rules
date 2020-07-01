@@ -15,7 +15,7 @@ TEST!="md/array_state", GOTO="md_end"
 ATTR{md/array_state}=="|clear|inactive", GOTO="md_end"
 LABEL="md_ignore_state"
 
-IMPORT{program}="/sbin/blkid -o udev -p $tempnode"
+IMPORT{program}="blkid -o udev -p $tempnode"
 OPTIONS+="link_priority=100"
 OPTIONS+="watch"
 ENV{ID_FS_USAGE}=="filesystem|other|crypto", ENV{ID_FS_UUID_ENC}=="?*", SYMLINK+="disk/by-uuid/$env{ID_FS_UUID_ENC}"

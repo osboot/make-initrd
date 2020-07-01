@@ -1,59 +1,72 @@
-PROJECT = make-initrd
-VERSION = 2.7.0
+PACKAGE_NAME    := @PACKAGE_NAME@
+PACKAGE_VERSION := @PACKAGE_VERSION@
 
-sysconfdir ?= /etc
-bootdir    ?= /boot
-bindir     ?= /usr/bin
-sbindir    ?= /usr/sbin
-libexecdir ?= /usr/libexec/$(PROJECT)
-statedir   ?= /var/lib
-helperdir  ?= /lib/initrd
-datadir    ?= /usr/share
-infodir    ?= $(datadir)/info
-mandir     ?= $(datadir)/man
-man1dir    ?= $(mandir)/man1
-tmpdir     ?= /tmp
-prefix     ?= $(datadir)/$(PROJECT)
-rulesdir   ?= $(prefix)/mk
+MKLOCAL := @MKLOCAL@
+
+prefix      = @prefix@
+exec_prefix = @exec_prefix@
+sysconfdir  = @sysconfdir@
+bootdir     = @bootdir@
+bindir      = @bindir@
+sbindir     = @sbindir@
+libexecdir  = @libexecdir@
+execdir     = @libexecdir@/@PACKAGE_NAME@
+statedir    = @localstatedir@
+runtimedir  = @runtimedir@
+datarootdir = @datarootdir@
+datadir     = @datadir@
+infodir     = @infodir@
+mandir      = @mandir@
+man1dir     = $(mandir)/man1
+tmpdir      = /tmp
+projectdir  = @projectdir@
+rulesdir    = ${projectdir}/mk
 
 localbuilddir =
+build_prefix = .build
 
-BUILDDIR ?= .build
-OBJDIR = $(BUILDDIR)/obj
+ifneq ($(MKLOCAL),no)
+localbuilddir = $(CURDIR)/$(build_prefix)/dest
+statedir = /tmp
+endif
 
-dest_prefix       := $(BUILDDIR)/dest$(prefix)
-dest_sysconfdir   := $(BUILDDIR)/dest$(sysconfdir)
-dest_bindir       := $(BUILDDIR)/dest$(bindir)
-dest_sbindir      := $(BUILDDIR)/dest$(sbindir)
-dest_libexecdir   := $(BUILDDIR)/dest$(libexecdir)
-dest_man1dir      := $(BUILDDIR)/dest$(man1dir)
-dest_rulesdir     := $(BUILDDIR)/dest$(rulesdir)
-dest_datadir      := $(BUILDDIR)/dest$(helperdir)
+
+OBJDIR = $(build_prefix)/obj
+
+dest_projectdir   := $(build_prefix)/dest$(projectdir)
+dest_sysconfdir   := $(build_prefix)/dest$(sysconfdir)
+dest_bindir       := $(build_prefix)/dest$(bindir)
+dest_sbindir      := $(build_prefix)/dest$(sbindir)
+dest_execdir      := $(build_prefix)/dest$(execdir)
+dest_man1dir      := $(build_prefix)/dest$(man1dir)
+dest_rulesdir     := $(build_prefix)/dest$(rulesdir)
+dest_datadir      := $(build_prefix)/dest$(runtimedir)
 dest_data_bindir  := $(dest_datadir)/bin
 dest_data_sbindir := $(dest_datadir)/sbin
 
-ifdef MKLOCAL
-VERSION       = $(shell git describe HEAD)
-prefix        = $(CURDIR)/$(dest_prefix)
-sysconfdir    = $(CURDIR)/$(dest_sysconfdir)
-bindir        = $(CURDIR)/$(dest_bindir)
-sbindir       = $(CURDIR)/$(dest_sbindir)
-libexecdir    = $(CURDIR)/$(dest_libexecdir)
-rulesdir      = $(CURDIR)/$(dest_rulesdir)
-localbuilddir = $(CURDIR)/$(BUILDDIR)/dest
-statedir      = $(tmpdir)
-endif
+HAVE_GZIP        := @HAVE_GZIP@
+HAVE_GZIP_LIBS   := @HAVE_GZIP_LIBS@
+HAVE_GZIP_CFLAGS := @HAVE_GZIP_CFLAGS@
 
-HAVE_GZIP    ?= $(shell pkg-config --exists zlib 2>/dev/null && echo 'yes')
-HAVE_BZIP2   ?= $(shell pkg-config --exists bzip2 2>/dev/null && echo 'yes')
-HAVE_LZMA    ?= $(shell pkg-config --exists liblzma 2>/dev/null && echo 'yes')
-HAVE_ZSTD    ?= $(shell pkg-config --exists libzstd 2>/dev/null && echo 'yes')
-HAVE_LIBKMOD ?= $(shell pkg-config --exists libkmod 2>/dev/null && echo 'yes')
-HAVE_LIBELF  ?= $(shell pkg-config --exists libelf 2>/dev/null && echo 'yes')
+HAVE_BZIP2        := @HAVE_BZIP2@
+HAVE_BZIP2_LIBS   := @HAVE_BZIP2_LIBS@
+HAVE_BZIP2_CFLAGS := @HAVE_BZIP2_CFLAGS@
 
-ifneq ($(HAVE_LIBKMOD),yes)
-$(error Your system does not have libkmod)
-endif
+HAVE_LZMA        := @HAVE_LZMA@
+HAVE_LZMA_LIBS   := @HAVE_LZMA_LIBS@
+HAVE_LZMA_CFLAGS := @HAVE_LZMA_CFLAGS@
+
+HAVE_ZSTD        := @HAVE_ZSTD@
+HAVE_ZSTD_LIBS   := @HAVE_ZSTD_LIBS@
+HAVE_ZSTD_CFLAGS := @HAVE_ZSTD_CFLAGS@
+
+HAVE_LIBKMOD        := @HAVE_LIBKMOD@
+HAVE_LIBKMOD_LIBS   := @HAVE_LIBKMOD_LIBS@
+HAVE_LIBKMOD_CFLAGS := @HAVE_LIBKMOD_CFLAGS@
+
+HAVE_LIBELF        := @HAVE_LIBELF@
+HAVE_LIBELF_LIBS   := @HAVE_LIBELF_LIBS@
+HAVE_LIBELF_CFLAGS := @HAVE_LIBELF_CFLAGS@
 
 VERBOSE ?= $(V)
 Q = $(if $(VERBOSE),,@)
@@ -87,10 +100,10 @@ DEPS       = $(call get_depends,$(C_SOURCES))
 RULESFILES = $(addprefix $(dest_rulesdir)/,$(patsubst mk/%.in,%,$(wildcard mk/*.mk.in)))
 MANPAGES   = $(addprefix $(dest_man1dir)/,$(notdir $(basename $(wildcard man/*.1.inc))))
 DATAFILES  = \
-	$(addprefix $(dest_prefix)/,data guess features tools kmodule.deps.d) \
+	$(addprefix $(dest_projectdir)/,data guess features tools kmodule.deps.d) \
 	$(addprefix $(dest_sysconfdir)/,$(patsubst conf/%,%,$(wildcard conf/*)))
 
-CFLAGS = \
+CFLAGS = @CFLAGS@ \
 	-Wall -Wextra -W -Wshadow -Wcast-align \
 	-Wwrite-strings -Wconversion -Waggregate-return -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations -Wmissing-noreturn \
@@ -98,29 +111,54 @@ CFLAGS = \
 	-Wno-pointer-arith \
 	-Werror=shadow -Werror=missing-prototypes -Werror=implicit-function-declaration
 
-CPPFLAGS = \
-	-DPACKAGE=\"$(PROJECT)\" -DVERSION=\"$(VERSION)\" \
-	-I$(CURDIR)/utils
+CPPFLAGS += @CPPFLAGS@ @DEFS@ -I$(CURDIR) -I$(CURDIR)/utils
+
+WHICH		= @WHICH@
+WHICH_ARGS	= --skip-alias --skip-functions --skip-dot --skip-tilde
+EGREP		= @EGREP@
+UDEVD		= @UDEVD@
+UDEVADM		= @UDEVADM@
+
+SEDsubst = @SED@ \
+	-e 's|@WHICH[@]|$(WHICH)|g' \
+	-e 's|@WHICH_ARGS[@]|$(WHICH_ARGS)|g' \
+	-e 's|@EGREP[@]|$(EGREP)|g' \
+	-e 's|@UDEVD[@]|$(UDEVD)|g' \
+	-e 's|@UDEVADM[@]|$(UDEVADM)|g' \
+	-e 's|@PACKAGE_NAME[@]|$(PACKAGE_NAME)|g' \
+	-e 's|@PACKAGE_VERSION[@]|$(PACKAGE_VERSION)|g' \
+	-e 's|@bootdir[@]|$(bootdir)|g' \
+	-e 's|@sysconfdir[@]|$(sysconfdir)|g' \
+	-e 's|@datadir[@]|$(datadir)|g' \
+	-e 's|@libdir[@]|$(libdir)|g' \
+	-e 's|@statedir[@]|$(statedir)|g' \
+	-e 's|@projectdir[@]|$(localbuilddir)$(projectdir)|g' \
+	-e 's|@localbuilddir[@]|$(localbuilddir)|g' \
+	-e 's|@execdir[@]|$(localbuilddir)$(execdir)|g'
 
 CP       = $(Q)cp -a
 RM       = $(Q)rm -f
-LN_S     = $(Q)ln -s -f
+LN_S     = $(Q)@LN_S@ -f
 CHMOD    = $(Q)chmod
-MKDIR_P  = $(Q)mkdir -p
+MKDIR_P  = $(Q)@MKDIR_P@
 TOUCH_R  = $(Q)touch -r
-SED      = $(call quiet_cmd,SED,$@,sed)
-HELP2MAN = $(call quiet_cmd,MAN,$@,env -i PATH="${PATH}" help2man -N)
+GEN      = $(call quiet_cmd,GEN,$@,$(CURDIR)/config.status -q)
+SED      = $(call quiet_cmd,SED,$@,$(SEDsubst))
+HELP2MAN = $(call quiet_cmd,MAN,$@,env -i PATH="${PATH}" @HELP2MAN@ -N)
 COMPILE  = $(call quiet_cmd,CC,$<,$(COMPILE.c))
 LINK     = $(call quiet_cmd,CCLD,$@,$(LINK.o))
 DEP      = $(call quiet_cmd,DEP,$<,$(CC))
 
 all: build
 
-build: build-progs build-rules build-manpages build-data
+build: build-progs build-rules build-data
 
 build-progs: $(OBJS) $(PROGS) $(SCRIPTS)
 
+ifneq ($(HELP2MAN),)
 build-manpages: build-progs $(MANPAGES)
+build: build-manpages
+endif
 
 build-rules: $(RULESFILES)
 
@@ -129,7 +167,7 @@ build-data: $(DATAFILES)
 	$(LN_S) -- environ $(dest_data_bindir)/showenv
 
 install: build-progs build-manpages
-	@root="$(CURDIR)/$(BUILDDIR)/dest"; \
+	@root="$(CURDIR)/$(build_prefix)/dest"; \
 	find "$$root" -mindepth 1 | sort -d | while read -r n; do \
 	  dst="$(DESTDIR)/$${n##$$root/}"; \
 	  if [ ! -L "$$n" ] && [ -d "$$n" ]; then \
@@ -141,7 +179,7 @@ install: build-progs build-manpages
 	done
 
 clean:
-	$(RM) -r -- $(BUILDDIR)
+	$(RM) -r -- $(build_prefix)
 
 verify:
 	find data features guess tools utils kmodule.deps.d -type f | \
@@ -156,36 +194,19 @@ src = $($(name)_SRCS)
 dst = $($(name)_DEST)
 $(SCRIPTS): Makefile
 	$(MKDIR_P) -- $(dir $@)
-	$(SED) \
-		-e 's,@PROJECT@,$(PROJECT),g' \
-		-e 's,@VERSION@,$(VERSION),g' \
-		-e 's,@BOOTDIR@,$(bootdir),g' \
-		-e 's,@STATEDIR@,$(statedir),g' \
-		-e 's,@PREFIX@,$(prefix),g' \
-		-e 's,@BINDIR@,$(bindir),g' \
-		-e 's,@SBINDIR@,$(sbindir),g' \
-		-e 's,@LIBEXECDIR@,$(libexecdir),g' \
-		-e 's,@LOCALBUILDDIR@,$(localbuilddir),g' \
-		< $(src) > $(dst)
+	$(SED) < $(src) > $(dst)
 	$(TOUCH_R) $(src) $(dst)
 	$(CHMOD) --reference=$(src) $(dst)
 
 $(dest_rulesdir)/%.mk: mk/%.mk.in Makefile
 	$(MKDIR_P) -- $(dir $@)
-	$(SED) \
-		-e 's,@PROJECT@,$(PROJECT),g' \
-		-e 's,@VERSION@,$(VERSION),g' \
-		-e 's,@BOOTDIR@,$(bootdir),g' \
-		-e 's,@STATEDIR@,$(statedir),g' \
-		-e 's,@PREFIX@,$(prefix),g' \
-		-e 's,@LOCALBUILDDIR@,$(localbuilddir),g' \
-		< $< > $@
+	$(SED) < $< > $@
 
 $(dest_man1dir)/%.1: man/%.1.inc Makefile
 	$(MKDIR_P) -- $(dir $@)
 	$(HELP2MAN) -i $< -- $(notdir $*) >$@
 
-$(dest_prefix)/%: % Makefile
+$(dest_projectdir)/%: % Makefile
 	$(MKDIR_P) -- $(dir $@)
 	$(RM) -- "$@"
 	$(LN_S) -- "$(CURDIR)/$(notdir $@)" "$@"
@@ -196,7 +217,7 @@ $(dest_sysconfdir)/%: conf/% Makefile
 
 name = $(subst -,_,$(notdir $@))
 objects = $(call get_objects,$($(name)_SRCS))
-$(dest_bindir)/% $(dest_sbindir)/% $(dest_libexecdir)/% $(dest_data_bindir)/% $(dest_data_sbindir)/%:
+$(dest_bindir)/% $(dest_sbindir)/% $(dest_execdir)/% $(dest_data_bindir)/% $(dest_data_sbindir)/%:
 	$(MKDIR_P) -- $(dir $@)
 	$(LINK) $(objects) -o $@ $($(name)_LIBS)
 

@@ -50,7 +50,7 @@ show_help()
 print_version()
 {
 	cat <<-EOF
-	$PROG version @VERSION@
+	$PROG version @PACKAGE_VERSION@
 	Written by Evgenii Terechkov.
 
 	Copyright (C) 2012  Evgenii Terechkov <evg@altlinux.org>
