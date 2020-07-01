@@ -1,6 +1,6 @@
 KBD_DATADIR = $(FEATURESDIR)/kbd/data
 
-KBD_DATA_DIR   ?= /lib/kbd
+KBD_DATA_DIR   ?= $(feature_kbd_kbddir)
 KBD_FONTS_DIR   = $(KBD_DATA_DIR)/consolefonts
 KBD_UNIMAPS_DIR = $(KBD_DATA_DIR)/unimaps
 KBD_KEYMAPS_DIR = $(KBD_DATA_DIR)/keymaps

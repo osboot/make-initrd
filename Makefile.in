@@ -22,6 +22,8 @@ tmpdir      = /tmp
 projectdir  = @projectdir@
 rulesdir    = ${projectdir}/mk
 
+feature_kbd_kbddir := @kbddir@
+
 localbuilddir =
 build_prefix = .build
 
@@ -132,6 +134,7 @@ SEDsubst = @SED@ \
 	-e 's|@datadir[@]|$(datadir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g' \
 	-e 's|@statedir[@]|$(statedir)|g' \
+	-e 's|@feature_kbd_kbddir[@]|$(feature_kbd_kbddir)|g' \
 	-e 's|@projectdir[@]|$(localbuilddir)$(projectdir)|g' \
 	-e 's|@localbuilddir[@]|$(localbuilddir)|g' \
 	-e 's|@execdir[@]|$(localbuilddir)$(execdir)|g'

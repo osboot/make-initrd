@@ -74,6 +74,13 @@ AC_ARG_WITH([runtimedir],
 	[], [with_runtimedir='/lib/initrd'])
 AC_SUBST([runtimedir], [$with_runtimedir])
 
+AC_ARG_WITH([kbddir],
+	[AS_HELP_STRING([--with-kbddir=DIR],
+			[Directory where the console keymaps and fonts are located
+			 (default: /lib/kbd)])],
+	[], [with_kbddir='/lib/kbd'])
+AC_SUBST([kbddir], [$with_kbddir])
+
 AC_ARG_WITH([projectdir],
 	[AS_HELP_STRING([--with-projectdir=DIR],
 			[Directory for project data

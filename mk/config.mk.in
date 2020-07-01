@@ -37,6 +37,8 @@ LIBDIR		:= @libdir@
 SYSFS_PATH	?= /sys
 PROCFS_PATH	?= /proc
 
+feature_kbd_kbddir := @feature_kbd_kbddir@
+
 WHICH		:= @WHICH@
 WHICH_ARGS	:= @WHICH_ARGS@
 EGREP		:= @EGREP@
