@@ -9,6 +9,7 @@ sysconfdir  = @sysconfdir@
 bootdir     = @bootdir@
 bindir      = @bindir@
 sbindir     = @sbindir@
+libdir      = @libdir@
 libexecdir  = @libexecdir@
 execdir     = @libexecdir@/@PACKAGE_NAME@
 statedir    = @localstatedir@
