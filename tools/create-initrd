@@ -52,15 +52,17 @@ UDEV_FILES_OLD='
 	/lib/udev/usb_id
 	/lib/udev/firmware'
 
-PUT_FILES="${PUT_FILES-} $UDEV_FILES $(
-
+BASE_FILES="$(
 printf '%s\n' \
 	blkid cat chmod chroot cp depmod dmesg findmnt grep kill killall5 ln \
 	logger ls lsmod mkdir mknod mktemp modprobe mount mountpoint mv \
 	readlink rm rmdir runas setsid sh sleep start-stop-daemon switch_root \
 	touch umount which ${PUT_FEATURE_PROGS-} ${PUT_PROGS-} |
-	PATH="$BUSYBOX_PATH:$SYSTEM_PATH" xargs -r $WHICH $WHICH_ARGS |
-	sed -e 's#^/lib/initrd##';
+	PATH="$BUSYBOX_PATH:$SYSTEM_PATH" xargs -r $WHICH $WHICH_ARGS)"
+
+PUT_FILES="${PUT_FILES-} $UDEV_FILES $(
+printf '%s\n' "$BASE_FILES" |
+	sed -e "s#^$RUNTIMEDIR##";
 
 for n in $UDEV_FILES_OLD /bin/shell-* /usr/share/terminfo/l /var/resolv; do
 	[ ! -e "$n" ] || printf '%s\n' "$n"
@@ -68,15 +70,23 @@ done;
 )"
 
 [ -z "${LOCALBUILDDIR-}" ] ||
-	PUT_DIRS="${PUT_DIRS-} ${LOCALBUILDDIR-}/lib/initrd"
-
-PUT_DIRS="${PUT_DIRS-} $RUNTIMEDATADIR /lib/initrd"
+	PUT_DIRS="${PUT_DIRS-} ${LOCALBUILDDIR-}$RUNTIMEDIR"
+PUT_DIRS="${PUT_DIRS-} $BASEDATADIR $RUNTIMEDIR"
 
 printf '%s\n' ${PUT_FEATURE_DIRS-} $PUT_DIRS   |sort -u |xargs -r put-tree .
 printf '%s\n' ${PUT_FEATURE_FILES-} $PUT_FILES |sort -u |xargs -r put-file .
 
-[ ".$UDEVD" = "./sbin/udevd" ]     || mv -f -- ".$UDEVD" "./sbin/udevd"
-[ ".$UDEVADM" = "./sbin/udevadm" ] || mv -f -- ".$UDEVADM" "./sbin/udevadm"
+if [ ".$UDEVD" != ./sbin/udevd ]; then
+	mkdir -p -- ./sbin
+	mv $verbose -f -- ".$UDEVD" ./sbin/udevd
+	ln $verbose -s -- /sbin/udevd ".$UDEVD"
+fi
+
+if [ ".$UDEVADM" != ./sbin/udevadm ]; then
+	mkdir -p -- ./sbin
+	mv $verbose -f -- ".$UDEVADM" ./sbin/udevadm
+	ln $verbose -s -- /sbin/udevadm ".$UDEVADM"
+fi
 
 for i in rc0 rc1 rc2 rc3 rc4 rc5 rc6 init; do
 	mkdir -p "./etc/rc.d/$i.d"

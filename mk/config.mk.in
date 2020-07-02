@@ -25,10 +25,11 @@ REPORTDIR	 = $(WORKDIR)/report
 
 TOOLSDIR	:= @projectdir@/tools
 LOCALBUILDDIR	:= @localbuilddir@
-RUNTIMEDATADIR	:= @projectdir@/data
 FEATURESDIR	:= @projectdir@/features
 DETECTDIR	:= @projectdir@/guess
 KMODDEPSDIR	:= @projectdir@/kmodule.deps.d
+BASEDATADIR	:= @projectdir@/data
+RUNTIMEDIR	:= @runtimedir@
 STATEDIR	:= @statedir@
 BOOTDIR		:= @bootdir@
 SYSCONFDIR	:= @sysconfdir@
@@ -45,7 +46,7 @@ EGREP		:= @EGREP@
 UDEVD		:= @UDEVD@
 UDEVADM		:= @UDEVADM@
 
-BUSYBOX_PATH := /lib/initrd/sbin:/lib/initrd/usr/sbin:/lib/initrd/bin:/lib/initrd/usr/bin
+BUSYBOX_PATH := $(RUNTIMEDIR)/sbin:$(RUNTIMEDIR)/usr/sbin:$(RUNTIMEDIR)/bin:$(RUNTIMEDIR)/usr/bin
 SYSTEM_PATH  := /sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin
 CURRENT_PATH := $(shell echo $$PATH)
 BUILDDIR_PATH =

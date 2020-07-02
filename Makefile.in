@@ -43,9 +43,9 @@ dest_sbindir      := $(build_prefix)/dest$(sbindir)
 dest_execdir      := $(build_prefix)/dest$(execdir)
 dest_man1dir      := $(build_prefix)/dest$(man1dir)
 dest_rulesdir     := $(build_prefix)/dest$(rulesdir)
-dest_datadir      := $(build_prefix)/dest$(runtimedir)
-dest_data_bindir  := $(dest_datadir)/bin
-dest_data_sbindir := $(dest_datadir)/sbin
+dest_runtimedir   := $(build_prefix)/dest$(runtimedir)
+dest_data_bindir  := $(dest_runtimedir)/bin
+dest_data_sbindir := $(dest_runtimedir)/sbin
 
 HAVE_GZIP        := @HAVE_GZIP@
 HAVE_GZIP_LIBS   := @HAVE_GZIP_LIBS@
@@ -135,6 +135,7 @@ SEDsubst = @SED@ \
 	-e 's|@datadir[@]|$(datadir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g' \
 	-e 's|@statedir[@]|$(statedir)|g' \
+	-e 's|@runtimedir[@]|$(runtimedir)|g' \
 	-e 's|@feature_kbd_kbddir[@]|$(feature_kbd_kbddir)|g' \
 	-e 's|@projectdir[@]|$(localbuilddir)$(projectdir)|g' \
 	-e 's|@localbuilddir[@]|$(localbuilddir)|g' \

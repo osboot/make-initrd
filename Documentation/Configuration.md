@@ -33,7 +33,7 @@ a configuration file.
 - **PUT_PROGS** - Same as `PUT_FILES` but contains a program names. The full path
   of the executables will be obtained by searching in the directories listed in
   the environment variable `PATH` using the same algorithm as `bash(1)`.
-  The `PATH` will be set to `/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin`.
+  The `PATH` will be set to `/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin`.
   The reason for this is that such a path is used in the initrd image.
 - **PUT_DIRS** - The variable lists directories to be copied into the image.
 
