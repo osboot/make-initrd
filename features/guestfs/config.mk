@@ -5,6 +5,7 @@ GUESTFS_PROGS_PATTERNS = \
 	*/guestfsd \
 	*/parted \
 	*/wipefs \
+	*/findfs \
 	*/zerofree \
 	*/sparsify \
 	*/rsync \
