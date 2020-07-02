@@ -60,6 +60,28 @@ printf '%s\n' \
 	touch umount which ${PUT_FEATURE_PROGS-} ${PUT_PROGS-} |
 	PATH="$BUSYBOX_PATH:$SYSTEM_PATH" xargs -r $WHICH $WHICH_ARGS)"
 
+if [ -n "${PUT_FEATURE_PROGS_WILDCARD-}" ]; then
+	printf '%s\n' "$SYSTEM_PATH" |
+		tr ':' '\n' |
+		sort -u |
+		xargs -ri find '{}' -type f -printf '%p\n' > "$TEMPDIR/list"
+
+	while read -r binpath; do
+		for pattern in $PUT_FEATURE_PROGS_WILDCARD; do
+			case "$binpath" in
+				$pattern)
+					;;
+				*)
+					continue
+					;;
+			esac
+			BASE_FILES="$BASE_FILES $binpath"
+		done
+	done < "$TEMPDIR/list"
+
+	rm -f -- "$TEMPDIR/list"
+fi
+
 PUT_FILES="${PUT_FILES-} $UDEV_FILES $(
 printf '%s\n' "$BASE_FILES" |
 	sed -e "s#^$RUNTIMEDIR##";
