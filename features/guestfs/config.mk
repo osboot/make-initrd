@@ -9,6 +9,7 @@ GUESTFS_FILES = \
 	$(wildcard /sbin/mkfs*) \
 	$(wildcard /sbin/*resize*) \
 	$(wildcard /sbin/*disk) \
+	$(wildcard /usr/sbin/*disk) \
 	$(wildcard /sbin/mount*) \
 	$(wildcard /usr/sbin/xfs_*) \
 	$(wildcard /usr/bin/hivex*) \
