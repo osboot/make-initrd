@@ -62,6 +62,11 @@ PATH = $(TOOLSDIR)$(BUILDDIR_PATH):$(SYSTEM_PATH):$(CURRENT_PATH)
 INITRD_CONFIG		?=
 INITRD_CONFIG_LIST	?= $(wildcard $(SYSCONFDIR)/initrd.mk $(SYSCONFDIR)/initrd.mk.d/*.mk)
 
+ifeq "$(INITRD_CONFIG_LIST)" ''
+$(info WARNING: No configuration files found. \
+	Create an '$(SYSCONFDIR)/initrd.mk' file \
+	or use the --config=FILE option)
+endif
 
 # Global variables
 RESOLVE_MODALIAS	?= 1
