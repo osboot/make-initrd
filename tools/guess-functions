@@ -7,8 +7,8 @@ __included_make_initrd_guess_functions=1
 
 get_device() {
 	case "$1" in
-		UUID=*|LABEL=*)
-			/sbin/blkid -c /dev/null -t "$1" -o device
+		*=*)
+			blkid -c /dev/null -t "$1" -o device
 			return 0
 			;;
 		/*)
