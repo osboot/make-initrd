@@ -125,6 +125,8 @@ PUT_PROGS ?=
 # Load user configuration
 include $(INITRD_CONFIG)
 
+DEPRECATED_FEATURES := bootsplash
+
 PUT_FEATURE_DIRS  =
 PUT_FEATURE_FILES =
 PUT_FEATURE_PROGS =
@@ -139,7 +141,13 @@ unknown_features = \
 ifneq "$(unknown_features)" ''
 $(info WARNING: Unknown features are specified in the config: $(unknown_features))
 endif
+
+deprecated_features = $(filter $(DEPRECATED_FEATURES),$(FEATURES))
+
+ifneq "$(deprecated_features)" ''
+$(info WARNING: Deprecated features found and will do nothing: $(deprecated_features))
 endif
+endif # MAKECMDGOALS = guess
 
 # Load extra configs
 feature_configs		 = $(call wildcard_features,config.mk)

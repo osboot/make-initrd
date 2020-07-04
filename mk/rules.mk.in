@@ -5,10 +5,16 @@ $(eval FEATURES = $(sort $(FEATURES) $(req)))
 $(eval include $(1))
 endef
 
+get_disabled_features = \
+	$(foreach exl,$(DISABLE_FEATURES),$(abspath $(exl:%=$(FEATURESDIR)/%/rules.mk)))
+
+get_deprecated_features = \
+	$(foreach depr,$(DEPRECATED_FEATURES),$(abspath $(depr:%=$(FEATURESDIR)/%/rules.mk)))
+
 require = \
 	$(foreach req,$(1), \
 		$(foreach inc,$(filter-out \
-			$(MAKEFILE_LIST) $(foreach exl,$(DISABLE_FEATURES),$(realpath $(exl:%=$(FEATURESDIR)/%/rules.mk))), \
+			$(MAKEFILE_LIST) $(call get_disabled_features) $(call get_deprecated_features), \
 			$(abspath $(req:%=$(FEATURESDIR)/%/rules.mk))), \
 			$(call include_rules,$(inc))))
 
