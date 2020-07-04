@@ -56,7 +56,7 @@ BASE_FILES="$(
 printf '%s\n' \
 	blkid cat chmod chroot cp depmod dmesg findmnt grep kill killall5 ln \
 	logger ls lsmod mkdir mknod mktemp modprobe mount mountpoint mv \
-	readlink rm rmdir runas setsid sh sleep start-stop-daemon switch_root \
+	readlink rm rmdir setsid sh sleep start-stop-daemon switch_root \
 	touch umount which ${PUT_FEATURE_PROGS-} ${PUT_PROGS-} |
 	PATH="$BUSYBOX_PATH:$SYSTEM_PATH" xargs -r $WHICH $WHICH_ARGS)"
 
