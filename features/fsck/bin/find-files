@@ -2,8 +2,7 @@
 
 for m in $MOUNTPOINTS; do
 	fstype="$(findmnt -n -o FSTYPE --target "$m")"
-	# shellcheck disable=SC2230
-	which --skip-alias --skip-functions "fsck.$fstype"
+	$WHICH $WHICH_ARGS "fsck.$fstype"
 
 	case "$fstype" in
 		ext2|ext3|ext4*)
@@ -12,5 +11,4 @@ for m in $MOUNTPOINTS; do
 			;;
 	esac
 done
-# shellcheck disable=SC2230
-which --skip-alias --skip-functions fsck
+$WHICH $WHICH_ARGS fsck
