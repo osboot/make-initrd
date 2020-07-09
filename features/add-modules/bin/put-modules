@@ -177,5 +177,5 @@ cut -f2- -- "$tempdir/firmwares" "$tempdir/modules" |
 	sort -u |
 	xargs -r put-file "$rootdir"
 
-load_modules postudev ${MODULES_PRELOAD-}
+load_modules preudev  ${MODULES_PRELOAD-}
 load_modules postudev ${MODULES_LOAD-}
