@@ -1,0 +1,26 @@
+name: CI
+on:
+  push:
+    branches:
+      - github-ci
+jobs:
+  tests:
+    name: Root on LUKS
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: check
+      env:
+        TRAVIS_TESTCASE: test-luks
+        IN_TRAVIS: 1
+      run: |
+        sudo apt-get update;
+        sudo apt-get install -y coreutils cpio curl linux-kvm qemu-kvm
+        sudo modprobe kvm-intel ||:
+        sudo modprobe kvm-amd   ||:
+        sudo chmod 666 /dev/kvm ||:
+        sudo -E make -C tests build
+        sudo -E make -C tests $TRAVIS_TESTCASE
+
