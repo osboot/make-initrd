@@ -8,8 +8,8 @@ shift
 LIBCRC32C="$(depinfo --set-version="$kernel" -D "libcrc32c" 2>/dev/null |cut -f1 -d\ )"
 
 case "$LIBCRC32C" in
-	builtin) pattern='^(ext4|xfs|btrfs) ' ;;
-	module)  pattern='^libcrc32c ' ;;
+	builtin) pattern='^(ext4|xfs|btrfs)[[:space:]]' ;;
+	module)  pattern='^libcrc32c[[:space:]]' ;;
 	*) exit 0 ;;
 esac
 
@@ -17,9 +17,9 @@ grep -E -qs -e "$pattern" "$kmodules_list" ||
 	exit 0
 
 # CRC32c (Castagnoli) calculations wrapper for lib/crc32c
-add-module 'crc32c'
+printf '%s\n' crc32c
 
 grep -E -e '^alias crc32c ' "$kernel_modules_dir"/modules.alias |
 while read -r prefix alias module; do
-	add-module "$module"
+	printf '%s\n' "$module"
 done
