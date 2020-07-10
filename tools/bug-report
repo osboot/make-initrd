@@ -58,7 +58,7 @@ progress "$c"
 
 (
 	export LANG=C;
-	find /dev -type d -exec stat -L -c '%A %t %T %n' '{}' '+' 2>/dev/null |
+	find /dev \( -type b -o -type c \) -exec stat -L -c '%A %t %T %n' '{}' '+' 2>/dev/null |
 		sort >"$reportdir"/dev/devlist
 ) ||
 	rm -f -- "$reportdir"/dev/devlist

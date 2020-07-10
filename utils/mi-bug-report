@@ -45,6 +45,7 @@ create()
 		etc/protocols \
 		etc/rpc \
 		etc/services \
+		etc/ld.so.cache \
 		home \
 		bin \
 		sbin \
