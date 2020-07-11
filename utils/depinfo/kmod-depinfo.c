@@ -91,7 +91,7 @@ append_kernel_builtin(char *name)
 
 	new = calloc(1, sizeof(struct kernel_builtin));
 	if (!new)
-		error(EXIT_FAILURE, 0, "malloc: nomem");
+		error(EXIT_FAILURE, errno, "calloc");
 
 	new->name = strdup(name);
 	new->aliases = NULL;
@@ -130,12 +130,12 @@ append_kernel_builtin_alias(char *name, char *alias)
 		}
 
 		if (next->aliases == NULL)
-			error(EXIT_FAILURE, 0, "memory allocation failed");
+			error(EXIT_FAILURE, errno, "memory allocation failed");
 
 		next->aliases[i] = strdup(alias);
 
 		if (next->aliases[i] == NULL)
-			error(EXIT_FAILURE, 0, "strdup: nomem");
+			error(EXIT_FAILURE, errno, "strdup");
 
 		next->aliases[i+1] = 0;
 		break;
@@ -261,14 +261,18 @@ tracked_module(struct kmod_module *mod)
 
 	modules = realloc(modules, (n_modules + 2) * sizeof(void *));
 
-	if (!modules)
-		error(EXIT_FAILURE, errno, "realloc: allocating %lu bytes", (n_modules + 2) * sizeof(void *));
+	if (!modules) {
+		error(0, errno, "realloc: allocating %lu bytes", (n_modules + 2) * sizeof(void *));
+		return -1;
+	}
 
 	modules[n_modules]     = strdup(path);
 	modules[n_modules + 1] = NULL;
 
-	if (!(modules[n_modules]))
-		error(EXIT_FAILURE, errno, "strdup");
+	if (!(modules[n_modules])) {
+		error(0, errno, "strdup");
+		return -1;
+	}
 
 	n_modules++;
 	return 0;
@@ -294,12 +298,12 @@ free_modules(void)
 static void
 process_firmware(const char *firmware)
 {
-	char *firmware_buf;
+	char firmware_buf[MAXPATHLEN];
 	char *s, *str, *token, *saveptr = NULL;
 	s = str = strdup(firmware_dir);
 
 	while ((token = strtok_r(str, ":", &saveptr)) != NULL) {
-		asprintf(&firmware_buf, "%s/%s", token, firmware);
+		snprintf(firmware_buf, sizeof(firmware_buf), "%s/%s", token, firmware);
 
 		if (!access(firmware_buf, F_OK)) {
 			int i = show_tree;
@@ -315,31 +319,34 @@ process_firmware(const char *firmware)
 			printf("%s\n", firmware_buf);
 		}
 
-		free(firmware_buf);
 		str = NULL;
 	}
 	free(s);
 }
 
-static void
+static int
 depinfo_alias(struct kmod_ctx *ctx, const char *alias);
 
-static void
+static int
 process_depends(struct kmod_ctx *ctx, const char *depends)
 {
+	int ret = 0;
 	char *s, *str, *token, *saveptr = NULL;
 	s = str = strdup(depends);
 
 	while ((token = strtok_r(str, ",", &saveptr)) != NULL) {
-		depinfo_alias(ctx, token);
+		if (depinfo_alias(ctx, token) < 0)
+			ret = -1;
 		str = NULL;
 	}
 	free(s);
+	return ret;
 }
 
-static void
+static int
 process_soft_depends(struct kmod_ctx *ctx, const char *depends)
 {
+	int ret = 0;
 	char *s, *str, *token, *saveptr = NULL;
 	size_t len = strlen(depends);
 	s = str = strdup(depends);
@@ -350,24 +357,32 @@ process_soft_depends(struct kmod_ctx *ctx, const char *depends)
 		str += 6;
 
 	while ((token = strtok_r(str, " ", &saveptr)) != NULL) {
-		depinfo_alias(ctx, token);
+		if (depinfo_alias(ctx, token) < 0)
+			ret = -1;
 		str = NULL;
 	}
 	free(s);
+	return ret;
 }
 
-static void
+static int
 depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 {
 	struct kmod_list *l, *list = NULL;
 	int ret;
 
-	if (tracked_module(mod))
-		return;
+	ret = tracked_module(mod);
 
-	if ((ret = kmod_module_get_info(mod, &list)) < 0)
-		error(EXIT_FAILURE, ret, "ERROR: Could not get information from '%s'",
+	switch (ret) {
+		case  1: return  0;
+		case -1: return -1;
+	}
+
+	if ((ret = kmod_module_get_info(mod, &list)) < 0) {
+		error(0, ret, "ERROR: Could not get information from '%s'",
 		      kmod_module_get_name(mod));
+		return -1;
+	}
 
 	if (opts & SHOW_MODULES) {
 		int i = show_tree;
@@ -393,10 +408,13 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 		const char *val = kmod_module_info_get_value(l);
 
 		if ((opts & SHOW_DEPS) && (opts & SHOW_MODULES)) {
-			if (!strcmp("depends", key))
-				process_depends(ctx, val);
-			else if (!strcmp("softdep", key))
-				process_soft_depends(ctx, val);
+			if (!strcmp("depends", key)) {
+				if (process_depends(ctx, val) < 0)
+					ret = -1;
+			} else if (!strcmp("softdep", key)) {
+				if (process_soft_depends(ctx, val) < 0)
+					ret = -1;
+			}
 		}
 		if ((opts & SHOW_FIRMWARE) && !strcmp("firmware", key))
 			process_firmware(val);
@@ -406,25 +424,35 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 
 	if (show_tree > 1)
 		show_tree--;
+
+	return ret;
 }
 
-static void
+static int
 depinfo_path(struct kmod_ctx *ctx, const char *path)
 {
+	int ret = -1;
 	struct kmod_module *mod;
 
-	if (kmod_module_new_from_path(ctx, path, &mod) < 0)
-		error(EXIT_FAILURE, 0, "ERROR: Module file %s not found.", path);
+	if (kmod_module_new_from_path(ctx, path, &mod) < 0) {
+		error(0, 0, "ERROR: Module file %s not found.", path);
+		return ret;
+	}
 
-	depinfo(ctx, mod);
+	ret = depinfo(ctx, mod);
 	kmod_module_unref(mod);
+
+	return ret;
 }
 
-static void
+static int
 depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 {
+	int ret = -1;
 	struct kmod_module *mod;
-	struct kmod_list *l, *filtered, *list = NULL;
+	struct kmod_list *l;
+	struct kmod_list *filtered = NULL;
+	struct kmod_list *list = NULL;
 
 	if (kbuiltin) {
 		char *name = is_kernel_builtin_match(alias);
@@ -433,18 +461,26 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 			if (opts & SHOW_PREFIX)
 				printf("builtin ");
 			printf("%s\n", name);
-			return;
+			return 0;
 		}
 	}
 
-	if (kmod_module_new_from_lookup(ctx, alias, &list) < 0)
-		error(EXIT_FAILURE, 0, "ERROR: Module alias %s not found.", alias);
+	if (kmod_module_new_from_lookup(ctx, alias, &list) < 0) {
+		error(0, 0, "ERROR: Module alias %s not found.", alias);
+		goto end;
+	}
 
-	if (!list)
-		error(EXIT_FAILURE, 0, "ERROR: Module %s not found.", alias);
+	if (!list) {
+		error(0, 0, "ERROR: Module %s not found.", alias);
+		goto end;
+	}
 
-	if (kmod_module_apply_filter(ctx, KMOD_FILTER_BUILTIN, list, &filtered) < 0)
-		error(EXIT_FAILURE, 0, "ERROR: Failed to filter list: %m");
+	if (kmod_module_apply_filter(ctx, KMOD_FILTER_BUILTIN, list, &filtered) < 0) {
+		error(0, 0, "ERROR: Failed to filter list: %m");
+		goto end;
+	}
+
+	ret = 0;
 
 	if (!filtered) {
 		if (opts & SHOW_BUILTIN) {
@@ -459,20 +495,24 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 
 				kmod_module_unref(mod);
 			}
-			kmod_module_unref_list(list);
-			return;
+			goto end;
 		}
 	}
 
 	kmod_list_foreach(l, filtered)
 	{
 		mod = kmod_module_get_module(l);
-		depinfo(ctx, mod);
+		if (depinfo(ctx, mod) < 0)
+			ret = -1;
 		kmod_module_unref(mod);
 	}
+end:
+	if (filtered)
+		kmod_module_unref_list(filtered);
+	if (list)
+		kmod_module_unref_list(list);
 
-	kmod_module_unref_list(filtered);
-	kmod_module_unref_list(list);
+	return ret;
 }
 
 static int
@@ -553,7 +593,7 @@ main(int argc, char **argv)
 {
 	struct kmod_ctx *ctx;
 	struct utsname u;
-	char *module_dir;
+	char module_dir[MAXPATHLEN];
 	const char *kversion = NULL;
 	const char *base_dir = NULL;
 	int i, c;
@@ -612,7 +652,7 @@ main(int argc, char **argv)
 		kversion = u.release;
 	}
 
-	asprintf(&module_dir, "%s/lib/modules/%s", base_dir, kversion);
+	snprintf(module_dir, sizeof(module_dir), "%s/lib/modules/%s", base_dir, kversion);
 
 	if (read_kernel_builtin(module_dir, "kernel.builtin.modinfo") < 0)
 		error(EXIT_FAILURE, errno, "ERROR: read_kernel_builtin()");
@@ -623,17 +663,19 @@ main(int argc, char **argv)
 	if (!(ctx = kmod_new(module_dir, NULL)))
 		error(EXIT_FAILURE, errno, "ERROR: kmod_new()");
 
-	free(module_dir);
+	int ret = EXIT_SUCCESS;
 
 	for (i = optind; i < argc; i++) {
-		is_filename(argv[i])
-		    ? depinfo_alias(ctx, argv[i])
-		    : depinfo_path(ctx, argv[i]);
+		int rc = is_filename(argv[i])
+			? depinfo_alias(ctx, argv[i])
+			: depinfo_path(ctx, argv[i]);
+		if (rc < 0)
+			ret = EXIT_FAILURE;
 	}
 
 	kmod_unref(ctx);
 	free_modules();
 	free_kernel_builtin();
 
-	return EXIT_SUCCESS;
+	return ret;
 }
