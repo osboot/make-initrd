@@ -91,10 +91,12 @@ for n in $UDEV_FILES_OLD /bin/shell-* /usr/share/terminfo/l /var/resolv; do
 done;
 )"
 
-[ -z "${LOCALBUILDDIR-}" ] ||
-	PUT_DIRS="${PUT_DIRS-} ${LOCALBUILDDIR-}$RUNTIMEDIR"
-PUT_DIRS="${PUT_DIRS-} $BASEDATADIR $RUNTIMEDIR"
+BASE_DIRS="$RUNTIMEDIR $BASEDATADIR"
 
+[ -z "${LOCALBUILDDIR-}" ] ||
+	BASE_DIRS="$BASE_DIRS ${LOCALBUILDDIR-}$RUNTIMEDIR"
+
+printf '%s\n' $BASE_DIRS |xargs -r put-tree .
 printf '%s\n' ${PUT_FEATURE_DIRS-} $PUT_DIRS   |sort -u |xargs -r put-tree .
 printf '%s\n' ${PUT_FEATURE_FILES-} $PUT_FILES |sort -u |xargs -r put-file .
 

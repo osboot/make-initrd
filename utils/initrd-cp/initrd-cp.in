@@ -475,6 +475,10 @@ while read -r type destination source symlink; do
 				verbose "Symbolic link \`$destination' already exists"
 				continue
 			fi
+			if [ -z "$force" ] && [ -e "$destination" ]; then
+				verbose "Destination \`$destination' already exists"
+				continue
+			fi
 			verbose "Create symbolic link \`$destination' -> \`$symlink'"
 			$dryrun ln $debug $force -s -- "$symlink" "$destination" >&2
 			;;
