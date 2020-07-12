@@ -532,7 +532,54 @@ is_filename(const char *path)
 	return 0;
 }
 
-static const char cmdopts_s[]        = "k:b:f:tDMFPBVh";
+static inline int
+process_name(struct kmod_ctx *ctx, const char *arg)
+{
+	return is_filename(arg)
+		? depinfo_alias(ctx, arg)
+		: depinfo_path(ctx, arg);
+}
+
+static int
+read_names(struct kmod_ctx *ctx, const char *file)
+{
+	FILE *stream;
+
+	if (!file)
+		return 0;
+
+	if (!strcmp(file, "-"))
+		stream = stdin;
+	else
+		stream = fopen(file, "r");
+
+	if (!stream) {
+		error(0, errno, "fopen: %s", file);
+		return -1;
+	}
+
+	int ret = 0;
+	char *line = NULL;
+	size_t len = 0;
+	ssize_t nread;
+
+	while ((nread = getline(&line, &len, stream)) != -1) {
+		if (line[nread - 1] == '\n')
+			line[nread - 1] = '\0';
+		if (process_name(ctx, line) < 0)
+			ret = -1;
+	}
+
+	free(line);
+
+	if (stream != stdin)
+		fclose(stream);
+
+	return ret;
+}
+
+
+static const char cmdopts_s[]        = "k:b:f:i:tDMFPBVh";
 static const struct option cmdopts[] = {
 	{ "tree", no_argument, 0, 't' },
 	{ "no-deps", no_argument, 0, 'D' },
@@ -543,6 +590,7 @@ static const struct option cmdopts[] = {
 	{ "set-version", required_argument, 0, 'k' },
 	{ "base-dir", required_argument, 0, 'b' },
 	{ "firmware-dir", required_argument, 0, 'f' },
+	{ "input", required_argument, 0, 'i' },
 	{ "version", no_argument, 0, 'V' },
 	{ "help", no_argument, 0, 'h' },
 	{ NULL, 0, 0, 0 }
@@ -567,6 +615,7 @@ print_help(const char *progname)
 	       "   -b, --base-dir=DIR          Use DIR as filesystem root for /lib/modules;\n"
 	       "   -f, --firmware-dir=DIR      Use DIR as colon-separated list of firmware directories\n"
 	       "                               (default: %s);\n"
+	       "   -i, --input=FILE            Read names from FILE;\n"
 	       "   -V, --version               Show version of program and exit;\n"
 	       "   -h, --help                  Show this text and exit.\n"
 	       "\n",
@@ -596,6 +645,7 @@ main(int argc, char **argv)
 	char module_dir[MAXPATHLEN];
 	const char *kversion = NULL;
 	const char *base_dir = NULL;
+	const char *from_file = NULL;
 	int i, c;
 
 	while ((c = getopt_long(argc, argv, cmdopts_s, cmdopts, NULL)) != -1) {
@@ -627,6 +677,9 @@ main(int argc, char **argv)
 			case 'f':
 				firmware_dir = optarg;
 				break;
+			case 'i':
+				from_file = optarg;
+				break;
 			case 'V':
 				print_version(basename(argv[0]));
 			case 'h':
@@ -634,7 +687,7 @@ main(int argc, char **argv)
 		}
 	}
 
-	if (optind >= argc)
+	if (!from_file && optind >= argc)
 		error(EXIT_FAILURE, 0, "ERROR: Missing module or filename.");
 
 	if (!(opts & SHOW_MODULES) && !(opts & SHOW_FIRMWARE))
@@ -665,11 +718,11 @@ main(int argc, char **argv)
 
 	int ret = EXIT_SUCCESS;
 
+	if (read_names(ctx, from_file) < 0)
+		ret = EXIT_FAILURE;
+
 	for (i = optind; i < argc; i++) {
-		int rc = is_filename(argv[i])
-			? depinfo_alias(ctx, argv[i])
-			: depinfo_path(ctx, argv[i]);
-		if (rc < 0)
+		if (process_name(ctx, argv[i]) < 0)
 			ret = EXIT_FAILURE;
 	}
 

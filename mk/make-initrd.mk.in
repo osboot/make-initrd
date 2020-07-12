@@ -50,7 +50,8 @@ guess-modules: check-for-root guess
 	@for f in $(GUESSDIR)/guess:modules* $(GUESSDIR)/guess:modalias*; do \
 		[ ! -s "$$f" ] || cat "$$f"; \
 	done | \
-	   xargs -r depinfo \
+	   depinfo \
+	      --input=- \
 	      --set-version="$(KERNEL)" \
 	      --no-prefix \
 	      --no-firmware \

@@ -90,7 +90,8 @@ get_depinfo()
 	[ -s "$1" ] ||
 		return 0
 	local rc=0
-	sort -u "$1" |xargs -r depinfo --set-version="$kernel" || rc=$?
+	sort -u "$1" |
+		depinfo --input=- --set-version="$kernel" || rc=$?
 	:> "$1"
 	return $rc
 }

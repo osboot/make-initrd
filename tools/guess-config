@@ -55,13 +55,14 @@ if [ -n "${RESOLVE_MODALIAS-}" ]; then
 		[ -z "${m##*/guess:modalias}" ] ||
 			suffix=":${m##*/guess:modalias:}"
 
-		xargs -r depinfo \
+		depinfo \
+				--input="$m" \
 				--set-version="$kernel" \
 				--no-deps \
 				--no-prefix \
 				--no-firmware \
 				--no-builtin \
-				< "$m" 2>/dev/null |
+			2>/dev/null |
 			sort -u >> "$guessdir/guess:modules$suffix"
 
 		rm -f "$m"
