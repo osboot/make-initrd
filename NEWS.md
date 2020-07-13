@@ -1,3 +1,43 @@
+Version 2.8.2
+
+- Feature changes:
+  + add-modules: Put MODULES_PRELOAD into the modules-preudev
+  + add-modules: Fix kmodule.deps.d execution
+- Utilities:
+  + bug-report: Fix device list
+  + depinfo: Do not stop on error
+  + depinfo: Add option to read names from the file
+- Misc:
+  + Change the priority of directories when copying to an image
+
+Version 2.8.1
+
+- Feature changes:
+  + fsck: Always add fsck utilities
+- Utilities:
+  + make-initrd: Fix --boot=DIR option
+
+Version 2.8.0
+
+- Feature changes:
+  + guestfs: Add findfs utility
+  + guestfs: Use patterns for utilities
+  + guestfs: Add gdisk and sgdisk
+  + btrfs: Add all devices in the btrfs
+  + network: Add service network-up
+- Utilities:
+  + Add md_run utility from kinit-utils
+  + Add nfsmount utility from kinit-utils
+  + Add resume utility from kinit-utils
+  + Add runas utility
+- Misc:
+  + Use autoconf
+  + Replace build system
+  + Add PUT_FEATURE_PROGS_WILDCARD
+  + Refactor features rules
+  + Drop bootsplash feature
+  + Do not show module dependencies in the guessed config
+
 Version 2.7.0
 
 - New feature:
