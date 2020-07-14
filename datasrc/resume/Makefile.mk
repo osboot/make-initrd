@@ -12,5 +12,4 @@ resume_SRCS = \
 
 resume_CFLAGS = -Idatasrc
 
-PROGS     += $(resume_DEST)
-C_SOURCES += $(resume_SRCS)
+PROGS += resume

@@ -75,9 +75,8 @@ VERBOSE ?= $(V)
 Q = $(if $(VERBOSE),,@)
 NULL :=
 
-PROGS     =
-SCRIPTS   =
-C_SOURCES =
+PROGS =
+SCRIPTS =
 
 -include \
 	$(wildcard utils/*/Makefile.mk) \
@@ -98,8 +97,6 @@ get_depends = $(foreach name,$(filter %.c,$(1)),$(OBJDIR)/$(name:.c=.d))
 quiet_cmd   = $(if $(VERBOSE),$(3),$(Q)printf "  %-07s%s\n" "$(1)" $(2); $(3))
 
 PATH       = $(dest_sbindir):$(dest_bindir):$(shell echo $$PATH)
-OBJS       = $(call get_objects,$(C_SOURCES))
-DEPS       = $(call get_depends,$(C_SOURCES))
 RULESFILES = $(addprefix $(dest_rulesdir)/,$(patsubst mk/%.in,%,$(wildcard mk/*.mk.in)))
 MANPAGES   = $(addprefix $(dest_man1dir)/,$(notdir $(basename $(wildcard man/*.1.inc))))
 DATAFILES  = \
@@ -121,8 +118,9 @@ WHICH_ARGS	= --skip-alias --skip-functions --skip-dot --skip-tilde
 EGREP		= @EGREP@
 UDEVD		= @UDEVD@
 UDEVADM		= @UDEVADM@
+HELP2MAN	= @HELP2MAN@
 
-SEDsubst = @SED@ \
+SED = @SED@ \
 	-e 's|@WHICH[@]|$(WHICH)|g' \
 	-e 's|@WHICH_ARGS[@]|$(WHICH_ARGS)|g' \
 	-e 's|@EGREP[@]|$(EGREP)|g' \
@@ -141,24 +139,13 @@ SEDsubst = @SED@ \
 	-e 's|@localbuilddir[@]|$(localbuilddir)|g' \
 	-e 's|@execdir[@]|$(localbuilddir)$(execdir)|g'
 
-CP       = $(Q)cp -a
-RM       = $(Q)rm -f
-LN_S     = $(Q)@LN_S@ -f
-CHMOD    = $(Q)chmod
-MKDIR_P  = $(Q)@MKDIR_P@
-TOUCH_R  = $(Q)touch -r
-GEN      = $(call quiet_cmd,GEN,$@,$(CURDIR)/config.status -q)
-SED      = $(call quiet_cmd,SED,$@,$(SEDsubst))
-HELP2MAN = $(call quiet_cmd,MAN,$@,env -i PATH="${PATH}" @HELP2MAN@ -N)
-COMPILE  = $(call quiet_cmd,CC,$<,$(COMPILE.c))
-LINK     = $(call quiet_cmd,CCLD,$@,$(LINK.o))
-DEP      = $(call quiet_cmd,DEP,$<,$(CC))
+.PHONY: $(PROGS) $(SCRIPTS)
 
 all: build
 
 build: build-progs build-rules build-data
 
-build-progs: $(OBJS) $(PROGS) $(SCRIPTS)
+build-progs: $(PROGS) $(SCRIPTS)
 
 ifneq ($(HELP2MAN),)
 build-manpages: build-progs $(MANPAGES)
@@ -168,8 +155,8 @@ endif
 build-rules: $(RULESFILES)
 
 build-data: $(DATAFILES)
-	$(MKDIR_P) -- $(dest_data_bindir)
-	$(LN_S) -- environ $(dest_data_bindir)/showenv
+	$(Q)mkdir -p -- $(dest_data_bindir)
+	$(Q)ln -s -f -- environ $(dest_data_bindir)/showenv
 
 install: build-progs build-manpages
 	@root="$(CURDIR)/$(build_prefix)/dest"; \
@@ -184,7 +171,7 @@ install: build-progs build-manpages
 	done
 
 clean:
-	$(RM) -r -- $(build_prefix)
+	$(Q)rm -f -r -- $(build_prefix)
 
 verify:
 	find data features guess tools utils kmodule.deps.d -type f | \
@@ -194,48 +181,53 @@ verify:
 	    shellcheck -s dash -e SC1003,SC1090,SC1091,SC2004,SC2006,SC2015,SC2030,SC2031,SC2034,SC2086,SC2154 "$$f"; \
 	done
 
-name = $(subst -,_,$(notdir $@))
-src = $($(name)_SRCS)
-dst = $($(name)_DEST)
-$(SCRIPTS): Makefile
-	$(MKDIR_P) -- $(dir $@)
-	$(SED) < $(src) > $(dst)
-	$(TOUCH_R) $(src) $(dst)
-	$(CHMOD) --reference=$(src) $(dst)
-
 $(dest_rulesdir)/%.mk: mk/%.mk.in Makefile
-	$(MKDIR_P) -- $(dir $@)
-	$(SED) < $< > $@
+	$(Q)mkdir -p -- $(dir $@)
+	$(call quiet_cmd,SED,$@,$(SED)) < $< > $@
 
 $(dest_man1dir)/%.1: man/%.1.inc Makefile
-	$(MKDIR_P) -- $(dir $@)
-	$(HELP2MAN) -i $< -- $(notdir $*) >$@
+	$(Q)mkdir -p -- $(dir $@)
+	$(call quiet_cmd,MAN,$@,env -i PATH="${PATH}" $(HELP2MAN) -N) \
+	  -i $< -- $(notdir $*) >$@
 
 $(dest_projectdir)/%: % Makefile
-	$(MKDIR_P) -- $(dir $@)
-	$(RM) -- "$@"
-	$(LN_S) -- "$(CURDIR)/$(notdir $@)" "$@"
+	$(Q)mkdir -p -- $(dir $@)
+	$(Q)rm -f -- "$@"
+	$(Q)ln -s -f -- "$(CURDIR)/$(notdir $@)" "$@"
 
 $(dest_sysconfdir)/%: conf/% Makefile
-	$(MKDIR_P) -- $(dir $@)
-	$(CP) -- $< $@
-
-name = $(subst -,_,$(notdir $@))
-objects = $(call get_objects,$($(name)_SRCS))
-$(dest_bindir)/% $(dest_sbindir)/% $(dest_execdir)/% $(dest_data_bindir)/% $(dest_data_sbindir)/%:
-	$(MKDIR_P) -- $(dir $@)
-	$(LINK) $(objects) -o $@ $($(name)_LIBS)
+	$(Q)mkdir -p -- $(dir $@)
+	$(Q)cp -a -- $< $@
 
 cflags = $($(subst -,_,$(notdir $*))_c_CFLAGS)
 $(OBJDIR)/%.o: %.c Makefile
-	$(MKDIR_P) -- $(dir $@)
-	$(COMPILE) $(cflags) $(OUTPUT_OPTION) $<
+	$(Q)mkdir -p -- $(dir $@)
+	$(call quiet_cmd,CC,$<,$(COMPILE.c)) $(cflags) $(OUTPUT_OPTION) $<
 
 cflags = $($(subst -,_,$(notdir $*))_c_CFLAGS)
 $(OBJDIR)/%.d: %.c Makefile
-	$(MKDIR_P) -- $(dir $@)
-	$(DEP) -MM $(cflags) $(CPPFLAGS) $(CFLAGS) $< | \
+	$(Q)mkdir -p -- $(dir $@)
+	$(call quiet_cmd,DEP,$<,$(CC)) -MM $(cflags) $(CPPFLAGS) $(CFLAGS) $< | \
 	  sed -e 's,\($(notdir $*)\)\.o[ :]*,$(@:.d=.o) $@: Makefile ,g' >$@
+
+define generate_link_target =
+DEPS += $(call get_depends,$($(1)_SRCS))
+
+$(1): $(call get_objects,$($(1)_SRCS))
+	$(Q)mkdir -p -- $(dir $($(1)_DEST))
+	$(call quiet_cmd,CCLD,$($(1)_DEST),$(LINK.o)) -o $($(1)_DEST) $$^ $($(1)_LIBS)
+endef
+
+define generate_script_target =
+$(1): $($(1)_SRCS) Makefile
+	$(Q)mkdir -p -- $$(dir $($(1)_DEST))
+	$(call quiet_cmd,SED,$($(1)_DEST),$(SED)) < $($(1)_SRCS) > $($(1)_DEST)
+	$(Q)touch -r $($(1)_SRCS) $($(1)_DEST)
+	$(Q)chmod --reference=$($(1)_SRCS) $($(1)_DEST)
+endef
+
+$(foreach name,$(PROGS),  $(eval $(call generate_link_target,$(name))))
+$(foreach name,$(SCRIPTS),$(eval $(call generate_script_target,$(name))))
 
 ifeq ($(filter verify clean,$(MAKECMDGOALS)),)
 -include $(DEPS)

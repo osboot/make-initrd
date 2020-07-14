@@ -12,5 +12,4 @@ nfsmount_SRCS = \
 
 nfsmount_CFLAGS = -Idatasrc -D_GNU_SOURCE=1
 
-PROGS     += $(nfsmount_DEST)
-C_SOURCES += $(nfsmount_SRCS)
+PROGS += nfsmount

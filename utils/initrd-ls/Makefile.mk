@@ -47,5 +47,4 @@ else
 $(warning Your system does not have libzstd, disabling xz support)
 endif
 
-PROGS     += $(initrd_ls_DEST)
-C_SOURCES += $(initrd_ls_SRCS)
+PROGS += initrd_ls

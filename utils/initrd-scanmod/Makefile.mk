@@ -11,6 +11,5 @@ initrd_scanmod_SRCS = \
 
 initrd_scanmod_LIBS = $(HAVE_LIBKMOD_LIBS)
 
-PROGS     += $(initrd_scanmod_DEST)
-C_SOURCES += $(initrd_scanmod_SRCS)
+PROGS += initrd_scanmod
 endif

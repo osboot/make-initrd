@@ -9,5 +9,4 @@ md_run_SRCS = \
 
 md_run_CFLAGS = -Idatasrc
 
-PROGS     += $(md_run_DEST)
-C_SOURCES += $(md_run_SRCS)
+PROGS += md_run
