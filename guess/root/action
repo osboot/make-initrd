@@ -171,7 +171,7 @@ else	# MAKE_INITRD_BUG_REPORT
 
 system_findmnt()
 {
-	findmnt -n -o MAJ:MIN,FSTYPE,SOURCE --target "$1"
+	findmnt -n -v -o MAJ:MIN,FSTYPE,SOURCE --target "$1"
 }
 
 fi	# MAKE_INITRD_BUG_REPORT
