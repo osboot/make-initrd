@@ -61,6 +61,12 @@ jobs:
       env:
          - TRAVIS_TESTCASE="test-btrfs-multi-device"
          - IN_TRAVIS=1
+    - name: "Root on btrfs with subvol"
+      arch: amd64
+      os: linux
+      env:
+         - TRAVIS_TESTCASE="test-btrfs-subvol"
+         - IN_TRAVIS=1
 script:
   - |
     sudo make -C tests build

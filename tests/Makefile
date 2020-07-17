@@ -17,7 +17,8 @@ check_SUBDIRS := \
 	test-raid1 \
 	test-degraded-raid1 \
 	test-pipeline-iso-squash \
-	test-btrfs-multi-device
+	test-btrfs-multi-device \
+	test-btrfs-subvol
 
 .PHONY: build $(check_SUBDIRS)
 
