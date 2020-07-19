@@ -1,3 +1,9 @@
+Version 2.8.3
+
+- Misc:
+  + Guess root: Show device name only
+  + tests: Add test for btrfs with subvol
+
 Version 2.8.2
 
 - Feature changes:
