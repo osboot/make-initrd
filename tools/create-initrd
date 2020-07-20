@@ -1,36 +1,96 @@
-#!/bin/bash -eu
+#!/bin/bash -efu
 
-. sh-functions
+. shell-error
 
-cd "$rootdir"
+
+FILES=()
+DIRS=()
+
+append_uniq()
+{
+	local arr i sz v
+	eval "sz=\${#$1[*]}"
+	for (( i=0; $i < $sz; i++ )); do
+		eval "v=\"\${$1[$i]}\""
+		[ "$v" != "$2" ] ||
+			return 0
+	done
+	eval "$1+=(\"\$2\")"
+}
+
+append_progs()
+{
+	local n f PATH="$BUSYBOX_PATH:$SYSTEM_PATH"
+	for n; do
+		f=$(type -P "$n") ||
+			fatal "Not found utility: $n"
+		[ -n "${f##$RUNTIMEDIR/*}" ] ||
+			continue
+		append_uniq FILES "$f"
+	done
+}
+
+for n in \
+	"$RUNTIMEDIR" "$BASEDATADIR" \
+	${LOCALBUILDDIR:+"${LOCALBUILDDIR-}$RUNTIMEDIR"} \
+	${PUT_FEATURE_DIRS-} $PUT_DIRS;
+do
+	append_uniq DIRS "$n"
+done
+
+FILES+=(
+	"$UDEVD"
+	"$UDEVADM"
+	/lib/udev/ata_id
+	/lib/udev/cdrom_id
+	/lib/udev/scsi_id
+)
+
+for n in \
+	/lib/udev/{edd_id,vol_id,path_id,usb_id,firmware} \
+	/usr/share/terminfo/l \
+	/var/resolv \
+	"$KERNEL_MODULES_DIR"/modules.{builtin,order,builtin.modinfo} \
+	/etc/modprobe.conf;
+do
+	[ ! -e "$n" ] ||
+		append_uniq FILES "$n"
+done
+
+append_progs \
+	blkid cat chmod chroot cp depmod dmesg findmnt grep kill killall5 ln \
+	logger ls lsmod mkdir mknod mktemp modprobe mount mountpoint mv \
+	readlink rm rmdir setsid sh sleep start-stop-daemon switch_root \
+	touch umount which ${PUT_FEATURE_PROGS-} ${PUT_PROGS-}
+
+while read -d: -r n; do
+	[ -z "$n" ] ||
+	while read -r bin; do
+		[ -n "$bin" ] ||
+			continue
+		for pattern in '*/shell-*' ${PUT_FEATURE_PROGS_WILDCARD-}; do
+			[ -z "${bin##$pattern}" ] ||
+				continue
+			[ -n "${bin##$RUNTIMEDIR/*}" ] ||
+				continue
+			append_uniq FILES "$bin"
+		done
+	done < <(set +f; shopt -s nullglob dotglob; printf '%s\n' "$n"/*)
+done <<<"$BUSYBOX_PATH:$SYSTEM_PATH"
+
+for n in ${PUT_FEATURE_FILES-} $PUT_FILES; do
+	append_uniq FILES "$n"
+done
+
+cd "$ROOTDIR"
 
 mkdir $verbose -p -- \
-	./.initrd/killall \
-	./.initrd/uevent/events \
-	./.initrd/uevent/queues/udev/.tmp \
-	./dev \
-	./etc/initrd \
-	./etc/modprobe.d \
-	./etc/sysconfig \
-	./etc/udev/rules.d \
-	./home/root \
-	./"$kernel_modules_dir" \
-	./lib/initrd \
-	./lib/initrd/all \
-	./lib/initrd/kmodules \
-	./lib/initrd/post \
-	./lib/initrd/pre \
-	./lib/udev \
-	./mnt \
-	./root \
-	./run \
-	./proc \
-	./sys \
-	./tmp \
-	./sbin \
-	./var/lock/subsys \
-	./var/log \
-	./var/run \
+	./.initrd/{killall,uevent/events,uevent/queues/udev/.tmp} \
+	./etc/{{initrd,modprobe.d,sysconfig},udev/rules.d} \
+	./lib/{udev,initrd/{all,kmodules,post,pre}} \
+	./var/{lock/subsys,log,run} \
+	./{home/root,dev,mnt,root,run,proc,sys,tmp,bin,sbin} \
+	./"$KERNEL_MODULES_DIR" \
 	#
 
 initrd-release
@@ -38,67 +98,8 @@ initrd-release
 mkfifo ./.initrd/telinit
 mkfifo ./.initrd/rdshell
 
-UDEV_FILES="
-	$UDEVD
-	$UDEVADM
-	/lib/udev/ata_id
-	/lib/udev/cdrom_id
-	/lib/udev/scsi_id"
-
-UDEV_FILES_OLD='
-	/lib/udev/edd_id
-	/lib/udev/vol_id
-	/lib/udev/path_id
-	/lib/udev/usb_id
-	/lib/udev/firmware'
-
-BASE_FILES="$(
-printf '%s\n' \
-	blkid cat chmod chroot cp depmod dmesg findmnt grep kill killall5 ln \
-	logger ls lsmod mkdir mknod mktemp modprobe mount mountpoint mv \
-	readlink rm rmdir setsid sh sleep start-stop-daemon switch_root \
-	touch umount which ${PUT_FEATURE_PROGS-} ${PUT_PROGS-} |
-	PATH="$BUSYBOX_PATH:$SYSTEM_PATH" xargs -r $WHICH $WHICH_ARGS)"
-
-if [ -n "${PUT_FEATURE_PROGS_WILDCARD-}" ]; then
-	printf '%s\n' "$SYSTEM_PATH" |
-		tr ':' '\n' |
-		sort -u |
-		xargs -ri find '{}' -type f -printf '%p\n' > "$TEMPDIR/list"
-
-	while read -r binpath; do
-		for pattern in $PUT_FEATURE_PROGS_WILDCARD; do
-			case "$binpath" in
-				$pattern)
-					;;
-				*)
-					continue
-					;;
-			esac
-			BASE_FILES="$BASE_FILES $binpath"
-		done
-	done < "$TEMPDIR/list"
-
-	rm -f -- "$TEMPDIR/list"
-fi
-
-PUT_FILES="${PUT_FILES-} $UDEV_FILES $(
-printf '%s\n' "$BASE_FILES" |
-	sed -e "s#^$RUNTIMEDIR##";
-
-for n in $UDEV_FILES_OLD /bin/shell-* /usr/share/terminfo/l /var/resolv; do
-	[ ! -e "$n" ] || printf '%s\n' "$n"
-done;
-)"
-
-BASE_DIRS="$RUNTIMEDIR $BASEDATADIR"
-
-[ -z "${LOCALBUILDDIR-}" ] ||
-	BASE_DIRS="$BASE_DIRS ${LOCALBUILDDIR-}$RUNTIMEDIR"
-
-printf '%s\n' $BASE_DIRS |xargs -r put-tree .
-printf '%s\n' ${PUT_FEATURE_DIRS-} $PUT_DIRS   |sort -u |xargs -r put-tree .
-printf '%s\n' ${PUT_FEATURE_FILES-} $PUT_FILES |sort -u |xargs -r put-file .
+printf '%s\n' "${DIRS[@]}"  |xargs -r put-tree .
+printf '%s\n' "${FILES[@]}" |xargs -r put-file .
 
 if [ ".$UDEVD" != ./sbin/udevd ]; then
 	mkdir -p -- ./sbin
@@ -134,11 +135,6 @@ if [ ! -x ./bin/sh ]; then
 	done
 fi
 
-if [ -f /etc/modprobe.conf ]; then
-	verbose "Copying /etc/modprobe.conf ..."
-	put-file . /etc/modprobe.conf
-fi
-
 for d in lib etc; do
 	if [ -d "/$d/modprobe.d" ]; then
 		verbose "Copying files from $d/modprobe.d ..."
@@ -153,9 +149,4 @@ for d in lib etc; do
 				-name '*.rules' \
 			-exec cp -aLt ./etc/udev/rules.d -- '{}' '+'
 	fi
-done
-
-for n in builtin order builtin.modinfo; do
-	[ ! -f "$kernel_modules_dir/modules.$n" ] ||
-		cp -aLt ./"$kernel_modules_dir" -- "$kernel_modules_dir/modules.$n"
 done
