@@ -1,7 +1,9 @@
+USED_FEATURES =
+
 # Features include helper: skip a feature which has already loaded
 # and skip globally disabled features
 define include_rules =
-$(eval FEATURES = $(sort $(FEATURES) $(req)))
+$(eval USED_FEATURES += $(req))
 $(eval include $(1))
 endef
 
@@ -58,7 +60,7 @@ create: depmod-host show-guessed
 	@$(TOOLSDIR)/create-initrd
 
 show-features:
-	@$(MSG_N) 'Used features: $(FEATURES)'
+	@$(MSG_N) 'Used features: $(sort $(USED_FEATURES))'
 	@printf '\n'
 
 show-modules:
