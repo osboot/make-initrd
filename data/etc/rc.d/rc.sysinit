@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . shell-cmdline
 . shell-var

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 ### BEGIN INIT INFO
 # Provides:          dropbear
 # Required-Start:    $syslog network-up

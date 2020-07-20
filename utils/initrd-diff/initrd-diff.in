@@ -1,4 +1,4 @@
-#!/bin/sh -efu
+#!/bin/bash -efu
 #
 # Copyright (C) 2012  Evgenii Terechkov <evg@altlinux.org>
 # Copyright (C) 2012-2016  Alexey Gladkov <gladkov.alexey@gmail.com>

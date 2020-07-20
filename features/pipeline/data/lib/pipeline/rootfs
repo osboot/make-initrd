@@ -1,4 +1,4 @@
-#!/bin/sh -efu
+#!/bin/bash -efu
 
 run mount --move "$prevdir" "$rootmnt"
 echo localdev > /etc/initrd/method

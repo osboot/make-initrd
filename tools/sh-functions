@@ -1,4 +1,4 @@
-#!/bin/sh -efu
+#!/bin/bash -efu
 
 if [ -z "${__included_make_initrd_sh_functions-}" ]; then
 __included_make_initrd_sh_functions=1

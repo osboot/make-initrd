@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Functions defined in this file are used by many rc scripts.
 # 

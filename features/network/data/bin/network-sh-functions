@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ -z "${__net_sh_functions-}" ]; then
 __net_sh_functions=1

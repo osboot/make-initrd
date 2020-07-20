@@ -1,4 +1,4 @@
-#!/bin/sh -eu
+#!/bin/bash -eu
 
 . sh-functions
 . guess-functions

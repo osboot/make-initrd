@@ -1,4 +1,4 @@
-#!/bin/sh -efu
+#!/bin/bash -efu
 
 for m in $MOUNTPOINTS; do
 	fstype="$(findmnt -n -o FSTYPE --target "$m")"

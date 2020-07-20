@@ -1,4 +1,4 @@
-#!/bin/sh -efu
+#!/bin/bash -efu
 
 export PS1='(initramfs)$ '
 for n in bash mksh dash ash sh; do

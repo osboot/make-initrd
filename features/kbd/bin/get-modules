@@ -1,4 +1,4 @@
-#!/bin/sh -efu
+#!/bin/bash -efu
 
 DIR="$TEMPDIR/root"
 mkdir -p -- "$DIR/etc"

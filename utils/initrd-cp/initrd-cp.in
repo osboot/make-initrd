@@ -1,4 +1,4 @@
-#!/bin/sh -eu
+#!/bin/bash -eu
 #
 # Copyright (C) 2012-2017  Alexey Gladkov <gladkov.alexey@gmail.com>
 #

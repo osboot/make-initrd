@@ -1,4 +1,4 @@
-#!/bin/sh -efu
+#!/bin/bash -efu
 
 echo ROOTFS_FOUND=1 >> /.initrd/initenv
 echo 2 > /.initrd/telinit

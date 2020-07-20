@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ -z "${__initrd_sh_functions-}" ]; then
 __initrd_sh_functions=1

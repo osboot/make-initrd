@@ -1,4 +1,4 @@
-#!/bin/sh -efu
+#!/bin/bash -efu
 
 check_parameter WAITDEV
 devspec="$(get_parameter WAITDEV)"

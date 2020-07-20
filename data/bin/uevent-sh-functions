@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ -z "${__uevent_sh_functions-}" ]; then
 __uevent_sh_functions=1

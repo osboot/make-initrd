@@ -1,4 +1,4 @@
-#!/bin/sh -efu
+#!/bin/bash -efu
 
 PROG="${0##*/}"
 PROG_VERSION="@PACKAGE_VERSION@"

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . /.initrd/initenv
 . /etc/init.d/functions
