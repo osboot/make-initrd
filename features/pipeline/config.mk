@@ -1,3 +1,5 @@
+$(call feature-requires,depmod-image)
+
 PIPELINE_DATADIR = $(FEATURESDIR)/pipeline/data
 
 PIPELINE_FILES = \

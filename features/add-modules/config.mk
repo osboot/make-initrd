@@ -1,3 +1,5 @@
+$(call feature-requires,depmod-image)
+
 MODULES_ADD     ?=
 MODULES_TRY_ADD ?=
 MODULES_LOAD    ?=

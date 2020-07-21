@@ -1,4 +1,4 @@
-DISABLE_FEATURES += raid
+$(call feature-disables,raid)
 
 # mdadm < 3.3
 MDAMD_RULES_OLD = \

@@ -84,14 +84,6 @@ DEVICES			?=
 DISABLE_FEATURES	?= systemd
 DISABLE_GUESS		?=
 
-
-# This is helper to filter a disabled files.
-wildcard_features = \
-	$(filter-out \
-		$(foreach exl,$(DISABLE_FEATURES),$(realpath $(exl:%=$(FEATURESDIR)/%/$(1)))), \
-		$(realpath $(wildcard $(FEATURESDIR)/*/$(1))))
-
-
 # The following functions should be available in both config.mk and rules.mk
 
 # $(call if-success,<command>,<then>,<else>)
@@ -154,11 +146,14 @@ $(info WARNING: Deprecated features found and will do nothing: $(deprecated_feat
 endif
 endif # MAKECMDGOALS = guess
 
+include @projectdir@/mk/functions.mk
+
 # Load extra configs
-feature_configs		 = $(call wildcard_features,config.mk)
+feature_configs = $(call wildcard_features,config.mk)
 ifeq "$(feature_configs)" ''
 $(error Cannot find configs for feature. Something goes wrong.)
 endif
+
 include $(feature_configs)
 
 endif # INITRD_CONFIG

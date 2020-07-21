@@ -5,6 +5,3 @@ MODULES_PATTERN_SETS += MULTIPATH_PATTERN_SET
 
 PUT_FEATURE_FILES += $(MULTIPATH_CONF) $(MULTIPATH_DATA)
 PUT_FEATUTE_PROGS += $(MULTIPATH_PROGS)
-
-$(call require,devmapper)
-$(call require,depmod-image)

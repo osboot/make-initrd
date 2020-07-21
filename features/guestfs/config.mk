@@ -1,3 +1,6 @@
+$(call feature-requires,add-modules qemu mdadm lvm luks devmapper btrfs compress cleanup)
+$(call feature-disables,plymouth ucode)
+
 GUESTFS_DATADIR = \
 	$(FEATURESDIR)/guestfs/data
 

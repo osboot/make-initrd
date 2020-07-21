@@ -1,4 +1,2 @@
-$(call require,syslog)
-
 PUT_FEATURE_DIRS  += $(DROPBEAR_DATADIR)
 PUT_FEATURE_PROGS += $(DROPBEAR_PROGS)

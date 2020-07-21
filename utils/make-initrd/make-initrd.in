@@ -11,6 +11,7 @@ SYSFS_PATH="${SYSFS_PATH:-/sys}"
 PROCFS_PATH="${PROCFS_PATH:-/proc}"
 KERNEL="$(uname -r)"
 VERBOSE=
+FEATURE_NAMES=
 no_depmod=
 no_checks=
 config=
@@ -53,6 +54,9 @@ show_help() {
 	guess-modules [<device>|<directory>]
 	               shows kernel module needed to mount
 	               specified mountpoint or block device;
+
+	feature-info [name [name1...]]
+	               shows information about feature;
 
 	Options:
 	   -D, --no-depmod        don't recreate a list of module dependencies;
@@ -163,6 +167,11 @@ case "${1-}" in
 
 		set -- "$1"
 		;;
+	feature-info)
+		shift
+		FEATURE_NAMES="$*"
+		set -- feature-info
+		;;
 esac
 
 if [ -z "$no_checks" ]; then
@@ -206,7 +215,7 @@ fi
 [ -z "$no_depmod" ] ||
 	export IGNORE_DEPMOD=1
 
-export TEMPDIR KERNEL BOOTDIR VERBOSE
+export TEMPDIR KERNEL BOOTDIR VERBOSE FEATURE_NAMES
 unset MAKELEVEL
 
 read -r make_version <<EOF

@@ -10,12 +10,26 @@ ifneq "$(strip $(INITRD_CONFIG))" ''
 
 # Load requested features
 ifneq "$(strip $(FEATURES))" ''
-include $(call require,$(FEATURES))
+ALL_FEATURES         := $(filter-out ,$(call expand_features,FEATURE-REQUIRES,$(FEATURES)))
+ALL_DISABLE_FEATURES := $(filter-out ,$(DISABLE_FEATURES) $(call expand_disabled_features,$(ALL_FEATURES)))
+ALL_ACTIVE_FEATURES  := $(filter-out \
+	$(call expand_list,FEATURE-REQUIRED,$(DEPRECATED_FEATURES) $(ALL_DISABLE_FEATURES)),\
+	$(ALL_FEATURES))
+
+ifdef VERBOSE
+$(info FEATURES              : $(FEATURES))
+$(info ALL FEATURES          : $(ALL_FEATURES))
+$(info ALL DISABLED FEATURES : $(ALL_DISABLE_FEATURES))
+$(info ALL ACTIVE FEATURES   : $(ALL_ACTIVE_FEATURES))
+endif
+
+$(call include_once,$(sort $(ALL_ACTIVE_FEATURES)))
+
 endif # FEATURES
 
 else # !INITRD_CONFIG
 
-public_goals  = all guess-config guess-modules bug-report
+public_goals  = all guess-config guess-modules feature-info bug-report
 private_goals = $(filter-out $(public_goals),$(MAKECMDGOALS))
 
 ifneq "$(private_goals)" ''
@@ -60,6 +74,15 @@ guess-modules: check-for-root guess
 	   sort -u
 	$Qrm -rf -- "$(GUESSDIR)"
 	$Qrmdir -- "$(WORKDIR)"
+
+ifneq "$(filter feature-info,$(MAKECMDGOALS))" ''
+INITRD_CONFIG = /dev/null
+include @projectdir@/mk/config.mk
+$(call show-feature-dependency,$(FEATURE_NAMES))
+
+feature-info:
+	@:
+endif
 
 bug-report: check-for-root
 	@mkdir -m 755 -p -- $(REPORTDIR)

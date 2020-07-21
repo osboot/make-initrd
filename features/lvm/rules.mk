@@ -1,5 +1,3 @@
-$(call require,devmapper)
-
 PUT_FEATURE_DIRS  += $(LVM_DATADIR)
 PUT_FEATURE_FILES += $(LVM_CONF)
 PUT_FEATURE_PROGS += $(LVM_BIN)

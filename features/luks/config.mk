@@ -1,3 +1,5 @@
+$(call feature-requires,depmod-image devmapper modules-crypto-user-api system-glibc)
+
 CRYPTSETUP_BIN		?= cryptsetup
 LUKS_DATADIR		?= $(FEATURESDIR)/luks/data
 LUKS_CIPHERS		?= aes

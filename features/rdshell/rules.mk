@@ -12,5 +12,3 @@ RHSHELL_DIRS := $(shell env \
 	$(FEATURESDIR)/rdshell/bin/add-login dirs)
 
 PUT_FEATURE_DIRS += $(RHSHELL_DIRS)
-
-$(call require,system-glibc)

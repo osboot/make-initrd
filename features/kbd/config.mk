@@ -1,3 +1,5 @@
+$(call feature-requires,depmod-image)
+
 KBD_DATADIR = $(FEATURESDIR)/kbd/data
 
 KBD_DATA_DIR   ?= $(feature_kbd_kbddir)

@@ -1,3 +1,5 @@
+$(call feature-requires,depmod-image)
+
 PLYMOUTH_DEFAULT_THEME := $(shell plymouth-set-default-theme 2>/dev/null ||:)
 
 PLYMOUTH_THEME  ?= $(PLYMOUTH_DEFAULT_THEME)

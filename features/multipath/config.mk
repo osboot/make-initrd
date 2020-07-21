@@ -1,3 +1,5 @@
+$(call feature-requires,depmod-image devmapper)
+
 MULTIPATH_PRELOAD = \
 	dm-multipath \
 	dm-queue-length \

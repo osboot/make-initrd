@@ -13,5 +13,3 @@ NETWORK_PATTERN_SET += not-filename:.*/net/ethernet/.*
 NETWORK_PATTERN_SET += not-filename:.*/net/phy/.*
 NETWORK_PATTERN_SET += not-filename:.*/net/team/.*
 MODULES_PATTERN_SETS += NETWORK_PATTERN_SET
-
-$(call require,depmod-image)
