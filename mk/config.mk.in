@@ -84,10 +84,21 @@ DEVICES			?=
 DISABLE_FEATURES	?= systemd
 DISABLE_GUESS		?=
 
+ifdef VERBOSE
+  verbose = -v
+  Q =
+  V = @
+else
+  Q = @
+  V = @\#
+endif
+
+MSG   = echo "$$(msg-timestamp)"
+MSG_N = echo -n "$$(msg-timestamp)"
+
 include @projectdir@/mk/functions.mk
 
-# This user's preferences are make sence only if user's config file is loaded.
-ifneq "$(INITRD_CONFIG)" ''
+ifneq "$(__INTERNAL_MAKE_EXECUTION)" ''
 
 # User defaults
 FEATURES		?=
@@ -111,41 +122,13 @@ PUT_FEATURE_FILES =
 PUT_FEATURE_PROGS =
 PUT_FEATURE_PROGS_WILDCARD =
 
-ifeq "$(MAKECMDGOALS)" 'guess'
-unknown_features = \
-	$(filter-out \
-		$(notdir $(wildcard $(FEATURESDIR)/*)), \
-		$(FEATURES))
+feature-configs = $(call wildcard-features,config.mk)
 
-ifneq "$(unknown_features)" ''
-$(info WARNING: Unknown features are specified in the config: $(unknown_features))
+ifeq "$(feature-configs)" ''
+$(error Unable to find feature configs. Something goes wrong.)
 endif
-
-deprecated_features = $(filter $(DEPRECATED_FEATURES),$(FEATURES))
-
-ifneq "$(deprecated_features)" ''
-$(info WARNING: Deprecated features found and will do nothing: $(deprecated_features))
-endif
-endif # MAKECMDGOALS = guess
 
 # Load extra configs
-feature_configs = $(call wildcard-features,config.mk)
-ifeq "$(feature_configs)" ''
-$(error Cannot find configs for feature. Something goes wrong.)
-endif
+include $(feature-configs)
 
-include $(feature_configs)
-
-endif # INITRD_CONFIG
-
-ifdef VERBOSE
-  verbose = -v
-  Q =
-  V = @
-else
-  Q = @
-  V = @\#
-endif
-
-MSG   = echo "$$(msg-timestamp)"
-MSG_N = echo -n "$$(msg-timestamp)"
+endif # __INTERNAL_MAKE_EXECUTION

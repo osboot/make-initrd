@@ -32,6 +32,21 @@ ifeq "$(MAKECMDGOALS)" 'guess-modules'
 AUTODETECT := root device
 endif
 
+unknown_features = \
+	$(filter-out \
+		$(notdir $(wildcard $(FEATURESDIR)/*)), \
+		$(FEATURES))
+
+ifneq "$(unknown_features)" ''
+$(info WARNING: Unknown features are specified in the config: $(unknown_features))
+endif
+
+deprecated_features = $(filter $(DEPRECATED_FEATURES),$(FEATURES))
+
+ifneq "$(deprecated_features)" ''
+$(info WARNING: Deprecated features found and will do nothing: $(deprecated_features))
+endif
+
 GUESS_MODULES = \
 	$(sort $(if $(findstring all,$(AUTODETECT)), \
 		$(realpath $(wildcard $(DETECTDIR)/*)), \
