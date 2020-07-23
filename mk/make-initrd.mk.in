@@ -2,6 +2,15 @@
 .EXPORT_ALL_VARIABLES:
 .DEFAULT_GOAL := all
 
+ifeq "$(__INTERNAL_MAKE_EXECUTION)" ''
+public-goals  := all guess-config guess-modules feature-info bug-report
+private-goals := $(filter-out $(public-goals),$(MAKECMDGOALS))
+
+ifneq "$(private-goals)" ''
+$(error You MUST NOT call private goals directly: $(private-goals))
+endif
+endif # __INTERNAL_MAKE_EXECUTION
+
 include @projectdir@/mk/config.mk
 include @projectdir@/mk/rules.mk
 include @projectdir@/mk/guess.mk
@@ -26,21 +35,17 @@ endif
 $(call include_once,$(sort $(ALL_ACTIVE_FEATURES)))
 
 endif # FEATURES
-
-else # !INITRD_CONFIG
-
-public_goals  = all guess-config guess-modules feature-info bug-report
-private_goals = $(filter-out $(public_goals),$(MAKECMDGOALS))
-
-ifneq "$(private_goals)" ''
-    $(error You MUST NOT call private goals directly: $(private_goals))
-endif
 endif # INITRD_CONFIG
 
 pack: pre-pack
 
 all: check-for-root
 	@rc=0; \
+	if [ -n "${__INTERNAL_MAKE_EXECUTION}" ]; then \
+		$(MSG) "Unexpected env variable: __INTERNAL_MAKE_EXECUTION"; \
+		exit 1; \
+	fi; \
+	export __INTERNAL_MAKE_EXECUTION=1; \
 	for c in $(INITRD_CONFIG_LIST); do \
 		wsuffix="$${c##*/}"; \
 		wsuffix="$${wsuffix%.mk}"; \
