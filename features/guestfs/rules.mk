@@ -1,5 +1,3 @@
-DISABLE_GUESS += fstab resume root ucode
-
 MODULES_TRY_ADD += drivers/scsi/ drivers/ata/ fs/
 MODULES_PRELOAD += virtio_console
 
