@@ -16,6 +16,7 @@ GUESTFS_PROGS_PATTERNS = \
 	*/mount* \
 	*/fsck* \
 	*/mkfs* \
+	*/mke2fs \
 	*/*resize* \
 	*disk \
 	*/hivex*
