@@ -85,8 +85,8 @@ USED_FEATURES =
 # Features include helper: skip a feature which has already loaded
 # and skip globally disabled features
 define include-feature
-$(if $(1),$(eval USED_FEATURES += $(1)))
-$(if $(1),$(eval include $(2)))
+$(if $(2),$(eval USED_FEATURES += $(1)))
+$(if $(2),$(eval include $(2)))
 endef
 
 # deprecated function
@@ -135,7 +135,8 @@ define include-features-once
 $(if $(1),$(eval USED_FEATURES = ))
 $(if $(1),\
 	$(foreach n,$(1),\
-		$(call include-feature,$(n),$(filter-out $(MAKEFILE_LIST),$(n:%=$(FEATURESDIR)/%/rules.mk)))))
+		$(call include-feature,$(n),$(wildcard \
+			$(filter-out $(MAKEFILE_LIST),$(n:%=$(FEATURESDIR)/%/rules.mk))))))
 endef
 
 endif # __included-functions-mk
