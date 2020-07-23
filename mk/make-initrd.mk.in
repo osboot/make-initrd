@@ -11,6 +11,11 @@ $(error You MUST NOT call private goals directly: $(private-goals))
 endif
 endif # __INTERNAL_MAKE_EXECUTION
 
+ifeq "$(MAKECMDGOALS)" 'genimage'
+# The previous call to 'guess' has already done this.
+IGNORE_DEPMOD := 1
+endif
+
 include @projectdir@/mk/config.mk
 include @projectdir@/mk/rules.mk
 
@@ -18,14 +23,9 @@ ifneq "$(filter guess guess-config guess-modules,$(MAKECMDGOALS))" ''
 include @projectdir@/mk/guess.mk
 endif
 
-ifneq "$(strip $(INITRD_CONFIG))" ''
-
 ifeq "$(MAKECMDGOALS)" 'genimage'
 include $(GUESSDIR)/guessed.mk
-endif
 
-# Load requested features
-ifneq "$(strip $(FEATURES))" ''
 ALL_FEATURES         := $(filter-out ,$(call expand_features,FEATURE-REQUIRES,$(FEATURES)))
 ALL_DISABLE_FEATURES := $(filter-out ,$(DISABLE_FEATURES) $(call expand_disabled_features,$(ALL_FEATURES)))
 ALL_ACTIVE_FEATURES  := $(filter-out \
@@ -39,10 +39,10 @@ $(info ALL DISABLED FEATURES : $(ALL_DISABLE_FEATURES))
 $(info ALL ACTIVE FEATURES   : $(ALL_ACTIVE_FEATURES))
 endif
 
+# Load requested features
 $(call include_once,$(sort $(ALL_ACTIVE_FEATURES)))
 
-endif # FEATURES
-endif # INITRD_CONFIG
+endif # MAKECMDGOALS = genimage
 
 pack: pre-pack
 
@@ -61,7 +61,6 @@ all: check-for-root
 		export STARTUP_TIME="$$(date +'%s')"; \
 		$(MSG) "Config file: $$c"; \
 		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk guess    || { rc=1; break; }; \
-		export IGNORE_DEPMOD=1; \
 		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk genimage || { rc=1; break; }; \
 	done; \
 	rm -f -- $(TEMPDIR)/images; \
