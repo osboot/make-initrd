@@ -26,10 +26,10 @@ endif
 ifeq "$(MAKECMDGOALS)" 'genimage'
 include $(GUESSDIR)/guessed.mk
 
-ALL_FEATURES         := $(filter-out ,$(call expand_features,FEATURE-REQUIRES,$(FEATURES)))
-ALL_DISABLE_FEATURES := $(filter-out ,$(DISABLE_FEATURES) $(call expand_disabled_features,$(ALL_FEATURES)))
+ALL_FEATURES         := $(filter-out ,$(call expand-features,FEATURE-REQUIRES,$(FEATURES)))
+ALL_DISABLE_FEATURES := $(filter-out ,$(DISABLE_FEATURES) $(call expand-disabled-features,$(ALL_FEATURES)))
 ALL_ACTIVE_FEATURES  := $(filter-out \
-	$(call expand_list,FEATURE-REQUIRED,$(DEPRECATED_FEATURES) $(ALL_DISABLE_FEATURES)),\
+	$(call expand-list,FEATURE-REQUIRED,$(DEPRECATED_FEATURES) $(ALL_DISABLE_FEATURES)),\
 	$(ALL_FEATURES))
 
 ifdef VERBOSE
@@ -40,7 +40,7 @@ $(info ALL ACTIVE FEATURES   : $(ALL_ACTIVE_FEATURES))
 endif
 
 # Load requested features
-$(call include_once,$(sort $(ALL_ACTIVE_FEATURES)))
+$(call include-features-once,$(sort $(ALL_ACTIVE_FEATURES)))
 
 endif # MAKECMDGOALS = genimage
 

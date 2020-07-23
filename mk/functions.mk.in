@@ -60,4 +60,82 @@ $(foreach n,$(if $(1),$(1),$(sort $(foreach f,$(wildcard $(FEATURESDIR)/*/rules.
 	$(info $(null)))
 endef
 
+# The following functions should be available in both config.mk and rules.mk
+
+# $(call if-success,<command>,<then>,<else>)
+# Return <then> if <command> exits with 0, <else> otherwise.
+if-success = $(if $(1),$(shell { $(1); } >/dev/null 2>&1 && echo "$(2)" || echo "$(3)"))
+
+# $(call success,<command>)
+# Return y if <command> exits with 0, n otherwise
+success = $(if $(1),$(call if-success,$(1),y,n))
+
+# $(call failure,<command>)
+# Return n if <command> exits with 0, y otherwise
+failure = $(if $(1),$(call if-success,$(1),n,y))
+
+if_kernel_version_greater_or_equal = $(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "ge" "$(KERNEL)" "$(1)",PROJECT,))
+if_kernel_version_greater          = $(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "gt" "$(KERNEL)" "$(1)",PROJECT,))
+if_kernel_version_less_or_equal    = $(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "le" "$(KERNEL)" "$(1)",PROJECT,))
+if_kernel_version_less             = $(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "lt" "$(KERNEL)" "$(1)",PROJECT,))
+if_kernel_version_equal            = $(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "eq" "$(KERNEL)" "$(1)",PROJECT,))
+
+USED_FEATURES =
+
+# Features include helper: skip a feature which has already loaded
+# and skip globally disabled features
+define include-feature
+$(if $(1),$(eval USED_FEATURES += $(1)))
+$(if $(1),$(eval include $(2)))
+endef
+
+# deprecated function
+get_disabled_features = \
+	$(foreach exl,$(DISABLE_FEATURES),$(abspath $(exl:%=$(FEATURESDIR)/%/rules.mk)))
+
+# deprecated function
+get_deprecated_features = \
+	$(foreach depr,$(DEPRECATED_FEATURES),$(abspath $(depr:%=$(FEATURESDIR)/%/rules.mk)))
+
+# deprecated function
+require = \
+	$(foreach n,$(1), \
+		$(foreach inc,$(filter-out \
+			$(MAKEFILE_LIST) $(call get_disabled_features) $(call get_deprecated_features), \
+			$(abspath $(n:%=$(FEATURESDIR)/%/rules.mk))), \
+			$(call include-feature,$(n),$(inc))))
+
+# $(call if_feature,<name> [<name1> ...])
+# Return a list of features without obsolete and disabled features.
+if_feature = $(if $(1),$(filter-out $(DEPRECATED_FEATURES) $(DISABLE_FEATURES),$(1)))
+
+# $(call expand-list,<variable-prefix>,<suffix-list>)
+# Return a content of $(<variable-prefix>-<suffix>)
+define expand-list
+$(if $(1),$(foreach n,$(2),$(n) $(call expand-list,$(1),$($(1)-$(n)))))
+endef
+
+# $(call expand-features,<variable-prefix>,<feature-list>)
+# Return a list of the contents of the $(<variable-prefix>-<feature>) variables.
+# The list is expanded recursively.
+define expand-features
+$(if $(1),\
+	$(foreach n,$(call if_feature,$(2)),\
+		$(n) $(call if_feature,$(call expand-features,$(1),$($(1)-$(n))))))
+endef
+
+# $(call expand-disabled-features,<feature-list>)
+# Return a list of features that disable the specified features.
+define expand-disabled-features
+$(foreach n,$(call if_feature,$(1)),$(FEATURE-DISABLES-$(n)))
+endef
+
+# $(call include-features-once,<feature-list>)
+define include-features-once
+$(if $(1),$(eval USED_FEATURES = ))
+$(if $(1),\
+	$(foreach n,$(1),\
+		$(call include-feature,$(n),$(filter-out $(MAKEFILE_LIST),$(n:%=$(FEATURESDIR)/%/rules.mk)))))
+endef
+
 endif # __included-functions-mk

@@ -84,25 +84,7 @@ DEVICES			?=
 DISABLE_FEATURES	?= systemd
 DISABLE_GUESS		?=
 
-# The following functions should be available in both config.mk and rules.mk
-
-# $(call if-success,<command>,<then>,<else>)
-# Return <then> if <command> exits with 0, <else> otherwise.
-if-success = $(if $(1),$(shell { $(1); } >/dev/null 2>&1 && echo "$(2)" || echo "$(3)"))
-
-# $(call success,<command>)
-# Return y if <command> exits with 0, n otherwise
-success = $(call if-success,$(1),y,n)
-
-# $(call failure,<command>)
-# Return n if <command> exits with 0, y otherwise
-failure = $(call if-success,$(1),n,y)
-
-if_kernel_version_greater_or_equal = $(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "ge" "$(KERNEL)" "$(1)",PROJECT,))
-if_kernel_version_greater          = $(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "gt" "$(KERNEL)" "$(1)",PROJECT,))
-if_kernel_version_less_or_equal    = $(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "le" "$(KERNEL)" "$(1)",PROJECT,))
-if_kernel_version_less             = $(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "lt" "$(KERNEL)" "$(1)",PROJECT,))
-if_kernel_version_equal            = $(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "eq" "$(KERNEL)" "$(1)",PROJECT,))
+include @projectdir@/mk/functions.mk
 
 # This user's preferences are make sence only if user's config file is loaded.
 ifneq "$(INITRD_CONFIG)" ''
@@ -145,8 +127,6 @@ ifneq "$(deprecated_features)" ''
 $(info WARNING: Deprecated features found and will do nothing: $(deprecated_features))
 endif
 endif # MAKECMDGOALS = guess
-
-include @projectdir@/mk/functions.mk
 
 # Load extra configs
 feature_configs = $(call wildcard_features,config.mk)
