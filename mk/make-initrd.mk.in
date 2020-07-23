@@ -17,7 +17,18 @@ IGNORE_DEPMOD := 1
 endif
 
 include @projectdir@/mk/config.mk
-include @projectdir@/mk/rules.mk
+
+check-for-root:
+	@if [ -z "$$IGNORE_PRIV_CHECKS" ] && [ "$$(id -u)" != 0 ]; then \
+	    echo "Only root can do that"; \
+	    exit 1; \
+	fi
+
+depmod-host: check-for-root
+	@if [ -z "$$IGNORE_DEPMOD" ]; then \
+	   $(MSG) "Generating module dependencies on host ..."; \
+	   depmod -a -F "$(BOOTDIR)/System.map-$(KERNEL)" "$(KERNEL)"; \
+	fi
 
 ifneq "$(filter guess guess-config guess-modules,$(MAKECMDGOALS))" ''
 include @projectdir@/mk/guess.mk
@@ -25,6 +36,44 @@ endif
 
 ifeq "$(MAKECMDGOALS)" 'genimage'
 include $(GUESSDIR)/guessed.mk
+
+create: depmod-host
+	@$(MSG) "Creating initrd image ..."
+	@mkdir -m 755 -p $(verbose) -- $(ROOTDIR)
+	@$(TOOLSDIR)/create-initrd
+
+pack: create
+	@$(MSG) "Sorting sysvinit services ..."
+	@sort-lsb --rootdir="$(ROOTDIR)" --result=symlink
+	@$(MSG) "Packing image to archive ..."
+	@$(TOOLSDIR)/pack-image
+
+install: pack
+	@$(MSG) 'Used features: $(USED_FEATURES)'
+	@$(MSG_N) 'Packed modules: '
+	@find $(ROOTDIR)/lib/modules/$(KERNEL) -type f \( -name '*.ko'  -o -name '*.ko.*' \) -printf '%f\n' 2>/dev/null | \
+	    sed -e 's/\.ko\(\.[^\.]\+\)\?$$//' | sort -u | tr '\n' ' '
+	@printf '\n'
+	@if [ -f "$(TEMPDIR)/images" ] && fgrep -xqs "$(IMAGEFILE)" "$(TEMPDIR)/images"; then \
+	    echo ""; \
+	    echo "An attempt to create two images with the same name. There is possibility" >&2; \
+	    echo "that you forgot to define IMAGE_SUFFIX or IMAGEFILE in one of the config files." >&2; \
+	    echo "" >&2; \
+	    echo "ERROR: Unable to overwrite the image $(IMAGEFILE)" >&2; \
+	    echo "" >&2; \
+	    exit 1; \
+	else \
+	    $(MSG) "Installing image ..."; \
+	    $(MSG) "Unpacked size: `du -sh "$(WORKDIR)" |cut -f1 ||:`"; \
+	    $(MSG) "Image size: `du -sh "$(WORKDIR)/initrd.img" |cut -f1 ||:`"; \
+	    chmod 600 -- "$(WORKDIR)/initrd.img"; \
+	    mv -f $(verbose) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"; \
+	    echo "$(IMAGEFILE)" >> "$(TEMPDIR)/images"; \
+	fi
+
+genimage: install
+	@$(MSG) "Image is saved as $(IMAGEFILE)"
+	@echo
 
 ALL_FEATURES         := $(filter-out ,$(call expand-features,FEATURE-REQUIRES,$(FEATURES)))
 ALL_DISABLE_FEATURES := $(filter-out ,$(DISABLE_FEATURES) $(call expand-disabled-features,$(ALL_FEATURES)))
@@ -43,8 +92,6 @@ endif
 $(call include-features-once,$(sort $(ALL_ACTIVE_FEATURES)))
 
 endif # MAKECMDGOALS = genimage
-
-pack: pre-pack
 
 all: check-for-root
 	@rc=0; \
