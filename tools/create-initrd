@@ -2,7 +2,6 @@
 
 . shell-error
 
-
 FILES=()
 DIRS=()
 
@@ -64,7 +63,9 @@ append_progs \
 	touch umount which ${PUT_FEATURE_PROGS-} ${PUT_PROGS-}
 
 while read -d: -r n; do
-	[ -z "$n" ] ||
+	[ -n "$n" ] ||
+		continue
+	(set +f; shopt -s nullglob dotglob; printf '%s\n' "$n"/*) > "$TEMPDIR/list"
 	while read -r bin; do
 		[ -n "$bin" ] ||
 			continue
@@ -75,8 +76,9 @@ while read -d: -r n; do
 				continue
 			append_uniq FILES "$bin"
 		done
-	done < <(set +f; shopt -s nullglob dotglob; printf '%s\n' "$n"/*)
+	done < "$TEMPDIR/list"
 done <<<"$BUSYBOX_PATH:$SYSTEM_PATH"
+rm -f -- "$TEMPDIR/list"
 
 for n in ${PUT_FEATURE_FILES-} $PUT_FILES; do
 	append_uniq FILES "$n"
