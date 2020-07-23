@@ -13,9 +13,16 @@ endif # __INTERNAL_MAKE_EXECUTION
 
 include @projectdir@/mk/config.mk
 include @projectdir@/mk/rules.mk
+
+ifneq "$(filter guess guess-config guess-modules,$(MAKECMDGOALS))" ''
 include @projectdir@/mk/guess.mk
+endif
 
 ifneq "$(strip $(INITRD_CONFIG))" ''
+
+ifeq "$(MAKECMDGOALS)" 'genimage'
+include $(GUESSDIR)/guessed.mk
+endif
 
 # Load requested features
 ifneq "$(strip $(FEATURES))" ''
