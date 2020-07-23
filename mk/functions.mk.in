@@ -41,9 +41,9 @@ $(if $(1),\
 endef
 
 # This is helper to filter a disabled files.
-# $(call wildcard_features,<filename>)
+# $(call wildcard-features,<filename>)
 # Return a space-separated list of full <filename> paths for each feature.
-define wildcard_features
+define wildcard-features
 $(if $(1),\
 	$(filter-out \
 		$(foreach exl,$(DEPRECATED_FEATURES) $(ALL_DISABLE_FEATURES),\

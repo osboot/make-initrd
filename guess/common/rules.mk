@@ -1,4 +1,4 @@
-GUESS_COMMON_SCRIPTS = $(call wildcard_features,guess/common)
+GUESS_COMMON_SCRIPTS = $(call wildcard-features,guess/common)
 
 guess-common:
 	$V echo "Processing $@ ..."

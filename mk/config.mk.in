@@ -129,7 +129,7 @@ endif
 endif # MAKECMDGOALS = guess
 
 # Load extra configs
-feature_configs = $(call wildcard_features,config.mk)
+feature_configs = $(call wildcard-features,config.mk)
 ifeq "$(feature_configs)" ''
 $(error Cannot find configs for feature. Something goes wrong.)
 endif

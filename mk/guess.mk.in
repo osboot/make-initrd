@@ -25,8 +25,8 @@ GUESS_RULES = \
 
 include $(GUESS_RULES)
 
-GUESS_DEVICE_SCRIPTS = $(call wildcard_features,guess/device)
-GUESS_FSTYPE_SCRIPTS = $(call wildcard_features,guess/fstype)
+GUESS_DEVICE_SCRIPTS = $(call wildcard-features,guess/device)
+GUESS_FSTYPE_SCRIPTS = $(call wildcard-features,guess/fstype)
 
 pre-guess: depmod-host check-for-root
 	@mkdir -m 755 -p -- $(GUESSDIR)
