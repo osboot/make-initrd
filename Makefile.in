@@ -113,17 +113,11 @@ CFLAGS = @CFLAGS@ \
 
 CPPFLAGS += @CPPFLAGS@ @DEFS@ -I$(CURDIR) -I$(CURDIR)/utils
 
-WHICH		= @WHICH@
-WHICH_ARGS	= --skip-alias --skip-functions --skip-dot --skip-tilde
-EGREP		= @EGREP@
 UDEVD		= @UDEVD@
 UDEVADM		= @UDEVADM@
 HELP2MAN	= @HELP2MAN@
 
 SED = @SED@ \
-	-e 's|@WHICH[@]|$(WHICH)|g' \
-	-e 's|@WHICH_ARGS[@]|$(WHICH_ARGS)|g' \
-	-e 's|@EGREP[@]|$(EGREP)|g' \
 	-e 's|@UDEVD[@]|$(UDEVD)|g' \
 	-e 's|@UDEVADM[@]|$(UDEVADM)|g' \
 	-e 's|@PACKAGE_NAME[@]|$(PACKAGE_NAME)|g' \

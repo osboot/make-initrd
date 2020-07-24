@@ -12,7 +12,6 @@ AC_SUBST([sysconfdir])
 AC_PROG_CC
 AC_PROG_MAKE_SET
 AC_PROG_MKDIR_P
-AC_PROG_EGREP
 AC_PROG_LN_S
 AC_PROG_SED
 
@@ -113,19 +112,6 @@ if ! test -x "$with_udevadm"; then
 	fi
 fi
 AC_SUBST([UDEVADM], [$with_udevadm])
-
-AC_ARG_WITH([which],
-	[AS_HELP_STRING([--with-which=FILE],
-			[Path to which utility (default: auto)])],
-	[], [])
-if ! test -x "$with_which"; then
-	AC_PATH_PROGS([with_which], [which], [],
-		[/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:${sbindir}:${bindir}:${libdir}/systemd])
-	if ! test -x "$with_which"; then
-		AC_MSG_FAILURE([required utility not found: which])
-	fi
-fi
-AC_SUBST([WHICH], [$with_which])
 
 AC_ARG_WITH([help2man],
 	[AS_HELP_STRING([--with-help2man=FILE],
