@@ -77,8 +77,9 @@ show_help() {
 }
 
 exit_handler() {
-	[ -z "$TEMPDIR" ] || rm -rf -- "$TEMPDIR"
-	exit 1
+	trap - EXIT
+	[ -z "$TEMPDIR" ] || rmdir -- "$TEMPDIR" 2>/dev/null ||:
+	exit $1
 }
 
 # Check WORKDIR for 'noexec' mount option.
@@ -200,8 +201,9 @@ WORKDIR="${WORKDIR:-/tmp}"
 [ -d "$WORKDIR" ] ||
 	fatal "$WORKDIR: Not a directory"
 
+trap 'exit_handler $?' EXIT
+trap 'exit_handler  1' HUP PIPE INT QUIT TERM
 TEMPDIR="$(mktemp -d "$WORKDIR/$PROG.XXXXXXXXX")"
-trap exit_handler HUP INT QUIT TERM
 
 if ! check_noexec; then
 	message "Perhaps 'noexec' mount option used?"
@@ -230,10 +232,5 @@ case "$make_version" in
 		;;
 esac
 
-rc=0
-make $output_sync --no-print-directory -r -f @projectdir@/mk/make-initrd.mk -- "$@" || rc=$?
-
-[ -z "$TEMPDIR" ] ||
-	rm -rf -- "$TEMPDIR" 2>/dev/null ||:
-
-exit $rc
+make $output_sync --no-print-directory -r \
+	-f @projectdir@/mk/make-initrd.mk -- "$@"
