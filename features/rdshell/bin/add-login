@@ -11,7 +11,7 @@ case "${1-}" in
 	files)
 		;;
 	dirs)
-		DIR="$TEMPDIR/root"
+		DIR="$WORKDIR/root"
 
 		mkdir -p -- "$DIR/etc/sysconfig"
 

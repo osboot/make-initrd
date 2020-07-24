@@ -12,7 +12,7 @@ case "${1-}" in
 				-e '/libnss_dns\.so.*'
 		;;
 	dirs)
-		DIR="$TEMPDIR/root"
+		DIR="$WORKDIR/root"
 
 		mkdir -p -- "$DIR"/etc
 		cat >"$DIR"/etc/nsswitch.conf <<-EOF

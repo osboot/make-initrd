@@ -1,6 +1,6 @@
 #!/bin/bash -efu
 
-DIR="$TEMPDIR/root"
+DIR="$WORKDIR/root"
 mkdir -p -- "$DIR/etc"
 
 if mkdir -- "$DIR/etc/sysconfig" 2>/dev/null; then
