@@ -13,6 +13,8 @@ endif # MAKELEVEL = 0
 
 include @projectdir@/mk/config.mk
 
+.PHONY: check-for-root depmod-host
+
 check-for-root:
 	@if [ -z "$$IGNORE_PRIV_CHECKS" ] && [ "$$(id -u)" != 0 ]; then \
 	    echo "Only root can do that"; \
@@ -70,6 +72,8 @@ include \
 		$(foreach mod,$(GUESS_MODULES),$(realpath $(mod)/rules.mk))))
 endif # GUESS_MODULES
 
+.PHONY: pre-guess guess
+
 pre-guess: depmod-host check-for-root
 	@mkdir -m 755 -p -- $(GUESSDIR)
 	@for n in modules:rescue modules:add modalias:rescue modalias:add features; do \
@@ -88,6 +92,8 @@ include $(GUESSDIR)/guessed.mk
 
 # The previous call to 'guess' has already done this.
 IGNORE_DEPMOD := 1
+
+.PHONY: create pack install genimage
 
 create: depmod-host
 	@$(MSG) "Creating initrd image ..."
@@ -144,6 +150,8 @@ endif
 $(call include-features-once,$(sort $(ALL_ACTIVE_FEATURES)))
 
 endif # MAKECMDGOALS = genimage
+
+.PHONY: all process-config guess-config guess-modules feature-info bug-report
 
 all: check-for-root
 	@for c in $(INITRD_CONFIG_LIST); do \

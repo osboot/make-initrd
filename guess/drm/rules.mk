@@ -1,3 +1,5 @@
+.PHONY: guess-drm
+
 guess-drm:
 	$V echo "Processing $@ ..."
 	@ GUESS_SUFFIX=add:$@ \

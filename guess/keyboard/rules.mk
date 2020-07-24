@@ -1,3 +1,5 @@
+.PHONY: guess-keyboard
+
 guess-keyboard:
 	$V echo "Processing $@ ..."
 	@ GUESS_SUFFIX=rescue:$@ \

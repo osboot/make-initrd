@@ -1,3 +1,5 @@
+.PHONY: guess-device
+
 guess-device:
 	$V echo "Processing $@ ..."
 	@ GUESS_SUFFIX=add:$@ \

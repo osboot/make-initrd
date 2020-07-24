@@ -1,3 +1,5 @@
+.PHONY: compress
+
 compress: pack
 	@$(MSG) "Compressing image ..."
 	@$(COMPRESS_IMAGE)

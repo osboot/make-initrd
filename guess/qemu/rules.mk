@@ -1,3 +1,5 @@
+.PHONY: guess-qemu
+
 guess-qemu:
 	$V echo "Processing $@ ..."
 	@ GUESS_SUFFIX=add:$@ \

@@ -1,3 +1,5 @@
+.PHONY: ucode
+
 ucode: $(call if_feature,compress)
 	@$(MSG) "Adding CPU microcode ..."
 	@$(FEATURESDIR)/ucode/bin/add-ucode

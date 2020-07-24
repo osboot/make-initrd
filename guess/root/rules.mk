@@ -1,3 +1,5 @@
+.PHONY: guess-root
+
 guess-root:
 	$V echo "Processing $@ ..."
 	@ GUESS_SUFFIX=add:$@ \

@@ -1,3 +1,5 @@
+.PHONY: buildinfo
+
 IMAGEFILES  = $(WORKDIR)/image.files
 
 buildinfo: pack

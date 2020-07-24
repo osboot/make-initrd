@@ -1,3 +1,5 @@
+.PHONY: guess-ucode
+
 guess-ucode:
 	$V echo "Processing $@ ..."
 	@ GUESS_SUFFIX=add:$@ \
