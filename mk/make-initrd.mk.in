@@ -2,14 +2,14 @@
 .EXPORT_ALL_VARIABLES:
 .DEFAULT_GOAL := all
 
-ifeq "$(__INTERNAL_MAKE_EXECUTION)" ''
+ifeq "$(MAKELEVEL)" '0'
 public-goals  := all guess-config guess-modules feature-info bug-report
 private-goals := $(filter-out $(public-goals),$(MAKECMDGOALS))
 
 ifneq "$(private-goals)" ''
 $(error You MUST NOT call private goals directly: $(private-goals))
 endif
-endif # __INTERNAL_MAKE_EXECUTION
+endif # MAKELEVEL = 0
 
 include @projectdir@/mk/config.mk
 
@@ -24,6 +24,11 @@ depmod-host: check-for-root
 	   $(MSG) "Generating module dependencies on host ..."; \
 	   depmod -a -F "$(BOOTDIR)/System.map-$(KERNEL)" "$(KERNEL)"; \
 	fi
+
+ifeq "$(MAKECMDGOALS)" 'process-config'
+STARTUP_TIME   = $(shell date +'%s')
+WORKDIR_SUFFIX = $(basename $(notdir $(INITRD_CONFIG)))
+endif
 
 ifneq "$(filter guess guess-config guess-modules,$(MAKECMDGOALS))" ''
 AUTODETECT ?= all
@@ -141,24 +146,17 @@ $(call include-features-once,$(sort $(ALL_ACTIVE_FEATURES)))
 endif # MAKECMDGOALS = genimage
 
 all: check-for-root
-	@rc=0; \
-	if [ -n "${__INTERNAL_MAKE_EXECUTION}" ]; then \
-		$(MSG) "Unexpected env variable: __INTERNAL_MAKE_EXECUTION"; \
-		exit 1; \
-	fi; \
-	export __INTERNAL_MAKE_EXECUTION=1; \
-	for c in $(INITRD_CONFIG_LIST); do \
-		wsuffix="$${c##*/}"; \
-		wsuffix="$${wsuffix%.mk}"; \
-		export WORKDIR_SUFFIX="$$wsuffix"; \
-		export INITRD_CONFIG="$$c"; \
-		export STARTUP_TIME="$$(date +'%s')"; \
-		$(MSG) "Config file: $$c"; \
-		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk guess    || { rc=1; break; }; \
-		$(TOOLSDIR)/run-make $(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk genimage || { rc=1; break; }; \
+	@for c in $(INITRD_CONFIG_LIST); do \
+	    $(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk \
+	       process-config INITRD_CONFIG="$$c" || { rc=1; break; }; \
 	done; \
 	rm -f -- $(TEMPDIR)/images; \
 	exit $$rc
+
+process-config: $(INITRD_CONFIG)
+	@$(MSG) "Config file: $(INITRD_CONFIG)"
+	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk guess
+	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk genimage
 
 guess-config: check-for-root guess
 	@cat $(GUESSDIR)/guessed.mk

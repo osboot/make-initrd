@@ -1,4 +1,0 @@
-#!/bin/bash -efu
-
-unset MAKELEVEL
-exec "$@"

@@ -98,7 +98,7 @@ MSG_N = echo -n "$$(msg-timestamp)"
 
 include @projectdir@/mk/functions.mk
 
-ifneq "$(__INTERNAL_MAKE_EXECUTION)" ''
+ifneq "$(MAKELEVEL)" '0'
 
 # User defaults
 FEATURES		?=
@@ -131,4 +131,4 @@ endif
 # Load extra configs
 include $(feature-configs)
 
-endif # __INTERNAL_MAKE_EXECUTION
+endif # MAKELEVEL != 0

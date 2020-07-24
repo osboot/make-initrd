@@ -231,7 +231,7 @@ case "$make_version" in
 esac
 
 rc=0
-make $output_sync -r -f @projectdir@/mk/make-initrd.mk -- "$@" || rc=$?
+make $output_sync --no-print-directory -r -f @projectdir@/mk/make-initrd.mk -- "$@" || rc=$?
 
 [ -z "$TEMPDIR" ] ||
 	rm -rf -- "$TEMPDIR" 2>/dev/null ||:
