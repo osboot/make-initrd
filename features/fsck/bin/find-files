@@ -2,7 +2,7 @@
 
 for m in $MOUNTPOINTS; do
 	fstype="$(findmnt -n -o FSTYPE --target "$m")"
-	$WHICH $WHICH_ARGS "fsck.$fstype"
+	type -P "fsck.$fstype" ||:
 
 	case "$fstype" in
 		ext2|ext3|ext4*)
@@ -11,4 +11,4 @@ for m in $MOUNTPOINTS; do
 			;;
 	esac
 done
-$WHICH $WHICH_ARGS fsck
+type -P fsck ||:

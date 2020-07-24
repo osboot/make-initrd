@@ -67,7 +67,7 @@ readline() {
 
 list_libs() {
 	local ldconfig
-	ldconfig="$($WHICH $WHICH_ARGS ldconfig)"
+	ldconfig="$(type -P ldconfig)" || return 0
 	$ldconfig -p | sed -n -e 's,.* => ,,p'
 }
 

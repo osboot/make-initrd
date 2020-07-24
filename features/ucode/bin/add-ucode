@@ -7,7 +7,10 @@
 	grep -E -qs "^CONFIG_MICROCODE(|_INTEL|_AMD)=[my]" "$KERNEL_CONFIG" ||
 	fatal "Microcode loading support is missing in kernel"
 
-IUCODE_BIN="$($WHICH $WHICH_ARGS iucode_tool)"
+if ! IUCODE_BIN="$(type -P iucode_tool)"; then
+	message "Utility not found: iucode_tool"
+	exit 0
+fi
 
 cpu_vendor="${UCODE_CPU_VENDOR-}"
 cpu_family="${UCODE_CPU_FAMILY-}"

@@ -25,7 +25,7 @@ case "${1-}" in
 
 		for s in gzip:gz bzip2:bz2 xz:xz; do
 			[ -z "$(find "$KBD_DATA_DIR" -type f -name "*.${s#*:}" -print -quit)" ] ||
-				"$WHICH" $WHICH_ARGS "${s%:*}"
+				type -P "${s%:*}" ||:
 		done
 		;;
 	dirs)

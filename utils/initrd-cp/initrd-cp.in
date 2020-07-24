@@ -80,7 +80,6 @@ fi
 
 . shell-signal
 
-CR="$(printf '\r')"
 ORIG_IFS="$IFS"
 
 prefix=
@@ -236,7 +235,7 @@ shebang_file()
 		return 0
 
 	line="${line##\#\!}"
-	line="${line%$CR}"
+	line="${line%$'\r'}"
 
 	local IFS="$ORIG_IFS"
 	set -- $line
@@ -255,7 +254,7 @@ shebang_file()
 	case "$#,$exe" in
 		2,/usr/bin/env)
 			local arg=
-			arg="$(@WHICH@ --skip-alias --skip-functions --skip-dot --skip-tilde "$2")"
+			arg="$(type -P "$2")"
 			debug "script file $f -> $arg"
 			print_canonicalize "$arg"
 			;;
@@ -328,7 +327,7 @@ export INITRD_COPY_PREFIX="$prefix"
 export INITRD_COPY_DESTDIR="$destdir"
 export INITRD_COPY_ABORTFILE="$abortfile"
 export INITRD_COPY_INSIDE=1
-export IFS='	'
+export IFS=$'\t'
 
 : >"$processed_files" >"$new_files"
 
