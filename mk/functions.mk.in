@@ -107,7 +107,7 @@ require = \
 
 # $(call if_feature,<name> [<name1> ...])
 # Return a list of features without obsolete and disabled features.
-if_feature = $(if $(1),$(filter-out $(DEPRECATED_FEATURES) $(ALL_DISABLE_FEATURES),$(1)))
+if_feature = $(if $(1),$(filter-out $(DEPRECATED_FEATURES) $(DISABLE_FEATURES) $(ALL_DISABLE_FEATURES),$(1)))
 
 # $(call expand-list,<variable-prefix>,<suffix-list>)
 # Return a content of $(<variable-prefix>-<suffix>)
