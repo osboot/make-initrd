@@ -9,7 +9,7 @@ case "${1-}" in
 		list_libs |
 			grep \
 				-e '/libnss_files\.so.*' \
-				-e '/libnss_dns\.so.*'
+				-e '/libnss_dns\.so.*' ||:
 		;;
 	dirs)
 		DIR="$WORKDIR/root"
