@@ -3,7 +3,9 @@
 . shell-error
 
 if [ "$#" = 0 ]; then
-	printf 'Usage: %s bug-report.archive.tar\n' "$PROG"
+	printf 'Usage: %s create bug-report.archive.tar\n' "$PROG"
+	printf '   or: %s destroy\n' "$PROG"
+	printf '   or: %s shell\n' "$PROG"
 	exit 1
 fi
 
