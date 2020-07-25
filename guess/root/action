@@ -34,7 +34,7 @@ report_devlist_majmin()
 				maj=$(( 0x$maj ))
 				min=$(( 0x$min ))
 
-				printf '%s %s %s\n' "$maj" "$min" "$dev"
+				#printf '%s %s %s\n' "$maj" "$min" "$dev"
 
 				[ "$devname" != "$dev" ] ||
 					return 0
