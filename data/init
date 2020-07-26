@@ -14,28 +14,13 @@
 x=/sbin/init-bin
 [ ! -x "$x" ] || exec "$x"
 
-trap wait CHLD
 trap : INT TSTP QUIT HUP
 
 x=/etc/rc.d/rc.sysinit
 [ ! -x "$x" ] || setsid "$x" ||:
 
-lock=/tmp/rc.lock
-lock()
-{
-	while ! mkdir -- "$lock" >/dev/null 2>&1; do
-		sleep 0.1
-	done
-}
-
-unlock()
-{
-	rmdir -- "$lock"
-}
-
 level=3
 rc=
-rc_pid=
 
 while :; do
 	[ -z "$rc" ] || {
@@ -49,23 +34,13 @@ while :; do
 
 			rc="$level"
 
-			lock
 			{
-				lock
-				[ -z "$rc_pid" ] ||
-					rm -f -- "$rc_pid"
-
-				setsid /etc/rc.d/rc "$level" ||:
-				unlock
+				:> "/.initrd/killall/$BASHPID"
+				setsid /etc/rc.d/rc "$rc" ||:
+				rm -f -- "/.initrd/killall/$BASHPID"
 			} &
-
-			rc_pid="/.initrd/killall/$!"
-			:>"$rc_pid"
-
-			unlock
 			;;
 		9)
-			lock
 			exec /etc/rc.d/rc.sysexec "$@"
 			;;
 	esac
