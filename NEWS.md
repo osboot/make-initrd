@@ -1,3 +1,14 @@
+Version 2.9.0
+
+- Feature changes:
+  + guestfs: Add mke2fs utility
+- Utilites:
+  + create-initrd: Use bash array to calculate list of files and directories
+- Misc:
+  + Use bash for scripting
+  + Show only actually included features
+  + Refactor feature dependencies
+
 Version 2.8.3
 
 - Misc:
