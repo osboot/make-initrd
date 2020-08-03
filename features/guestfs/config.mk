@@ -4,11 +4,17 @@ $(call feature-disables,plymouth ucode)
 GUESTFS_DATADIR = \
 	$(FEATURESDIR)/guestfs/data
 
+GUESTFS_FILE_DATABASE = \
+	$(wildcard /usr/share/file/*) \
+	$(wildcard /usr/share/magic/*) \
+	$(wildcard /etc/magic)
+
 GUESTFS_PROGS_PATTERNS = \
 	*/guestfsd \
 	*/parted \
 	*/wipefs \
 	*/findfs \
+	*/file \
 	*/zerofree \
 	*/sparsify \
 	*/rsync \
@@ -22,5 +28,6 @@ GUESTFS_PROGS_PATTERNS = \
 	*/hivex*
 
 GUESTFS_FILES = \
+	$(GUESTFS_FILE_DATABASE) \
 	$(wildcard /usr/share/augeas/*) \
 	$(wildcard /usr/lib*/gconv)
