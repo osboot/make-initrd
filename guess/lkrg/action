@@ -1,0 +1,8 @@
+#!/bin/bash -e
+
+. guess-functions
+
+depinfo --no-deps --no-firmware p_lkrg |grep -e '^module ' ||
+	exit 0
+
+guess_feature "lkrg"

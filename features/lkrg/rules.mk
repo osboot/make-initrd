@@ -1,0 +1,1 @@
+MODULES_PRELOAD += p_lkrg
