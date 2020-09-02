@@ -20,7 +20,7 @@ handler()
 
 	rootdelay_pause
 
-	fsck -V -t noloop -Tay "$MOUNTDEV" ||
+	fsck -V -t noloop,noswap -Tay "$MOUNTDEV" ||
 		rc=$?
 
 	if [ "$rc" = 0 ] || [ "$rc" = 1 ]; then
