@@ -37,7 +37,7 @@ while [ -f "$pidfile" ]; do
 
 	if { read -r method < /etc/initrd/method; } >/dev/null 2>&1; then
 		d="/lib/poll/method/$method"
-		[ ! -x "$d/check" ] || ! ( . "$d/check" ) || ( . "$d/action" ) ||:
+		[ ! -x "$d/check" ] || ! "$d/check" || "$d/action" ||:
 	fi
 
 	sleep 0.1
