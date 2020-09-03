@@ -32,6 +32,10 @@ resolve_target()
 			target="$mntdir/dst/$target"
 			;;
 		*)
+			if [ -z "${prevdir-}" ]; then
+				message "no previous stop to use"
+				return
+			fi
 			target="$prevdir/${target#/}"
 			;;
 	esac

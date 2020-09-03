@@ -3,8 +3,11 @@
 . pipeline-sh-functions
 
 check_parameter MOUNTFS
-target="$(get_parameter MOUNTFS)"
-target="$(resolve_target "$target")"
+param="$(get_parameter MOUNTFS)"
+target="$(resolve_target "$param")"
+
+[ -n "$target" ] ||
+	fatal "unable to resolve: $param"
 
 opts=
 [ ! -c "$target" ] && [ ! -b "$target" ] ||

@@ -3,9 +3,11 @@
 . pipeline-sh-functions
 
 target="$(get_parameter OVERLAYFS)"
-target="${target:-$prevdir}"
 
-pipe="$target"
+[ -n "$target" ] || [ -n "$prevdir" ] ||
+	fatal "no previous step to use as lower directory"
+
+pipe="${target:-$prevdir}"
 lowerdirs=
 
 while [ -n "$pipe" ]; do
