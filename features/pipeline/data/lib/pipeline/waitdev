@@ -1,5 +1,7 @@
 #!/bin/bash -efu
 
+. pipeline-sh-functions
+
 check_parameter WAITDEV
 devspec="$(get_parameter WAITDEV)"
 envfile=/.initrd/pipeline/waitdev

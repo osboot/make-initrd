@@ -3,9 +3,6 @@
 . shell-error
 . shell-signal
 
-handlerdir="/lib/pipeline"
-mntdir="/dev/pipeline"
-
 pidfile="/var/run/$PROG.pid"
 
 exit_handler()
@@ -22,45 +19,10 @@ exit_handler()
 set_cleanup_handler exit_handler
 echo "$$" >"$pidfile"
 
-. /.initrd/initenv
+. pipeline-sh-functions
 
 exec >"/var/log/$PROG.log" 2>&1
 message "Starting server ..."
-
-check_parameter()
-{
-	local v
-	eval "v=\"\${$1-}\""
-	[ -n "$v" ] ||
-		fatal "Parameter '$1' required"
-}
-
-get_parameter()
-{
-	eval "printf '%s' \"\${${1}$callnum-}\""
-}
-
-resolve_target()
-{
-	local target="$1"
-	case "${target%%/*}" in
-		'')
-			;;
-		pipe[0-9]|pipe[0-9][0-9]|pipe[0-9][0-9][0-9])
-			target="$mntdir/dst/$target"
-			;;
-		*)
-			target="$prevdir/${target#/}"
-			;;
-	esac
-	printf '%s' "$target"
-}
-
-run()
-{
-	[ -z "${DEBUG-}" ] || message "[$callnum] RUN: $*"
-	"$@"
-}
 
 mkdir -p -- "$mntdir"
 
@@ -90,8 +52,10 @@ while [ -n "$pipe" ]; do
 		if ! mountpoint -q "$destdir"; then
 			message "[$callnum] Handler: $exe"
 
+			export name callnum datadir destdir prevdir
+
 			rc=0
-			( . "$exe" ) || rc=$?
+			"$exe" || rc=$?
 
 			if [ "$rc" != 0 ]; then
 				[ "$rc" != 2 ] ||

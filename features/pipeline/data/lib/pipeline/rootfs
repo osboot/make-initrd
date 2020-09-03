@@ -1,5 +1,7 @@
 #!/bin/bash -efu
 
+. pipeline-sh-functions
+
 run mount --move "$prevdir" "$rootmnt"
 echo localdev > /etc/initrd/method
 exit 2

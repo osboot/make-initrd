@@ -1,5 +1,7 @@
 #!/bin/bash -efu
 
+. pipeline-sh-functions
+
 target="$(get_parameter OVERLAYFS)"
 target="${target:-$prevdir}"
 

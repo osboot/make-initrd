@@ -1,5 +1,7 @@
 #!/bin/bash -efu
 
+. pipeline-sh-functions
+
 check_parameter MOUNTFS
 target="$(get_parameter MOUNTFS)"
 target="$(resolve_target "$target")"
