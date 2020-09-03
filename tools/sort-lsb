@@ -355,7 +355,7 @@ sort_services()
 
 make_start_links()
 {
-	local level order serv name rank=10
+	local level order serv name rank=10 vrank
 	level="$1"
 
 	eval "order=\"\$rc${level}_S_order\""
@@ -363,7 +363,8 @@ make_start_links()
 	for serv in $order; do
 		if [ "$serv" != '@mark' ]; then
 			eval "name=\"\$rc_${serv}\""
-			result "$name" "$level" "S$rank"
+			printf -v vrank 'S%06d' "$rank"
+			result "$name" "$level" "$vrank"
 		else
 			rank=$(($rank + 10))
 		fi
@@ -372,7 +373,7 @@ make_start_links()
 
 make_stop_links()
 {
-	local level order serv name rank=10
+	local level order serv name rank=10 vrank
 	level="$1"
 
 	eval "order=\"\$rc${level}_K_order\""
@@ -385,7 +386,8 @@ make_stop_links()
 	for serv in $order; do
 		if [ "$serv" != '@mark' ]; then
 			eval "name=\"\$rc_${serv}\""
-			result "$name" "$level" "K$rank"
+			printf -v vrank 'K%06d' "$rank"
+			result "$name" "$level" "$vrank"
 		else
 			rank=$(($rank - 10))
 		fi
