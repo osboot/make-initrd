@@ -160,8 +160,7 @@ parse_services()
 			verbose "   Suggests (S):$S_suggests"
 			verbose "   Suggests (K):$K_suggests"
 
-			name="$(printf '%s' "$name" | sha1sum)"
-			name="${name%% *}"
+			name="$(set -- $rc_names; printf '%s' "$#")"
 			eval "rc_${name}=\"\$service\""
 
 			append rc_names $name
