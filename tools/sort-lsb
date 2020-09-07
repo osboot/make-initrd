@@ -82,8 +82,7 @@ empty()
 in_list()
 {
 	local __in_list_strlist
-	declare -n "__in_list_strlist=$1"
-	shift
+	declare -n "__in_list_strlist=$1"; shift
 	[ -n "$1" ] &&
 	! empty $__in_list_strlist ||
 		return 1
@@ -100,8 +99,7 @@ remove_from_list()
 	in_list "$@" ||
 		return 0
 	local __strlist __elem
-	declare -n "__strlist=$1"
-	shift
+	declare -n "__strlist=$1"; shift
 	__elem="$1"
 	set -- $__strlist
 	__strlist=
@@ -118,8 +116,7 @@ remove_from_list()
 append()
 {
 	local __append_strlist n
-	declare -n "__append_strlist=$1"
-	shift
+	declare -n "__append_strlist=$1"; shift
 	for n; do
 		[ "$n" = '@mark' ] || ! in_list __append_strlist "$n" ||
 			continue
@@ -227,17 +224,17 @@ print_name()
 
 print_list()
 {
-	local name service
-
-	for name; do
+	local names name
+	declare -n "names=$1"; shift
+	set --
+	for name in $names; do
 		if [ "$name" = '@mark' ]; then
-			printf '%s ' "$name"
+			set -- "$@" "$name"
 			continue
 		fi
-		eval "service=\"\$rc_${name}\""
-		printf '%s ' "$service"
+		eval "set -- \"\$@\" \"\$rc_${name}\""
 	done
-	printf '\n'
+	printf '%s\n' "$*"
 }
 
 process_suggests()
@@ -246,7 +243,7 @@ process_suggests()
 	level="$1"; shift
 	type="$1"; shift
 
-	eval "names=\"\$rc${level}_${type}_names\""
+	declare -n "names=rc${level}_${type}_names"
 
 	deps=
 	for name in $names; do
@@ -254,15 +251,13 @@ process_suggests()
 	done
 
 	for name in $names; do
-		eval "requires=\"\$rc_${name}_${type}_requires\""
-		eval "suggests=\"\$rc_${name}_${type}_suggests\""
+		declare -n "requires=rc_${name}_${type}_requires"
+		declare -n "suggests=rc_${name}_${type}_suggests"
 
 		for req in $suggests; do
 			! in_list deps "$req" ||
 				append requires $req
 		done
-
-		eval "rc_${name}_${type}_requires=\"\$requires\""
 	done
 }
 
@@ -274,16 +269,16 @@ process_before()
 
 	verbose "Processing x-start-before services ($type$level)"
 
-	eval "names=\"\$rc${level}_${type}_names\""
+	declare -n "names=rc${level}_${type}_names"
 
 	for name in $names; do
-		eval "rcname=\"\$rc_${name}\""
-		eval "provides=\" \$rc_${name}_provides \""
-		eval "requires=\"\$rc_${name}_${type}_requires\""
+		declare -n "rcname=rc_${name}"
+		declare -n "provides=rc_${name}_provides"
+		declare -n "requires=rc_${name}_${type}_requires"
 
 		for req in $names; do
-			eval "reqname=\"\$rc_${req}\""
-			eval "before=\"\$rc_${req}_${type}_before\""
+			declare -n "reqname=rc_${req}"
+			declare -n "before=rc_${req}_${type}_before"
 
 			for dep in $before; do
 				if in_list provides "$dep"; then
@@ -292,8 +287,6 @@ process_before()
 				fi
 			done
 		done
-
-		eval "rc_${name}_${type}_requires=\"\$requires\""
 	done
 }
 
@@ -305,7 +298,7 @@ sort_services()
 
 	local names name services='' deps='' found
 	local req requires provides new_serv='' new_prov=''
-	local unmet_name='' unmet_req=''
+	local unmet_name unmet_req
 
 	verbose "Ordering services ($type$level)"
 
@@ -317,8 +310,8 @@ sort_services()
 
 	# First: filter names withoout requires
 	for name in $names; do
-		eval "provides=\"\$rc_${name}_provides\""
-		eval "requires=\"\$rc_${name}_${type}_requires\""
+		declare -n "provides=rc_${name}_provides"
+		declare -n "requires=rc_${name}_${type}_requires"
 
 		empty $requires ||
 			continue
@@ -339,20 +332,20 @@ sort_services()
 		new_serv=
 		new_prov=
 
-		verbose "   ($type$level) order: $(print_list $services)"
+		verbose "   ($type$level) order: $(print_list services)"
 
 		for name in $names; do
-			eval "provides=\"\$rc_${name}_provides\""
-			eval "requires=\"\$rc_${name}_${type}_requires\""
+			declare -n "provides=rc_${name}_provides"
+			declare -n "requires=rc_${name}_${type}_requires"
 
 			found=1
 			for req in $requires; do
-				! in_list deps "$req" ||
-					continue
-				found=
-				unmet_name="$name"
-				unmet_req="$req"
-				break
+				if ! in_list deps "$req"; then
+					declare -n "unmet_name=name"
+					declare -n "unmet_req=req"
+					found=
+					break
+				fi
 			done
 
 			[ -n "$found" ] ||
@@ -375,10 +368,12 @@ sort_services()
 	if ! empty $names; then
 		services=
 		for name in $names; do
-			eval "services=\"\$services \$rc_${name}\""
+			[ -z "$services" ] ||
+				services+=" "
+			eval "services+=\"\$rc_${name}\""
 		done
 		message "Error: Unable to find dependency for '$(print_name $unmet_name)' on $type$level: $unmet_req"
-		fatal "Error: Unmet found at runlevel $type$level in services:$services"
+		fatal "Error: Unmet found at runlevel $type$level in services: $services"
 	fi
 
 	empty $services ||
@@ -389,14 +384,12 @@ sort_services()
 
 make_start_links()
 {
-	local level order serv name rank=10 vrank
-	level="$1"
-
-	eval "order=\"\$rc${level}_S_order\""
+	local order serv name rank=10 vrank
+	declare -n "order=rc${1}_S_order"
 
 	for serv in $order; do
 		if [ "$serv" != '@mark' ]; then
-			eval "name=\"\$rc_${serv}\""
+			declare -n "name=rc_${serv}"
 			printf -v vrank 'S%06d' "$rank"
 			result "$name" "$level" "$vrank"
 		else
@@ -407,10 +400,8 @@ make_start_links()
 
 make_stop_links()
 {
-	local level order serv name rank=10 vrank
-	level="$1"
-
-	eval "order=\"\$rc${level}_K_order\""
+	local order serv name rank=10 vrank
+	declare -n "order=rc${1}_K_order"
 
 	for serv in $order; do
 		[ "$serv" != '@mark' ] ||
@@ -419,7 +410,7 @@ make_stop_links()
 
 	for serv in $order; do
 		if [ "$serv" != '@mark' ]; then
-			eval "name=\"\$rc_${serv}\""
+			declare -n "name=rc_${serv}"
 			printf -v vrank 'K%06d' "$rank"
 			result "$name" "$level" "$vrank"
 		else
@@ -435,8 +426,8 @@ process_runlevel()
 	if [ -n "$verbose" ]; then
 		printf '\n' >&2
 		verbose "Services per runlevel $level"
-		verbose "   (S$level) services: $(eval "print_list \$rc${level}_S_names")"
-		verbose "   (K$level) services: $(eval "print_list \$rc${level}_K_names")"
+		verbose "   (S$level) services: $(print_list rc${level}_S_names)"
+		verbose "   (K$level) services: $(print_list rc${level}_K_names)"
 	fi
 
 	process_suggests "$level" S
