@@ -187,13 +187,13 @@ parse_services()
 			! empty $K_suggests || K_suggests="$S_suggests"
 
 			verbose "Service with LSB header: $f"
-			verbose "   Levels   (S):$S_level"
-			verbose "   Provides    :$provides"
-			verbose "   Before   (S):$S_before"
-			verbose "   Requires (S):$S_requires"
-			verbose "   Requires (K):$K_requires"
-			verbose "   Suggests (S):$S_suggests"
-			verbose "   Suggests (K):$K_suggests"
+			verbose "   Levels   (S): $S_level"
+			verbose "   Provides    : $provides"
+			verbose "   Before   (S): $S_before"
+			verbose "   Requires (S): $S_requires"
+			verbose "   Requires (K): $K_requires"
+			verbose "   Suggests (S): $S_suggests"
+			verbose "   Suggests (K): $K_suggests"
 
 			name="$rc_names"
 			rc_names=$(($rc_names + 1))
