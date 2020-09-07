@@ -44,7 +44,7 @@ for i in "$rcd"/K*; do
 	[ -x "$i" ] ||
 		continue
 
-	subsys=${i#$rcd/K??}
+	subsys=${i#$rcd/K*:}
 
 	# Check if the subsystem is already up.
 	[ -f "$locksys/$subsys" ] ||
@@ -63,7 +63,7 @@ for i in "$rcd"/S*; do
 	[ -x "$i" ] ||
 		continue
 
-	subsys="${i#$rcd/S??}"
+	subsys="${i#$rcd/S*:}"
 
 	SourceIfExists /.initrd/initenv
 
