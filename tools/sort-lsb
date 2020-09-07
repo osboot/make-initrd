@@ -80,18 +80,54 @@ empty()
 	[ "$#" -eq 0 ] || return 1
 }
 
+in_list()
+{
+	local __in_list_strlist
+	declare -n "__in_list_strlist=$1"
+	shift
+	[ -n "$1" ] &&
+	! empty $__in_list_strlist ||
+		return 1
+	[ "$__in_list_strlist" != "$1" ] &&
+	[ -n "${__in_list_strlist##$1 *}" ] &&
+	[ -n "${__in_list_strlist##* $1 *}" ] &&
+	[ -n "${__in_list_strlist##* $1}" ] ||
+		return 0
+	return 1
+}
+
+remove_from_list()
+{
+	in_list "$@" ||
+		return 0
+	local __strlist __elem
+	declare -n "__strlist=$1"
+	shift
+	__elem="$1"
+	set -- $__strlist
+	__strlist=
+	while [ "$#" != 0 ]; do
+		if [ "$__elem" != "$1" ]; then
+			[ -z "$__strlist" ] ||
+				__strlist+=" "
+			__strlist+="$1"
+		fi
+		shift
+	done
+}
+
 append()
 {
-	local name var n
-	var="$1"; shift
-	eval "name=\" \${$var:-}\""
+	local __append_strlist n
+	declare -n "__append_strlist=$1"
+	shift
 	for n; do
-		[ "$n" = '@mark' ] || [ -n "${name##* $n *}" ] ||
+		[ "$n" = '@mark' ] || ! in_list __append_strlist "$n" ||
 			continue
-		name="$name $n "
+		[ -z "$__append_strlist" ] ||
+			__append_strlist+=" "
+		__append_strlist+="$n"
 	done
-	set -- $name
-	eval "$var=\" \$* \""
 }
 
 parse_services()
@@ -174,7 +210,7 @@ parse_services()
 			done
 
 			for level in $runlevels; do
-				[ -z "${S_level##* $level *}" ] &&
+				in_list S_level "$level" &&
 					type='S' ||
 					type='K'
 				append "rc${level}_${type}_names" $name
@@ -214,6 +250,7 @@ process_suggests()
 
 	eval "names=\"\$rc${level}_${type}_names\""
 
+	deps=
 	for name in $names; do
 		eval "append deps \$rc_${name}_provides"
 	done
@@ -223,7 +260,7 @@ process_suggests()
 		eval "suggests=\"\$rc_${name}_${type}_suggests\""
 
 		for req in $suggests; do
-			[ -n "${deps##* $req *}" ] ||
+			! in_list deps "$req" ||
 				append requires $req
 		done
 
@@ -251,7 +288,7 @@ process_before()
 			eval "before=\"\$rc_${req}_${type}_before\""
 
 			for dep in $before; do
-				if [ -z "${provides##* $dep *}" ]; then
+				if in_list provides "$dep"; then
 					verbose "   $rcname requires $reqname"
 					append requires "$reqname"
 				fi
@@ -268,7 +305,7 @@ sort_services()
 	level="$1"; shift
 	type="$1"; shift
 
-	local names name services='' deps=' ' found
+	local names name services='' deps='' found
 	local req requires provides new_serv='' new_prov=''
 	local unmet_name='' unmet_req=''
 
@@ -291,7 +328,7 @@ sort_services()
 		append new_serv $name
 		append new_prov $provides
 
-		names="${names% $name *} ${names#* $name }"
+		remove_from_list names "$name"
 	done
 
 	if [ -n "$new_serv" ]; then
@@ -312,7 +349,7 @@ sort_services()
 
 			found=1
 			for req in $requires; do
-				[ -n "${deps##* $req *}" ] ||
+				! in_list deps "$req" ||
 					continue
 				found=
 				unmet_name="$name"
@@ -326,7 +363,7 @@ sort_services()
 			append new_serv $name
 			append new_prov $provides
 
-			names="${names% $name *} ${names#* $name }"
+			remove_from_list names "$name"
 		done
 
 		if [ -n "$new_serv" ]; then
