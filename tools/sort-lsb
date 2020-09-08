@@ -224,15 +224,15 @@ print_name()
 
 print_list()
 {
-	local names name
-	declare -n "names=$1"; shift
+	local __print_names __print_name
+	declare -n "__print_names=$1"; shift
 	set --
-	for name in $names; do
-		if [ "$name" = '@mark' ]; then
-			set -- "$@" "$name"
+	for __print_name in $__print_names; do
+		if [ "$__print_name" = '@mark' ]; then
+			set -- "$@" "$__print_name"
 			continue
 		fi
-		eval "set -- \"\$@\" \"\$rc_${name}\""
+		eval "set -- \"\$@\" \"\$rc_${__print_name}\""
 	done
 	printf '%s\n' "$*"
 }
@@ -290,6 +290,23 @@ process_before()
 	done
 }
 
+find_provider()
+{
+	local i=0 provides
+
+	while [ "$i" -lt "$rc_names" ]; do
+		declare -n "provides=rc_${i}_provides"
+
+		if in_list provides "$1"; then
+			printf '%s' "$i"
+			return
+		fi
+
+		i=$(($i + 1))
+	done
+	return 1
+}
+
 sort_services()
 {
 	local level type
@@ -341,8 +358,8 @@ sort_services()
 			found=1
 			for req in $requires; do
 				if ! in_list deps "$req"; then
-					declare -n "unmet_name=name"
-					declare -n "unmet_req=req"
+					unmet_name="$name"
+					unmet_req="$req"
 					found=
 					break
 				fi
@@ -372,8 +389,17 @@ sort_services()
 				services+=" "
 			eval "services+=\"\$rc_${name}\""
 		done
-		message "Error: Unable to find dependency for '$(print_name $unmet_name)' on $type$level: $unmet_req"
-		fatal "Error: Unmet found at runlevel $type$level in services: $services"
+
+		if badname="$(find_provider "$unmet_req")"; then
+			unmet_name="$badname"
+			unmet_req=
+			declare -n "requires=rc_${badname}_${type}_requires"
+			for req in $requires; do
+				in_list deps "$req" || unmet_req+="$req "
+			done
+		fi
+
+		fatal "Error: runlevel=$type$level: Unable to find service(s) required by '$(print_name $unmet_name)': $unmet_req"
 	fi
 
 	empty $services ||
