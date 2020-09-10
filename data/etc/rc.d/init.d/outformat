@@ -3,7 +3,7 @@
 # Copyright (C) 2002,2003 Dmitry V. Levin <ldv@altlinux.org>.
 
 # Offset from right margin of the screen to start status labels at.
-[ -n "$RES_OFFSET" ] && [ "$RES_OFFSET" -gt 0 ] 2>/dev/null || RES_OFFSET=8
+[ -n "${RES_OFFSET-}" ] && [ "$RES_OFFSET" -gt 0 ] 2>/dev/null || RES_OFFSET=8
 
 # Terminal sequence to move to that position.
 TO_COL=$(pos=$((${COLUMNS:-80} - $RES_OFFSET)); [ $pos -le 0 ] || printf "\033[%dG" $pos;)

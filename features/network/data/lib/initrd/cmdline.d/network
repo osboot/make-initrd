@@ -1,9 +1,7 @@
 #!/bin/bash -efu
 
-exec >/var/log/cmdline-to-network.log 2>&1
-
 . /.initrd/initenv
-
+. /etc/init.d/functions
 . shell-ip-address
 . network-sh-functions
 
