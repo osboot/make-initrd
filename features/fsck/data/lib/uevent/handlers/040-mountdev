@@ -1,6 +1,7 @@
 #!/bin/bash
 
 . /.initrd/initenv
+. /etc/init.d/functions
 . uevent-sh-functions
 . rdshell-sh-functions
 . initrd-sh-functions
@@ -20,7 +21,7 @@ handler()
 
 	rootdelay_pause
 
-	fsck -V -t noloop,noswap -Tay "$MOUNTDEV" ||
+	action "Checking filesystem [$MOUNTDEV]:" fsck -t noloop,noswap -Tay "$MOUNTDEV" ||
 		rc=$?
 
 	if [ "$rc" = 0 ] || [ "$rc" = 1 ]; then
