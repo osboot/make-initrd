@@ -8,30 +8,46 @@
 [ "$1" = start ] ||
 	exit 0
 
+. /.initrd/initenv
 . /etc/init.d/functions
+
+msg="Network up"
+
+if [ -n "${RDSHELL-}" ]; then
+	echo_msg "$msg:"
+	passed "$msg:"
+	exit 0
+fi
+
 . network-sh-functions
 
+# wait for network modules
+udevadm settle --timeout=3
+
+ifaces=' '
 while :; do
-	all_ifaces_up=1
+	set -- /sys/class/net/*
 
-	for d in /sys/class/net/*; do
-		NET_IF="${d##*/}"
+	up=0
+	for confdir; do
+		NET_IF="${confdir##*/}"
 
-		[ -e "$d" ] && get_iface_confdir ||
+		if [ ! -d "$confdir" ] || [ -z "${ifaces##* $NET_IF *}" ] || ! get_iface_confdir; then
+			up=$(($up + 1))
 			continue
-
-		if ! is_link_up "$NET_IF"; then
-			all_ifaces_up=
-			break
 		fi
 
-		m="Network($NET_IF) up"
+		[ -e "/.initrd/online/$NET_IF" ] ||
+			continue
 
-		echo_msg "$m"
-		success "$m"
+		echo_msg "$msg ($NET_IF):"
+		success "$msg ($NET_IF):"
+
+		ifaces+="$NET_IF "
+		up=$(($up + 1))
 	done
 
-	[ -z "$all_ifaces_up" ] ||
+	[ "$#" != $up ] ||
 		break
 
 	sleep 0.1
