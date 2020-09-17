@@ -15,6 +15,7 @@ PLYMOUTH_FILES = \
 	$(DATADIR)/plymouth/themes/text/text.plymouth \
 	$(LIBDIR)/plymouth/details.so \
 	$(LIBDIR)/plymouth/text.so \
+	$(LIBDIR)/plymouth/label.so \
 	$(LIBDIR)/plymouth/renderers/drm.so \
 	$(LIBDIR)/plymouth/renderers/frame-buffer.so \
 	$(shell env \
