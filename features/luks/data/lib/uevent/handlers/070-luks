@@ -137,12 +137,20 @@ handler() {
 			rc="$?"
 		freekey
 	else
-		# WARNING: Wait decrypt forever!
-		rc=2
-		while [ "$rc" = 2 ]; do
-			cryptsetup $luks_discard luksOpen "$LUKS_ROOT" "$nameluks"
+		if plymouth --ping 2>/dev/null; then
+			plymouth ask-for-password \
+				--prompt "Please enter passphrase for $LUKS_ROOT:" \
+				--number-of-tries=3 \
+				--command="cryptsetup $luks_discard luksOpen $LUKS_ROOT $nameluks"
 			rc="$?"
-		done
+		else
+			rc=2
+			# WARNING: Wait decrypt forever!
+			while [ "$rc" = 2 ]; do
+				cryptsetup $luks_discard luksOpen "$LUKS_ROOT" "$nameluks"
+				rc="$?"
+			done
+		fi
 	fi
 
 	if [ "$rc" != 0 ]; then
