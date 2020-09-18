@@ -13,6 +13,7 @@ PLYMOUTH_FILES = \
 	$(DATADIR)/plymouth/plymouthd.defaults \
 	$(DATADIR)/plymouth/themes/details/details.plymouth \
 	$(DATADIR)/plymouth/themes/text/text.plymouth \
+	$(DATADIR)/fonts/ttf/dejavu/DejaVuSans.ttf \
 	$(LIBDIR)/plymouth/details.so \
 	$(LIBDIR)/plymouth/text.so \
 	$(LIBDIR)/plymouth/label.so \
