@@ -9,10 +9,12 @@ MULTIPATH_PRELOAD = \
 	scsi_dh_emc \
 	scsi_dh_rdac
 
-MULTIPATH_PROGS   = multipath kpartx
+MULTIPATH_PROGS   = multipathd multipath kpartx
 MULTIPATH_CONF    = \
 	$(SYSCONFDIR)/multipath.conf \
 	$(SYSCONFDIR)/multipath
+MULTIPATH_DATADIR = \
+	$(FEATURESDIR)/multipath/data
 MULTIPATH_DATA    = \
 	/lib/udev/kpartx_id \
 	$(wildcard /lib/udev/rules.d/*-kpartx.rules) \

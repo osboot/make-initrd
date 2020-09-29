@@ -1,0 +1,38 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          multipathd
+# Required-Start:    cmdline $local_fs
+# X-Start-Before:    udev
+# Default-Start:     3 4 5
+### END INIT INFO
+
+. /etc/init.d/template
+
+NAME=multipathd
+PIDFILE="/var/run/$NAME.pid"
+LOCKFILE="/var/lock/subsys/$NAME"
+
+start()
+{
+	action "Loading kernel modules for multipath:" \
+		modprobe -q -a scsi_dh_alua scsi_dh_emc scsi_dh_rdac dm-multipath 2>/dev/null
+
+	start_daemon \
+		--pidfile "$PIDFILE" \
+		--lockfile "$LOCKFILE" \
+		-- multipathd
+	RETVAL=$?
+	return $RETVAL
+}
+
+stop()
+{
+	stop_daemon \
+		--pidfile "$PIDFILE" \
+		--lockfile "$LOCKFILE" \
+		-- multipathd
+	RETVAL=$?
+	return $RETVAL
+}
+
+switch "${1-}"
