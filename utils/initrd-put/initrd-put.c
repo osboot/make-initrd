@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/sendfile.h>
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -518,6 +519,8 @@ static void free_file(void *ptr)
 }
 
 static char install_path[PATH_MAX + 1];
+static int use_copy_file_range = 1;
+static int use_sendfile = 1;
 
 static void install_file(struct file *p)
 {
@@ -614,22 +617,77 @@ static void install_file(struct file *p)
 	if ((sfd = open(p->src, O_RDONLY)) < 0)
 		err(EXIT_FAILURE, "open: %s", p->src);
 
+	posix_fadvise(sfd, 0, (off_t) p->size, POSIX_FADV_SEQUENTIAL);
+	posix_fallocate(dfd, 0, (off_t) p->size);
+
 	ssize_t ret;
 	size_t len = p->size;
 
+	if (!use_copy_file_range)
+		goto fallback_sendfile;
 	do {
+		errno = 0;
 		ret = copy_file_range(sfd, NULL, dfd, NULL, len, 0);
-		if (ret < 0)
+		if (ret < 0) {
+			if (errno == EXDEV) {
+				use_copy_file_range = 0;
+				goto fallback_sendfile;
+			}
 			err(EXIT_FAILURE, "copy_file_range: %s -> %s", p->src, p->dst);
+		}
 		len -= (size_t) ret;
 	} while (len > 0 && ret > 0);
-
+finish:
 	close(sfd);
 	close(dfd);
 chown:
 	errno = 0;
 	if (lchown(install_path, p->uid, p->gid) < 0 && errno != EPERM)
 		err(EXIT_FAILURE, "chown: %s", install_path);
+	return;
+
+fallback_sendfile:
+	if (!use_sendfile)
+		goto fallback_readwrite;
+
+	lseek(sfd, 0, SEEK_SET);
+	lseek(dfd, 0, SEEK_SET);
+
+	len = p->size;
+	do {
+		errno = 0;
+		ret = sendfile(dfd, sfd, NULL, len);
+		if (ret < 0) {
+			if (errno == EINVAL || errno == ENOSYS) {
+				use_sendfile = 0;
+				goto fallback_readwrite;
+			}
+			err(EXIT_FAILURE, "sendfile: %s -> %s", p->src, p->dst);
+		}
+		len -= (size_t) ret;
+	} while (len > 0 && ret > 0);
+
+	goto finish;
+
+fallback_readwrite:
+	lseek(sfd, 0, SEEK_SET);
+	lseek(dfd, 0, SEEK_SET);
+
+	char buf[BUFSIZ];
+	len = p->size;
+	do {
+		ret = TEMP_FAILURE_RETRY(read(sfd, buf, sizeof(buf)));
+		if (ret < 0)
+			err(EXIT_FAILURE, "read: %s", p->src);
+
+		ret = TEMP_FAILURE_RETRY(write(dfd, buf, (size_t) ret));
+		if (ret < 0)
+			err(EXIT_FAILURE, "write: %s", p->dst);
+
+		len -= (size_t) ret;
+	} while (len > 0 && ret > 0);
+
+	goto finish;
 }
 
 static void walk_action(const void *nodep, VISIT which, void *closure)
