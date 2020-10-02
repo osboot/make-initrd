@@ -388,6 +388,9 @@ static int shared_object_dependencies(const char *filename)
 		if (*p != '/')
 			continue;
 
+		if (verbose > 1)
+			warnx("shared object '%s' depends on '%s'", filename, p);
+
 		add_list(p, -1);
 	}
 
@@ -405,11 +408,9 @@ static int process_regular_file(const char *filename)
 	errno = 0;
 	fd = open(filename, O_RDONLY | O_NOFOLLOW | O_CLOEXEC);
 	if (fd < 0) {
-		if (errno == EACCES || errno == EPERM) {
-			ret = 0;
-			goto end;
-		}
 		warn("open: %s", filename);
+		if (errno == EACCES || errno == EPERM)
+			return 0;
 		return -1;
 	}
 
@@ -427,6 +428,9 @@ static int process_regular_file(const char *filename)
 		for (p = &buf[2]; *p && isspace(*p); p++);
 		for (q = p; *q && (!isspace(*q)); q++);
 		*q = '\0';
+
+		if (verbose > 1)
+			warnx("shell script '%s' uses the '%s' interpreter", filename, p);
 
 		add_list(p, -1);
 
@@ -489,6 +493,9 @@ static void process(struct file *p)
 
 			const char *s = canonicalize_symlink(p->src, p->symlink);
 			if (s) {
+				if (verbose > 1)
+					warnx("symlink '%s' points to '%s'", p->src, s);
+
 				struct file *f = add_list(s, -1);
 				f->recursive = 1;
 				return;
@@ -865,6 +872,8 @@ int main(int argc, char **argv)
 				process(*(struct file **) ptr);
 				del_list(queue);
 			} else {
+				if (verbose > 1)
+					warnx("'%s' has already been processed so skip it", queue->src);
 				del_list(queue);
 				free_file(queue);
 			}
