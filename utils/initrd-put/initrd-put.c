@@ -73,7 +73,7 @@ static struct file *add_list(const char *str, ssize_t len)
 
 	new = calloc(1, sizeof(*new));
 	if (!new)
-		err(EXIT_FAILURE, "calloc");
+		err(EX_OSERR, "calloc");
 
 	new->src = (len < 0)
 		? xstrdup(str)
@@ -81,7 +81,7 @@ static struct file *add_list(const char *str, ssize_t len)
 
 	if (inqueue) {
 		if (inqueue->prev)
-			errx(EXIT_FAILURE, "bad queue head");
+			errx(EX_SOFTWARE, "bad queue head");
 		inqueue->prev = new;
 		new->next = inqueue;
 	}
@@ -555,7 +555,7 @@ static void install_file(struct file *p)
 		errno = 0;
 		if (mkdir(install_path, p->mode) < 0) {
 			if (errno != EEXIST) {
-				err(EXIT_FAILURE, "mkdir: %s", install_path);
+				err(EX_CANTCREAT, "mkdir: %s", install_path);
 			} else if (verbose) {
 				warnx("skip (directory): %s", p->dst);
 			}
@@ -574,7 +574,7 @@ static void install_file(struct file *p)
 		errno = 0;
 		if (mknod(install_path, p->mode, p->dev)) {
 			if (errno != EEXIST) {
-				err(EXIT_FAILURE, "mknod: %s", install_path);
+				err(EX_CANTCREAT, "mknod: %s", install_path);
 			} else if (verbose) {
 				warnx("skip (divice file): %s", p->dst);
 			}
@@ -588,7 +588,7 @@ static void install_file(struct file *p)
 		errno = 0;
 		if (symlink(p->symlink, install_path) < 0) {
 			if (errno != EEXIST) {
-				err(EXIT_FAILURE, "symlink: %s", install_path);
+				err(EX_CANTCREAT, "symlink: %s", install_path);
 			} else if (verbose) {
 				warnx("skip (symlink): %s", p->dst);
 			}
@@ -602,7 +602,7 @@ static void install_file(struct file *p)
 		errno = 0;
 		if (mkfifo(install_path, p->mode) < 0) {
 			if (errno != EEXIST) {
-				err(EXIT_FAILURE, "mkfifo: %s", install_path);
+				err(EX_CANTCREAT, "mkfifo: %s", install_path);
 			} else if (verbose) {
 				warnx("skip (fifo): %s", p->dst);
 			}
@@ -631,14 +631,14 @@ static void install_file(struct file *p)
 
 	errno = 0;
 	if ((dfd = creat(install_path, p->mode)) < 0) {
-		err(EXIT_FAILURE, "creat: %s", install_path);
+		err(EX_CANTCREAT, "creat: %s", install_path);
 	} else if (verbose) {
 		warnx("install (file): %s", p->dst);
 	}
 
 	errno = 0;
 	if ((sfd = open(p->src, O_RDONLY)) < 0)
-		err(EXIT_FAILURE, "open: %s", p->src);
+		err(EX_NOINPUT, "open: %s", p->src);
 
 	posix_fadvise(sfd, 0, (off_t) p->size, POSIX_FADV_SEQUENTIAL);
 	posix_fallocate(dfd, 0, (off_t) p->size);
@@ -656,7 +656,7 @@ static void install_file(struct file *p)
 				use_copy_file_range = 0;
 				goto fallback_sendfile;
 			}
-			err(EXIT_FAILURE, "copy_file_range: %s -> %s", p->src, p->dst);
+			err(EX_IOERR, "copy_file_range: %s -> %s", p->src, p->dst);
 		}
 		len -= (size_t) ret;
 	} while (len > 0 && ret > 0);
@@ -685,7 +685,7 @@ fallback_sendfile:
 				use_sendfile = 0;
 				goto fallback_readwrite;
 			}
-			err(EXIT_FAILURE, "sendfile: %s -> %s", p->src, p->dst);
+			err(EX_IOERR, "sendfile: %s -> %s", p->src, p->dst);
 		}
 		len -= (size_t) ret;
 	} while (len > 0 && ret > 0);
@@ -701,11 +701,11 @@ fallback_readwrite:
 	do {
 		ret = TEMP_FAILURE_RETRY(read(sfd, buf, sizeof(buf)));
 		if (ret < 0)
-			err(EXIT_FAILURE, "read: %s", p->src);
+			err(EX_IOERR, "read: %s", p->src);
 
 		ret = TEMP_FAILURE_RETRY(write(dfd, buf, (size_t) ret));
 		if (ret < 0)
-			err(EXIT_FAILURE, "write: %s", p->dst);
+			err(EX_IOERR, "write: %s", p->dst);
 
 		len -= (size_t) ret;
 	} while (len > 0 && ret > 0);
@@ -842,7 +842,7 @@ int main(int argc, char **argv)
 
 	cwd = open(".", O_PATH);
 	if (!cwd)
-		err(EXIT_FAILURE, "unable to open current directory");
+		err(EX_OSERR, "unable to open current directory");
 
 	for (int i = optind; i < argc; i++) {
 		const char *s = canonicalize_path(argv[i]);
@@ -859,7 +859,7 @@ int main(int argc, char **argv)
 
 			ptr = tsearch(queue, &files, compare);
 			if (!ptr)
-				err(EXIT_FAILURE, "tsearch");
+				err(EX_OSERR, "tsearch");
 
 			if ((*(struct file **)ptr) == queue) {
 				process(*(struct file **) ptr);
@@ -889,7 +889,7 @@ int main(int argc, char **argv)
 
 	if (logfile) {
 		if ((logout = fopen(logfile, "a")) == NULL)
-			err(EXIT_FAILURE, "open: %s", logfile);
+			err(EX_CANTCREAT, "open: %s", logfile);
 
 		twalk_r(files, walk_action, print_file);
 
