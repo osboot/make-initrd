@@ -151,7 +151,7 @@ static void process_directory(char *path)
 			case FTS_NS:
 				errno = p->fts_errno;
 				warn("fts_read: %s", p->fts_path);
-				return;
+				continue;
 		}
 
 		v.src = p->fts_path;
