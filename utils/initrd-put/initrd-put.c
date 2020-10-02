@@ -361,6 +361,10 @@ static int shared_object_dependencies(const char *filename)
 	snprintf(command, sizeof(command), "ldd %s 2>&1", filename);
 
 	pfd = popen(command, "r");
+	if (!pfd) {
+		warn("popen(ldd): %s", filename);
+		return -1;
+	}
 
 	while ((n = getline(&line, &len, pfd)) != -1) {
 		char *p;
