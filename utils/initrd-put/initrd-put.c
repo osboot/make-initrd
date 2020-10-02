@@ -34,6 +34,7 @@ struct file {
 	char   *dst;
 	char   *symlink;
 	unsigned recursive:1;
+	unsigned stat:1;
 };
 
 static const char *progname = NULL;
@@ -119,16 +120,26 @@ static int compare(const void *a, const void *b)
 	return strcmp(((struct file *)a)->src, ((struct file *)b)->src);
 }
 
+static inline void fill_file(struct file *p, struct stat *sb)
+{
+	p->mode = sb->st_mode;
+	p->size = (size_t) sb->st_size;
+	p->dev  = sb->st_dev;
+	p->uid  = sb->st_uid;
+	p->gid  = sb->st_gid;
+	p->stat = 1;
+}
+
 static void process_directory(char *path)
 {
 	FTS *t = NULL;
-	struct file f = { 0 };
+	struct file v = { 0 };
 	char *argv[2] = { path, NULL };
 
 	if (verbose)
 		warnx("processing: %s", argv[0]);
 
-	if ((t = fts_open(argv, FTS_PHYSICAL | FTS_NOSTAT, NULL)) == NULL)
+	if ((t = fts_open(argv, FTS_PHYSICAL, NULL)) == NULL)
 		err(EXIT_FAILURE, "fts_open");
 
 
@@ -143,10 +154,13 @@ static void process_directory(char *path)
 				return;
 		}
 
-		f.src = p->fts_path;
+		v.src = p->fts_path;
 
-		if (!tfind(&f, &files, compare))
-			add_list(p->fts_path, -1);
+		if (tfind(&v, &files, compare))
+			continue;
+
+		struct file *f = add_list(p->fts_path, -1);
+		fill_file(f, p->fts_statp);
 	}
 
 	fts_close(t);
@@ -430,17 +444,16 @@ end:
 
 static void process(struct file *p)
 {
-	struct stat sb;
+	if (!p->stat) {
+		struct stat sb;
 
-	if (lstat(p->src, &sb) < 0)
-		err(EXIT_FAILURE, "lstat: %s", p->src);
+		if (lstat(p->src, &sb) < 0)
+			err(EXIT_FAILURE, "lstat: %s", p->src);
 
-	p->mode = sb.st_mode;
-	p->size = (size_t) sb.st_size;
-	p->dev  = sb.st_dev;
-	p->uid  = sb.st_uid;
-	p->gid  = sb.st_gid;
-	p->dst  = p->src;
+		fill_file(p, &sb);
+	}
+
+	p->dst = p->src;
 
 	if (prefix) {
 		size_t dst_len = strlen(p->dst);
@@ -452,13 +465,13 @@ static void process(struct file *p)
 
 	add_parent_directory(p->src);
 
-	if (S_IFDIR == (sb.st_mode & S_IFMT)) {
+	if (S_IFDIR == (p->mode & S_IFMT)) {
 		if (p->recursive)
 			process_directory(p->src);
 		return;
 	}
 
-	if (S_IFLNK == (sb.st_mode & S_IFMT)) {
+	if (S_IFLNK == (p->mode & S_IFMT)) {
 		static char symlink[PATH_MAX + 1];
 
 		ssize_t linklen = readlink(p->src, symlink, sizeof(symlink));
@@ -479,7 +492,7 @@ static void process(struct file *p)
 		return;
 	}
 
-	if (S_IFREG == (sb.st_mode & S_IFMT)) {
+	if (S_IFREG == (p->mode & S_IFMT)) {
 		if (process_regular_file(p->src) < 0)
 			warnx("failed to read regular file: %s", p->src);
 		return;
