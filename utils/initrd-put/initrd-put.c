@@ -558,96 +558,75 @@ static int use_sendfile = 1;
 
 static void install_file(struct file *p)
 {
-	int sfd, dfd;
+	struct stat sb;
+	const char *ftype;
+
+	switch (p->mode & S_IFMT) {
+		case S_IFBLK:  ftype = "block device";     break;
+		case S_IFCHR:  ftype = "character device"; break;
+		case S_IFDIR:  ftype = "directory";        break;
+		case S_IFIFO:  ftype = "FIFO/pipe";        break;
+		case S_IFLNK:  ftype = "symlink";          break;
+		case S_IFREG:  ftype = "regular file";     break;
+		case S_IFSOCK: ftype = "socket";           break;
+		default:       ftype = "unknown";          break;
+	}
 
 	strncpy(install_path + destdir_len, p->dst, sizeof(install_path) - destdir_len - 1);
 
-	if (S_IFDIR == (p->mode & S_IFMT)) {
-		errno = 0;
-		if (mkdir(install_path, p->mode) < 0) {
-			if (errno != EEXIST) {
-				err(EX_CANTCREAT, "mkdir: %s", install_path);
-			} else if (verbose) {
-				warnx("skip (directory): %s", p->dst);
-			}
-		} else if (verbose) {
-			warnx("install (directory): %s", p->dst);
+	if (!lstat(install_path, &sb)) {
+		int remove_prev = force;
+
+		//if ((sb.st_mode & S_IFMT) != (p->mode & S_IFMT))
+		//	remove_prev = 1;
+
+		if (remove_prev && remove(install_path) < 0) {
+			err(EXIT_FAILURE, "remove: %s", install_path);
+		} else {
+			if (verbose)
+				warnx("skip (%s): %s", ftype, p->dst);
+			goto chown;
 		}
+	}
+
+	if (S_IFDIR == (p->mode & S_IFMT)) {
+		if (mkdir(install_path, p->mode) < 0)
+			err(EX_CANTCREAT, "mkdir: %s", install_path);
 		goto chown;
 	}
 
-	errno = 0;
-	if (force && remove(install_path) < 0 && errno != ENOENT)
-		err(EXIT_FAILURE, "remove: %s", install_path);
-
 	if (S_IFBLK == (p->mode & S_IFMT) ||
-			S_IFCHR == (p->mode & S_IFMT)) {
-		errno = 0;
-		if (mknod(install_path, p->mode, p->dev)) {
-			if (errno != EEXIST) {
-				err(EX_CANTCREAT, "mknod: %s", install_path);
-			} else if (verbose) {
-				warnx("skip (divice file): %s", p->dst);
-			}
-		} else if (verbose) {
-			warnx("install (divice file): %s", p->dst);
-		}
+	    S_IFCHR == (p->mode & S_IFMT)) {
+		if (mknod(install_path, p->mode, p->dev) < 0)
+			err(EX_CANTCREAT, "mknod: %s", install_path);
 		goto chown;
 	}
 
 	if (S_IFLNK == (p->mode & S_IFMT)) {
-		errno = 0;
-		if (symlink(p->symlink, install_path) < 0) {
-			if (errno != EEXIST) {
-				err(EX_CANTCREAT, "symlink: %s", install_path);
-			} else if (verbose) {
-				warnx("skip (symlink): %s", p->dst);
-			}
-		} else if (verbose) {
-			warnx("install (symlink): %s", p->dst);
-		}
+		if (symlink(p->symlink, install_path) < 0)
+			err(EX_CANTCREAT, "symlink: %s", install_path);
 		goto chown;
 	}
 
 	if (S_IFIFO == (p->mode & S_IFMT)) {
-		errno = 0;
-		if (mkfifo(install_path, p->mode) < 0) {
-			if (errno != EEXIST) {
-				err(EX_CANTCREAT, "mkfifo: %s", install_path);
-			} else if (verbose) {
-				warnx("skip (fifo): %s", p->dst);
-			}
-		} else if (verbose) {
-			warnx("install (fifo): %s", p->dst);
-		}
+		if (mkfifo(install_path, p->mode) < 0)
+			err(EX_CANTCREAT, "mkfifo: %s", install_path);
 		goto chown;
 	}
 
 	if (S_IFSOCK == (p->mode & S_IFMT)) {
-		errno = 0;
 		mksock(install_path, p->mode);
-		if (verbose)
-			warnx("install (socket): %s", install_path);
 		goto chown;
 	}
 
 	if (S_IFREG != (p->mode & S_IFMT))
 		errx(EXIT_FAILURE, "not implemented (mode=%o): %s", p->mode, p->dst);
 
-	if (!access(install_path, X_OK)) {
-		if (verbose)
-			warnx("skip (file): %s", p->dst);
-		goto chown;
-	}
+	int sfd, dfd;
 
-	errno = 0;
-	if ((dfd = creat(install_path, p->mode)) < 0) {
+	if ((dfd = creat(install_path, p->mode)) < 0)
 		err(EX_CANTCREAT, "creat: %s", install_path);
-	} else if (verbose) {
-		warnx("install (file): %s", p->dst);
-	}
 
-	errno = 0;
 	if ((sfd = open(p->src, O_RDONLY)) < 0)
 		err(EX_NOINPUT, "open: %s", p->src);
 
@@ -665,6 +644,8 @@ static void install_file(struct file *p)
 		if (ret < 0) {
 			if (errno == EXDEV) {
 				use_copy_file_range = 0;
+				if (verbose > 2)
+					warnx("copy_file_range not supported");
 				goto fallback_sendfile;
 			}
 			err(EX_IOERR, "copy_file_range: %s -> %s", p->src, p->dst);
@@ -675,6 +656,8 @@ finish:
 	close(sfd);
 	close(dfd);
 chown:
+	if (verbose)
+		warnx("install (%s): %s", ftype, install_path);
 	errno = 0;
 	if (lchown(install_path, p->uid, p->gid) < 0 && errno != EPERM)
 		err(EXIT_FAILURE, "chown: %s", install_path);
@@ -694,6 +677,8 @@ fallback_sendfile:
 		if (ret < 0) {
 			if (errno == EINVAL || errno == ENOSYS) {
 				use_sendfile = 0;
+				if (verbose > 2)
+					warnx("sendfile not supported");
 				goto fallback_readwrite;
 			}
 			err(EX_IOERR, "sendfile: %s -> %s", p->src, p->dst);
