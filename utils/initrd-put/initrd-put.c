@@ -22,6 +22,8 @@
 
 #include <gelf.h>
 
+#include "config.h"
+
 struct file {
 	struct file *prev;
 	struct file *next;
@@ -729,6 +731,33 @@ static void walk_action(const void *nodep, VISIT which, void *closure)
 			break;
 	}
 }
+
+#ifndef HAVE_TWALK_R
+static void *twalk_r_closure;
+static void (*twalk_r_action)(const void *nodep, VISIT which, void *closure);
+
+static void twalk_handler(const void *nodep, VISIT which,
+		int depth __attribute__((unused)))
+{
+	twalk_r_action(nodep, which, twalk_r_closure);
+}
+
+static void twalk_r(const void *root,
+		void (*action)(const void *nodep, VISIT which, void *closure),
+		void *closure)
+{
+	twalk_r_action  = action;
+	twalk_r_closure = closure;
+	twalk(root, twalk_handler);
+}
+#endif
+
+#ifndef HAVE_TDESTROY
+static inline void tdestroy(
+		void *root __attribute__((unused)),
+		void (*free_node)(void *nodep) __attribute__((unused)))
+{}
+#endif
 
 static void show_help(int rc)
 {

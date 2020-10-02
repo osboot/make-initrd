@@ -146,6 +146,12 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
 
+/* Define to 1 if you have the `tdestroy' function. */
+#undef HAVE_TDESTROY
+
+/* Define to 1 if you have the `twalk_r' function. */
+#undef HAVE_TWALK_R
+
 /* Define to 1 if you have the `uname' function. */
 #undef HAVE_UNAME
 

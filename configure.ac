@@ -52,7 +52,8 @@ AC_FUNC_REALLOC
 AC_CHECK_FUNCS([ \
 		clock_gettime gettimeofday inet_ntoa localtime_r memset munmap \
 		regcomp setenv socket strchr strdup strerror strncasecmp strndup \
-		strpbrk strrchr strstr strtol strtoul strtoull uname])
+		strpbrk strrchr strstr strtol strtoul strtoull uname \
+		twalk_r tdestroy])
 
 AC_ARG_ENABLE(local-build,
 	[AS_HELP_STRING(--enable-local-build,
