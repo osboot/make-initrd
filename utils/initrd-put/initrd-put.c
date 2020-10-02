@@ -257,10 +257,15 @@ static const char *canonicalize_symlink(char *file, char *target)
 	if (name) {
 		*name++ = 0;
 
-		if ((fd = open(pathbuf, O_PATH)) < 0)
-			err(EXIT_FAILURE, "open: %s", pathbuf);
-		if (fchdir(fd) < 0)
-			err(EXIT_FAILURE, "chdir: %s", pathbuf);
+		if ((fd = open(pathbuf, O_PATH)) < 0) {
+			warn("open: %s", pathbuf);
+			goto ignore;
+		}
+		if (fchdir(fd) < 0) {
+			warn("chdir: %s", pathbuf);
+			close(fd);
+			goto ignore;
+		}
 		close(fd);
 	} else {
 		name = target;
@@ -281,6 +286,8 @@ static const char *canonicalize_symlink(char *file, char *target)
 		err(EXIT_FAILURE, "chdir");
 
 	return pathbuf;
+ignore:
+	return NULL;
 }
 
 enum ftype {
@@ -481,10 +488,13 @@ static void process(struct file *p)
 			p->symlink = xstrdup(symlink);
 
 			const char *s = canonicalize_symlink(p->src, p->symlink);
+			if (s) {
+				struct file *f = add_list(s, -1);
+				f->recursive = 1;
+				return;
+			}
 
-			struct file *f = add_list(s, -1);
-			f->recursive = 1;
-
+			warnx("unable to resolve symlink '%s' -> '%s'", p->src, p->symlink);
 			return;
 		}
 
