@@ -25,6 +25,12 @@ jobs:
       env:
          - TRAVIS_TESTCASE="test-lukskey"
          - IN_TRAVIS=1
+    - name: "Root on partition and unaccessible LUKS partition"
+      arch: amd64
+      os: linux
+      env:
+         - TRAVIS_TESTCASE="test-luks-home"
+         - IN_TRAVIS=1
     - name: "Root on LVM"
       arch: amd64
       os: linux

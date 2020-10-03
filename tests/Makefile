@@ -12,6 +12,7 @@ Q = $(if $(VERBOSE),,@)
 check_SUBDIRS := \
 	test-luks \
 	test-lukskey \
+	test-luks-home \
 	test-lvm \
 	test-partition \
 	test-raid1 \

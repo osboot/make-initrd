@@ -47,6 +47,10 @@ QEMU_STAGE0_ARGUMENTS += -drive 'media=disk,index=0,file=$(TESTDIR)/data/rootfs-
 QEMU_STAGE0_ARGUMENTS += -fsdev 'local,id=virtfs-0,security_model=none,path=$(TOPDIR)'
 QEMU_STAGE0_ARGUMENTS += -device 'virtio-9p-pci,fsdev=virtfs-0,mount_tag=project'
 
+#QEMU_STAGE0_ARGUMENTS += \
+#		-object rng-random,filename=/dev/random,id=rng0 \
+#		-device virtio-rng-pci,rng=rng0
+
 TRAVIS_START = :
 TRAVIS_STOP  = :
 TRAVIS_Q     = $(Q)
