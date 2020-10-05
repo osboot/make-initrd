@@ -8,9 +8,13 @@ message_time=1
 handler() {
 	[ -d "$MOUNTPOINT" ] ||
 		return 1
-	mountpoint -q "$MOUNTPOINT" ||
-		mount ${DEBUG:+-v} "$roflag" "$MOUNTPOINT" ||
-		return 1
+	! mountpoint -q "$MOUNTPOINT" ||
+		return 0
+	rc=0
+	msg="$(mount -v "$roflag" "$MOUNTPOINT" 2>&1)" ||
+		rc=1
+	message "$msg"
+	return $rc
 }
 
 roflag=-w
