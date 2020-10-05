@@ -1,0 +1,16 @@
+#!/bin/bash -efu
+
+. shell-error
+message_time=1
+
+method=
+{ read -r method < /etc/initrd/method; } >/dev/null 2>&1 ||:
+
+d="/lib/initrd/boot/method/$method"
+c="$d/check"
+
+[ -x "$c" ] && "$c" ||
+	exit 0
+
+message "$method ready. acting!"
+"$d/action"

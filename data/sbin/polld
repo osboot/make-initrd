@@ -40,10 +40,6 @@ while [ -f "$pidfile" ]; do
 		"$fn" || message "Extender failed: $name"
 	done
 
-	if { read -r method < /etc/initrd/method; } >/dev/null 2>&1; then
-		d="/lib/poll/method/$method"
-		[ ! -x "$d/check" ] || ! "$d/check" || "$d/action" ||:
-	fi
-
+	process-boot-method
 	sleep 0.1
 done

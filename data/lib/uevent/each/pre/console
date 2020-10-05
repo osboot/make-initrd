@@ -1,0 +1,12 @@
+#!/bin/bash -efu
+
+. rdshell-sh-functions
+
+QUEUE="$1"
+
+[ "$QUEUE" = udev ] ||
+	exit 0
+
+while ! console_inactive; do
+	sleep 0.1
+done

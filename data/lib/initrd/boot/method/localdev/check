@@ -1,6 +1,6 @@
 #!/bin/bash -efu
 
-cd /lib/poll/scripts
+cd /lib/initrd/boot/scripts
 ./live-mode
 ./console-inactive
 ./mountpoints
