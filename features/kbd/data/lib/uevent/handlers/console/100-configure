@@ -7,7 +7,13 @@
 . initrd-sh-functions
 . state-sh-functions
 
-exec >> "/var/log/console-setup.log" 2>&1
+message_time=1
+logfile="/var/log/console-setup.log"
+
+[ "${RDLOG-}" != 'console' ] ||
+	logfile=/dev/console
+
+exec >> "$logfile" 2>&1
 
 for e in "$1/ev".*; do
 	[ -e "$e" ] || break

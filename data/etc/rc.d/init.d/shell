@@ -11,6 +11,7 @@
 # Description:         Runs emergency shell
 ### END INIT INFO
 
+. /.initrd/initenv
 . /etc/init.d/template
 
 export RDSHELL_FOREVER=1

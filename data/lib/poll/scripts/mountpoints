@@ -3,6 +3,8 @@
 . shell-error
 . /.initrd/initenv
 
+PROG="poll: $PROG"
+
 while [ -z "${eof-}" ]; do
 	read -r fsdev fsdir _ ||
 		eof=1

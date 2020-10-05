@@ -6,7 +6,9 @@
 . /.initrd/initenv
 . uevent-sh-functions
 
+message_time=1
 pidfile="/var/run/$PROG.pid"
+logfile="/var/log/$PROG.log"
 
 exit_handler()
 {
@@ -16,13 +18,16 @@ exit_handler()
 	exit $rc
 }
 
+[ "${RDLOG-}" != 'console' ] ||
+	logfile=/dev/console
+
 [ ! -f "$pidfile" ] ||
 	fatal "already running"
 
 set_cleanup_handler exit_handler
 echo "$$" >"$pidfile"
 
-exec >"/var/log/$PROG.log" 2>&1
+exec >"$logfile" 2>&1
 message "Starting server ..."
 
 while [ -f "$pidfile" ]; do

@@ -25,8 +25,6 @@ msg "INIT: Entering runlevel: $runlevel"
 
 export INITLOG_FILE='/var/log/boot.log'
 
-. rdshell-sh-functions
-
 while ! console_lock; do
 	sleep 0.5
 done
@@ -66,6 +64,9 @@ for i in "$rcd"/S*; do
 	subsys="${i#$rcd/S*:}"
 
 	SourceIfExists /.initrd/initenv
+
+	[ "${RDLOG-}" != 'console' ] ||
+		export INITLOG_FILE=/dev/console
 
 	interactive=
 	[ -z "${STOP-}" ] ||

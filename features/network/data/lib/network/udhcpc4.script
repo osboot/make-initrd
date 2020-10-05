@@ -15,7 +15,13 @@ done
 unlock() { rmdir "$lock"; }
 trap unlock EXIT
 
-exec >>"/var/log/$CMDNAME.$INTERFACE.log" 2>&1
+logfile=$(
+	. /.initrd/initenv
+	[ "${RDLOG-}" != 'console' ] &&
+		echo "/var/log/$CMDNAME.$INTERFACE.log" ||
+		echo "/dev/console"
+)
+exec >>"$logfile" 2>&1
 
 . network-sh-functions
 

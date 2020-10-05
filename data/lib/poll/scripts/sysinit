@@ -3,5 +3,7 @@
 . shell-error
 . /.initrd/initenv
 
+PROG="poll: $PROG"
+
 [ -e "$rootmnt/$INIT" ] ||
 	fatal "Unable to mount root"

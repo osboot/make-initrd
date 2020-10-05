@@ -3,7 +3,9 @@
 . shell-error
 . shell-signal
 
+message_time=1
 pidfile="/var/run/$PROG.pid"
+logfile="/var/log/$PROG.log"
 
 exit_handler()
 {
@@ -21,7 +23,11 @@ echo "$$" >"$pidfile"
 
 . pipeline-sh-functions
 
-exec >"/var/log/$PROG.log" 2>&1
+
+[ "${RDLOG-}" != 'console' ] ||
+	logfile=/dev/console
+
+exec >"$logfile" 2>&1
 message "Starting server ..."
 
 mkdir -p -- "$mntdir"

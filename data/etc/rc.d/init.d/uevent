@@ -11,6 +11,7 @@
 # Description:         Processing kernel events.
 ### END INIT INFO
 
+. /.initrd/initenv
 . /etc/init.d/template
 . uevent-sh-functions
 

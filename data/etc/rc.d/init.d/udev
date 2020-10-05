@@ -12,6 +12,7 @@
 #                      Device nodes are created as defined by udev.
 ### END INIT INFO
 
+. /.initrd/initenv
 . /etc/init.d/template
 . initrd-sh-functions
 

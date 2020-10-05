@@ -9,6 +9,7 @@ The following parameters can be passed via kernel command line.
 - `rescue-modules` specifies the list of modules required to open emergency console.
 - `stop=<comma-separated list>` specifies the list of stages to where it's necessary to open emergency console.
 - `rdshell` opens emergency console after all services.
+- `rdlog=console` all messages from services will be printed to /dev/console.
 - `debug` shows more messages.
 - `quiet` tries to be more quiet.
 - `rd-preload-modules` enables/disables loading a static list of modules before udev service.

@@ -128,6 +128,9 @@ start_daemon()
 	[ -n "$BASENAME" ] || return 1
 	[ -n "$DISPNAME" ] || DISPNAME="$BASENAME"
 
+	[ "${RDLOG-}" != 'console' ] ||
+		ANNOUNCE=''
+
 	# Use a safe umask
 	#umask 077
 
@@ -243,6 +246,9 @@ stop_daemon()
 		BASENAME="${NAME##*/}" || return 1
 
 	[ -n "$DISPNAME" ] || DISPNAME="$BASENAME"
+
+	[ "${RDLOG-}" != 'console' ] ||
+		ANNOUNCE=''
 
 	# Try to guess the PID file if one isn't specified manually.
 	if [ -z "$PIDFILE" ]; then
@@ -470,6 +476,8 @@ echo_passed()
 success()
 {
 	$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 1
+	[ "${RDLOG-}" != 'console' ] ||
+		return 0
 	echo_success
 	echo_newline
 	return 0
@@ -480,6 +488,8 @@ failure()
 {
 	local rc=$?
 	$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 2
+	[ "${RDLOG-}" != 'console' ] ||
+		return $rc
 	echo_failure
 	echo_newline
 	return $rc
@@ -490,6 +500,8 @@ passed()
 {
 	local rc=$?
 	$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 1
+	[ "${RDLOG-}" != 'console' ] ||
+		return $rc
 	echo_passed
 	echo_newline
 	return $rc
@@ -501,7 +513,7 @@ action()
 	local STRING rc
 	STRING="$1"
 	shift
-	echo_msg "$STRING"
+	[ "${RDLOG-}" = 'console' ] || echo_msg "$STRING"
 	$INITLOG $INITLOG_ARGS -c "$*"
 	rc=$?
 	[ $rc -eq 0 ] && success "$STRING" || failure "$STRING"
@@ -513,7 +525,7 @@ action_shell()
 	local STRING rc
 	STRING="$1"
 	shift
-	echo_msg "$STRING"
+	[ "${RDLOG-}" = 'console' ] || echo_msg "$STRING"
 	("$@")
 	rc=$?
 	[ $rc -eq 0 ] && success "$STRING" || failure "$STRING"

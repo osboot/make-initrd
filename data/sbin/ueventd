@@ -6,9 +6,14 @@
 . /.initrd/initenv
 . uevent-sh-functions
 
+message_time=1
+
 pidfile="/var/run/$PROG.pid"
 logfile="/var/log/$PROG.log"
 inotifyd='/sbin/inotifyd'
+
+[ "${RDLOG-}" != 'console' ] ||
+	logfile=/dev/console
 
 UEVENT_MODE="${UEVENT_MODE:-server}"
 
@@ -99,6 +104,10 @@ queuedir="$ueventdir/$QUEUE"
 mv -f -- "$2"/* "$queuedir" 2>/dev/null || exit 0
 
 message "$QUEUE: Processing events ..."
+
+for ev in "$queuedir"/*; do
+	message "$QUEUE: event $ev"
+done
 
 get_name()
 {

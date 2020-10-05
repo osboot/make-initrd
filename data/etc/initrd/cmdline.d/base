@@ -14,6 +14,7 @@ register_parameter number RDUEVENT_TIMEOUT
 register_parameter number RESUME_OFFSET
 register_parameter string INIT /sbin/init
 register_parameter string RDMODE
+register_parameter string RDLOG
 register_parameter string RESCUE_MODULES
 register_parameter string RESUME
 register_parameter string ROOT
