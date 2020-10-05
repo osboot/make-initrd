@@ -23,24 +23,27 @@ To build a initramfs, you have to install the following software packages:
 - [kmod](https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git)
 - [help2man](https://www.gnu.org/software/help2man/)
 - [busybox](https://busybox.net/)
+- [elfutils](https://sourceware.org/elfutils/)
 
 Optional:
 
 - [zlib](https://zlib.net)
 - [bzip2](https://www.sourceware.org/bzip2/)
 - [xz](http://tukaani.org/xz/)
-- [elfutils](https://sourceware.org/elfutils/)
 
 ## Build
 
 ```
-$ make build
+$ ./autogen.sh
+$ ./configure
+$ make
 $ make install DESTDIR=/path/to/somewhere
 ```
 
 If you want to use it in-tree:
 ```
-$ make build MKLOCAL=1
+$ ./configure --enable-local-build
+$ make
 ```
 
 ## Usage

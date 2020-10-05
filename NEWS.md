@@ -1,3 +1,35 @@
+Version 2.11.0
+
+- Feature luks:
+  + Decrypt using plymouth if present (thx Oleg Solovyov)
+  + Run luks handler after mountdev
+- Feature multipath:
+  + Add service file and multipathd
+- Feature plymouth:
+  + Add missing label plugin (thx Oleg Solovyov)
+  + Include fonts (thx Oleg Solovyov)
+- Runtime:
+  + Add rdlog=console boot parameter to send all log messages to the /dev/console
+  + Check bootable conditions after each uevend handler
+- Misc:
+  + Replace initrd-cp by initrd-put
+
+Version 2.10.0
+
+- New feature:
+  + Add lkrg feature to preload lkrg module (thx Vladimir D. Seleznev)
+- Feature fsck:
+  + Show more friendly message
+  + Do not check swap
+- Feature network:
+  + Fix synchronization service
+  + Fix generation network config from cmdline
+- Feature pipeline:
+  + Show an error if the previous step is used which did not exist
+  + Run handlers as separate programs
+- Feature guestfs:
+  + Add file utility (thx Mikhail Gordeev)
+
 Version 2.9.0
 
 - Feature changes:
