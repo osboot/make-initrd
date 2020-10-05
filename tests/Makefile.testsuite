@@ -3,7 +3,7 @@
 TESTDIR := $(TOPDIR)/.tests
 TESTSDATA_URL = file:///$(HOME)/scm/.initrd/make-initrd-testdata
 
-ifneq ($(IN_TRAVIS),)
+ifneq ($(TRAVIS),)
 TESTSDATA_URL = https://raw.githubusercontent.com/osboot/make-initrd-testdata/master
 endif
 
@@ -62,7 +62,7 @@ QEMU_FILTER_ARGUMENTS += --expect='IT WORKS!' --process='retcode=0'
 
 QEMU_FILTER = $(TOPDIR)/tests/qemu-filter.bash $(QEMU_FILTER_ARGUMENTS)
 
-ifneq "$(IN_TRAVIS)" ''
+ifneq "$(TRAVIS)" ''
 TRAVIS_START = $(TOPDIR)/tests/travis-command-start
 TRAVIS_STOP  = $(TOPDIR)/tests/travis-command-stop
 TRAVIS_Q     =
