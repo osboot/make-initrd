@@ -93,6 +93,8 @@ if [ "$evtype" = 'x' ]; then
 	exit 0
 fi
 
+udevadm settle --timeout=3 ||:
+
 glob()
 {
 	[ -e "$1" ]
@@ -116,16 +118,34 @@ get_name()
 	name="${name#[0-9][0-9][0-9]-}"
 }
 
+run_scripts()
+{
+	local exe rc
+	for exe in "/lib/uevent/each/$1"/*; do
+		[ -x "$exe" ] || continue
+		message "$2: Running $1 scripts ..."
+		"$exe" "$2" ||:
+	done
+}
+
 for fn in "$handlerdir/$QUEUE"/*; do
 	get_name || continue
 
+	run_scripts pre "$QUEUE"
+
 	message "$QUEUE: Running queue-specific $name handler ..."
 	"$fn" "$queuedir" || message "$QUEUE: Event handler failed: $name"
+
+	run_scripts post "$QUEUE"
 done
 
 for fn in "$handlerdir"/*; do
 	get_name && glob "$queuedir/$name".* || continue
 
+	run_scripts pre "$QUEUE"
+
 	message "$QUEUE: Running $name handler ..."
 	"$fn" || message "$QUEUE: Event handler failed: $name"
+
+	run_scripts post "$QUEUE"
 done
