@@ -24,8 +24,8 @@ publish_event() {
 }
 
 release_event() {
-	local num='' dummy
-	[ ! -e /proc/uptime ] || read -r num dummy < /proc/uptime ||:
+	local num dummy
+	num=$(/sbin/monotonic-timestamp raw)
 	publish_event "$1.${num:-0.0}${2##*/}" "$2"
 }
 
