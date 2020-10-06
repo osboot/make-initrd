@@ -554,6 +554,48 @@ static void free_file(void *ptr)
 	free(p);
 }
 
+/*
+static void remove_recursive(char *path)
+{
+	FTS *t = NULL;
+	char *argv[2] = { path, NULL };
+
+	if (verbose)
+		warnx("removing: %s", argv[0]);
+
+	if ((t = fts_open(argv, FTS_PHYSICAL, NULL)) == NULL)
+		err(EXIT_FAILURE, "fts_open");
+
+
+	FTSENT *p;
+	while ((p = fts_read(t))) {
+		switch (p->fts_info) {
+			case FTS_DNR:
+			case FTS_ERR:
+			case FTS_NS:
+				errno = p->fts_errno;
+				warn("fts_read: %s", p->fts_path);
+				continue;
+			case FTS_D:
+			case FTS_DC:
+			case FTS_DOT:
+			case FTS_NSOK:
+				break;
+			case FTS_DP:
+			case FTS_F:
+			case FTS_SL:
+			case FTS_SLNONE:
+			case FTS_DEFAULT:
+				errno = 0;
+				if (remove(p->fts_accpath) < 0)
+					err(EX_OSERR, "remove: %s", p->fts_path);
+				break;
+		}
+	}
+
+	fts_close(t);
+}*/
+
 static char install_path[PATH_MAX + 1];
 static int use_copy_file_range = 1;
 static int use_sendfile = 1;
@@ -583,8 +625,9 @@ static void install_file(struct file *p)
 		//if ((sb.st_mode & S_IFMT) != (p->mode & S_IFMT))
 		//	remove_prev = 1;
 
-		if (remove_prev && remove(install_path) < 0) {
-			err(EXIT_FAILURE, "remove: %s", install_path);
+		if (remove_prev) {
+			if (S_IFDIR != (sb.st_mode & S_IFMT) && remove(install_path) < 0)
+				err(EXIT_FAILURE, "remove: %s", install_path);
 		} else {
 			op = "skip";
 			goto chown;
@@ -592,7 +635,8 @@ static void install_file(struct file *p)
 	}
 
 	if (S_IFDIR == (p->mode & S_IFMT)) {
-		if (mkdir(install_path, p->mode) < 0)
+		errno = 0;
+		if (mkdir(install_path, p->mode) < 0 && errno != EEXIST)
 			err(EX_CANTCREAT, "mkdir: %s", install_path);
 		goto chown;
 	}
