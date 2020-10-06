@@ -562,6 +562,7 @@ static void install_file(struct file *p)
 {
 	struct stat sb;
 	const char *ftype;
+	const char *op = "install";
 
 	switch (p->mode & S_IFMT) {
 		case S_IFBLK:  ftype = "block device";     break;
@@ -585,8 +586,7 @@ static void install_file(struct file *p)
 		if (remove_prev && remove(install_path) < 0) {
 			err(EXIT_FAILURE, "remove: %s", install_path);
 		} else {
-			if (verbose)
-				warnx("skip (%s): %s", ftype, p->dst);
+			op = "skip";
 			goto chown;
 		}
 	}
@@ -659,7 +659,7 @@ finish:
 	close(dfd);
 chown:
 	if (verbose)
-		warnx("install (%s): %s", ftype, install_path);
+		warnx("%s (%s): %s", op, ftype, install_path);
 	errno = 0;
 	if (lchown(install_path, p->uid, p->gid) < 0 && errno != EPERM)
 		err(EXIT_FAILURE, "chown: %s", install_path);
