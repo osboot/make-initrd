@@ -688,7 +688,7 @@ static void install_file(struct file *p)
 		errno = 0;
 		ret = copy_file_range(sfd, NULL, dfd, NULL, len, 0);
 		if (ret < 0) {
-			if (errno == EXDEV) {
+			if (errno == EXDEV || errno == ENOSYS) {
 				use_copy_file_range = 0;
 				if (verbose > 2)
 					warnx("copy_file_range not supported");
