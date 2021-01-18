@@ -2,7 +2,7 @@
 
 . guess-functions
 
-depinfo --no-deps --no-firmware p_lkrg 2>/dev/null |grep -e '^module ' ||
+depinfo ${KERNEL:+-k "$KERNEL"} --no-deps --no-firmware p_lkrg 2>/dev/null |grep -e '^module ' ||
 	exit 0
 
 guess_feature "lkrg"
