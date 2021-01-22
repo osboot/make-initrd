@@ -12,8 +12,8 @@ Q = $(if $(VERBOSE),,@)
 
 ROOTFS_VENDOR  = altlinux
 ROOTFS_VERSION = 20210102
-KERN_FLAVOR    = un-def
-KERN_VERSION   = 5.4.7-alt1
+KERN_FLAVOR    = std-def
+KERN_VERSION   = 5.4.91-alt1
 STAGE0_VERSION = 20200101
 
 QEMU_STAGE0_VMLINUZ   = $(TESTDIR)/vmlinuz
@@ -71,7 +71,8 @@ endif
 TESTCASE           ?= $(notdir $(CURDIR))
 TESTCASE_VMLINUZ   ?= $(QEMU_STAGE0_VMLINUZ)
 TESTCASE_INITRAMFS ?= $(TESTDIR)/boot/initramfs-$(TESTCASE).img
-TESTCASE_CMDLINE   ?= testcase=$(TESTCASE) console=ttyS0 root=LABEL=ROOT rootonly=1 rootdelay=10 panic=1 rdlog=console
+TESTCASE_CMDLINE   ?= testcase=$(TESTCASE) console=ttyS0 root=LABEL=ROOT rootonly=1 rootdelay=10 panic=1 rdlog=console \
+		      loglevel=0 quiet
 TESTCASE_TIMEOUT   ?= 30m
 TESTCASE_COMMAND   ?= false
 
