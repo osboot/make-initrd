@@ -14,6 +14,7 @@ check_SUBDIRS := \
 	test-lukskey \
 	test-luks-home \
 	test-lvm \
+	test-lvm-luks-home \
 	test-partition \
 	test-raid1 \
 	test-degraded-raid1 \

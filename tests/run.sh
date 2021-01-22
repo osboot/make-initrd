@@ -7,6 +7,11 @@ read -r testcase < "$HOME/src/.tests/cur"
 [ ! -x "$HOME/src/tests/$testcase/run.sh" ] ||
 	exec "$HOME/src/tests/$testcase/run.sh"
 
+if ! mountpoint -q /run; then
+	mkdir -p /run
+	mount -t tmpfs tmpfs /run
+fi
+
 rc=0
 for n in build-prepare build-initrd build-finish; do
 	x="$HOME/src/tests/$n.sh"
