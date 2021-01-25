@@ -47,6 +47,13 @@ jobs:
          - TRAVIS_TESTCASE="test-lvm"
       workspaces:
         use: binaries
+    - name: "Root on LVM with LUKS home partition"
+      arch: amd64
+      os: linux
+      env:
+         - TRAVIS_TESTCASE="test-lvm-luks-home"
+      workspaces:
+        use: binaries
     - name: "Root on RAID1"
       arch: amd64
       os: linux
