@@ -1,3 +1,11 @@
+Version 2.12.0
+
+- Feature lkrg:
+  + Respect kernel version when we check for a kernel module (thx Vladimir D. Seleznev).
+- Misc:
+  + initrd-put: Properly handle the situation when the copy_file_range is not
+    implemented.
+
 Version 2.11.0
 
 - Feature luks:
