@@ -43,12 +43,28 @@ get_dev() {
 			[ "$ID_FS_LABEL" = "${name#LABEL=}" ] ||
 				return 1
 			;;
+		PARTUUID=*)
+			[ "$ID_PART_ENTRY_UUID" = "${name#PARTUUID=}" ] ||
+				return 1
+			;;
+		PARTLABEL=*)
+			[ "$ID_PART_ENTRY_NAME" = "${name#PARTLABEL=}" ] ||
+				return 1
+			;;
 		/dev/disk/by-uuid/*)
 			[ "/dev/disk/by-uuid/$ID_FS_UUID_ENC" = "$name" ] ||
 				return 1
 			;;
 		/dev/disk/by-label/*)
 			[ "/dev/disk/by-label/$ID_FS_LABEL_ENC" = "$name" ] ||
+				return 1
+			;;
+		/dev/disk/by-partuuid/*)
+			[ "/dev/disk/by-partuuid/$ID_PART_ENTRY_UUID" = "$name" ] ||
+				return 1
+			;;
+		/dev/disk/by-partlabel/*)
+			[ "/dev/disk/by-label/$ID_PART_ENTRY_NAME" = "$name" ] ||
 				return 1
 			;;
 		/dev/block/[0-9]*:[0-9]*)

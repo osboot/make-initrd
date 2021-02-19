@@ -14,12 +14,19 @@ A device can be specified in several ways:
 - `UUID=<uuid>` - For block devices with a filesystem, you can specify the UUID
   as the device identifier. The value should begin with the `UUID=` prefix.
 
+- `PARTUUID=<uuid>` - The UUID may be either an EFI/GPT UUID, or refer to
+   an MSDOS partition.
+
+- `PARTLABEL=<label>` - The `<label>` being the GPT partition label. MSDOS
+   partitions do not support labels!
+
 - `<major:<minor>` - you can specify device major and minor.
 
 - `<HEX-number>` - major is (`number` / 256), minor is (`number` % 256).
 
 - `/dev/disk/by-uuid/<UUID_ENC>`, `/dev/disk/by-label/<LABEL_ENC>`,
-  `/dev/block/<major>:<minor>` - There is also an alternative form for
+  `/dev/block/<major>:<minor>`, `/dev/disk/by-partuuid/<PARTUUID>`,
+  `/dev/disk/by-partlabel/<PARTLABEL>` - There is also an alternative form for
   specifying the above methods.
 
 If the specified value is not unique within the system, the result will not be
