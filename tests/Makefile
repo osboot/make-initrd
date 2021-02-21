@@ -17,6 +17,7 @@ check_SUBDIRS := \
 	test-lvm-luks-home \
 	test-partition \
 	test-raid1 \
+	test-raid1+raid5 \
 	test-degraded-raid1 \
 	test-pipeline-iso-squash \
 	test-btrfs-multi-device \

@@ -61,6 +61,13 @@ jobs:
          - TRAVIS_TESTCASE="test-raid1"
       workspaces:
         use: binaries
+    - name: "Root on RAID1+RAID5"
+      arch: amd64
+      os: linux
+      env:
+         - TRAVIS_TESTCASE="test-raid1+raid5"
+      workspaces:
+        use: binaries
     - name: "Root on degraded RAID1"
       arch: amd64
       os: linux
