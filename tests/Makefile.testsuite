@@ -14,7 +14,7 @@ ROOTFS_VENDOR  = altlinux
 ROOTFS_VERSION = 20210102
 KERN_FLAVOR    = std-def
 KERN_VERSION   = 5.4.91-alt1
-STAGE0_VERSION = 20200101
+STAGE0_VERSION = 20210222
 
 QEMU_STAGE0_VMLINUZ   = $(TESTDIR)/vmlinuz
 QEMU_STAGE0_INITRAMFS = $(TESTDIR)/initramfs-stage0-$(STAGE0_VERSION).cpio
@@ -114,7 +114,7 @@ $(QEMU_STAGE0_INITRAMFS): check-prepare
 	@$(TRAVIS_START) "prepare.initramfs-stage0"
 	@echo "$(TESTCASE): Generating $(@F) ... "
 	$(TRAVIS_Q)cat \
-	        "$(TESTDIR)/data/initramfs-stage0-20200101.cpio" \
+	        "$(TESTDIR)/data/initramfs-stage0-$(STAGE0_VERSION).cpio" \
 	        "$(TESTDIR)/data/kernel-$(KERN_FLAVOR)-$(KERN_VERSION).cpio" \
 	    > "$@"
 	@$(TRAVIS_STOP)
