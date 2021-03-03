@@ -5,8 +5,7 @@ MDAMD_RULES_OLD = \
 	/lib/udev/rules.d/64-md-raid.rules
 
 MDAMD_RULES = \
-	/lib/udev/rules.d/63-md-raid-arrays.rules \
-	/lib/udev/rules.d/64-md-raid-assembly.rules
+	/lib/udev/rules.d/63-md-raid-arrays.rules
 
 MDADM_CONF ?= $(SYSCONFDIR)/mdadm.conf
 

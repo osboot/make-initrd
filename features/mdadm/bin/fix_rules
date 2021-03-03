@@ -1,0 +1,51 @@
+#!/bin/bash
+
+RULEDIR="$WORKDIR/root/lib/udev/rules.d"
+RULEPREF="$RULEDIR/64-md-raid-assembly"
+mkdir -p "$RULEDIR"
+
+add_uuid_filter() {
+    local uuid="$1"
+    printf 'ENV{ID_FS_UUID}=="%s", GOTO="md_uuid_ok"\n' "${uuid:0:8}-${uuid:8:4}-${uuid:12:4}-${uuid:16:4}-${uuid:20:12}"
+    printf 'IMPORT{program}="/sbin/mdadm --examine --export $devnode"\n'
+    printf 'ENV{MD_UUID}=="%s", GOTO="md_uuid_ok"\n' "${uuid:0:8}:${uuid:8:8}:${uuid:16:8}:${uuid:24:8}"
+    printf 'GOTO="md_inc_end"\n'
+}
+
+generate_rules() {
+    for m in $MOUNTPOINTS; do
+        local mdnode=$(findmnt -T "$m" -no SOURCE)
+        eval $(mdadm --detail --export "$mdnode")
+        local uuid="${MD_UUID//:}"
+        local rule="$RULEPREF-$uuid.rules"
+
+        cat > "$rule" <<EOF
+SUBSYSTEM!="block", GOTO="md_inc_end"
+ENV{ID_FS_TYPE}=="linux_raid_member", GOTO="md_inc"
+
+IMPORT{cmdline}="noiswmd"
+IMPORT{cmdline}="nodmraid"
+
+ENV{nodmraid}=="?*", GOTO="md_inc_end"
+ENV{ID_FS_TYPE}=="ddf_raid_member", GOTO="md_inc"
+ENV{noiswmd}=="?*", GOTO="md_inc_end"
+ENV{ID_FS_TYPE}=="isw_raid_member", GOTO="md_inc"
+GOTO="md_inc_end"
+
+LABEL="md_inc"
+
+$(add_uuid_filter "$uuid")
+
+LABEL="md_uuid_ok"
+
+ACTION=="add|change", IMPORT{program}="/sbin/mdadm --incremental --export \$devnode --offroot \$env{DEVLINKS}"
+ACTION=="remove", ENV{ID_PATH}=="?*", RUN+="/sbin/mdadm -If \$name --path \$env{ID_PATH}"
+ACTION=="remove", ENV{ID_PATH}!="?*", RUN+="/sbin/mdadm -If \$name"
+
+LABEL="md_inc_end"
+EOF
+        printf '%s\n' "$rule"
+    done
+}
+
+generate_rules
