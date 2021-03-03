@@ -3,6 +3,7 @@
 export PATH="$HOME/src/utils:$PATH"
 
 read -r testcase < "$HOME/src/.tests/cur"
+read -r mode < "$HOME/src/.tests/mode"
 
 [ ! -x "$HOME/src/tests/$testcase/run.sh" ] ||
 	exec "$HOME/src/tests/$testcase/run.sh"
@@ -12,8 +13,13 @@ if ! mountpoint -q /run; then
 	mount -t tmpfs tmpfs /run
 fi
 
+set -- build-prepare build-initrd build-finish
+
+[ "$mode" != "shell" ] ||
+	set -- build-prepare shell build-finish
+
 rc=0
-for n in build-prepare build-initrd build-finish; do
+for n in "$@"; do
 	x="$HOME/src/tests/$n.sh"
 
 	[ -x "$x" ] ||
