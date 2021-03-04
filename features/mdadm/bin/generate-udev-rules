@@ -16,9 +16,16 @@ add_uuid_filter()
 
 generate_rules()
 {
-	local mdnode uuid rule
+	local majmin mdnode uuid rule
 
-	mdnode=$(findmnt -T "$1" -no SOURCE)
+	# Check that the specified mountpoint is indeed on the raid.
+	for majmin in $(findmnt -T "$1" -no MAJ:MIN); do
+		[ -d "$SYSFS_PATH/dev/block/$majmin/md" ] ||
+			return 0
+	done
+
+	mdnode=$(findmnt -T "$1" -no SOURCE) ||
+		return 1
 
 	eval $(mdadm --detail --export "$mdnode")
 
