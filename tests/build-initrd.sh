@@ -13,6 +13,7 @@ if [ ! -e "$HOME/src/tests/$testcase/initrd.mk" ]; then
 	echo "RUN: $*"
 	(
 		export MOUNTPOINTS=/root/rootfs
+		echo "MOUNTPOINTS = /root/rootfs"
 		echo "AUTODETECT ="
 		echo "IMAGEFILE = /root/src/.tests/boot/initramfs-$testcase.img"
 		echo ""
