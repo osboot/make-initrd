@@ -1,3 +1,5 @@
+MDADM_UDEV_RULES := $(shell $(FEATURESDIR)/mdadm/bin/generate-udev-rules)
+
 PUT_FEATURE_DIRS  += $(MDADM_DATADIR)
-PUT_FEATURE_FILES += $(MDADM_FILES) $(shell $(FEATURESDIR)/mdadm/bin/generate-udev-rules)
+PUT_FEATURE_FILES += $(MDADM_FILES) $(MDADM_UDEV_RULES)
 PUT_FEATURE_PROGS += $(MDADM_PROGS)
