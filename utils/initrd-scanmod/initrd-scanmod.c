@@ -26,7 +26,7 @@ static void __attribute__((noreturn))
 usage(int code)
 {
 	dprintf(STDOUT_FILENO,
-	        "Usage: %s [options] [--] RULES [RULES ...]\n"
+	        "Usage: %s [options] [--] rules-file [rules-file ...]\n"
 	        "\n"
 	        "Options:\n"
 	        " -k, --set-version=VERSION   use VERSION instead of `uname -r`;\n"
