@@ -1,7 +1,5 @@
 # make-initrd
 
-[![Build Status](https://travis-ci.org/osboot/make-initrd.svg?branch=master)](https://travis-ci.org/osboot/make-initrd)
-
 make-initrd is a new, uevent-driven initramfs infrastructure based around udev.
 
 The make-initrd is intended for creating initramfs images. The project consists of two main parts:

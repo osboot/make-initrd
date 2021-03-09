@@ -1,3 +1,17 @@
+Version 2.13.0
+
+- Feature guestfs:
+  + Add lable utilities (thx Mikhail Gordeev)
+- Feature mdadm:
+  + Assemble only $MOUNTPOINTS related raids (thx Slava Aseev)
+- Runtime:
+  + Support root=PARTLABEL= and root=PARTUUID=
+- Utilities:
+  + depinfo: Show builtin modules hierarchically if --tree specified.
+- Misc:
+  + Improve man-pages.
+  + Add more tests.
+
 Version 2.12.0
 
 - Feature lkrg:
