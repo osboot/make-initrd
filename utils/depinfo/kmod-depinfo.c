@@ -458,6 +458,14 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 		char *name = is_kernel_builtin_match(alias);
 
 		if (name != NULL && opts & SHOW_BUILTIN) {
+			int i = show_tree;
+
+			if (--i > 0) {
+				while (i--)
+					printf("   ");
+				printf("\\_ ");
+			}
+
 			if (opts & SHOW_PREFIX)
 				printf("builtin ");
 			printf("%s\n", name);
