@@ -24,6 +24,7 @@ projectdir  = @projectdir@
 rulesdir    = ${projectdir}/mk
 
 feature_kbd_kbddir := @kbddir@
+external_srcdir = $(CURDIR)/external
 
 localbuilddir =
 build_prefix = .build
@@ -116,6 +117,7 @@ CPPFLAGS += @CPPFLAGS@ @DEFS@ -I$(CURDIR) -I$(CURDIR)/utils
 UDEVD		= @UDEVD@
 UDEVADM		= @UDEVADM@
 HELP2MAN	= @HELP2MAN@
+USE_BUSYBOX	= @USE_BUSYBOX@
 
 SED = @SED@ \
 	-e 's|@UDEVD[@]|$(UDEVD)|g' \
@@ -174,6 +176,22 @@ verify:
 	    [ -n "$${ftype##*shell script*}" ] || \
 	    shellcheck -s bash -e SC1003,SC1090,SC1091,SC2004,SC2006,SC2015,SC2034,SC2086,SC2154 "$$f"; \
 	done
+
+ifeq ($(USE_BUSYBOX),yes)
+$(dest_runtimedir)/bin/busybox:
+	$(Q)mkdir -p -- "$(OBJDIR)/external/busybox"
+	cp -af -- \
+		"$(external_srcdir)/busybox/config" \
+		"$(OBJDIR)/external/busybox/.config"
+	$(MAKE) -C "$(OBJDIR)/external/busybox" \
+		-f "$(external_srcdir)/busybox/upstream/Makefile" \
+		KBUILD_SRC="$(external_srcdir)/busybox/upstream"
+	$(MAKE) -C "$(OBJDIR)/external/busybox" \
+		CONFIG_PREFIX="$(realpath $(dest_runtimedir))" \
+		install
+
+build-progs: $(dest_runtimedir)/bin/busybox
+endif
 
 $(dest_rulesdir)/%.mk: mk/%.mk.in Makefile
 	$(Q)mkdir -p -- $(dir $@)

@@ -88,6 +88,26 @@ AC_ARG_WITH([projectdir],
 	[], [with_projectdir='${datarootdir}/${PACKAGE_NAME}'])
 AC_SUBST([projectdir], [$with_projectdir])
 
+AC_ARG_WITH([busybox],
+	[AS_HELP_STRING([--with-busybox],
+			[Use builtin busybox (default: auto)])],
+	[],
+	[: m4_divert_text([DEFAULTS], [with_busybox=auto])])
+AC_MSG_CHECKING([for busybox])
+if test "$with_busybox" != "no"; then
+	if test "$with_busybox" = "auto"; then
+		with_busybox=no
+		if ! test -x "$with_runtimedir/bin/busybox"; then
+			with_busybox=yes
+		fi
+	fi
+	if test "$with_busybox" = "yes" && ! test -f "$srcdir/external/busybox/upstream/Makefile"; then
+		AC_MSG_FAILURE([submodule 'busybox' is out of sync])
+	fi
+fi
+AC_MSG_RESULT([$with_busybox])
+AC_SUBST([USE_BUSYBOX], [$with_busybox])
+
 AC_ARG_WITH([udevd],
 	[AS_HELP_STRING([--with-udevd=FILE],
 			[Path to udevd daemon (default: auto)])],
