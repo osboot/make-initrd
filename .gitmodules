@@ -1,3 +1,6 @@
 [submodule "external/busybox/upstream"]
 	path = external/busybox/upstream
 	url = git://git.busybox.net/busybox
+[submodule "external/libshell/upstream"]
+	path = external/libshell/upstream
+	url = https://github.com/legionus/libshell.git

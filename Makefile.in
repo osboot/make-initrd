@@ -118,6 +118,7 @@ UDEVD		= @UDEVD@
 UDEVADM		= @UDEVADM@
 HELP2MAN	= @HELP2MAN@
 USE_BUSYBOX	= @USE_BUSYBOX@
+USE_LIBSHELL	= @USE_LIBSHELL@
 
 SED = @SED@ \
 	-e 's|@UDEVD[@]|$(UDEVD)|g' \
@@ -191,6 +192,16 @@ $(dest_runtimedir)/bin/busybox:
 		install
 
 build-progs: $(dest_runtimedir)/bin/busybox
+endif
+
+ifeq ($(USE_LIBSHELL),yes)
+$(dest_bindir)/bin/shell-error:
+	$(MAKE) -C "$(external_srcdir)/libshell/upstream" \
+		bindir="$(realpath $(dest_bindir))" \
+		DESTDIR="" \
+		install-bin
+
+build-progs: $(dest_bindir)/bin/shell-error
 endif
 
 $(dest_rulesdir)/%.mk: mk/%.mk.in Makefile

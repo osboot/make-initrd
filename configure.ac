@@ -61,6 +61,13 @@ AC_ARG_ENABLE(local-build,
 	[MKLOCAL=$enableval],[MKLOCAL=no])
 AC_SUBST([MKLOCAL])
 
+if test "$MKLOCAL" != no; then
+	localbuilddir=".build/dest"
+else
+	localbuilddir=""
+fi
+AC_SUBST([localbuilddir], [$localbuilddir])
+
 AC_ARG_WITH([bootdir],
 	[AS_HELP_STRING([--with-bootdir=DIR],
 			[Directory for initramfs images (default: /boot)])],
@@ -107,6 +114,26 @@ if test "$with_busybox" != "no"; then
 fi
 AC_MSG_RESULT([$with_busybox])
 AC_SUBST([USE_BUSYBOX], [$with_busybox])
+
+AC_ARG_WITH([libshell],
+	[AS_HELP_STRING([--with-libshell],
+			[Use builtin libshell (default: auto)])],
+	[],
+	[: m4_divert_text([DEFAULTS], [with_libshell=auto])])
+AC_MSG_CHECKING([for libshell])
+if test "$with_libshell" != "no"; then
+	if test "$with_libshell" = "auto"; then
+		with_libshell=no
+		if ! test -f "/bin/shell-error" && ! test -f "$bindir/shell-error"; then
+			with_libshell=yes
+		fi
+	fi
+	if test "$with_libshell" = "yes" && ! test -f "$srcdir/external/libshell/upstream/Makefile"; then
+		AC_MSG_FAILURE([submodule 'libshell' is out of sync])
+	fi
+fi
+AC_MSG_RESULT([$with_libshell])
+AC_SUBST([USE_LIBSHELL], [$with_libshell])
 
 AC_ARG_WITH([udevd],
 	[AS_HELP_STRING([--with-udevd=FILE],
