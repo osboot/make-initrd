@@ -242,9 +242,15 @@ static const char *canonicalize_symlink(char *file, char *target)
 
 	strcpy(pathbuf, file);
 
+	if (verbose > 2)
+		warnx("canonicalize_symlink: %s", pathbuf);
+
 	name = strrchr(pathbuf, '/');
 	if (name) {
 		*name++ = 0;
+
+		if (pathbuf[0] == '\0')
+			strcpy(pathbuf, "/");
 
 		if ((fd = open(pathbuf, O_PATH)) < 0)
 			err(EXIT_FAILURE, "open: %s", pathbuf);
