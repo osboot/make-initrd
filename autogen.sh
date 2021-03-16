@@ -1,4 +1,4 @@
-#!/bin/sh -efu
+#!/bin/bash -efu
 
 OPT=
 [ "${1-}" != '-f' ] || OPT=--force
@@ -54,8 +54,8 @@ foreach()
 
 check_program()
 {
-	which "$prog" >/dev/null 2>&1 ||
-		fatal "ERROR: You must have $varname installed to build the kbd."
+	type -p "$prog" >/dev/null 2>&1 ||
+		fatal "ERROR: You must have $varname installed to build the make-initrd."
 
 	if [ -n "$version_pattern" ]; then
 		local version="$(get_version "$varname")"
