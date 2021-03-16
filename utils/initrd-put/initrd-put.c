@@ -81,6 +81,9 @@ static struct file *add_list(const char *str, ssize_t len)
 		? xstrdup(str)
 		: xstrndup(str, (size_t) len);
 
+	if (verbose > 1)
+		warnx("add to list: %s", new->src);
+
 	if (inqueue) {
 		if (inqueue->prev)
 			errx(EX_SOFTWARE, "bad queue head");
@@ -641,6 +644,8 @@ static void install_file(struct file *p)
 	}
 
 	if (S_IFDIR == (p->mode & S_IFMT)) {
+		if (verbose > 2)
+			warnx("create a directory: %s", install_path);
 		errno = 0;
 		if (mkdir(install_path, p->mode) < 0 && errno != EEXIST)
 			err(EX_CANTCREAT, "mkdir: %s", install_path);
@@ -649,30 +654,41 @@ static void install_file(struct file *p)
 
 	if (S_IFBLK == (p->mode & S_IFMT) ||
 	    S_IFCHR == (p->mode & S_IFMT)) {
+		if (verbose > 2)
+			warnx("make a special file: %s", install_path);
 		if (mknod(install_path, p->mode, p->dev) < 0)
 			err(EX_CANTCREAT, "mknod: %s", install_path);
 		goto chown;
 	}
 
 	if (S_IFLNK == (p->mode & S_IFMT)) {
+		if (verbose > 2)
+			warnx("create a symlink file: %s", install_path);
 		if (symlink(p->symlink, install_path) < 0)
 			err(EX_CANTCREAT, "symlink: %s", install_path);
 		goto chown;
 	}
 
 	if (S_IFIFO == (p->mode & S_IFMT)) {
+		if (verbose > 2)
+			warnx("create a fifo file: %s", install_path);
 		if (mkfifo(install_path, p->mode) < 0)
 			err(EX_CANTCREAT, "mkfifo: %s", install_path);
 		goto chown;
 	}
 
 	if (S_IFSOCK == (p->mode & S_IFMT)) {
+		if (verbose > 2)
+			warnx("create a socket file: %s", install_path);
 		mksock(install_path, p->mode);
 		goto chown;
 	}
 
 	if (S_IFREG != (p->mode & S_IFMT))
 		errx(EXIT_FAILURE, "not implemented (mode=%o): %s", p->mode, p->dst);
+
+	if (verbose > 2)
+		warnx("create a regular file: %s", install_path);
 
 	int sfd, dfd;
 
@@ -956,6 +972,9 @@ int main(int argc, char **argv)
 		logout = stdout;
 		twalk_r(files, walk_action, print_file);
 	} else {
+		if (verbose > 1)
+			warnx("copying files ...");
+
 		strncpy(install_path, destdir, sizeof(install_path) - 1);
 		install_path[destdir_len] = 0;
 
