@@ -141,7 +141,7 @@ AC_ARG_WITH([udevd],
 	[], [])
 if ! test -x "$with_udevd"; then
 	AC_PATH_PROGS([with_udevd], [udevd eudevd systemd-udevd], [],
-		[/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:${sbindir}:${bindir}:${libdir}/systemd])
+		[/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:${sbindir}:${bindir}:/lib/systemd])
 	if ! test -x "$with_udevd"; then
 		AC_MSG_FAILURE([required utility not found: udevd])
 	fi
@@ -154,7 +154,7 @@ AC_ARG_WITH([udevadm],
 	[], [])
 if ! test -x "$with_udevadm"; then
 	AC_PATH_PROGS([with_udevadm], [udevadm eudevadm], [],
-		[/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:${sbindir}:${bindir}:${libdir}/systemd])
+		[/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:${sbindir}:${bindir}:/lib/systemd])
 	if ! test -x "$with_udevadm"; then
 		AC_MSG_FAILURE([required utility not found: udevadm])
 	fi
