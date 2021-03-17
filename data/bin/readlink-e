@@ -1,0 +1,5 @@
+#!/bin/bash -efu
+
+test -e "$1" ||
+	echo >&2 "readlink: $1: No such file or directory"
+exec readlink -fv -- "$1"
