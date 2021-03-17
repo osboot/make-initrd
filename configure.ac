@@ -55,10 +55,12 @@ AC_CHECK_FUNCS([ \
 		strpbrk strrchr strstr strtol strtoul strtoull uname \
 		twalk_r tdestroy])
 
+AC_MSG_CHECKING([if in-tree build is required])
 AC_ARG_ENABLE(local-build,
 	[AS_HELP_STRING(--enable-local-build,
 			[Build the project to run from a tree (developer mode)])],
 	[MKLOCAL=$enableval],[MKLOCAL=no])
+AC_MSG_RESULT([${MKLOCAL}])
 AC_SUBST([MKLOCAL])
 
 if test "$MKLOCAL" != no; then
@@ -100,7 +102,7 @@ AC_ARG_WITH([busybox],
 			[Use builtin busybox (default: auto)])],
 	[],
 	[: m4_divert_text([DEFAULTS], [with_busybox=auto])])
-AC_MSG_CHECKING([for busybox])
+AC_MSG_CHECKING([if builtin busybox is required])
 if test "$with_busybox" != "no"; then
 	if test "$with_busybox" = "auto"; then
 		with_busybox=no
@@ -120,7 +122,7 @@ AC_ARG_WITH([libshell],
 			[Use builtin libshell (default: auto)])],
 	[],
 	[: m4_divert_text([DEFAULTS], [with_libshell=auto])])
-AC_MSG_CHECKING([for libshell])
+AC_MSG_CHECKING([if builtin libshell is required])
 if test "$with_libshell" != "no"; then
 	if test "$with_libshell" = "auto"; then
 		with_libshell=no
@@ -217,7 +219,7 @@ AC_ARG_WITH([libelf],
 	[],
 	[: m4_divert_text([DEFAULTS], [with_libelf=yes])])
 
-AS_IF([test "x$with_zstd" != xno],
+AS_IF([test "x$with_elf" != xno],
 	[PKG_CHECK_MODULES(HAVE_LIBELF, libelf, [HAVE_LIBELF=yes], [HAVE_LIBELF=no])],
 	[HAVE_LIBELF=no])
 
