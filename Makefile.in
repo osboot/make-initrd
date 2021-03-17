@@ -97,7 +97,7 @@ get_objects = $(foreach name,$(filter %.c,$(1)),$(OBJDIR)/$(name:.c=.o))
 get_depends = $(foreach name,$(filter %.c,$(1)),$(OBJDIR)/$(name:.c=.d))
 quiet_cmd   = $(if $(VERBOSE),$(3),$(Q)printf "  %-07s%s\n" "$(1)" $(2); $(3))
 
-PATH       = $(dest_sbindir):$(dest_bindir):$(shell echo $$PATH)
+PATH       = $(CURDIR)/$(dest_sbindir):$(CURDIR)/$(dest_bindir):$(shell echo $$PATH)
 RULESFILES = $(addprefix $(dest_rulesdir)/,$(patsubst mk/%.in,%,$(wildcard mk/*.mk.in)))
 MANPAGES   = $(addprefix $(dest_man1dir)/,$(notdir $(basename $(wildcard man/*.1.inc))))
 DATAFILES  = \
