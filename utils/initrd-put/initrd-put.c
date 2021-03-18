@@ -49,7 +49,6 @@ static char *logfile = NULL;
 static int verbose = 0;
 static int dry_run = 0;
 static int force = 0;
-static int cwd;
 static void *files = NULL;
 static struct file *inqueue = NULL;
 
@@ -197,108 +196,93 @@ static void mksock(const char *path, mode_t mode)
 	close (fd);
 }
 
-static const char *canonicalize_path(const char *path)
+#define IS_DIR_SEPARATOR(c) ((c) == '/')
+#define IS_NUL_OR_DIR_SEPARATOR(c) ((c) == '\0' || (c) == '/')
+#define SKIP_DIR_SEPARATOR(s_) while (IS_DIR_SEPARATOR(*(s_))) (s_)++
+
+static void canonicalize_path(const char *s, char *d)
 {
-	static char pathbuf[PATH_MAX + 1];
-	char *name;
-	size_t len;
-	int fd = -1;
+	if (*s == '\0') {
+		*d = '\0';
+		return;
+	}
 
-	strcpy(pathbuf, path);
+	const char *const orig_d = d;
 
-	name = strrchr(pathbuf, '/');
-	if (!name)
-		err(EXIT_FAILURE, "unable to get dirname: %s", path);
-	*name++ = 0;
-	name = xstrdup(name);
+	if (IS_DIR_SEPARATOR (*s)) {
+		*d++ = *s++;
+		SKIP_DIR_SEPARATOR(s);
+	}
 
-	if ((fd = open(pathbuf, O_PATH)) < 0)
-		err(EXIT_FAILURE, "open: %s", pathbuf);
+	const char *const droot = d;
 
-	if (fchdir(fd) < 0)
-		err(EXIT_FAILURE, "chdir: %s", pathbuf);
+	while (*s) {
+		/* At this point, we're always at the beginning of a path segment.  */
+		if (s[0] == '.' && IS_NUL_OR_DIR_SEPARATOR(s[1])) {
+			s++;
+			SKIP_DIR_SEPARATOR(s);
+		}
 
-	if (!getcwd(pathbuf, sizeof(pathbuf)))
-		err(EXIT_FAILURE, "getcwd");
+		else if (s[0] == '.' && s[1] == '.' && IS_NUL_OR_DIR_SEPARATOR(s[2])) {
+			char *pre = d - 1; /* includes slash */
+			while (droot < pre && IS_DIR_SEPARATOR(*pre))
+				pre--;
+			if (droot <= pre && ! IS_DIR_SEPARATOR(*pre)) {
+				while (droot < pre && ! IS_DIR_SEPARATOR(*pre))
+					pre--;
+				/* If droot < pre, then pre points to the slash.  */
+				if (droot < pre)
+					pre++;
+				if (pre < droot || (pre + 3 == d && pre[0] == '.' && pre[1] == '.')) {
+					/* Append ".." segment.  */
+					*d++ = *s++;
+					*d++ = *s++;
+				} else {
+					d = pre;
+					s += 2;
+					SKIP_DIR_SEPARATOR(s);
+				}
+			} else {
+				/* Append ".." segment.  */
+				*d++ = *s++;
+				*d++ = *s++;
+			}
+		} else {
+			while (*s && ! IS_DIR_SEPARATOR(*s))
+				*d++ = *s++;
+		}
 
-	if (fchdir(cwd) < 0)
-		err(EXIT_FAILURE, "chdir");
+		if (IS_DIR_SEPARATOR(*s)) {
+			*d++ = *s++;
+			SKIP_DIR_SEPARATOR(s);
+		}
+	}
 
-	close(fd);
+	while (droot < d && IS_DIR_SEPARATOR(d[-1]))
+		--d;
 
-	len = strlen(pathbuf);
-	strncat(pathbuf + len, "/",  sizeof(pathbuf) - 1 - len);
-	len++;
-	strncat(pathbuf + len, name, sizeof(pathbuf) - 1 - len);
+	if (d == orig_d)
+		*d++ = '.';
 
-	free(name);
-
-	return pathbuf;
+	*d = '\0';
 }
 
-static const char *canonicalize_symlink(char *file, char *target)
+static void canonicalize_symlink(char *file, char *target, char *d)
 {
-	static char pathbuf[PATH_MAX + 1];
-	char *name;
-	size_t len;
-	int fd;
-
-	strcpy(pathbuf, file);
+	char pathbuf[PATH_MAX + 1];
+	char *p;
 
 	if (verbose > 2)
-		warnx("canonicalize_symlink: %s", pathbuf);
+		warnx("canonicalize_symlink: %s", file);
 
-	name = strrchr(pathbuf, '/');
-	if (name) {
-		*name++ = 0;
-
-		if (pathbuf[0] == '\0')
-			strcpy(pathbuf, "/");
-
-		if ((fd = open(pathbuf, O_PATH)) < 0)
-			err(EXIT_FAILURE, "open: %s", pathbuf);
-		if (fchdir(fd) < 0)
-			err(EXIT_FAILURE, "chdir: %s", pathbuf);
-		close(fd);
+	strncpy(pathbuf, file, sizeof(pathbuf) - 1);
+	if ((p = strrchr(pathbuf, '/'))) {
+		p++;
+		*p = 0;
 	}
+	strncat(pathbuf, target, sizeof(pathbuf) - 1 - strlen(pathbuf));
 
-	strcpy(pathbuf, target);
-
-	name = strrchr(pathbuf, '/');
-	if (name) {
-		*name++ = 0;
-
-		if ((fd = open(pathbuf, O_PATH)) < 0) {
-			warn("open: %s", pathbuf);
-			goto ignore;
-		}
-		if (fchdir(fd) < 0) {
-			warn("chdir: %s", pathbuf);
-			close(fd);
-			goto ignore;
-		}
-		close(fd);
-	} else {
-		name = target;
-	}
-	name = xstrdup(name);
-
-	if (!getcwd(pathbuf, sizeof(pathbuf)))
-		err(EXIT_FAILURE, "getcwd");
-
-	len = strlen(pathbuf);
-
-	strncat(pathbuf + len, "/",  sizeof(pathbuf) - 1 - len);
-	len++;
-	strncat(pathbuf + len, name, sizeof(pathbuf) - 1 - len);
-	free(name);
-
-	if (fchdir(cwd) < 0)
-		err(EXIT_FAILURE, "chdir");
-
-	return pathbuf;
-ignore:
-	return NULL;
+	canonicalize_path(pathbuf, d);
 }
 
 enum ftype {
@@ -503,15 +487,15 @@ static void process(struct file *p)
 		ssize_t linklen = readlink(p->src, symlink, sizeof(symlink));
 		if (linklen >= 0) {
 			symlink[linklen] = 0;
-
 			p->symlink = xstrdup(symlink);
+			symlink[0] = 0;
 
-			const char *s = canonicalize_symlink(p->src, p->symlink);
-			if (s) {
+			canonicalize_symlink(p->src, p->symlink, symlink);
+			if (*symlink) {
 				if (verbose > 1)
-					warnx("symlink '%s' points to '%s'", p->src, s);
+					warnx("symlink '%s' points to '%s'", p->src, symlink);
 
-				struct file *f = add_list(s, -1);
+				struct file *f = add_list(symlink, -1);
 				f->recursive = 1;
 				return;
 			}
@@ -931,13 +915,13 @@ int main(int argc, char **argv)
 	if (elf_version(EV_CURRENT) == EV_NONE)
 		errx(EXIT_FAILURE, "ELF library initialization failed: %s", elf_errmsg(-1));
 
-	cwd = open(".", O_PATH);
-	if (!cwd)
-		err(EX_OSERR, "unable to open current directory");
-
 	for (int i = optind; i < argc; i++) {
-		const char *s = canonicalize_path(argv[i]);
-		struct file *f = add_list(s, -1);
+		char pathbuf[PATH_MAX + 1];
+		struct file *f;
+
+		canonicalize_path(argv[i], pathbuf);
+
+		f = add_list(pathbuf, -1);
 		f->recursive = 1;
 	}
 
