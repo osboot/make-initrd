@@ -170,7 +170,7 @@ static void process_directory(char *path)
 	fts_close(t);
 }
 
-static void mksock(const char *path, mode_t mode)
+static void mksock(const char *path)
 {
 	struct sockaddr_un sun;
 
@@ -186,9 +186,6 @@ static void mksock(const char *path, mode_t mode)
 	int fd = socket(PF_UNIX, SOCK_STREAM, 0);
 	if (fd < 0)
 		err(EXIT_FAILURE, "cannot create socket: %s", path);
-
-	if (fchmod(fd, mode))
-		err(EXIT_FAILURE, "cannot set permissions of socket: %s", path);
 
 	if (bind(fd, (struct sockaddr *) &sun, sizeof(sun)))
 		err(EXIT_FAILURE, "cannot bind socket: %s", path);
@@ -623,7 +620,7 @@ static void install_file(struct file *p)
 				err(EXIT_FAILURE, "remove: %s", install_path);
 		} else {
 			op = "skip";
-			goto chown;
+			goto end;
 		}
 	}
 
@@ -631,9 +628,9 @@ static void install_file(struct file *p)
 		if (verbose > 2)
 			warnx("create a directory: %s", install_path);
 		errno = 0;
-		if (mkdir(install_path, p->mode) < 0 && errno != EEXIST)
+		if (mkdir(install_path, 0755) < 0 && errno != EEXIST)
 			err(EX_CANTCREAT, "mkdir: %s", install_path);
-		goto chown;
+		goto end;
 	}
 
 	if (S_IFBLK == (p->mode & S_IFMT) ||
@@ -642,7 +639,7 @@ static void install_file(struct file *p)
 			warnx("make a special file: %s", install_path);
 		if (mknod(install_path, p->mode, p->dev) < 0)
 			err(EX_CANTCREAT, "mknod: %s", install_path);
-		goto chown;
+		goto end;
 	}
 
 	if (S_IFLNK == (p->mode & S_IFMT)) {
@@ -650,7 +647,7 @@ static void install_file(struct file *p)
 			warnx("create a symlink file: %s", install_path);
 		if (symlink(p->symlink, install_path) < 0)
 			err(EX_CANTCREAT, "symlink: %s", install_path);
-		goto chown;
+		goto end;
 	}
 
 	if (S_IFIFO == (p->mode & S_IFMT)) {
@@ -658,14 +655,14 @@ static void install_file(struct file *p)
 			warnx("create a fifo file: %s", install_path);
 		if (mkfifo(install_path, p->mode) < 0)
 			err(EX_CANTCREAT, "mkfifo: %s", install_path);
-		goto chown;
+		goto end;
 	}
 
 	if (S_IFSOCK == (p->mode & S_IFMT)) {
 		if (verbose > 2)
 			warnx("create a socket file: %s", install_path);
-		mksock(install_path, p->mode);
-		goto chown;
+		mksock(install_path);
+		goto end;
 	}
 
 	if (S_IFREG != (p->mode & S_IFMT))
@@ -707,12 +704,9 @@ static void install_file(struct file *p)
 finish:
 	close(sfd);
 	close(dfd);
-chown:
+end:
 	if (verbose)
 		warnx("%s (%s): %s", op, ftype, install_path);
-	errno = 0;
-	if (lchown(install_path, p->uid, p->gid) < 0 && errno != EPERM)
-		err(EXIT_FAILURE, "chown: %s", install_path);
 	return;
 
 fallback_sendfile:
@@ -759,6 +753,23 @@ fallback_readwrite:
 	} while (len > 0 && ret > 0);
 
 	goto finish;
+}
+
+static void apply_permissions(struct file *p)
+{
+	strncpy(install_path + destdir_len, p->dst, sizeof(install_path) - destdir_len - 1);
+
+	errno = 0;
+	if (lchown(install_path, p->uid, p->gid) < 0) {
+		if (errno != EPERM)
+			err(EXIT_FAILURE, "chown: %s", install_path);
+		if (verbose > 2)
+			warn("chown: %s", install_path);
+	}
+
+	errno = 0;
+	if (chmod(install_path, p->mode) < 0)
+		err(EXIT_FAILURE, "chmod: %s", install_path);
 }
 
 static void walk_action(const void *nodep, VISIT which, void *closure)
@@ -965,6 +976,7 @@ int main(int argc, char **argv)
 		umask(0);
 
 		twalk_r(files, walk_action, install_file);
+		twalk_r(files, walk_action, apply_permissions);
 	}
 
 	if (logfile) {
