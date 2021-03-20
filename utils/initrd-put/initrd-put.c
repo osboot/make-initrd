@@ -32,6 +32,7 @@ struct file {
 	char *dst;
 	char *symlink;
 	unsigned recursive:1;
+	unsigned installed:1;
 };
 
 static const char *progname = NULL;
@@ -46,6 +47,8 @@ static int dry_run = 0;
 static int force = 0;
 static void *files = NULL;
 static struct file *inqueue = NULL;
+static size_t installed = 0;
+static size_t queue_nr = 0;
 
 static char *xstrdup(const char *s)
 {
@@ -86,6 +89,7 @@ static struct file *add_list(const char *str, ssize_t len)
 	}
 
 	inqueue = new;
+	queue_nr++;
 
 	return new;
 }
@@ -100,6 +104,7 @@ static void del_list(struct file *ptr)
 		ptr->next->prev = ptr->prev;
 	if (inqueue == ptr)
 		inqueue = NULL;
+	queue_nr--;
 }
 
 static void add_parent_directory(char *path)
@@ -483,8 +488,7 @@ static void process(struct file *p)
 				if (verbose > 1)
 					warnx("symlink '%s' points to '%s'", p->src, symlink);
 
-				struct file *f = add_list(symlink, -1);
-				f->recursive = 1;
+				add_list(symlink, -1);
 				return;
 			}
 
@@ -583,9 +587,11 @@ static int use_sendfile = 1;
 
 static void install_file(struct file *p)
 {
-	struct stat sb;
 	const char *ftype;
 	const char *op = "install";
+
+	if (p->installed)
+		return;
 
 	switch (p->stat.st_mode & S_IFMT) {
 		case S_IFBLK:  ftype = "block device";     break;
@@ -600,27 +606,24 @@ static void install_file(struct file *p)
 
 	strncpy(install_path + destdir_len, p->dst, sizeof(install_path) - destdir_len - 1);
 
-	if (!lstat(install_path, &sb)) {
-		int remove_prev = force;
-
-		//if ((sb.st_mode & S_IFMT) != (p->stat.st_mode & S_IFMT))
-		//	remove_prev = 1;
-
-		if (remove_prev) {
-			if (S_IFDIR != (sb.st_mode & S_IFMT) && remove(install_path) < 0)
-				err(EXIT_FAILURE, "remove: %s", install_path);
-		} else {
-			op = "skip";
-			goto end;
-		}
-	}
+	errno = 0;
+	if (force && (S_IFDIR != (p->stat.st_mode & S_IFMT)) &&
+	    remove(install_path) < 0 && errno != ENOENT)
+		err(EXIT_FAILURE, "remove: %s", install_path);
 
 	if (S_IFDIR == (p->stat.st_mode & S_IFMT)) {
 		if (verbose > 2)
 			warnx("create a directory: %s", install_path);
 		errno = 0;
-		if (mkdir(install_path, 0755) < 0 && errno != EEXIST)
+		if (mkdir(install_path, 0755) < 0) {
+			if (errno == EEXIST) {
+				op = "skip";
+				goto end;
+			}
+			if (errno == ENOENT)
+				return;
 			err(EX_CANTCREAT, "mkdir: %s", install_path);
+		}
 		goto end;
 	}
 
@@ -628,45 +631,86 @@ static void install_file(struct file *p)
 	    S_IFCHR == (p->stat.st_mode & S_IFMT)) {
 		if (verbose > 2)
 			warnx("make a special file: %s", install_path);
-		if (mknod(install_path, p->stat.st_mode, p->stat.st_dev) < 0)
+		errno = 0;
+		if (mknod(install_path, p->stat.st_mode, p->stat.st_dev) < 0) {
+			if (errno == EEXIST) {
+				op = "skip";
+				goto end;
+			}
+			if (errno == ENOENT)
+				return;
 			err(EX_CANTCREAT, "mknod: %s", install_path);
+		}
 		goto end;
 	}
 
 	if (S_IFLNK == (p->stat.st_mode & S_IFMT)) {
 		if (verbose > 2)
 			warnx("create a symlink file: %s", install_path);
-		if (symlink(p->symlink, install_path) < 0)
+		errno = 0;
+		if (symlink(p->symlink, install_path) < 0) {
+			if (errno == EEXIST) {
+				op = "skip";
+				goto end;
+			}
+			if (errno == ENOENT)
+				return;
 			err(EX_CANTCREAT, "symlink: %s", install_path);
+		}
 		goto end;
 	}
 
 	if (S_IFIFO == (p->stat.st_mode & S_IFMT)) {
 		if (verbose > 2)
 			warnx("create a fifo file: %s", install_path);
-		if (mkfifo(install_path, p->stat.st_mode) < 0)
+		errno = 0;
+		if (mkfifo(install_path, p->stat.st_mode) < 0) {
+			if (errno == EEXIST) {
+				op = "skip";
+				goto end;
+			}
+			if (errno == ENOENT)
+				return;
 			err(EX_CANTCREAT, "mkfifo: %s", install_path);
+		}
 		goto end;
 	}
 
 	if (S_IFSOCK == (p->stat.st_mode & S_IFMT)) {
 		if (verbose > 2)
 			warnx("create a socket file: %s", install_path);
-		if (mksock(install_path) < 0)
+		errno = 0;
+		if (mksock(install_path) < 0) {
+			if (errno == EEXIST) {
+				op = "skip";
+				goto end;
+			}
+			if (errno == ENOENT)
+				return;
 			err(EX_CANTCREAT, "mksock: %s", install_path);
+		}
 		goto end;
 	}
 
 	if (S_IFREG != (p->stat.st_mode & S_IFMT))
 		errx(EXIT_FAILURE, "not implemented (mode=%o): %s", p->stat.st_mode, p->dst);
 
+	if (!access(install_path, X_OK)) {
+		op = "skip";
+		goto end;
+	}
+
 	if (verbose > 2)
 		warnx("create a regular file: %s", install_path);
 
 	int sfd, dfd;
 
-	if ((dfd = creat(install_path, p->stat.st_mode)) < 0)
+	errno = 0;
+	if ((dfd = creat(install_path, p->stat.st_mode)) < 0) {
+		if (errno == ENOENT)
+			return;
 		err(EX_CANTCREAT, "creat: %s", install_path);
+	}
 
 	if ((sfd = open(p->src, O_RDONLY)) < 0)
 		err(EX_NOINPUT, "open: %s", p->src);
@@ -699,6 +743,8 @@ finish:
 end:
 	if (verbose)
 		warnx("%s (%s): %s", op, ftype, install_path);
+	p->installed = 1;
+	installed++;
 	return;
 
 fallback_sendfile:
@@ -967,7 +1013,21 @@ int main(int argc, char **argv)
 
 		umask(0);
 
-		twalk_r(files, walk_action, install_file);
+		while (1) {
+			size_t prev_installed = installed;
+
+			twalk_r(files, walk_action, install_file);
+
+			if (prev_installed == installed)
+				break;
+		}
+
+		if (queue_nr > installed) {
+			logout = stdout;
+			twalk_r(files, walk_action, print_file);
+			errx(EXIT_FAILURE, "unable to create the files listed above");
+		}
+
 		twalk_r(files, walk_action, apply_permissions);
 	}
 
