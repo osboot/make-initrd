@@ -27,16 +27,11 @@
 struct file {
 	struct file *prev;
 	struct file *next;
-	mode_t mode;
-	size_t size;
-	dev_t  dev;
-	uid_t  uid;
-	gid_t  gid;
-	char   *src;
-	char   *dst;
-	char   *symlink;
+	struct stat stat;
+	char *src;
+	char *dst;
+	char *symlink;
 	unsigned recursive:1;
-	unsigned stat:1;
 };
 
 static const char *progname = NULL;
@@ -124,14 +119,9 @@ static int compare(const void *a, const void *b)
 	return strcmp(((struct file *)a)->src, ((struct file *)b)->src);
 }
 
-static inline void fill_file(struct file *p, struct stat *sb)
+static inline void fill_stat(struct file *p, struct stat *sb)
 {
-	p->mode = sb->st_mode;
-	p->size = (size_t) sb->st_size;
-	p->dev  = sb->st_dev;
-	p->uid  = sb->st_uid;
-	p->gid  = sb->st_gid;
-	p->stat = 1;
+	memcpy(&p->stat, sb, sizeof(p->stat));
 }
 
 static void process_directory(char *path)
@@ -164,33 +154,34 @@ static void process_directory(char *path)
 			continue;
 
 		struct file *f = add_list(p->fts_path, -1);
-		fill_file(f, p->fts_statp);
+		fill_stat(f, p->fts_statp);
 	}
 
 	fts_close(t);
 }
 
-static void mksock(const char *path)
+static int mksock(const char *path)
 {
-	struct sockaddr_un sun;
+	struct sockaddr_un sun = { 0 };
+	int ret = -1;
 
-	if (strlen(path) >= sizeof(sun)) {
-		errno = EINVAL;
-		err(EXIT_FAILURE, "cannot bind socket: %s", path);
+	errno = EINVAL;
+	if (strlen(path) < sizeof(sun)) {
+		int fd = -1;
+
+		sun.sun_family = AF_UNIX;
+		strcpy(sun.sun_path, path);
+
+		if ((fd = socket(PF_UNIX, SOCK_STREAM, 0)) >= 0 &&
+		    !bind(fd, (struct sockaddr *) &sun, sizeof(sun))) {
+			errno = 0;
+			ret = 0;
+		}
+		if (fd >= 0)
+			close(fd);
 	}
 
-	memset(&sun, 0, sizeof(sun));
-	sun.sun_family = AF_UNIX;
-	strcpy(sun.sun_path, path);
-
-	int fd = socket(PF_UNIX, SOCK_STREAM, 0);
-	if (fd < 0)
-		err(EXIT_FAILURE, "cannot create socket: %s", path);
-
-	if (bind(fd, (struct sockaddr *) &sun, sizeof(sun)))
-		err(EXIT_FAILURE, "cannot bind socket: %s", path);
-
-	close (fd);
+	return ret;
 }
 
 #define IS_DIR_SEPARATOR(c) ((c) == '/')
@@ -451,13 +442,13 @@ end:
 
 static void process(struct file *p)
 {
-	if (!p->stat) {
+	if (!p->stat.st_ino) {
 		struct stat sb;
 
 		if (lstat(p->src, &sb) < 0)
 			err(EXIT_FAILURE, "lstat: %s", p->src);
 
-		fill_file(p, &sb);
+		fill_stat(p, &sb);
 	}
 
 	p->dst = p->src;
@@ -472,13 +463,13 @@ static void process(struct file *p)
 
 	add_parent_directory(p->src);
 
-	if (S_IFDIR == (p->mode & S_IFMT)) {
+	if (S_IFDIR == (p->stat.st_mode & S_IFMT)) {
 		if (p->recursive)
 			process_directory(p->src);
 		return;
 	}
 
-	if (S_IFLNK == (p->mode & S_IFMT)) {
+	if (S_IFLNK == (p->stat.st_mode & S_IFMT)) {
 		static char symlink[PATH_MAX + 1];
 
 		ssize_t linklen = readlink(p->src, symlink, sizeof(symlink));
@@ -505,7 +496,7 @@ static void process(struct file *p)
 		return;
 	}
 
-	if (S_IFREG == (p->mode & S_IFMT)) {
+	if (S_IFREG == (p->stat.st_mode & S_IFMT)) {
 		if (process_regular_file(p->src) < 0)
 			warnx("failed to read regular file: %s", p->src);
 		return;
@@ -518,7 +509,7 @@ static void print_file(struct file *p)
 {
 	char type;
 
-	switch (p->mode & S_IFMT) {
+	switch (p->stat.st_mode & S_IFMT) {
 		case S_IFBLK:  type = 'b'; break;
 		case S_IFCHR:  type = 'c'; break;
 		case S_IFDIR:  type = 'd'; break;
@@ -596,7 +587,7 @@ static void install_file(struct file *p)
 	const char *ftype;
 	const char *op = "install";
 
-	switch (p->mode & S_IFMT) {
+	switch (p->stat.st_mode & S_IFMT) {
 		case S_IFBLK:  ftype = "block device";     break;
 		case S_IFCHR:  ftype = "character device"; break;
 		case S_IFDIR:  ftype = "directory";        break;
@@ -612,7 +603,7 @@ static void install_file(struct file *p)
 	if (!lstat(install_path, &sb)) {
 		int remove_prev = force;
 
-		//if ((sb.st_mode & S_IFMT) != (p->mode & S_IFMT))
+		//if ((sb.st_mode & S_IFMT) != (p->stat.st_mode & S_IFMT))
 		//	remove_prev = 1;
 
 		if (remove_prev) {
@@ -624,7 +615,7 @@ static void install_file(struct file *p)
 		}
 	}
 
-	if (S_IFDIR == (p->mode & S_IFMT)) {
+	if (S_IFDIR == (p->stat.st_mode & S_IFMT)) {
 		if (verbose > 2)
 			warnx("create a directory: %s", install_path);
 		errno = 0;
@@ -633,16 +624,16 @@ static void install_file(struct file *p)
 		goto end;
 	}
 
-	if (S_IFBLK == (p->mode & S_IFMT) ||
-	    S_IFCHR == (p->mode & S_IFMT)) {
+	if (S_IFBLK == (p->stat.st_mode & S_IFMT) ||
+	    S_IFCHR == (p->stat.st_mode & S_IFMT)) {
 		if (verbose > 2)
 			warnx("make a special file: %s", install_path);
-		if (mknod(install_path, p->mode, p->dev) < 0)
+		if (mknod(install_path, p->stat.st_mode, p->stat.st_dev) < 0)
 			err(EX_CANTCREAT, "mknod: %s", install_path);
 		goto end;
 	}
 
-	if (S_IFLNK == (p->mode & S_IFMT)) {
+	if (S_IFLNK == (p->stat.st_mode & S_IFMT)) {
 		if (verbose > 2)
 			warnx("create a symlink file: %s", install_path);
 		if (symlink(p->symlink, install_path) < 0)
@@ -650,46 +641,47 @@ static void install_file(struct file *p)
 		goto end;
 	}
 
-	if (S_IFIFO == (p->mode & S_IFMT)) {
+	if (S_IFIFO == (p->stat.st_mode & S_IFMT)) {
 		if (verbose > 2)
 			warnx("create a fifo file: %s", install_path);
-		if (mkfifo(install_path, p->mode) < 0)
+		if (mkfifo(install_path, p->stat.st_mode) < 0)
 			err(EX_CANTCREAT, "mkfifo: %s", install_path);
 		goto end;
 	}
 
-	if (S_IFSOCK == (p->mode & S_IFMT)) {
+	if (S_IFSOCK == (p->stat.st_mode & S_IFMT)) {
 		if (verbose > 2)
 			warnx("create a socket file: %s", install_path);
-		mksock(install_path);
+		if (mksock(install_path) < 0)
+			err(EX_CANTCREAT, "mksock: %s", install_path);
 		goto end;
 	}
 
-	if (S_IFREG != (p->mode & S_IFMT))
-		errx(EXIT_FAILURE, "not implemented (mode=%o): %s", p->mode, p->dst);
+	if (S_IFREG != (p->stat.st_mode & S_IFMT))
+		errx(EXIT_FAILURE, "not implemented (mode=%o): %s", p->stat.st_mode, p->dst);
 
 	if (verbose > 2)
 		warnx("create a regular file: %s", install_path);
 
 	int sfd, dfd;
 
-	if ((dfd = creat(install_path, p->mode)) < 0)
+	if ((dfd = creat(install_path, p->stat.st_mode)) < 0)
 		err(EX_CANTCREAT, "creat: %s", install_path);
 
 	if ((sfd = open(p->src, O_RDONLY)) < 0)
 		err(EX_NOINPUT, "open: %s", p->src);
 
-	posix_fadvise(sfd, 0, (off_t) p->size, POSIX_FADV_SEQUENTIAL);
-	posix_fallocate(dfd, 0, (off_t) p->size);
+	posix_fadvise(sfd, 0, p->stat.st_size, POSIX_FADV_SEQUENTIAL);
+	posix_fallocate(dfd, 0, p->stat.st_size);
 
-	ssize_t ret;
-	size_t len = p->size;
+	off_t ret;
+	off_t len = p->stat.st_size;
 
 	if (!use_copy_file_range)
 		goto fallback_sendfile;
 	do {
 		errno = 0;
-		ret = copy_file_range(sfd, NULL, dfd, NULL, len, 0);
+		ret = copy_file_range(sfd, NULL, dfd, NULL, (size_t) len, 0);
 		if (ret < 0) {
 			if (errno == EXDEV || errno == ENOSYS) {
 				use_copy_file_range = 0;
@@ -699,7 +691,7 @@ static void install_file(struct file *p)
 			}
 			err(EX_IOERR, "copy_file_range: %s -> %s", p->src, p->dst);
 		}
-		len -= (size_t) ret;
+		len -= ret;
 	} while (len > 0 && ret > 0);
 finish:
 	close(sfd);
@@ -716,10 +708,10 @@ fallback_sendfile:
 	lseek(sfd, 0, SEEK_SET);
 	lseek(dfd, 0, SEEK_SET);
 
-	len = p->size;
+	len = p->stat.st_size;
 	do {
 		errno = 0;
-		ret = sendfile(dfd, sfd, NULL, len);
+		ret = sendfile(dfd, sfd, NULL, (size_t) len);
 		if (ret < 0) {
 			if (errno == EINVAL || errno == ENOSYS) {
 				use_sendfile = 0;
@@ -729,7 +721,7 @@ fallback_sendfile:
 			}
 			err(EX_IOERR, "sendfile: %s -> %s", p->src, p->dst);
 		}
-		len -= (size_t) ret;
+		len -= ret;
 	} while (len > 0 && ret > 0);
 
 	goto finish;
@@ -739,7 +731,7 @@ fallback_readwrite:
 	lseek(dfd, 0, SEEK_SET);
 
 	char buf[BUFSIZ];
-	len = p->size;
+	len = p->stat.st_size;
 	do {
 		ret = TEMP_FAILURE_RETRY(read(sfd, buf, sizeof(buf)));
 		if (ret < 0)
@@ -749,7 +741,7 @@ fallback_readwrite:
 		if (ret < 0)
 			err(EX_IOERR, "write: %s", p->dst);
 
-		len -= (size_t) ret;
+		len -= ret;
 	} while (len > 0 && ret > 0);
 
 	goto finish;
@@ -760,7 +752,7 @@ static void apply_permissions(struct file *p)
 	strncpy(install_path + destdir_len, p->dst, sizeof(install_path) - destdir_len - 1);
 
 	errno = 0;
-	if (lchown(install_path, p->uid, p->gid) < 0) {
+	if (lchown(install_path, p->stat.st_uid, p->stat.st_gid) < 0) {
 		if (errno != EPERM)
 			err(EXIT_FAILURE, "chown: %s", install_path);
 		if (verbose > 2)
@@ -768,7 +760,7 @@ static void apply_permissions(struct file *p)
 	}
 
 	errno = 0;
-	if (chmod(install_path, p->mode) < 0)
+	if (chmod(install_path, p->stat.st_mode) < 0)
 		err(EXIT_FAILURE, "chmod: %s", install_path);
 }
 
