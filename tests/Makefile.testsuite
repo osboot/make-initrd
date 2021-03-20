@@ -131,6 +131,7 @@ $(TESTCASE_INITRAMFS): check-prepare qemu-stage0
 	@$(TRAVIS_START) "build.$(@F)"
 	@echo "$(TESTCASE): Building $(@F) ... "
 	$(TRAVIS_Q)echo "$(TESTCASE)" > $(TESTDIR)/cur;
+	@echo "check" > $(TESTDIR)/mode;
 	$(TRAVIS_Q)timeout --foreground 30m \
 	$(QEMU_FILTER) --logfile=$(TESTDIR)/log.$(TESTCASE).build -- \
 	$(QEMU_BIN) \
