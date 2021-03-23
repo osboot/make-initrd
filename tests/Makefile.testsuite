@@ -31,7 +31,7 @@ QEMU_ARGUMENTS += -machine 'type=q35,accel=kvm:tcg'
 QEMU_ARGUMENTS += -cpu 'host'
 QEMU_ARGUMENTS += -smp '4'
 QEMU_ARGUMENTS += -m '1G'
-ifeq ($(MAKECMDGOALS),check-shell)
+ifneq ($(filter check-shell check-testcase ,$(MAKECMDGOALS)),)
 QEMU_ARGUMENTS += -chardev stdio,mux=on,id=stdio,signal=off
 QEMU_ARGUMENTS += -mon "chardev=stdio,mode=readline"
 else
@@ -152,6 +152,13 @@ check: qemu-stage0
 	$(QEMU_FILTER) --logfile=$(TESTDIR)/log.$(TESTCASE).boot -- \
 	    $(TESTCASE_COMMAND);
 	@$(TRAVIS_STOP)
+
+check-testcase: qemu-stage0
+	@echo "check.$(TESTCASE)"
+	@echo "$(TESTCASE): Testing ... "
+	@echo "$(TESTCASE)" > $(TESTDIR)/cur;
+	@echo "check" > $(TESTDIR)/mode;
+	$(TESTCASE_COMMAND)
 
 check-shell:
 	@echo "$(TESTCASE): Testing ... "
