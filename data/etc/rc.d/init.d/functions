@@ -151,7 +151,7 @@ start_daemon()
 	[ -z "$MAKE_PIDFILE" ] || FLAGS="$FLAGS $MAKE_PIDFILE"
 
 	# Is it running at all?
-	start-stop-daemon $FLAGS --test > /dev/null
+	! start-stop-daemon --stop --quiet --test --signal 0 --exec "$WHICH" > /dev/null
 	STATUS=$?
 
 	if [ $STATUS != 0 ]; then
@@ -268,7 +268,7 @@ stop_daemon()
 		FLAGS="$FLAGS --exec $WHICH" ||
 		FLAGS="$FLAGS --name $CMDNAME"
 	[ -z "$PIDFILE" ] || FLAGS="$FLAGS --pidfile $PIDFILE"
-	[ -z "$RETRY" ] || FLAGS="$FLAGS --retry $RETRY"
+#	[ -z "$RETRY" ] || FLAGS="$FLAGS --retry $RETRY"
 
 	if [ "$DEFAULT" = true ]; then
 		MESSAGE="$BASENAME shutdown"
@@ -383,7 +383,7 @@ status()
 	# Actually determine the status.
 	FLAGS="--stop --test"
 	[ -z "$CMDNAME" ] &&
-		FLAGS="$FLAGS --exec $WHICH --user-fallback-to-name" ||
+		FLAGS="$FLAGS --exec $WHICH" ||
 		FLAGS="$FLAGS --name $CMDNAME"
 	[ -z "$PIDFILE" ] || FLAGS="$FLAGS --pidfile $PIDFILE"
 
