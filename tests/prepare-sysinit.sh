@@ -7,7 +7,7 @@ cd "$HOME/rootfs"
 
 mkdir -p -- ./bin ./sbin
 
-cp -vf -- /bin/ash.static ./bin/sh
+~/src/.build/dest/usr/bin/initrd-put . /bin/bash
 
 cat > ./sbin/init <<EOF
 #!/bin/sh
