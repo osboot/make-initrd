@@ -2,36 +2,32 @@
 
 hsh --init --excludedocs
 
-hsh-install --excludedocs gcc make git-core
-hsh-install --excludedocs expect
-hsh-install --excludedocs libkmod-devel zlib-devel bzlib-devel liblzma-devel libzstd-devel libelf-devel
-hsh-install --excludedocs libshell
-hsh-install --excludedocs help2man tar cpio kinit-utils pciutils
-hsh-install --excludedocs dmsetup lvm2
-hsh-install --excludedocs cryptsetup
-hsh-install --excludedocs mdadm
-hsh-install --excludedocs e2fsprogs btrfs-progs xfsprogs
-hsh-install --excludedocs ash-static
-hsh-install --excludedocs fdisk
-hsh-install --excludedocs strace
-hsh-install --excludedocs gzip xz
-hsh-install --excludedocs iproute2 chrooted-resolv
-hsh-install --excludedocs make-initrd-busybox
+hsh-install --excludedocs \
+	gcc make git-core expect libkmod-devel zlib-devel bzlib-devel \
+	liblzma-devel libzstd-devel libelf-devel \
+	help2man tar cpio kinit-utils pciutils \
+	dmsetup lvm2 cryptsetup mdadm e2fsprogs btrfs-progs xfsprogs \
+	bash fdisk strace gzip xz iproute2 chrooted-resolv \
+	libtirpc-devel libcrypt-devel
+
+#hsh-install --excludedocs make-initrd-busybox
 
 cat >"$0.exec"<<EOF
 #!/bin/sh -efu
 
 find / \
 	\( \
-		\! -path '/.*'                 -a \
-		\! -path '/usr/lib/locale/*'   -a \
-		\! -path '/usr/share/locale/*' -a \
-		\! -path '/usr/share/doc/*'    -a \
-		\! -path '/usr/share/man/*'    -a \
-		\! -path '/usr/share/info/*'   -a \
-		\! -path '/usr/share/icons/*'  -a \
-		\! -path '/usr/share/zsh/*'    -a \
-		\! -path '/rootfs.cpio'           \
+		   \! -path '/.*' \
+		-a \! -path '/usr/lib/locale/*' \
+		-a \! -path '/usr/share/locale/*' \
+		-a \! -path '/usr/share/doc/*' \
+		-a \! -path '/usr/share/man/*' \
+		-a \! -path '/usr/share/info/*' \
+		-a \! -path '/usr/share/icons/*' \
+		-a \! -path '/usr/share/zsh/*' \
+		-a \! -path '/lib/initrd/*' \
+		-a \! -path '/usr/share/make-initrd/*' \
+		-a \! -path '/rootfs.cpio' \
 	\) \
 	-print0 |
 	cpio -H newc -ov0
