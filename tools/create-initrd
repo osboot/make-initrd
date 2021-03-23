@@ -87,6 +87,7 @@ done
 cd "$ROOTDIR"
 
 mkdir $verbose -p -- \
+	./{,usr/}{,s}bin \
 	./.initrd/{killall,uevent/events,uevent/queues/udev/.tmp} \
 	./etc/{{initrd,modprobe.d,sysconfig},udev/rules.d} \
 	./lib/{udev,initrd/{all,kmodules,post,pre}} \
@@ -103,17 +104,8 @@ mkfifo ./.initrd/rdshell
 printf '%s\n' "${DIRS[@]}"  |xargs -r put-tree .
 printf '%s\n' "${FILES[@]}" |xargs -r put-file .
 
-if [ ".$UDEVD" != ./sbin/udevd ]; then
-	mkdir -p -- ./sbin
-	mv $verbose -f -- ".$UDEVD" ./sbin/udevd
-	ln $verbose -s -- /sbin/udevd ".$UDEVD"
-fi
-
-if [ ".$UDEVADM" != ./sbin/udevadm ]; then
-	mkdir -p -- ./sbin
-	mv $verbose -f -- ".$UDEVADM" ./sbin/udevadm
-	ln $verbose -s -- /sbin/udevadm ".$UDEVADM"
-fi
+[ ".$UDEVD"   = ./sbin/udevd   ] || ln $verbose -s -- "$UDEVD"   ./sbin/udevd
+[ ".$UDEVADM" = ./sbin/udevadm ] || ln $verbose -s -- "$UDEVADM" ./sbin/udevadm
 
 for i in rc0 rc1 rc2 rc3 rc4 rc5 rc6 init; do
 	mkdir -p "./etc/rc.d/$i.d"
