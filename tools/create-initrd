@@ -2,6 +2,7 @@
 
 . shell-error
 
+LOCALFILES=()
 FILES=()
 DIRS=()
 
@@ -19,12 +20,34 @@ append_uniq()
 
 append_progs()
 {
-	local n f PATH="$BUSYBOX_PATH:$SYSTEM_PATH"
+	local n f SEARCH_PATH=''
+
+	[ -z "$LOCALBUILDDIR" ] ||
+		SEARCH_PATH="$LOCALBUILDDIR$RUNTIMEDIR/sbin:$LOCALBUILDDIR$RUNTIMEDIR/bin"
+
+	SEARCH_PATH="${SEARCH_PATH:+$SEARCH_PATH:}$BUSYBOX_PATH:$SYSTEM_PATH"
+
 	for n; do
-		f=$(type -P "$n") ||
+		found=
+		while read -d: -r path; do
+			[ -n "$path" ] ||
+				continue
+			f="$path/$n"
+			if [ -x "$f" ]; then
+				found=1
+				break
+			fi
+		done <<<"$SEARCH_PATH"
+
+		[ -n "$found" ] ||
 			fatal "Not found utility: $n"
+
 		[ -n "${f##$RUNTIMEDIR/*}" ] ||
 			continue
+
+		[ -z "$LOCALBUILDDIR" ] || [ -n "${f##$LOCALBUILDDIR/*}" ] ||
+			continue
+
 		append_uniq FILES "$f"
 	done
 }
@@ -72,12 +95,16 @@ while read -d: -r n; do
 		for pattern in '*/shell-*' ${PUT_FEATURE_PROGS_WILDCARD-}; do
 			[ -z "${bin##$pattern}" ] ||
 				continue
+			if [ -n "$LOCALBUILDDIR" ] && [ -z "${bin##$LOCALBUILDDIR/*}" ]; then
+				append_uniq LOCALFILES "$bin"
+				continue
+			fi
 			[ -n "${bin##$RUNTIMEDIR/*}" ] ||
 				continue
 			append_uniq FILES "$bin"
 		done
 	done < "$TEMPDIR/list"
-done <<<"$BUSYBOX_PATH:$SYSTEM_PATH"
+done <<<"$BUILDDIR_PATH:$BUSYBOX_PATH:$SYSTEM_PATH"
 rm -f -- "$TEMPDIR/list"
 
 for n in ${PUT_FEATURE_FILES-} $PUT_FILES; do
@@ -101,8 +128,9 @@ initrd-release
 mkfifo ./.initrd/telinit
 mkfifo ./.initrd/rdshell
 
-printf '%s\n' "${DIRS[@]}"  |xargs -r put-tree .
-printf '%s\n' "${FILES[@]}" |xargs -r put-file .
+printf '%s\n' "${DIRS[@]}"       |xargs -r put-tree .
+printf '%s\n' "${FILES[@]}"      |xargs -r put-file .
+printf '%s\n' "${LOCALFILES[@]}" |xargs -r put-file -r "$LOCALBUILDDIR" .
 
 [ ".$UDEVD"   = ./sbin/udevd   ] || ln $verbose -s -- "$UDEVD"   ./sbin/udevd
 [ ".$UDEVADM" = ./sbin/udevadm ] || ln $verbose -s -- "$UDEVADM" ./sbin/udevadm
