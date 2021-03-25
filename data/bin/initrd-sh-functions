@@ -51,6 +51,10 @@ get_dev() {
 			[ "${ID_PART_ENTRY_NAME-}" = "${name#PARTLABEL=}" ] ||
 				return 1
 			;;
+		SERIAL=*)
+			[ "${ID_SERIAL-}" = "${name#SERIAL=}" ] ||
+				return 1
+			;;
 		/dev/disk/by-uuid/*)
 			[ "/dev/disk/by-uuid/${ID_FS_UUID_ENC-}" = "$name" ] ||
 				return 1

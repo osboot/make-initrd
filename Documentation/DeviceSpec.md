@@ -20,6 +20,9 @@ A device can be specified in several ways:
 - `PARTLABEL=<label>` - The `<label>` being the GPT partition label. MSDOS
    partitions do not support labels!
 
+- `SERIAL=<serial>` - The `<serial>` has the format: `<ID_MODEL>_<ID_SERIAL_SHORT>`
+   It's possible to get these values using the `/lib/udev/ata_id`.
+
 - `<major:<minor>` - you can specify device major and minor.
 
 - `<HEX-number>` - major is (`number` / 256), minor is (`number` % 256).
