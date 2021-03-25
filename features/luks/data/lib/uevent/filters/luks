@@ -4,6 +4,9 @@
 . uevent-sh-functions
 . initrd-sh-functions
 
+[ -n "${DEVNAME-}" ] ||
+	exit 0
+
 DEVNAME="${DEVNAME#/dev}"
 DEVNAME="${DEVNAME#/}"
 DEVNAME="/dev/$DEVNAME"
@@ -11,7 +14,7 @@ DEVNAME="/dev/$DEVNAME"
 [ -z "${NO_LUKS-}" ] ||
 	exit 0
 
-[ "$ID_FS_TYPE" = "crypto_LUKS" ] ||
+[ "${ID_FS_TYPE-}" = "crypto_LUKS" ] ||
 	exit 0
 
 cryptsetup isLuks "$DEVNAME" ||

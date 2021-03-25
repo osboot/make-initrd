@@ -9,7 +9,7 @@ omit_pid() {
 
 devlinks_check() {
 	local l
-	for l in $DEVLINKS; do
+	for l in ${DEVLINKS-}; do
 		[ "$1" != "$l" ] ||
 			return 0
 	done
@@ -36,56 +36,58 @@ get_dev() {
 			return 1
 			;;
 		UUID=*)
-			[ "$ID_FS_UUID" = "${name#UUID=}" ] ||
+			[ "${ID_FS_UUID-}" = "${name#UUID=}" ] ||
 				return 1
 			;;
 		LABEL=*)
-			[ "$ID_FS_LABEL" = "${name#LABEL=}" ] ||
+			[ "${ID_FS_LABEL-}" = "${name#LABEL=}" ] ||
 				return 1
 			;;
 		PARTUUID=*)
-			[ "$ID_PART_ENTRY_UUID" = "${name#PARTUUID=}" ] ||
+			[ "${ID_PART_ENTRY_UUID-}" = "${name#PARTUUID=}" ] ||
 				return 1
 			;;
 		PARTLABEL=*)
-			[ "$ID_PART_ENTRY_NAME" = "${name#PARTLABEL=}" ] ||
+			[ "${ID_PART_ENTRY_NAME-}" = "${name#PARTLABEL=}" ] ||
 				return 1
 			;;
 		/dev/disk/by-uuid/*)
-			[ "/dev/disk/by-uuid/$ID_FS_UUID_ENC" = "$name" ] ||
+			[ "/dev/disk/by-uuid/${ID_FS_UUID_ENC-}" = "$name" ] ||
 				return 1
 			;;
 		/dev/disk/by-label/*)
-			[ "/dev/disk/by-label/$ID_FS_LABEL_ENC" = "$name" ] ||
+			[ "/dev/disk/by-label/${ID_FS_LABEL_ENC-}" = "$name" ] ||
 				return 1
 			;;
 		/dev/disk/by-partuuid/*)
-			[ "/dev/disk/by-partuuid/$ID_PART_ENTRY_UUID" = "$name" ] ||
+			[ "/dev/disk/by-partuuid/${ID_PART_ENTRY_UUID-}" = "$name" ] ||
 				return 1
 			;;
 		/dev/disk/by-partlabel/*)
-			[ "/dev/disk/by-label/$ID_PART_ENTRY_NAME" = "$name" ] ||
+			[ "/dev/disk/by-label/${ID_PART_ENTRY_NAME-}" = "$name" ] ||
 				return 1
 			;;
 		/dev/block/[0-9]*:[0-9]*)
-			[ "/dev/block/$MAJOR:$MINOR" = "$name" ] ||
+			[ "/dev/block/${MAJOR-}:${MINOR-}" = "$name" ] ||
 				return 1
 			;;
 		/*)
-			[ "$DEVNAME" = "$name" ] || devlinks_check "$name" ||
+			[ "${DEVNAME-}" = "$name" ] || devlinks_check "$name" ||
 				return 1
 			;;
 		*:*)
-			[ "$MAJOR" = "${name%:*}" ] && [ "$MINOR" = "${name#*:}" ] ||
+			[ "${MAJOR-}" = "${name%:*}" ] && [ "${MINOR-}" = "${name#*:}" ] ||
 				return 1
 			;;
 		*)
 			(_=$(( 0x$name ))) 2>/dev/null ||
 				return 1
-			[ "$MAJOR" = "$(( $value / 256 ))" ] && [ "$MINOR" = "$(( $value % 256 ))" ] ||
+			[ "${MAJOR-}" = "$(( $value / 256 ))" ] && [ "${MINOR-}" = "$(( $value % 256 ))" ] ||
 				return 1
 			;;
 	esac
+	[ -n "${DEVNAME-}" ] ||
+		return 1
 	[ -z "$retval" ] ||
 		eval "$retval=\"\$DEVNAME\""
 }
