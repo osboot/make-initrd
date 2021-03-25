@@ -1,4 +1,6 @@
-MDADM_UDEV_RULES := $(shell $(FEATURESDIR)/mdadm/bin/generate-udev-rules)
+MDADM_UDEV_RULES := \
+	$(foreach majmin,$(GENERATE_UDEV_RULES_FOR_MD_DEVICE),\
+		$(shell $(FEATURESDIR)/mdadm/bin/generate-udev-rules $(majmin)))
 
 PUT_FEATURE_DIRS  += $(MDADM_DATADIR)
 PUT_FEATURE_FILES += $(MDADM_FILES) $(MDADM_UDEV_RULES)

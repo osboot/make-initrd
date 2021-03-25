@@ -20,3 +20,9 @@ while read -r mod; do
 done
 
 guess_feature mdadm
+
+MAJOR=
+MINOR=
+. "$SYSFS_PATH$1"/uevent
+
+guess_variable GENERATE_UDEV_RULES_FOR_MD_DEVICE "$MAJOR:$MINOR"
