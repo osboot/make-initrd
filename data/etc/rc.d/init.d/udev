@@ -35,7 +35,7 @@ post_start() {
 }
 
 start() {
-	start_daemon --background --lockfile "$LOCKFILE" -- udevd --daemon --resolve-names=never ||
+	start_daemon --background --lockfile "$LOCKFILE" -- /lib/initrd/udevd --daemon --resolve-names=never ||
 		RETVAL=$?
 
 	[ "$RETVAL" = 0 ] ||

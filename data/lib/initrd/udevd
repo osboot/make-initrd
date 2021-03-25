@@ -1,0 +1,3 @@
+#!/bin/bash -efu
+
+exec udevd --debug "$@" >/var/log/udevd.log 2>&1
