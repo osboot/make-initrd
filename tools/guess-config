@@ -11,6 +11,26 @@ modules_fmt() {
 		fmt -u -w60
 }
 
+print_vars() {
+	f="$guessdir/guess:variables"
+
+	[ "$(cat "$f":* 2>/dev/null |wc -l)" != "0" ] ||
+		return 0
+
+	for m in "$f":*; do
+		[ -s "$m" ] ||
+			continue
+		n="${m##*:}"
+		printf '%s = \\\n' "$n"
+		sort -u "$m" |
+			tr '\n' ' ' |
+			fmt |
+			sed -e 's/^/\t/; $ ! s/$/ \\/'
+	done
+
+	printf '\n'
+}
+
 print_list() {
 	f="$guessdir/guess:$2"
 
@@ -69,6 +89,7 @@ if [ -n "${RESOLVE_MODALIAS-}" ]; then
 	done
 fi
 
+print_vars
 print_list RESCUE_MODULES modules:rescue
 print_list RESCUE_MODULES modalias:rescue
 print_list MODULES_ADD    modules:add
