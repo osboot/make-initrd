@@ -31,7 +31,7 @@ QEMU_ARGUMENTS += -machine 'type=q35,accel=kvm:tcg'
 QEMU_ARGUMENTS += -cpu 'host'
 QEMU_ARGUMENTS += -smp '4'
 QEMU_ARGUMENTS += -m '1G'
-ifneq ($(filter check-shell check-testcase ,$(MAKECMDGOALS)),)
+ifneq ($(filter check-shell check-testcase build-testcase ,$(MAKECMDGOALS)),)
 QEMU_ARGUMENTS += -chardev stdio,mux=on,id=stdio,signal=off
 QEMU_ARGUMENTS += -mon "chardev=stdio,mode=readline"
 else
@@ -154,11 +154,21 @@ check: qemu-stage0
 	@$(TRAVIS_STOP)
 
 check-testcase: qemu-stage0
-	@echo "check.$(TESTCASE)"
-	@echo "$(TESTCASE): Testing ... "
+	@echo "$(TESTCASE): Testing $(TESTCASE) ... "
 	@echo "$(TESTCASE)" > $(TESTDIR)/cur;
 	@echo "check" > $(TESTDIR)/mode;
 	$(TESTCASE_COMMAND)
+
+build-testcase: qemu-stage0
+	@echo "$(TESTCASE): Building $(TESTCASE) ... "
+	@echo "$(TESTCASE)" > $(TESTDIR)/cur;
+	@echo "check" > $(TESTDIR)/mode;
+	$(QEMU_BIN) \
+	    $(QEMU_STAGE0_ARGUMENTS) \
+	    $(QEMU_STAGE0_DRIVES) \
+	    -kernel '$(QEMU_STAGE0_VMLINUZ)' \
+	    -initrd '$(QEMU_STAGE0_INITRAMFS)' \
+	    -append '$(QEMU_STAGE0_CMDLINE)';
 
 check-shell:
 	@echo "$(TESTCASE): Testing ... "
