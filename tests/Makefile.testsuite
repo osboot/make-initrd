@@ -12,7 +12,7 @@ Q = $(if $(VERBOSE),,@)
 
 ROOTFS_VENDOR  = altlinux
 ROOTFS_VERSION = 20210102
-KERN_FLAVOR    = std-def
+KERN_FLAVOR    = -std-def
 KERN_VERSION   = 5.4.91-alt1
 STAGE0_VERSION = 20210222
 
@@ -100,27 +100,27 @@ $(TESTDIR)/data/%.iso: check-prepare
 	@$(TRAVIS_STOP)
 
 $(QEMU_STAGE0_VMLINUZ): check-prepare
-	@$(TRAVIS_START) "prepare.kernel-$(KERN_FLAVOR)-$(KERN_VERSION)"
+	@$(TRAVIS_START) "prepare.kernel$(KERN_FLAVOR)-$(KERN_VERSION)"
 	@echo "$(TESTCASE): Unpacking $(@F) ... "
 	$(TRAVIS_Q)cpio \
 	        -i --to-stdout '*/vmlinuz-*' \
-	        < "$(TESTDIR)/data/kernel-$(KERN_FLAVOR)-$(KERN_VERSION).cpio" \
+	        < "$(TESTDIR)/data/kernel$(KERN_FLAVOR)-$(KERN_VERSION).cpio" \
 	    > "$@" 2>/dev/null
 	@$(TRAVIS_STOP)
 
-$(QEMU_STAGE0_VMLINUZ): $(TESTDIR)/data/kernel-$(KERN_FLAVOR)-$(KERN_VERSION).cpio
+$(QEMU_STAGE0_VMLINUZ): $(TESTDIR)/data/kernel$(KERN_FLAVOR)-$(KERN_VERSION).cpio
 
 $(QEMU_STAGE0_INITRAMFS): check-prepare
 	@$(TRAVIS_START) "prepare.initramfs-stage0"
 	@echo "$(TESTCASE): Generating $(@F) ... "
 	$(TRAVIS_Q)cat \
 	        "$(TESTDIR)/data/initramfs-stage0-$(STAGE0_VERSION).cpio" \
-	        "$(TESTDIR)/data/kernel-$(KERN_FLAVOR)-$(KERN_VERSION).cpio" \
+	        "$(TESTDIR)/data/kernel$(KERN_FLAVOR)-$(KERN_VERSION).cpio" \
 	    > "$@"
 	@$(TRAVIS_STOP)
 
 $(QEMU_STAGE0_INITRAMFS): $(TESTDIR)/data/initramfs-stage0-$(STAGE0_VERSION).cpio
-$(QEMU_STAGE0_INITRAMFS): $(TESTDIR)/data/kernel-$(KERN_FLAVOR)-$(KERN_VERSION).cpio
+$(QEMU_STAGE0_INITRAMFS): $(TESTDIR)/data/kernel$(KERN_FLAVOR)-$(KERN_VERSION).cpio
 
 qemu-stage0: check-prepare
 qemu-stage0: $(QEMU_STAGE0_VMLINUZ)
