@@ -4,13 +4,13 @@
 
 check_parameter WAITDEV
 devspec="$(get_parameter WAITDEV)"
-envfile=/.initrd/pipeline/waitdev
 
 while [ -n "$devspec" ]; do
-	if [ -f "$envfile" ]; then
-		. "$envfile"
+	envfile="/.initrd/pipeline/waitdev/$callnum"
 
-		devfile="$(get_parameter WAITDEV_FILE)"
+	if [ -s "$envfile" ]; then
+		devfile=
+		read -r devfile < "$envfile" ||:
 
 		if [ -n "$devfile" ]; then
 			if [ ! -e "$destdir/dev" ]; then

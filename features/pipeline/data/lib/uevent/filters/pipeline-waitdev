@@ -3,18 +3,16 @@
 . /.initrd/initenv
 . initrd-sh-functions
 
-export WAITDEV_FILE=0
-while [ "$WAITDEV_FILE" -lt "${WAITDEV:-0}" ]; do
-	eval "spec=\"\${WAITDEV$WAITDEV_FILE-}\""
-	dev=
-	[ -z "$spec" ] ||
-		get_dev dev "$spec" ||:
-	eval "export WAITDEV_FILE$WAITDEV_FILE=\"\$dev\""
-	WAITDEV_FILE=$(($WAITDEV_FILE + 1))
+mkdir -p -- /.initrd/pipeline/waitdev
+cd /.initrd/pipeline/waitdev
+
+i=0
+while [ "$i" -lt "${WAITDEV:-0}" ]; do
+	eval "spec=\"\${WAITDEV$i-}\""
+
+	if [ -n "$spec" ] && get_dev dev "$spec"; then
+		printf '%s\n' "$dev" > "$i"
+	fi
+
+	i=$(($i + 1))
 done
-
-mkdir -p -- /.initrd/pipeline
-cd /.initrd/pipeline
-
-environ -q -i 'WAITDEV_FILE*' >waitdev.env
-mv -f -- waitdev.env waitdev

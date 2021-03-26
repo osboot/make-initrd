@@ -17,9 +17,23 @@ NAME=pipelined
 PIDFILE="/var/run/$NAME.pid"
 ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --name $NAME --displayname $NAME"
 
+prepare() {
+	local dir i n
+
+	dir=/.initrd/pipeline/waitdev
+	mkdir -p -- "$dir"
+
+	i=0
+	while [ "$i" -lt "${WAITDEV:-0}" ]; do
+		touch "$dir/$i"
+		i=$(($i + 1))
+	done
+}
+
 start() {
 	RETVAL=0
 	if [ "${ROOT-}" = pipeline ]; then
+		prepare
 		start_daemon --background $ARGS "$NAME"
 		RETVAL=$?
 	fi
