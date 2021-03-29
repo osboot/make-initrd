@@ -148,15 +148,6 @@ done
 [ -s ./etc/sysconfig/rdshell ] ||
 	printf 'RDSHELL_MODE=disable\n' >./etc/sysconfig/rdshell
 
-if [ ! -x ./bin/sh ]; then
-	for n in bash dash mksh ash; do
-		[ -x "./bin/$n" ] || continue
-		verbose "Setting $n as /bin/sh ..."
-		ln -s "$n" ./bin/sh
-		break
-	done
-fi
-
 for d in lib etc; do
 	if [ -d "/$d/modprobe.d" ]; then
 		verbose "Copying files from $d/modprobe.d ..."
