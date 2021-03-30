@@ -167,7 +167,7 @@ process-config: $(INITRD_CONFIG)
 	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk genimage
 
 guess-config: check-for-root guess
-	@cat $(GUESSDIR)/guessed.mk
+	@cat $(GUESSDIR)/guessed.mk >&4
 	$Qrm -rf -- "$(GUESSDIR)"
 	$Qrmdir -- "$(WORKDIR)"
 
@@ -182,7 +182,7 @@ guess-modules: check-for-root guess
 	      --no-firmware \
 	      --no-builtin \
 	      2>/dev/null | \
-	   sort -u
+	   sort -u >&4
 	$Qrm -rf -- "$(GUESSDIR)"
 	$Qrmdir -- "$(WORKDIR)"
 
@@ -197,6 +197,6 @@ endif
 
 bug-report: check-for-root
 	@mkdir -m 755 -p -- $(REPORTDIR)
-	@$(TOOLSDIR)/bug-report
+	@$(TOOLSDIR)/bug-report >&4
 	$Qrm -rf -- "$(REPORTDIR)"
 	$Qrmdir -- "$(WORKDIR)"

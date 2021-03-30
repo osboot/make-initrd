@@ -9,7 +9,7 @@ cp -vf -- /boot/System* "$HOME/src/.tests/boot/"
 cp -vf -- /boot/config* "$HOME/src/.tests/boot/"
 
 if [ ! -e "$HOME/src/tests/$testcase/initrd.mk" ]; then
-	set -- make-initrd -D -c /dev/null guess-config
+	set -- make-initrd -v -D -c /dev/null guess-config
 
 	echo "RUN: $*"
 	(
