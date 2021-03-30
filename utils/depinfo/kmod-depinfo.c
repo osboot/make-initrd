@@ -20,6 +20,11 @@
 
 #include "config.h"
 
+enum alias_need {
+	ALIAS_OPTIONAL = 0,
+	ALIAS_REQUIRED = 1,
+};
+
 enum show_flags {
 	SHOW_DEPS     = (1 << 1),
 	SHOW_MODULES  = (1 << 2),
@@ -325,7 +330,7 @@ process_firmware(const char *firmware)
 }
 
 static int
-depinfo_alias(struct kmod_ctx *ctx, const char *alias);
+depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req);
 
 static int
 process_depends(struct kmod_ctx *ctx, const char *depends)
@@ -335,7 +340,7 @@ process_depends(struct kmod_ctx *ctx, const char *depends)
 	s = str = strdup(depends);
 
 	while ((token = strtok_r(str, ",", &saveptr)) != NULL) {
-		if (depinfo_alias(ctx, token) < 0)
+		if (depinfo_alias(ctx, token, ALIAS_REQUIRED) < 0)
 			ret = -1;
 		str = NULL;
 	}
@@ -357,7 +362,7 @@ process_soft_depends(struct kmod_ctx *ctx, const char *depends)
 		str += 6;
 
 	while ((token = strtok_r(str, " ", &saveptr)) != NULL) {
-		if (depinfo_alias(ctx, token) < 0)
+		if (depinfo_alias(ctx, token, ALIAS_OPTIONAL) < 0)
 			ret = -1;
 		str = NULL;
 	}
@@ -446,7 +451,7 @@ depinfo_path(struct kmod_ctx *ctx, const char *path)
 }
 
 static int
-depinfo_alias(struct kmod_ctx *ctx, const char *alias)
+depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req)
 {
 	int ret = -1;
 	struct kmod_module *mod;
@@ -474,11 +479,19 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias)
 	}
 
 	if (kmod_module_new_from_lookup(ctx, alias, &list) < 0) {
+		if (req == ALIAS_OPTIONAL) {
+			ret = 0;
+			goto end;
+		}
 		error(0, 0, "ERROR: Module alias %s not found.", alias);
 		goto end;
 	}
 
 	if (!list) {
+		if (req == ALIAS_OPTIONAL) {
+			ret = 0;
+			goto end;
+		}
 		error(0, 0, "ERROR: Module %s not found.", alias);
 		goto end;
 	}
@@ -544,7 +557,7 @@ static inline int
 process_name(struct kmod_ctx *ctx, const char *arg)
 {
 	return is_filename(arg)
-		? depinfo_alias(ctx, arg)
+		? depinfo_alias(ctx, arg, ALIAS_REQUIRED)
 		: depinfo_path(ctx, arg);
 }
 
