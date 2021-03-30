@@ -83,7 +83,7 @@ append_progs \
 	blkid cat chmod chroot cp depmod dmesg findmnt grep kill killall5 ln \
 	logger ls lsmod mkdir mknod mktemp modprobe mount mountpoint mv \
 	readlink rm rmdir setsid sh sleep start-stop-daemon switch_root \
-	touch umount which ${PUT_FEATURE_PROGS-} ${PUT_PROGS-}
+	touch umount which bash ${PUT_FEATURE_PROGS-} ${PUT_PROGS-}
 
 while read -d: -r n; do
 	[ -n "$n" ] ||
@@ -132,6 +132,10 @@ printf '%s\n' "${DIRS[@]}"       |xargs -r put-tree .
 printf '%s\n' "${FILES[@]}"      |xargs -r put-file .
 printf '%s\n' "${LOCALFILES[@]}" |xargs -r put-file -r "$LOCALBUILDDIR" .
 
+BASH="$(find ./bin ./sbin ./usr/bin ./usr/sbin ./usr/local/bin ./usr/local/sbin -name bash -print -quit)"
+BASH="${BASH#.}"
+
+[ ".$BASH"    = ./bin/bash     ] || ln $verbose -s -- "$BASH"    ./bin/bash
 [ ".$UDEVD"   = ./sbin/udevd   ] || ln $verbose -s -- "$UDEVD"   ./sbin/udevd
 [ ".$UDEVADM" = ./sbin/udevadm ] || ln $verbose -s -- "$UDEVADM" ./sbin/udevadm
 
