@@ -1,3 +1,27 @@
+Version 2.14.0
+
+- Feature mdadm:
+  + Generate udev rules for guessed raid devices.
+- Feature pipeline:
+  + Fix possible race in the waitdev.
+- Feature network:
+  + Always import runtime environment.
+- Runtime:
+  + Use wrapper around readlink for portability.
+  + Use start-stop-daemon from busybox.
+  + Udev variables $ID_\* are optional.
+  + Add default udev rules.
+  + Add support for root=SERIAL=\*.
+- Utilities:
+  + initrd-put: Handle symlinks in the root directory.
+  + initrd-put: Get the canonical path correctly.
+  + initrd-put: Set mode and owner after directories creation.
+  + depinfo: Do not show an error if softdep is not found.
+- Build:
+  + Add busybox and libshell as submodules.
+- Misc:
+  + All make messages should go to stderr.
+
 Version 2.13.0
 
 - Feature guestfs:
