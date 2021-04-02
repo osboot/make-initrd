@@ -268,6 +268,11 @@ static void canonicalize_symlink(char *file, char *target, char *d)
 	if (verbose > 2)
 		warnx("canonicalize_symlink: %s", file);
 
+	if (target && target[0] == '/') {
+		canonicalize_path(target, d);
+		return;
+	}
+
 	strncpy(pathbuf, file, sizeof(pathbuf) - 1);
 	if ((p = strrchr(pathbuf, '/'))) {
 		p++;
