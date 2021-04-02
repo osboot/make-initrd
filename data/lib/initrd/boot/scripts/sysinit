@@ -5,5 +5,5 @@
 
 PROG="poll: $PROG"
 
-[ -e "$rootmnt/$INIT" ] ||
+[ -e "$rootmnt/$INIT" ] || [ -h "$rootmnt/$INIT" ] ||
 	fatal "Unable to mount root"
