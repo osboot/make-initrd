@@ -132,12 +132,17 @@ printf '%s\n' "${DIRS[@]}"       |xargs -r put-tree .
 printf '%s\n' "${FILES[@]}"      |xargs -r put-file .
 printf '%s\n' "${LOCALFILES[@]}" |xargs -r put-file -r "$LOCALBUILDDIR" .
 
+ln_if_missing()
+{
+	[ -h "$2" ] || [ -e "$2" ] || ln $verbose -s -- "$1" "$2"
+}
+
 BASH="$(find ./bin ./sbin ./usr/bin ./usr/sbin ./usr/local/bin ./usr/local/sbin -name bash -print -quit)"
 BASH="${BASH#.}"
 
-[ ".$BASH"    = ./bin/bash     ] || ln $verbose -s -- "$BASH"    ./bin/bash
-[ ".$UDEVD"   = ./sbin/udevd   ] || ln $verbose -s -- "$UDEVD"   ./sbin/udevd
-[ ".$UDEVADM" = ./sbin/udevadm ] || ln $verbose -s -- "$UDEVADM" ./sbin/udevadm
+ln_if_missing "$BASH"    ./bin/bash
+ln_if_missing "$UDEVD"   ./sbin/udevd
+ln_if_missing "$UDEVADM" ./sbin/udevadm
 
 for i in rc0 rc1 rc2 rc3 rc4 rc5 rc6 init; do
 	mkdir -p "./etc/rc.d/$i.d"
