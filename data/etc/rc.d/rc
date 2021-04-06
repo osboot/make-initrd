@@ -48,6 +48,11 @@ for i in "$rcd"/K*; do
 	[ -f "$locksys/$subsys" ] ||
 		continue
 
+	SourceIfExists /.initrd/initenv
+
+	[ "${RDLOG-}" != 'console' ] ||
+		export INITLOG_FILE=/dev/console
+
 	run_scripts "pre/$subsys" stop "$subsys"
 
 	"$i" stop
