@@ -10,7 +10,7 @@ target="$(resolve_target "$param")"
 	fatal "unable to resolve: $param"
 
 opts=
-[ ! -c "$target" ] && [ ! -b "$target" ] ||
+[ -c "$target" ] || [ -b "$target" ] ||
 	opts='ro,loop'
 
 run mount ${opts:+-o $opts} "$target" "$destdir"
