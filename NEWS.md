@@ -1,3 +1,17 @@
+Version 2.15.0
+
+- Runtime:
+  + Allow init= to be symlink
+  + Fix root=NUMBER
+  + Show on console stopped services
+  + Make killall messages more informative
+- Utilities:
+  + initrd-put: Copy absolute symlinks
+- Misc:
+  + Make a compatibility symlink only if the file doesn't exist
+  + Create initramfs filesystem structure based on system filesystem
+  + Add more documentation
+
 Version 2.14.0
 
 - Feature mdadm:
