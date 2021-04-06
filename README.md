@@ -17,14 +17,14 @@ To build a initramfs, you have to install the following software packages:
 
 - [coreutils](https://www.gnu.org/software/coreutils/)
 - [gnu make](http://www.gnu.org/software/make/)
-- [libshell](https://github.com/legionus/libshell)
 - [kmod](https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git)
 - [help2man](https://www.gnu.org/software/help2man/)
-- [busybox](https://busybox.net/)
 - [elfutils](https://sourceware.org/elfutils/)
 
 Optional:
 
+- [busybox](https://busybox.net/)
+- [libshell](https://github.com/legionus/libshell)
 - [zlib](https://zlib.net)
 - [bzip2](https://www.sourceware.org/bzip2/)
 - [xz](http://tukaani.org/xz/)
@@ -44,10 +44,9 @@ $ ./configure --enable-local-build
 $ make
 ```
 
-## Usage
+## Documentation
 
-The initramfs build process requires access to block devices and kernel modules,
-so it needs root privileges.
+Documentation about the project is located in the [Documentation directory](Documentation/).
 
 ## License
 

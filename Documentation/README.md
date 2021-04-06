@@ -15,21 +15,10 @@ want to fix it.
 
 Patches are welcome.
 
-## Requires
-
-- make-initrd uses [GNU make](http://www.gnu.org/software/make/) to establish
-  and properly maintain the relationship between modules.
-
-- Most scripts use [libshell](https://github.com/legionus/libshell), a set of
-  functions frequently used in shell scripts.
-
-- [kinit-utils](https://github.com/legionus/kinit-utils) is a set of
-  tools from [klibc](https://kernel.org/pub/linux/libs/klibc) ported to glibc.
-  These tools have broad enough functionality and small size. These utilities
-  are used by some features (setup network, NFS root, raid autodetect).
-
-## See also
+## Articles
 
 - The article about [main idea of determining the root](HowItWorks.md).
 - The article about [runtime](BootRuntime.md).
-- Feature [list](Features.md).
+- Article to learn how to write [new features](NewFeature.md).
+- Incomplete feature [list](Features.md). To learn more about features, see the
+  documentation in the feature directory.
