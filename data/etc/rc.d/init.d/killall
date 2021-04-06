@@ -18,15 +18,17 @@
 . /etc/init.d/functions
 
 omitpid=
+omitpid_msg=
 killpids()
 {
 	echo_msg "$1"
 	killall5 "-$2" $omitpid
 	local rc=$?
+	local msg="sig=$2${omitpid_msg:+ (except $omitpid_msg)}"
 	case "$rc" in
-		2) passed; exit 0 ;;
-		0) success ;;
-		*) failure ;;
+		2) passed "$msg"; exit 0 ;;
+		0) success "$msg" ;;
+		*) failure "$msg" ;;
 	esac
 	return $rc
 }
@@ -34,7 +36,11 @@ killpids()
 [ -n "${IGNORE_OMITPIDS-}" ] ||
 for pid in /.initrd/killall/[0-9]*; do
 	[ -f "$pid" ] || break
-	omitpid="$omitpid -o ${pid##*/}"
+	pid=${pid##*/}
+	omitpid="$omitpid -o $pid"
+
+	exe="$(readlink "/proc/$pid/exe" 2>/dev/null)" ||:
+	omitpid_msg="${omitpid_msg:+$omitpid_msg }$pid${exe:+[$exe]}"
 done
 
 seq=5
