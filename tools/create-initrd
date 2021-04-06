@@ -113,14 +113,39 @@ done
 
 cd "$ROOTDIR"
 
-mkdir $verbose -p -- \
-	./{,usr/}{,s}bin \
-	./.initrd/{killall,uevent/events,uevent/queues/udev/.tmp} \
-	./etc/{{initrd,modprobe.d,sysconfig},udev/rules.d} \
-	./lib/{udev,initrd/{all,kmodules,post,pre}} \
-	./var/{lock/subsys,log,run} \
-	./{home/root,dev,mnt,root,run,proc,sys,tmp,bin,sbin} \
-	./"$KERNEL_MODULES_DIR" \
+mkdir_save_symlinks()
+{
+	local dir sub_dir follow_dir canon_path
+
+	for dir in "$@"; do
+		[ -n "$dir" ] ||
+			continue
+
+		sub_dir="$(dirname "$dir")"
+
+		if [ ! -e "$sub_dir" ] && [ ! -h "$sub_dir" ]; then
+			mkdir_save_symlinks "$sub_dir"
+		fi
+
+		if [ ! -h "/$dir" ]; then
+			mkdir $verbose -p -- "./$dir"
+		else
+			follow_dir=".$(readlink -f "/$dir")"
+			mkdir_save_symlinks "$follow_dir"
+
+			canon_path="$(realpath --relative-to="$sub_dir" "$follow_dir")"
+			ln -s "$canon_path" "./$dir"
+		fi
+	done
+}
+
+mkdir_save_symlinks \
+	{dev,mnt,root,run,proc,sys,tmp,{,usr/}{,s}bin,{,usr/}{share,lib{,32,x32,64}},var/{cache,lock/subsys,log,run}} \
+	lib/{modules,udev,initrd/{all,kmodules,post,pre}} \
+	etc/{{initrd,modprobe.d,sysconfig},udev/rules.d} \
+	.initrd/{killall,uevent/events,uevent/queues/udev/.tmp} \
+	home/root \
+	"${KERNEL_MODULES_DIR#/}" \
 	#
 
 initrd-release
