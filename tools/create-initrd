@@ -28,6 +28,16 @@ append_progs()
 	SEARCH_PATH="${SEARCH_PATH:+$SEARCH_PATH:}$BUSYBOX_PATH:$SYSTEM_PATH"
 
 	for n; do
+		[ -n "$n" ] ||
+			continue
+		if [ -z "${n##/*}" ]; then
+			message "WARNING: it doesn't make sense to search in PATH for a utility with absolute path: $n"
+			append_uniq FILES "$n"
+			continue
+		elif [ -z "${n##*/*}" ]; then
+			message "WARNING: it doesn't make sense to search in PATH for a utility with subpath: $n"
+			n="${n##*/}"
+		fi
 		found=
 		while read -d: -r path; do
 			[ -n "$path" ] ||
