@@ -1,0 +1,41 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            iscsi
+# Required-Start:      cmdline modules network-up
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+### END INIT INFO
+
+[ -z "${1-}" ] || [ "$1" = start ] || exit 0
+
+if [ -z "$ISCSI_TARGET_NAME" ] || [ -z "$ISCSI_TARGET_IP" ]; then
+        exit 0
+fi
+
+if [ -z "$ISCSI_INITIATOR" ]; then
+	if [ ! -f /etc/iscsi/initiatorname.iscsi ]; then
+		mkdir -p /etc/iscsi
+		iscsi-gen-initiatorname
+	fi
+	. /etc/iscsi/initiatorname.iscsi
+        ISCSI_INITIATOR="$InitiatorName"
+fi
+
+if [ -z "$ISCSI_TARGET_PORT" ]; then
+	ISCSI_TARGET_PORT=3260
+fi
+
+if [ -z "$ISCSI_TARGET_GROUP" ]; then
+	ISCSI_TARGET_GROUP=1
+fi
+
+iscsistart -i "$ISCSI_INITIATOR" -t "$ISCSI_TARGET_NAME" \
+	-g "$ISCSI_TARGET_GROUP" -a "$ISCSI_TARGET_IP" \
+	-p "$ISCSI_TARGET_PORT" \
+	"${ISCSI_USERNAME:+-u "$ISCSI_USERNAME"}" \
+	"${ISCSI_PASSWORD:+-w "$ISCSI_PASSWORD"}" \
+	"${ISCSI_IN_USERNAME:+-U "$ISCSI_IN_USERNAME"}" \
+	"${ISCSI_IN_PASSWORD:+-W "$ISCSI_IN_PASSWORD"}"
