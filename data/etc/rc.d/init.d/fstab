@@ -45,7 +45,7 @@ convert_dev()
 
 gen_fstab()
 {
-	local i=1 n dev path str s0 ndev
+	local i=1 n dev path str s0 ndev roflags
 	local have_sys='' have_run=''
 
 	for conf in /etc/fstab /etc/fstab.d/*.conf; do
@@ -84,6 +84,11 @@ gen_fstab()
 	if [ -n "${ROOT-}" ]; then
 		convert_dev ndev "$ROOT"
 		ROOTFLAGS="${ROOTFLAGS:-defaults}"
+
+		roflag=rw
+		[ -z "$READONLY" ] || roflag=ro
+
+		ROOTFLAGS="$ROOTFLAGS,$roflag"
 
 		if [ -z "${ndev##SOURCE=*}" ]; then
 			ndev="${ndev#SOURCE=}"
