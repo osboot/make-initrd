@@ -71,7 +71,8 @@ if [ "$UEVENT_MODE" = 'queue-processor' ]; then
 			mkdir -p -- "$ueventdir/$QUEUE"
 
 			:> "$event.pid"
-			"$inotifyd" "$0" "$pidfile:x" "$event.pid:x" "$event:ny" &
+			:> "$event.timer"
+			"$inotifyd" "$0" "$pidfile:x" "$event.pid:x" "$event.timer:0" "$event:ny" &
 			echo "$!" >"$event.pid"
 			;;
 		d)
@@ -100,10 +101,14 @@ glob()
 	[ -e "$1" ]
 }
 
-glob "$2"/* || exit 0
-
 queuedir="$ueventdir/$QUEUE"
-mv -f -- "$2"/* "$queuedir" 2>/dev/null || exit 0
+
+if [ "$evtype" != '0' ]; then
+	mv -f -- "$2"/* "$queuedir" 2>/dev/null ||:
+else
+	message "$QUEUE: retrying with failed events ..."
+fi
+glob "$queuedir"/* || exit 0
 
 message "$QUEUE: Processing events ..."
 
@@ -149,3 +154,8 @@ for fn in "$handlerdir"/*; do
 
 	run_scripts post "$QUEUE"
 done
+
+if glob "$queuedir"/*; then
+	sleep 1
+	:<"$filterdir/$QUEUE.timer"
+fi
