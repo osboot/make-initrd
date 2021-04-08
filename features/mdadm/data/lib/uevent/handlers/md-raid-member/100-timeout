@@ -2,11 +2,16 @@
 
 . shell-error
 . initrd-sh-functions
+. uevent-sh-functions
 . /.initrd/initenv
 
 pidfile="/var/run/$PROG.pid"
 tsfile=/.initrd/md-raid-timeout
 delay="${RAID_MEMBER_DELAY-}"
+
+for e in "$1"/md-raid-member.*; do
+	done_event "$e" ||:
+done
 
 [ -n "$delay" ] && [ "$delay" -gt 0 ] ||
 	exit 0
