@@ -30,7 +30,7 @@ release_event() {
 }
 
 done_event() {
-	mv -f -- "$1" "${1%/*}/done.${1##*/}"
+	rm -f -- "$1"
 }
 
 fi
