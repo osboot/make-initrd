@@ -1,3 +1,16 @@
+Version 2.16.0
+
+- Runtime:
+  + ueventd tries to process events again if it did not work the first time.
+  + Move READONLY handle to fstab service.
+  + Fix polld service dependency.
+- New feature:
+  + iscsi: feature adds you to perform a diskless system boot using pxe and iSCSI (thx Mikhail Chernonog).
+- Feature mdadm:
+  + md-raid-member handler assume that it has successfully processed all the events.
+- Feature pipeline:
+  + Use ro,loop options only for a non-device files.
+
 Version 2.15.0
 
 - Runtime:
