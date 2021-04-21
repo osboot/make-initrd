@@ -19,6 +19,6 @@ fi
 for dir in "${paths[@]}"; do
 	if [ -e "$dir/details.so" ]; then
 		printf '%s\n' "$dir"
-		return
+		exit
 	fi
 done
