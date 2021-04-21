@@ -1,0 +1,24 @@
+#!/bin/bash -efu
+
+paths=(
+	"/usr/lib/plymouth"
+	"/usr/lib64/plymouth"
+	"/usr/libexec/plymouth"
+)
+
+libdir=
+if type -P dpkg &>/dev/null; then
+	libdir=$(dpkg -L plymouth 2>/dev/null |sed -n -e 's,/plymouth/details\.so$,,p')
+elif type -P rpm &>/dev/null; then
+	libdir=$(rpm -ql plymouth 2>/dev/null |sed -n -e 's,/plymouth/details\.so$,,p')
+fi
+
+[ -z "$libdir" ] ||
+	paths+=("$libdir/plymouth")
+
+for dir in "${paths[@]}"; do
+	if [ -e "$dir/details.so" ]; then
+		printf '%s\n' "$dir"
+		return
+	fi
+done
