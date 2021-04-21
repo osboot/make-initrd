@@ -1,0 +1,498 @@
+#!/bin/bash -efu
+
+# https://pykickstart.readthedocs.io/en/latest/kickstart-docs.html
+# https://docs.fedoraproject.org/en-US/fedora/rawhide/install-guide/appendixes/Kickstart_Syntax_Reference/
+
+[ ! -f /.initrd/initenv ] ||
+	. /.initrd/initenv
+
+. shell-error
+. shell-quote
+. shell-args
+
+. "$0-sh-storage"
+. "$0-sh-installation"
+. "$0-sh-postinstall"
+
+verbose="${DEBUG:+-v}"
+
+export LANG=C
+export LC_ALL=C
+
+ks_datadir="/.initrd/ks"
+ks_rootdir="${rootmnt:-/mnt/sysimage}"
+
+show_help()
+{
+	cat <<EOF
+Usage: $PROG [kickstart-script]
+
+Options:
+ -d, --datadir=DIR      set data directory (default: $ks_datadir);
+ -r, --rootdir=DIR      set root directory (default: $ks_rootdir);
+ -v, --verbose          print a message for each action;
+ -V, --version          output version information and exit;
+ -h, --help             display this help and exit.
+
+Report bugs to authors.
+
+EOF
+	exit
+}
+
+print_version()
+{
+	cat <<EOF
+$PROG version 0.1
+
+Written by Alexey Gladkov
+
+Copyright (C) 2021  Alexey Gladkov <gladkov.alexey@gmail.com>
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+EOF
+	exit
+}
+
+KS_IGNORED='9999000000'
+KS_ORDERS=(
+	$KS_IGNORED:autostep
+	$KS_IGNORED:device
+	$KS_IGNORED:deviceprobe
+	$KS_IGNORED:dmraid
+	$KS_IGNORED:install
+	$KS_IGNORED:interactive
+	$KS_IGNORED:langsupport
+	$KS_IGNORED:method
+	$KS_IGNORED:monitor
+	$KS_IGNORED:mouse
+	$KS_IGNORED:multipath
+	$KS_IGNORED:upgrade
+	0000000000:cdrom
+	0000000000:cmdline
+	0000000000:driverdisk
+	0000000000:eula
+	0000000000:firstboot
+	0000000000:graphical
+	0000000000:harddrive
+	0000000000:hmc
+	0000000000:mediacheck
+	0000000000:module
+	0000000000:nfs
+	0000000000:nvdimm
+	0000000000:rescue
+	0000000000:snapshot
+	0000000000:text
+	0000000000:updates
+	0000000000:vnc
+	1000000000:ks_step_begin
+	2000000000:lang
+	2000000000:url
+	2100000000:ks_step_pre
+	3000000000:reqpart
+	3000000000:zerombr
+	3100000000:autopart
+	3100000000:btrfs
+	3100000000:clearpart
+	3100000000:crypto
+	3100000000:fcoe
+	3100000000:ignoredisk
+	3100000000:iscsi
+	3100000000:iscsiname
+	3100000000:logvol
+	3100000000:makefs
+	3100000000:part
+	3100000000:partition
+	3100000000:raid
+	3100000000:volgroup
+	3100000000:zfcp
+	3100000000:zipl
+	4000000000:ks_step_mount
+	5000000000:ks_step_pre_install
+	5100000000:liveimg
+	6000000000:repo
+	7000000000:ks_step_packages
+	8000000000:auth
+	8000000000:authconfig
+	8000000000:authselect
+	8000000000:bootloader
+	8000000000:firewall
+	8000000000:group
+	8000000000:keyboard
+	8000000000:logging
+	8000000000:network
+	8000000000:ostreesetup
+	8000000000:realm
+	8000000000:rootpw
+	8000000000:selinux
+	8000000000:services
+	8000000000:skipx
+	8000000000:sshkey
+	8000000000:sshpw
+	8000000000:timesource
+	8000000000:timezone
+	8000000000:user
+	8000000000:xconfig
+	9000000000:ks_step_sync
+	9100000000:ks_step_post
+	9200000000:halt
+	9200000000:poweroff
+	9200000000:reboot
+	9200000000:shutdown
+)
+
+ks_block_devices()
+{
+	local retval="$1"; shift
+	local f dev
+	local exclude=','
+
+	for f in $(findmnt -lno SOURCE | sed -n -e 's,^/dev/,,p'); do
+		dev="$(readlink -f "/sys/class/block/$f")"
+		dev="${dev%/$f}"
+		dev="${dev##*/}"
+		exclude="$exclude$dev,"
+	done
+
+	set --
+
+	for f in $(set +f; printf '%s\n' /sys/block/*); do
+		[ -e "$f" ] ||
+			continue
+
+		dev=
+		read -r dev < "$f/dev"
+
+		case "$dev" in
+			8:*|9:*)
+				;;
+			*)
+				continue
+				;;
+		esac
+
+		[ -n "${exclude##*,${f##*/},*}" ] ||
+			continue
+
+		set -- "$@" "${f##*/}"
+	done
+
+	eval "$retval=\"\$*\""
+}
+
+ks_mount()
+{
+	[ -s "$ks_datadir/fstab" ] ||
+		return 0
+
+	umount -q -R "$ks_rootdir" ||:
+
+	findmnt -F "$ks_datadir/fstab" -n -o target | sort -d |
+	while read -r mntpoint; do
+		verbose "mounting $mntpoint"
+		mount -v -n --fstab="$ks_datadir/fstab" -o rw,X-mount.mkdir "$mntpoint"
+	done
+
+	mkdir -p -- "$ks_datadir/sysdata/etc"
+
+	findmnt -l -k -n -R -o UUID,TARGET,FSTYPE,OPTIONS "$ks_rootdir" |
+	while read -r source target fstype options; do
+		freq=0 passno=0
+
+		if [ "$target" = "$ks_rootdir" ]; then
+			freq=1 passno=1
+		fi
+
+		target="${target#$ks_rootdir}"
+		target="${target:-/}"
+
+		printf '%s\n' "UUID=$source $target $fstype $options $freq $passno"
+
+	done > "$ks_datadir/sysdata/etc/fstab"
+}
+
+ks_sync()
+{
+	[ -d "$ks_datadir/sysdata" ] && mountpoint -q "$ks_rootdir" ||
+		return 0
+	rsync -abX --suffix=.ks -- "$ks_datadir/sysdata/" "$ks_rootdir/"
+}
+
+ks_begin=()
+ks_onerror=()
+ks_packages=()
+ks_post=()
+ks_pre=()
+ks_pre_install=()
+ks_traceback=()
+
+ks_run_section()
+{
+	local name="$1"; shift
+	local num="$1"; shift
+
+	local PROG TEMP str args
+	local erroronfail='' interpreter='' logfile=''
+
+	PROG="%$name"
+
+	declare -n "args=ks_$name"
+	quote_shell_args str "${args[$num]}"
+	eval "set -- \"$PROG\" $str"
+
+	TEMP=`getopt -n "$PROG" -l 'erroronfail,interpreter:,log:,logfile:' -- "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			--erroronfail)
+				erroronfail=1
+				;;
+			--interpreter) shift
+				message "use shebang to change interpreter"
+				interpreter="$1"
+				;;
+			--log|--logfile) shift
+				logfile="$1"
+				;;
+		esac
+		shift
+	done
+
+	local script="$ks_datadir/ks:$name-$num"
+	local ret=0
+
+	if [ -n "$logfile" ]; then
+		$interpreter "$script" >"$logfile" 2>&1 ||
+			ret=1
+	else
+		$interpreter "$script" ||
+			ret=1
+	fi
+	[ -n "$erroronfail" ] ||
+		ret=0
+	return $ret
+}
+
+ks_run()
+{
+	local i max
+	eval "max=\${#ks_$1[@]}"
+	for (( i=0; $i < $max; i++ )); do
+		ks_run_section "$1" "$i"
+	done
+}
+
+ks_not_implemented()
+{
+	fatal "command $1 not implemented"
+}
+
+ks_prepare_parser()
+{
+	local fn order
+
+	for fn in "${KS_ORDERS[@]}"; do
+		order="${fn%%:*}"
+		fn="${fn#*:}"
+
+		eval "ks_order_$fn=$order"
+
+		if [ "$order" = "$KS_IGNORED" ]; then
+			eval "$fn() { :; }"
+		elif [ "$(type -t "$fn")" != 'function' ]; then
+			eval "$fn() { ks_not_implemented \"\$FUNCNAME\"; }"
+		fi
+
+		KS_COMMANDS="$KS_COMMANDS$fn,"
+	done
+}
+
+ks_parse()
+{
+	local l args kwd num section='body' lineno=0 cmdbase=0
+	while read l; do
+		lineno=$(( $lineno + 1 ))
+
+		case "$l" in
+			'#'*|'')
+				[ "$section" != 'body' ] ||
+					continue
+				;;
+			'%include'|'%include '*)
+				quote_shell_args args "$l"
+				eval "set -- $args"
+				ks_parse < "$1"
+				continue
+				;;
+			'%ksappend'|'%ksappend '*)
+				fatal "%ksappend directive is not supported"
+				;;
+			'%begin'|'%begin '*)
+				;;
+			'%onerror'|'%onerror '*)
+				;;
+			'%pre'|'%pre '*)
+				;;
+			'%post'|'%post '*)
+				;;
+			'%pre-install'|'%pre-install '*)
+				;;
+			'%packages'|'%packages '*)
+				;;
+			'%traceback'|'%traceback '*)
+				;;
+			'%end')
+				section='body'
+				continue
+				;;
+		esac
+
+		if [ "$section" = 'body' ]; then
+			set -- $l
+
+			if [ -n "$l" ] && [ -z "${l##%*}" ]; then
+				kwd="${1#%}"
+				kwd="${kwd//-/_}"
+				declare -n "args=ks_$kwd"
+				num=${#args[@]}
+				section="$kwd-$num"
+				args+=("${l#%$kwd}")
+				continue
+			fi
+
+			if [ -n "${KS_COMMANDS##*,$1,*}" ]; then
+				message "lineno=$lineno: unknown command: $1"
+				continue
+			fi
+
+			eval "cmdbase=\$ks_order_$1"
+		fi
+
+		if [ ! -f "$ks_datadir/ks:$section" ]; then
+			printf '#!/bin/bash -efu\n' > "$ks_datadir/ks:$section"
+			chmod +x "$ks_datadir/ks:$section"
+		fi
+
+		{
+			[ "$section" = 'body' ] &&
+				printf '%010d\t%s\n' "$(($lineno + $cmdbase))" "$l" ||
+				printf '%s\n' "$l"
+		} >> "$ks_datadir/ks:$section"
+	done
+}
+
+ks_parse_stream()
+{
+	local l step i=0 cmdbase=0
+	local KS_COMMANDS=','
+
+	ks_prepare_parser
+	ks_parse
+
+	for l in \
+		ks_step_begin \
+		ks_step_pre \
+		ks_step_mount \
+		ks_step_pre_install \
+		ks_step_packages \
+		ks_step_post \
+		ks_step_sync;
+	do
+		eval "cmdbase=\$ks_order_$l"
+		step="${l#ks_step_}"
+		if [ "$(type -t ks_$step)" != function ]; then
+			eval "$l() { ks_run \"$step\"; }"
+		else
+			eval "$l() { ks_$step; }"
+		fi
+		printf '%010d\t%s\n' "$(( $i + $cmdbase ))" "$l"
+		i=$(( $i + 1 ))
+	done >> "$ks_datadir/ks:body"
+}
+
+TEMP=`getopt -n "$PROG" -o 'r:,d:,h,v,V' -l 'rootdir:,datadir:,help,verbose,version' -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
+
+while :; do
+	case "$1" in
+		-d|--datadir) shift
+			ks_datadir="$1"
+			;;
+		-r|--rootdir) shift
+			ks_rootdir="$1"
+			;;
+		-v|--verbose)
+			verbose=-v
+			;;
+		-h|--help)
+			show_help
+			;;
+		-V|--version)
+			print_version
+			;;
+		--) shift; break
+			;;
+	esac
+	shift
+done
+
+ks_script=
+
+if [ "$#" -gt 0 ]; then
+	ks_script="$(readlink -f "$1")"
+	shift
+fi
+
+rm -rf -- "$ks_datadir"
+mkdir -p -- \
+	"$ks_datadir/empty" \
+	"$ks_datadir/sysdata" \
+	"$ks_rootdir"
+
+# Prevent accidental expansion of relative shell patterns
+chmod 500 "$ks_datadir/empty"
+cd "$ks_datadir/empty"
+
+# Empty fstab for ks_mount step
+:> "$ks_datadir/fstab"
+mkdir -- "$ks_datadir/fstab.d"
+
+# Parse incomming stream
+if [ -n "$ks_script" ]; then
+	ks_parse_stream < "$ks_script"
+else
+	ks_parse_stream
+fi
+
+udevadm settle --timeout=3 ||:
+
+# Final reorder
+sort -g -k1,1 "$ks_datadir/ks:body" |
+	cut -f2- > "$ks_datadir/ks"
+
+set +e
+(set -e;
+	BLOCK_DEVICES=
+	DISKLABEL=
+
+	while [ -z "$BLOCK_DEVICES" ]; do
+		ks_block_devices BLOCK_DEVICES;
+		sleep 1
+	done
+
+	verbose "Block devices: $BLOCK_DEVICES"
+
+	. "$ks_datadir/ks";
+)
+rc=$?
+set -e
+
+[ "$rc" = 0 ] ||
+	ks_run onerror
+exit "$rc"

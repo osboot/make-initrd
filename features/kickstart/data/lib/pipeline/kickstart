@@ -1,0 +1,21 @@
+#!/bin/bash -efu
+
+. pipeline-sh-functions
+
+check_parameter MOUNTFS
+ks="$(get_parameter KICKSTART)"
+ksfile="$ks"
+
+if [ ! -f "$ksfile" ]; then
+	for dir in ${prevdir:+"$prevdir"} /etc/ks.conf.d /etc; do
+		if [ -f "$dir/$ks" ]; then
+			ksfile="$dir/$ks"
+			break
+		fi
+	done
+fi
+
+[ -f "$ksfile" ] ||
+	fatal "unable to find kickstart file: $ks"
+
+kickstart "$ksfile"

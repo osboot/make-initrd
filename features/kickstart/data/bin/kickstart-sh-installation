@@ -1,0 +1,94 @@
+liveimg()
+{
+	local PROG TEMP archive=''
+	local url='' proxy='' noverifyssl='' checksum=''
+
+	PROG="$FUNCNAME"
+	TEMP=`getopt -n "$PROG" -l 'url:,proxy:,checksum:,noverifyssl' -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			--noverifyssl) noverifyssl=1
+				;;
+			--url) shift; url="$1"
+				;;
+			--checksum) shift; checksum="$1"
+				;;
+			--proxy) shift; proxy="$1"
+				;;
+		esac
+		shift
+	done
+
+	if [ -z "$url" ]; then
+		message "url required"
+		return 1
+	fi
+
+	if ! mountpoint -q "$ks_rootdir"; then
+		message "sysroot does not exist"
+		return 1
+	fi
+
+	rm -rf -- "$ks_datadir/liveimg"
+	mkdir -p -- "$ks_datadir/liveimg"
+
+	case "$url" in
+		http://*|https://*)
+			env \
+				${proxy:+"http_proxy=$proxy"} \
+				${proxy:+"https_proxy=$proxy"} \
+				wget -nd -P "$ks_datadir/liveimg/" "$url" \
+					${noverifyssl:+--no-check-certificate}
+			archive="$(find "$ks_datadir/liveimg" -type f -print -quit)"
+			;;
+		file://*)
+			archive="${url#file://}"
+			;;
+		*)
+			message "unexpected url: $url"
+			return 1
+			;;
+	esac
+
+	if [ -n "$checksum" ]; then
+		local cursum
+
+		cursum="$(sha256sum < "$archive")"
+		cursum="${cursum%% *}"
+
+		if [ "$checksum" != "$cursum" ]; then
+			message "computed checksum did NOT match"
+			return 1
+		fi
+	fi
+
+	case "$archive" in
+		*.tar|*.tbz|*.tgz|*.txz|*.tar.bz2|*.tar.gz|*.tar.xz)
+			tar -C "$ks_rootdir" -xf "$archive" ||
+				ret=1
+			;;
+		*.zip)
+			unzip -d "$ks_rootdir" "$arhive" ||
+				ret=1
+			;;
+		*.cpio)
+			cpio -id -D "$ks_rootdir" --no-absolute-filenames < "$archive" ||
+				ret=1
+			;;
+		*)
+			message "unsupported archive format: $archive"
+			return 1
+			;;
+	esac
+
+	if [ "$ret" = 1 ]; then
+		message "unable to unpack tar archive: $archive"
+		return 1
+	fi
+}
+

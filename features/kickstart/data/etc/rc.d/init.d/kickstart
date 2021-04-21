@@ -1,0 +1,31 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            kickstart
+# Required-Start:      network-up udev uevent
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Runs kickstart script
+# Description:         Runs kickstart script
+# X-LFS-Provided-By:   LFS
+### END INIT INFO
+
+[ "$1" = start ] || exit 0
+
+. /.initrd/initenv
+
+[ -n "${KSFILE-}" ] || exit 0
+
+[ -z "${KSFILE##/*}" ] ||
+	KSFILE="/etc/ks.conf.d/$KSFILE"
+
+if [ -s "$KSFILE" ]; then
+	cp -f /etc/initrd/method /etc/initrd/method.prev
+	echo none > /etc/initrd/method
+
+	kickstart -v "$KSFILE"
+
+	cp -f /etc/initrd/method.prev /etc/initrd/method
+fi

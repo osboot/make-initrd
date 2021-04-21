@@ -1,0 +1,32 @@
+ks_reboot()
+{
+	local PROG TEMP cmd
+	local try_eject='' try_kexec=''
+
+	PROG="$FUNCNAME"
+	TEMP=`getopt -n "$PROG" -l 'eject,kexec' -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			--eject) try_eject=1
+				;;
+			--kexec) try_kexec=1
+				;;
+		esac
+		shift
+	done
+
+	[ -z "$try_eject" ] || eject ||:
+	[ -z "$try_kexec" ] || command reboot -f -d -k ||:
+	command "$@"
+}
+
+reboot()   { ks_reboot "$@" reboot -f -d; }
+halt()     { ks_reboot "$@" halt -f -p;   }
+poweroff() { ks_reboot "$@" halt -f -p;   }
+shutdown() { ks_reboot "$@" halt -f -p;   }
+

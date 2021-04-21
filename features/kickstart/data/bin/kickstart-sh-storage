@@ -1,0 +1,1095 @@
+#!/bin/bash
+
+ks_devname()
+{
+	local devname=''
+	case "$1" in
+		LABEL=*)
+			devname="$(blkid -o device -L "${1#LABEL=}")"
+			;;
+		UUID=*)
+			devname="$(blkid -o device -U "${1#UUID=}")"
+			;;
+		/dev/*)
+			[ -L "$1" ] &&
+				devname="$(readlink -f "$1")" ||
+				devname="$1"
+			;;
+		*)
+			if [ -e "/sys/class/block/$1" ]; then
+				devname=$(sed -n -e 's,DEVNAME=,/dev/,p' "/sys/class/block/$1/uevent")
+			elif [ -e "/dev/md/$1" ]; then
+				devname="$(readlink -f "/dev/md/$1")"
+			fi
+			;;
+	esac
+
+	[ -n "$devname" ] && [ -b "$devname" ] ||
+		fatal "unable to get devname for argument: $1"
+
+	printf '%s\n' "${devname#/dev/}"
+}
+
+ks_devname_list()
+{
+	set -- ${1//,/ }
+
+	while [ "$#" -gt 0 ]; do
+		ks_devname "$1"
+		shift
+	done
+}
+
+ignoredisk()
+{
+	local PROG TEMP dev
+	local drives='' onlyuse=''
+	local ret=0
+
+	PROG="$FUNCNAME"
+	TEMP=`getopt -n "$PROG" -l 'drives:,only-use:' -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--drives)
+				shift
+				drives="$(ks_devname_list "$1")"
+				;;
+			--only-use)
+				shift
+				onlyuse="$(ks_devname_list "$1")"
+				;;
+			--) shift; break
+				;;
+		esac
+		shift
+	done
+
+	if [ -n "$drives" ] && [ -n "$onlyuse" ]; then
+		message "options --drives and --only-use are mutually exclusive."
+		return 1
+	fi
+
+	drives=",${drives//$'\n'/,},"
+	onlyuse=",${onlyuse//$'\n'/,},"
+
+	set --
+
+	for dev in $BLOCK_DEVICES; do
+		if [ "$onlyuse" != ',,' ] && [ -n "${onlyuse##*,$dev,*}" ]; then
+			verbose "'$dev' disk ignored"
+			continue
+		elif [ "$drives" != ',,' ] && [ -z "${drives##*,$dev,*}" ]; then
+			verbose "'$dev' disk ignored"
+			continue
+		fi
+		set -- "$@" "$dev"
+	done
+
+	BLOCK_DEVICES="$*"
+}
+
+clearpart()
+{
+	local PROG TEMP dev skipped
+	local all='' disks='' list='' initlabel=''
+
+	PROG="$FUNCNAME"
+	TEMP=`getopt -n "$PROG" -l 'all,drives:,list:,none,initlabel,disklabel:' -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	DISKLABEL=dos
+
+	while :; do
+		case "$1" in
+			--all)
+				all=1
+				disks="$BLOCK_DEVICES"
+				;;
+			--drives)
+				shift
+				disks="$(ks_devname_list "$1")"
+				;;
+			--none)
+				disks=''
+				;;
+			--list)
+				shift
+				list="$(ks_devname_list "$1")"
+				;;
+			--disklabel)
+				shift
+				DISKLABEL="${1##*/}"
+				;;
+			--initlabel)
+				initlabel=1
+				;;
+			--) shift; break
+				;;
+		esac
+		shift
+	done
+
+	case "$DISKLABEL" in
+		''|gpt|dos)
+			;;
+		*)
+			message "unsupported disklabel: $DISKLABEL"
+			return 1
+	esac
+
+	if [ -n "$initlabel" ] && [ -z "$all" ]; then
+		message "unable to initializes the disk label"
+		return 1
+	fi
+
+	list=",${list//$'\n'/,},"
+
+	for dev in $disks; do
+		skipped=0
+		for num in $(sfdisk -d "/dev/$dev" | sed -n -e 's,^/dev/[^[:space:]]\+\([0-9]\+\) : .*,\1,p'); do
+			if [ "$list" != ',,' ] && [ -n "${list##,$dev$num,}" ]; then
+				skipped=$(( $skipped + 1 ))
+				continue
+			fi
+
+			[ -b "/dev/$dev$num" ] ||
+				continue
+
+			findmnt -no TARGET "/dev/$dev$num" |
+			while read -r mntpoint; do
+				verbose "umounting $mntpoint"
+				umount -fR "$mntpoint"
+			done
+
+			verbose "dropping /dev/$dev$num"
+
+			wipefs -qfa "/dev/$dev$num" ||:
+			sfdisk -q --delete "/dev/$dev" "$num" ||
+				return 1
+			dropped=1
+		done
+
+		[ -n "$initlabel" ] ||
+			continue
+
+		if [ "$skipped" -gt 0 ]; then
+			message "unable to initializes the disk label because there are partitions left($skipped) on the disk"
+			continue
+		fi
+
+		verbose "creating new $DISKLABEL partition table on /dev/$dev"
+
+		echo "label: $DISKLABEL" |
+			sfdisk -q -w always "/dev/$dev" ||
+			return 1
+	done
+}
+
+ks_get_dev_size()
+{
+	local name value dev
+	dev="$1"; shift
+
+	while read -r name value; do
+		case "$name" in
+			bytes)   totalsize_bytes=$value ;;
+			sectors) totalsize_sectors=$value ;;
+		esac
+	done <<< $(
+		sfdisk "$@" "/dev/$dev" |
+			head -1 |
+			sed -n -e 's|^.*, \([0-9]\+\) bytes, \([0-9]\+\) sectors|bytes \1\nsectors \2|p'
+		)
+}
+
+ks_fstab()
+{
+	local fname dev mpoint fstype fsopts
+
+	dev="${1#/dev/}"; shift
+	mpoint="$1"; shift
+	fsopts="$1"; shift
+
+	fstype="$(blkid -o value -s TYPE "/dev/$dev")"
+
+	fname="$(echo $mpoint | sha256sum)"
+	fname="${fname% *}"
+
+	printf '/dev/%s %s %s %s 0 0\n' \
+		"$dev" "$ks_rootdir$mpoint" "$fstype" "${fsopts:-defaults}" \
+		> "$ks_datadir/fstab.d/$fname"
+
+	find "$ks_datadir/fstab.d" -type f -exec cat '{}' '+' \
+		> "$ks_datadir/fstab"
+}
+
+getopt_useexisting='useexisting,noformat'
+ks_set_useexisting()
+{
+	case "$1" in
+		--useexisting|--noformat)
+			useexisting=1
+			shift_args=1
+			;;
+	esac
+}
+
+getopt_makefs='fstype:,label:'
+ks_set_makefs_args()
+{
+	case "$1" in
+		--label|--fstype)
+			makefs_args="${makefs_args-} \"$1=$2\""
+			shift_args=2
+			;;
+	esac
+}
+
+makefs()
+{
+	local PROG TEMP
+	local dev=''
+	local fstype='ext4' label=''
+
+	PROG="$FUNCNAME"
+	TEMP=`getopt -n "$PROG" -l "$getopt_makefs" -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--fstype) shift; fstype="$1"
+				;;
+			--label) shift; label="$1"
+				;;
+			--) shift; break
+				;;
+		esac
+		shift
+	done
+
+	if [ "$#" = 0 ]; then
+		message "device required"
+		return 1
+	fi
+
+	if [ -z "$fstype" ]; then
+		message "filesystem type required"
+		return 1
+	fi
+
+	dev="${1#/dev/}"
+
+	verbose "clearing previous filesystem on /dev/$dev"
+
+	wipefs -qfa "/dev/$dev" ||
+		return 1
+
+	if [ "$fstype" = swap ]; then
+		verbose "creating swap on /dev/$dev"
+		mkswap -f ${label:+-L "$label"} "/dev/$dev" >/dev/null
+		return
+	fi
+
+	verbose "creating $fstype filesystem on /dev/$dev"
+
+	"mkfs.$fstype" -q ${label:+-L "$label"} "/dev/$dev"
+}
+
+getopt_crypto='cipher:,passphrase:,pbkdf:,pbkdf-memory:,pbkdf-time:,pbkdf-iterations:'
+ks_set_crypto_args()
+{
+	case "$1" in
+		--cipher|--passphrase|--pbkdf|--pbkdf-memory|--pbkdf-time|--pbkdf-iterations)
+			crypto_args="${crypto_args-} \"$1=$2\""
+			shift_args=2
+			;;
+	esac
+}
+
+crypto()
+{
+	local PROG TEMP
+	local luks_passphrase='' luks_cipher='' luks_pbkdf='' luks_pbkdf_memory=''
+	local luks_pbkdf_time='' luks_pbkdf_iterations=''
+
+	local ret=0
+
+	PROG="$FUNCNAME"
+	TEMP=`getopt -n "$PROG" -l "name:,$getopt_crypto" -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--name) shift; name="$1"
+				;;
+			--cipher) shift; luks_cipher="$1"
+				;;
+			--passphrase) shift; luks_passphrase="$1"
+				;;
+			--pbkdf) shift; luks_pbkdf="$1"
+				;;
+			--pbkdf-memory) shift; luks_pbkdf_memory="$1"
+				;;
+			--pbkdf-time) shift; luks_pbkdf_time="$1"
+				;;
+			--pbkdf-iterations) shift; luks_pbkdf_iterations="$1"
+				;;
+			--) shift; break
+				;;
+		esac
+		shift
+	done
+
+	if [ -z "$luks_passphrase" ]; then
+		message "specify the passphrase to use."
+		return 1
+	fi
+
+	if [ -n "$luks_pbkdf_time" ] && [ -n "$luks_pbkdf_iterations" ]; then
+		message "only one of --pbkdf-time and --pbkdf-iterations can be specified."
+		return 1
+	fi
+
+	[ -z "${ONLYARGS-}" ] ||
+		return 0
+
+	if [ "$#" = 0 ] || [ -z "${1-}" ]; then
+		message "device not specified"
+		return 1
+	fi
+
+	dev="${1#/dev/}"
+
+	verbose "creating LUKS encrypted volume on /dev/$dev"
+
+	set -- cryptsetup \
+		--batch-mode \
+		--type luks2 \
+		${luks_cipher:+--cipher="$luks_cipher"} \
+		${luks_passphrase:+ --force-password} \
+		${luks_pbkdf:+--pbkdf="$luks_pbkdf"} \
+		${luks_pbkdf_memory:+--pbkdf-memory="$luks_pbkdf_memory"} \
+		${luks_pbkdf_time:+--iter-time="$luks_pbkdf_time"} \
+		${luks_pbkdf_iterations:+--pbkdf-force-iterations="$luks_pbkdf_iterations"} \
+		luksFormat "/dev/$dev" \
+
+	if [ -n "$luks_passphrase" ]; then
+		printf '%s' "$luks_passphrase" |
+			"$@" - ||
+			ret=1
+	else
+		"$@" ||
+			ret=1
+	fi
+
+	if [ "$ret" = 1 ]; then
+		message "unable to format luks device: /dev/$partdev"
+		return 1
+	fi
+
+	set -- cryptsetup open "/dev/$dev" "${name:-${dev}_crypt}"
+
+	if [ -n "$luks_passphrase" ]; then
+		printf '%s' "$luks_passphrase" |
+			"$@" - ||
+			ret=1
+	else
+		"$@" ||
+			ret=1
+	fi
+
+	if [ "$ret" = 1 ]; then
+		message "unable to open luks device: /dev/$partdev"
+		return 1
+	fi
+}
+
+part()
+{
+	local PROG TEMP shift_args=0 sfdisk_args
+	local mntpoint='' dev='' partdev='' parttype='' fsoptions='' size='' grow='' useexisting='' resize=''
+	local asprimary=''
+	local encrypted='' makefs_args='' crypto_args=''
+	local disks="$BLOCK_DEVICES"
+
+	local ret=0
+
+	PROG="$FUNCNAME"
+	TEMP=`getopt -n "$PROG" -l "asprimary,ondisk:,ondrive:,onpart:,usepart:,fsoptions:,size:,grow,resize,encrypted,$getopt_makefs,$getopt_crypto,$getopt_useexisting" -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			--asprimary) asprimary=1
+				;;
+			--ondisk|--ondrive)
+				shift
+				disks="$(ks_devname "$1")"
+				;;
+			--onpart|--usepart)
+				shift
+				partdev="$(ks_devname "$1")"
+				if [ ! -f "/sys/class/block/$partdev/partition" ]; then
+					message "argument is not like a disk partition: $1"
+					return 1
+				fi
+				disks=''
+				;;
+			--fsoptions) shift; fsoptions="$1"
+				;;
+			--size) shift;
+				# B   -> B
+				# MiB -> Mi
+				# KiB -> Ki
+				size="${1/i[Bb]/i}"
+				[ -z "${size##*[!0-9]*}" ] || size="${size}Mi"
+				;;
+			--resize) resize=1
+				;;
+			--grow) grow=1; size=''
+				;;
+			--encrypted)
+				encrypted=1
+				;;
+			*)
+				shift_args=0
+				ks_set_useexisting "$@"
+				ks_set_makefs_args "$@"
+				ks_set_crypto_args "$@"
+				if [ "$shift_args" != 0 ]; then
+					shift "$shift_args"
+					continue
+				fi
+				;;
+		esac
+		shift
+	done
+
+	if [ -n "$encrypted" ]; then
+		quote_shell_args crypto_args "$crypto_args"
+		eval "ONLYARGS=1 crypto $crypto_args"
+	fi
+
+	mntpoint="${1:-none}"
+	set --
+
+	case "$mntpoint" in
+		raid.*)    parttype="raid"  ;;
+		pv.*)      parttype="lvm"   ;;
+		swap)      parttype="swap"  ;;
+		/boot/efi)
+			parttype="uefi"
+			size="${size:-200Mi}"
+			;;
+		/home)
+			[ "$DISKLABEL" = 'gpt' ] &&
+				parttype="home" ||
+				parttype="linux"
+			;;
+		*)         parttype="linux" ;;
+	esac
+
+	for dev in $disks; do
+		if [ -n "$size" ] && [ -n "${size%\%}" ]; then
+			local totalsize_bytes=0 totalsize_sectors=0 needbytes=0 sectors=''
+
+			if [ -z "${size##*%}" ]; then
+				local totalfree_percent freesize_sectors
+
+				ks_get_dev_size "$dev" --list-free
+				freesize_sectors="$totalsize_sectors"
+
+				ks_get_dev_size "$dev" --list
+				totalfree_percent=$(( $freesize_sectors * 1000 / $totalsize_sectors ))
+
+				[ ${totalfree_percent:$(( ${#totalfree_percent} - 1 ))} -ge 5 ] &&
+					totalfree_percent=$(( ${totalfree_percent:0:$(( ${#totalfree_percent} - 1 ))} + 1 )) ||
+					totalfree_percent=$(( ${totalfree_percent:0:$(( ${#totalfree_percent} - 1 ))} ))
+
+				if [ "${size%\%}" -eq "$totalfree_percent" ]; then
+					sectors="$freesize_sectors"
+				else
+					sectors="$(( $totalsize_sectors * ${size%\%} / 100 ))"
+				fi
+				needbytes=$(( $sectors * 512 ))
+			elif [ -z "${size##*[!0-9]*}" ]; then
+				local from='iec'
+				[ -n "${size%%*i}" ] || from='iec-i'
+				sectors="$size"
+				needbytes=$(numfmt --from=$from --grouping "$size")
+			else
+				# sectors
+				sectors="$size"
+				needbytes=$(( $size * 512 ))
+			fi
+
+			ks_get_dev_size "$dev" --list-free
+
+			if [ "$needbytes" -gt "$totalsize_bytes" ]; then
+				verbose "/dev/$dev is too small, ignoring."
+				continue
+			fi
+
+			[ -z "$sectors" ] ||
+				set -- "size=$sectors"
+		fi
+
+		set -- ${1:+"$@" ,} "type=$parttype"
+
+		local prev_parttable curr_parttable sz i
+		prev_parttable=()
+		curr_parttable=()
+
+		readarray -t prev_parttable <<< $(sfdisk -d "/dev/$dev" | grep ^/dev/)
+
+		if [ -z "$asprimary" ] && [ "$DISKLABEL" = dos ] && [ "${#prev_parttable[@]}" = 3 ]; then
+			verbose "creating new extended partition on /dev/$dev"
+
+			printf 'type=extended\n' |
+				sfdisk -q -W always --append "/dev/$dev" ||
+				break
+
+			readarray -t prev_parttable <<< $(sfdisk -d "/dev/$dev" | grep ^/dev/)
+		fi
+
+		verbose "creating new partition on /dev/$dev"
+
+		ret=0
+		printf '%s\n' "$*" |
+			sfdisk -q -W always --append "/dev/$dev" ||
+			ret=1
+
+		if [ "$ret" = 1 ]; then
+			message "unable to create partition"
+			return 1
+		fi
+
+		readarray -t curr_parttable <<< $(sfdisk -d "/dev/$dev" | grep ^/dev/)
+
+		sz=${#curr_parttable[@]}
+
+		for (( i=0; $i < $sz; i++ )); do
+			local prev="${prev_parttable[$i]-}"
+			local curr="${curr_parttable[$i]}"
+
+			if [ "${prev#* : }" != "${curr#* : }" ]; then
+				partdev="${curr%% : *}"
+				partdev="${partdev#/dev/}"
+				break
+			fi
+		done
+		break
+	done
+
+	if [ -z "$partdev" ]; then
+		if [ -n "$size" ]; then
+			message "unable to create partition with $size size"
+			return 1
+		fi
+		return 0
+	fi
+
+	if [ -n "$resize" ]; then
+		# https://karelzak.blogspot.com/2015/05/resize-by-sfdisk.html
+
+		if [ -n "$grow" ]; then
+			size='+'
+		elif [ -z "$size" ]; then
+			message "you need to specify the size by which you want to increase the partition."
+			return 1
+		else
+			size="+$size"
+		fi
+
+		local partnum
+		read partnum < "/sys/class/block/$partdev/partition"
+
+		dev="$(readlink -ev "/sys/class/block/$partdev")"
+		dev="${dev%/*}"
+		dev="${dev##*/}"
+
+		verbose "increasing partition /dev/$dev$partnum"
+
+		printf ', %s\n' "$size" |
+			sfdisk -q -N "$partnum" "/dev/$dev"
+	fi
+
+	if [ -n "$encrypted" ]; then
+		eval "set -- $crypto_args"
+		crypto --name="${partdev}_crypt" "$@" "/dev/$partdev"
+		partdev="mapper/${partdev}_crypt"
+	fi
+
+	quote_shell_args makefs_args "$makefs_args"
+	eval "set -- $makefs_args"
+
+	case "$mntpoint" in
+		/|/*)
+			[ -n "$useexisting" ] ||
+				makefs "$partdev" "$@"
+			ks_fstab "$partdev" "$mntpoint" "$fsoptions"
+			;;
+		swap)
+			makefs "$partdev" "$@" --fstype=swap
+			ks_fstab "$partdev" "swap" "$fsoptions"
+			;;
+		none)
+			[ -n "$useexisting" ] ||
+				makefs "$partdev" "$@"
+			;;
+		btrfs.*|pv.*|raid.*)
+			printf '%s\n' "$partdev" >> "$ks_datadir/$mntpoint"
+			;;
+	esac
+}
+
+partition() { part "$@"; }
+
+volgroup()
+{
+	local PROG TEMP shift_args
+	local useexisting='' pesize=''
+
+	PROG="$FUNCNAME"
+	TEMP=`getopt -n "$PROG" -l "pesize:,$getopt_useexisting" -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			--pesize) shift; pesize="$1"
+				;;
+			*)
+				shift_args=0
+				ks_set_useexisting "$@"
+				if [ "$shift_args" != 0 ]; then
+					shift "$shift_args"
+					continue
+				fi
+				;;
+		esac
+		shift
+	done
+
+	local name="$1"; shift
+	local i arg num="$#"
+
+	if [ -n "$useexisting" ] && [ "$num" != 0 ]; then
+		message "do not specify partitions when using --useexisting option."
+		return 1
+	fi
+
+	for (( i=0; $i < $num; i++ )); do
+		arg=
+		case "$1" in
+			'')
+				;;
+			pv.*)
+				for arg in $(set +f; printf '%s\n' "$ks_datadir/"$1); do
+					read arg < "$arg"
+					set -- "$@" "/dev/$arg"
+				done
+				;;
+			*)
+				for arg in $(set +f; printf '%s\n' $1); do
+					arg="$(ks_devname "$arg")"
+					set -- "$@" "/dev/$arg"
+				done
+				;;
+		esac
+		shift
+	done
+
+	if [ -z "$useexisting" ]; then
+		verbose "creating lvm volume group '$name': $*"
+		lvm pvcreate -q "$@" ||
+			return 1
+		lvm vgcreate -q ${pesize:+-s "$pesize"} "$name" "$@" ||
+			return 1
+		return 0
+	fi
+
+	verbose "changing lvm volume group '$name'"
+	vgchange -q ${pesize:+-s "$pesize"} "$name" ||
+		return 1
+}
+
+logvol()
+{
+	local PROG TEMP shift_args
+	local vgname='' name=''
+	local useexisting='' fsoptions='' size='' resize='' grow='' chunksize=''
+	local encrypted='' makefs_args='' crypto_args=''
+	local ret=0
+
+	PROG="$FUNCNAME"
+	TEMP=`getopt -n "$PROG" -l "vgname:,name:,fsoptions:,chunksize:,percent:,size:,resize,grow,encrypted,$getopt_crypto,$getopt_makefs,$getopt_useexisting" -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			--vgname) shift; vgname="$1"
+				;;
+			--name) shift; name="$1"
+				;;
+			--fsoptions) shift; fsoptions="$1"
+				;;
+			--chunksize) shift; chunksize="$1"
+				;;
+			--percent) shift;
+				size="${1%\%}%"
+				;;
+			--size) shift;
+				# B   -> B
+				# MiB -> Mi
+				# KiB -> Ki
+				size="${1/i[Bb]/i}"
+				[ -z "${size##*[!0-9]*}" ] || size="${size}Mi"
+				;;
+			--resize) resize=1
+				;;
+			--grow) grow=1; size=''
+				;;
+			--encrypted)
+				encrypted=1
+				;;
+			*)
+				shift_args=0
+				ks_set_useexisting "$@"
+				ks_set_makefs_args "$@"
+				ks_set_crypto_args "$@"
+				if [ "$shift_args" != 0 ]; then
+					shift "$shift_args"
+					continue
+				fi
+				;;
+		esac
+		shift
+	done
+
+	if [ -n "$encrypted" ]; then
+		quote_shell_args crypto_args "$crypto_args"
+		eval "ONLYARGS=1 crypto $crypto_args"
+	fi
+
+	mntpoint="${1:-none}"
+	set --
+
+	if [ -n "$grow" ]; then
+		set -- "$@" --extents '100%FREE'
+	elif [ -n "$size" ]; then
+		if [ -z "${size##*%}" ]; then
+			set -- "$@" --extents "${size%\%}%FREE"
+		else
+			set -- "$@" --size "$size"
+		fi
+	fi
+
+	[ -z "$chunksize" ] ||
+		set -- "$@" --chunksize "$chunksize"
+
+	[ -n "$name" ] ||
+		name="lvol$(lvs --noheadings -o name |wc -l)"
+
+	partdev="$vgname/$name"
+	ret=0
+
+	if [ -z "$useexisting" ]; then
+		verbose "creating logical volume '$name' in '$vgname' volume group"
+		lvm lvcreate "$@" "$vgname" --activate n --name "$name" &&
+			lvm vgscan &&
+			lvm vgchange -ay --noudevsync &&
+			lvm vgmknodes ||
+			ret=1
+	elif [ -n "$resize" ]; then
+		verbose "increasing logical volume /dev/$partdev"
+		lvm lvextend "$@" "/dev/$partdev" ||
+			ret=1
+	fi
+
+	if [ "$ret" = 1 ]; then
+		message "unable to handle logical volume: /dev/$partdev"
+		return 1
+	fi
+
+	if [ -n "$encrypted" ]; then
+		eval "set -- $crypto_args"
+		crypto --name="${name}_crypt" "$@" "/dev/$partdev"
+		partdev="mapper/${name}_crypt"
+	fi
+
+	if [ -z "$useexisting" ]; then
+		quote_shell_args makefs_args "$makefs_args"
+		eval "set -- $makefs_args"
+		makefs "$partdev" "$@"
+	fi
+
+	case "$mntpoint" in
+		/|/*)
+			ks_fstab "$partdev" "$mntpoint" "$fsoptions"
+			;;
+		none)
+			;;
+	esac
+}
+
+raid()
+{
+	local PROG TEMP shift_args dev=''
+	local device='' level='' chunksize='' useexisting='' fsoptions=''
+	local encrypted='' makefs_args='' crypto_args=''
+
+	PROG="$FUNCNAME"
+	TEMP=`getopt -n "$PROG" -l "device:,level:,chunksize:,encrypted,$getopt_crypto,$getopt_makefs,$getopt_useexisting" -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			--device) shift; device="$1"
+				;;
+			--level) shift; level="$1"
+				;;
+			--fsoptions) shift; fsoptions="$1"
+				;;
+			--chunksize) shift; chunksize="$1"
+				;;
+			--encrypted)
+				encrypted=1
+				;;
+			*)
+				shift_args=0
+				ks_set_useexisting "$@"
+				ks_set_makefs_args "$@"
+				ks_set_crypto_args "$@"
+				if [ "$shift_args" != 0 ]; then
+					shift "$shift_args"
+					continue
+				fi
+				;;
+		esac
+		shift
+	done
+
+	if [ -n "$encrypted" ]; then
+		quote_shell_args crypto_args "$crypto_args"
+		eval "ONLYARGS=1 crypto $crypto_args"
+	fi
+
+	local mntpoint i num
+
+	mntpoint="$1"; shift
+	num="$#"
+
+	for (( i=0; $i < $num; i++ )); do
+		arg=
+		case "$1" in
+			'')
+				;;
+			raid.*)
+				read arg < "$ks_datadir/$1"
+				set -- "$@" "/dev/$arg"
+				;;
+			*)
+				for arg in $(set +f; printf '%s\n' $1); do
+					arg="$(ks_devname "$arg")"
+					set -- "$@" "/dev/$arg"
+				done
+				;;
+		esac
+		shift
+	done
+
+	if [ -z "$useexisting" ]; then
+		case "$device" in
+			UUID=*|LABEL=*)
+				message "it is not possible to use such a device name to create"
+				return 1
+				;;
+		esac
+
+		for arg; do
+			wipefs -qfa "$arg" ||:
+		done
+
+		dev="/dev/md/$device"
+
+		if mdadm --query --brief "$dev" 2>/dev/null |grep -qs ' [1-9][0-9]* devices'; then
+			mdadm --quiet --stop "$dev"
+		fi
+
+		verbose "creating raid$level array '$device': $*"
+
+		mdadm --create --quiet \
+			--metadata=default \
+			--level="$level" \
+			--raid-devices="$#" \
+			${chunksize:+--chunk="$chunksize"} \
+			"$device" "$@" ||
+			return 1
+
+		#mdadm --wait "$device"
+	fi
+
+	dev="$(ks_devname "$device")"
+
+	if [ -n "$encrypted" ]; then
+		eval "set -- $crypto_args"
+		crypto --name="${device}_crypt" "$@" "$dev"
+		dev="mapper/${device}_crypt"
+	fi
+
+	if [ -z "$useexisting" ]; then
+		quote_shell_args makefs_args "$makefs_args"
+		eval "set -- $makefs_args"
+		makefs "$dev" "$@"
+	fi
+
+	case "$mntpoint" in
+		/|/*)
+			ks_fstab "$dev" "$mntpoint" "$fsoptions"
+			;;
+		none)
+			;;
+	esac
+}
+
+btrfs()
+{
+	local PROG TEMP shift_args dev
+	local subvol='' data='' metadata='' label='' name='' fsoptions='' useexisting=''
+	local mntpoint i num
+
+	PROG="$FUNCNAME"
+	TEMP=`getopt -n "$PROG" -l "subvol,name:,label:,data:,metadata:,fsoptions:,$getopt_useexisting" -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			--subvol) subvol=1
+				;;
+			--name) shift; name="$1"
+				;;
+			--label) shift; label="$1"
+				;;
+			--fsoptions) shift; fsoptions="$1"
+				;;
+			--data) shift
+				data="${1,,}"
+				data="${data#raid}"
+				;;
+			--metadata) shift
+				metadata="${1,,}"
+				metadata="${metadata#raid}"
+				;;
+			*)
+				shift_args=0
+				ks_set_useexisting "$@"
+				if [ "$shift_args" != 0 ]; then
+					shift "$shift_args"
+					continue
+				fi
+				;;
+		esac
+		shift
+	done
+
+	mntpoint="$1"; shift
+	num="$#"
+
+	if [ "$num" = 0 ]; then
+		message "partition required"
+		return 1
+	fi
+
+	for (( i=0; $i < $num; i++ )); do
+		arg=
+		case "$1" in
+			'')
+				;;
+			btrfs.*)
+				for arg in $(set +f; printf '%s\n' "$ks_datadir"/$1); do
+					read arg < "$arg"
+					set -- "$@" "/dev/$arg"
+				done
+				;;
+			*)
+				for arg in $(set +f; printf '%s\n' $1); do
+					arg="$(ks_devname "$arg")"
+					set -- "$@" "/dev/$arg"
+				done
+				;;
+		esac
+		shift
+	done
+
+	dev="$(ks_devname "$1")"
+
+	if [ -z "$useexisting" ]; then
+		local ret=0
+
+		if [ -z "$subvol" ]; then
+			wipefs -qfa "$@" ||:
+			mkfs.btrfs -q -f \
+				${data:+--data "raid$data"} \
+				${metadata:+--metadata "raid$metadata"} \
+				${label:+--label "$label"} \
+				"$@" ||
+				ret=1
+		else
+			if [ -z "$name" ]; then
+				message "name of subvolume required."
+				return 1
+			fi
+
+			if [ "$#" != 1 ]; then
+				message "too many arguments. Must be the identifier of the subvolume's parent volume."
+				return 1
+			fi
+
+			mount -n -o rw,X-mount.mkdir \
+				"/dev/$dev" \
+				"$ks_datadir/btrfs.subvol"
+			command btrfs subvolume create \
+				"$ks_datadir/btrfs.subvol/$name" ||
+				ret=1
+			umount -f \
+				"$ks_datadir/btrfs.subvol"
+		fi
+
+		if [ "$ret" != 0 ]; then
+			message "unable to process btrfs volume or subvolume."
+			return 1
+		fi
+	fi
+
+	[ -z "$name" ] ||
+		fsoptions="${fsoptions:+$fsoptions,}subvol=$name"
+
+	case "$mntpoint" in
+		/|/*)
+			ks_fstab "$dev" "$mntpoint" "$fsoptions"
+			;;
+		none)
+			;;
+	esac
+}

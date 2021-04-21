@@ -1,0 +1,10 @@
+#!/bin/bash -efu
+
+DIR="$WORKDIR/root"
+mkdir -p -- "$DIR/etc/ks.conf.d"
+
+for ks in ${KICKSTART_CONFIGS-}; do
+	cp -f -- "$ks" "$DIR"/etc/ks.conf.d/
+done
+
+printf '%s\n' "$DIR"
