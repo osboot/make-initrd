@@ -314,8 +314,16 @@ ks_prepare_parser()
 
 ks_parse()
 {
-	local l args kwd num section='body' lineno=0 cmdbase=0
-	while read l; do
+	local l eof='' args kwd num section='body' lineno=0 cmdbase=0
+	while [ -z "$eof" ]; do
+		IFS='' read l || eof=1
+
+		if [ "$section" = 'body' ]; then
+			if [[ "$l" =~ [[:space:]]*([^[:space:]].*) ]]; then
+				l="${BASH_REMATCH[1]}"
+			fi
+		fi
+
 		lineno=$(( $lineno + 1 ))
 
 		case "$l" in
