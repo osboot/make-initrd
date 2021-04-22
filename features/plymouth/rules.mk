@@ -1,8 +1,29 @@
-PLYMOUTH_MODULES := $(shell $(PLYMOUTH_GET_MODULES))
+PLYMOUTH_LIBDIR := $(shell $(FEATURESDIR)/plymouth/bin/get-libdir)
 
-MODULES_ADD += $(PLYMOUTH_MODULES)
+PLYMOUTH_PACK_FONT  = $(or $(PLYMOUTH_FONT),$(shell fc-match -f '%{file}\n' 'DejaVuSans' ||:))
+PLYMOUTH_PACK_THEME = $(or $(PLYMOUTH_THEME),$(shell plymouth-set-default-theme 2>/dev/null ||:))
+
+PLYMOUTH_PACK_FILES ?= \
+	$(wildcard $(SYSCONFDIR)/plymouth/plymouthd.conf) \
+	$(wildcard $(SYSCONFDIR)/*-release) \
+	$(wildcard /var/lib/plymouth/boot-duration) \
+	$(wildcard $(DATADIR)/plymouth/plymouthd.defaults) \
+	$(DATADIR)/plymouth/themes/details/details.plymouth \
+	$(DATADIR)/plymouth/themes/text/text.plymouth \
+	$(PLYMOUTH_LIBDIR)/details.so \
+	$(PLYMOUTH_LIBDIR)/text.so \
+	$(PLYMOUTH_LIBDIR)/label.so \
+	$(PLYMOUTH_LIBDIR)/renderers/drm.so \
+	$(PLYMOUTH_LIBDIR)/renderers/frame-buffer.so \
+	$(PLYMOUTH_PACK_FONT) \
+	$(shell env \
+		"LIBDIR=$(LIBDIR)" \
+		"DATADIR=$(DATADIR)" \
+		$(FEATURESDIR)/plymouth/bin/get-theme-files $(PLYMOUTH_PACK_THEME))
+
+MODULES_ADD += $(shell $(FEATURESDIR)/plymouth/bin/get-modules)
 MODULES_TRY_ADD += drivers/char/agp
 
 PUT_FEATURE_DIRS  += $(PLYMOUTH_DATADIR)
-PUT_FEATURE_FILES += $(PLYMOUTH_FILES) $(PLYMOUTH_RULES)
+PUT_FEATURE_FILES += $(PLYMOUTH_PACK_FILES) $(PLYMOUTH_FILES)
 PUT_FEATURE_PROGS += $(PLYMOUTH_PROGS)
