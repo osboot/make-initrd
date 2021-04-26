@@ -3,9 +3,11 @@
 . shell-cmdline
 . shell-var
 
+[ ! -f /etc/sysconfig/init ] ||
+	. /etc/sysconfig/init
+
 # Fix console loglevel
-LOGLEVEL=1
-dmesg -n "$LOGLEVEL"
+dmesg -n "${LOGLEVEL:-1}"
 
 mount -t proc -o nodev,noexec,nosuid proc /proc
 
@@ -31,3 +33,6 @@ if shell_var_is_no "$quiet"; then
 		echo "INITRAMFS: version $VERSION_ID"
 	}
 fi
+
+# Alt-Uparrow
+spawn-shell ${CONSOLE_KEYSTROKE:-alt keycode 103} &

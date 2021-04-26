@@ -1,0 +1,6 @@
+#!/bin/bash -efu
+
+. rdshell-sh-functions
+
+console_inactive &&
+	console_open "Emergency shell" withlock ||:
