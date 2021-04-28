@@ -36,6 +36,8 @@ enum show_flags {
 static int show_tree = 0;
 static int opts      = SHOW_DEPS | SHOW_MODULES | SHOW_FIRMWARE | SHOW_PREFIX | SHOW_BUILTIN;
 
+static const char *suffixes[] = { "", ".xz", NULL };
+
 static char *firmware_dir;
 static char firmware_defaultdir[] = "/lib/firmware/updates:/lib/firmware";
 
@@ -308,20 +310,23 @@ process_firmware(const char *firmware)
 	s = str = strdup(firmware_dir);
 
 	while ((token = strtok_r(str, ":", &saveptr)) != NULL) {
-		snprintf(firmware_buf, sizeof(firmware_buf), "%s/%s", token, firmware);
+		for (int n = 0; suffixes[n]; n++) {
+			snprintf(firmware_buf, sizeof(firmware_buf), "%s/%s%s", token, firmware, suffixes[n]);
 
-		if (!access(firmware_buf, F_OK)) {
-			int i = show_tree;
+			if (!access(firmware_buf, F_OK)) {
+				int i = show_tree;
 
-			if (--i > 0) {
-				while (i--)
-					printf("   ");
-				printf("\\_ ");
+				if (--i > 0) {
+					while (i--)
+						printf("   ");
+					printf("\\_ ");
+				}
+
+				if (opts & SHOW_PREFIX)
+					printf("firmware ");
+				printf("%s\n", firmware_buf);
+				break;
 			}
-
-			if (opts & SHOW_PREFIX)
-				printf("firmware ");
-			printf("%s\n", firmware_buf);
 		}
 
 		str = NULL;
