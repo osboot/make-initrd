@@ -31,12 +31,12 @@ struct modifier {
 };
 
 static const char *conspath[] = {
-	"/proc/self/fd/0",
-	"/dev/tty",
-	"/dev/tty0",
-	"/dev/vc/0",
-	"/dev/systty",
 	"/dev/console",
+	"/dev/systty",
+	"/dev/tty0",
+	"/dev/tty",
+	"/dev/vc/0",
+	"/proc/self/fd/0",
 	NULL
 };
 
