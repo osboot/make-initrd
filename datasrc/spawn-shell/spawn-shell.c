@@ -41,6 +41,14 @@ static const char *conspath[] = {
 };
 
 int confd;
+int verbose = 0;
+char *prog;
+
+static void show_usage(int rc)
+{
+	fprintf(stderr, "Usage: %s [-v|-h] [modificators ...] keycode KEYCODE\n", prog);
+	exit(rc);
+}
 
 static int is_a_console(int fd)
 {
@@ -75,7 +83,8 @@ static int getfd(void)
 	for (int i = 0; conspath[i]; i++) {
 		if ((fd = open_a_console(conspath[i])) >= 0) {
 			if (is_a_console(fd)) {
-				warnx("using %s", conspath[i]);
+				if (verbose)
+					warnx("using %s", conspath[i]);
 				return fd;
 			}
 			close(fd);
@@ -84,17 +93,20 @@ static int getfd(void)
 
 	for (fd = 0; fd < 3; fd++) {
 		if (is_a_console(fd)) {
-			warnx("using %d", fd);
+			if (verbose)
+				warnx("using %d", fd);
 			return fd;
 		}
 	}
 
 	/* total failure */
-	errx(EXIT_FAILURE, "Couldn't get a file descriptor referring to the console.");
+	errx(EXIT_FAILURE, "couldn't get a file descriptor referring to the console.");
 }
 
 static void sighup(int n __attribute__((unused)))
 {
+	if (verbose > 1)
+		warnx("spawing shell");
 	if (system("/lib/initrd/spawn-shell") < 0)
 		warn("system");
 
@@ -104,15 +116,34 @@ static void sighup(int n __attribute__((unused)))
 int main(int argc, char **argv)
 {
 	struct kbentry ke;
-	int mod = 0;
+	int opt, mod = 0;
 	int keycode = -1;
 
-	if (argc == 1)
-		return EXIT_SUCCESS;
+	prog = strrchr(argv[0], '/');
+	if (!prog)
+		prog = argv[0];
+	else
+		prog++;
+
+	while ((opt = getopt(argc, argv, "vh")) != -1) {
+		switch (opt) {
+			case 'v':
+				verbose++;
+				break;
+			case 'h':
+				show_usage(EXIT_SUCCESS);
+				break;
+			default: /* '?' */
+				show_usage(EXIT_FAILURE);
+		}
+	}
+
+	if (optind == argc)
+		show_usage(EXIT_SUCCESS);
 
 	confd = getfd();
 
-	for (int i = 1; i < argc; i++) {
+	for (int i = optind; i < argc; i++) {
 		if (!strcasecmp(argv[i], "keycode")) {
 			i++;
 
