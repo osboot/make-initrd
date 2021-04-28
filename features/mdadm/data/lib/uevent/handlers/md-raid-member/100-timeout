@@ -22,6 +22,16 @@ touch -d "@$(($now + $delay))" "$tsfile"
 [ ! -e "$pidfile" ] ||
 	exit 0
 
+is_raid()
+{
+	local MD_UUID='' MD_DEVICES='' MD_METADATA='' MD_DEVNAME='' MD_NAME=''
+
+	eval $(mdadm --detail --export "/dev/block/$1")
+
+	[ -n "$MD_UUID" ] && [ -f "/etc/initrd/md/${MD_UUID//:}" ] ||
+		return 1
+}
+
 (
 	while :; do
 		now="$(date +'%s')"
@@ -37,6 +47,13 @@ touch -d "@$(($now + $delay))" "$tsfile"
 		[ -e "$md" ] ||
 			break
 
+		dev=
+		readline dev "${md%/md/array_state}/dev"
+
+		is_raid "$dev" ||
+			continue
+
+		state=
 		readline state "$md"
 
 		[ "$state" != "inactive" ] ||
@@ -50,12 +67,17 @@ touch -d "@$(($now + $delay))" "$tsfile"
 		[ -e "$md" ] ||
 			break
 
+		state=
 		readline state "$md"
 
 		[ "$state" = "read-auto" ] ||
 			continue
 
+		dev=
 		readline dev "${md%/md/array_state}/dev"
+
+		is_raid "$dev" ||
+			continue
 
 		mdadm -w "/dev/block/$dev" ||:
 	done

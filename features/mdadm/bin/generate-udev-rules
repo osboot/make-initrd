@@ -13,6 +13,10 @@ eval $(mdadm --detail --export "/dev/$DEVNAME")
 	fatal "UUID not found for /dev/$DEVNAME"
 
 uuid="${MD_UUID//:}"
+
+mkdir -p -- "$WORKDIR/root/etc/initrd/md"
+:> "$WORKDIR/root/etc/initrd/md/$uuid"
+
 rules="$WORKDIR/root/etc/udev/rules.d/64-md-raid-assembly-$uuid.rules"
 
 mkdir -p -- "${rules%/*}"
@@ -46,4 +50,4 @@ ACTION=="remove", ENV{ID_PATH}!="?*", RUN+="/sbin/mdadm -If \$name"
 LABEL="md_inc_end"
 EOF
 
-printf '%s\n' "$rules"
+printf '%s\n' "$rules" "$WORKDIR/root/etc/initrd/md/$uuid"
