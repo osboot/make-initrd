@@ -36,6 +36,7 @@ enum show_flags {
 static int show_tree = 0;
 static int opts      = SHOW_DEPS | SHOW_MODULES | SHOW_FIRMWARE | SHOW_PREFIX | SHOW_BUILTIN;
 
+static const char *kversion = NULL;
 static const char *suffixes[] = { "", ".xz", NULL };
 
 static char *firmware_dir;
@@ -311,8 +312,9 @@ process_firmware(const char *firmware)
 
 	while ((token = strtok_r(str, ":", &saveptr)) != NULL) {
 		for (int n = 0; suffixes[n]; n++) {
-			snprintf(firmware_buf, sizeof(firmware_buf), "%s/%s%s", token, firmware, suffixes[n]);
-
+			int retry = 0;
+			snprintf(firmware_buf, sizeof(firmware_buf), "%s/%s/%s%s", token, kversion, firmware, suffixes[n]);
+again:
 			if (!access(firmware_buf, F_OK)) {
 				int i = show_tree;
 
@@ -326,6 +328,12 @@ process_firmware(const char *firmware)
 					printf("firmware ");
 				printf("%s\n", firmware_buf);
 				break;
+			}
+
+			if (!retry) {
+				retry = 1;
+				snprintf(firmware_buf, sizeof(firmware_buf), "%s/%s%s", token, firmware, suffixes[n]);
+				goto again;
 			}
 		}
 
@@ -669,7 +677,6 @@ main(int argc, char **argv)
 	struct kmod_ctx *ctx;
 	struct utsname u;
 	char module_dir[MAXPATHLEN];
-	const char *kversion = NULL;
 	const char *base_dir = NULL;
 	const char *from_file = NULL;
 	int i, c;
