@@ -16,6 +16,8 @@
 . /etc/init.d/template
 . initrd-sh-functions
 
+PIDFILE=/var/run/udevd.pid
+
 load_modules() {
 	local modname args
 	# shellcheck disable=SC2162
@@ -35,7 +37,8 @@ post_start() {
 }
 
 start() {
-	start_daemon --background --lockfile "$LOCKFILE" -- /lib/initrd/udevd --daemon --resolve-names=never ||
+	start_daemon --make-pidfile --pidfile "$PIDFILE" --lockfile "$LOCKFILE" \
+		-- /lib/initrd/udevd --resolve-names=never ||
 		RETVAL=$?
 
 	[ "$RETVAL" = 0 ] ||
@@ -58,10 +61,12 @@ stop() {
 	udevadm settle
 	udevadm control --stop-exec-queue
 
-	stop_daemon --lockfile "$LOCKFILE" udevd ||
+	stop_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --name udevd \
+		-- udevd ||
 		RETVAL=$?
 
 	# ignore any failed event because the init script will trigger again all events
+	udevadm control --exit
 	udevadm info --cleanup-db
 
 	return $RETVAL
