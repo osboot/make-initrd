@@ -14,8 +14,50 @@
 
 [ -z "${1-}" ] || [ "$1" = start ] || exit 0
 
+. /.initrd/initenv
+
 # Source function library.
 . /etc/init.d/functions
+
+processes()
+{
+	for pid in $(cd /proc; printf '%s\n' [0-9]* |sort -g); do
+		f="/proc/$pid"
+
+		[ -e "$f/cmdline" ] ||
+			continue
+
+		uid='' name='' pid='' ppid='' state='' cmdline='' n='' v=''
+
+		{
+			while read n v _; do
+				case "$n" in
+					"Name:")  name="$v"  ;;
+					"State:") state="$v" ;;
+					"Uid:")   uid="$v"   ;;
+					"Pid:")   pid="$v"   ;;
+					"PPid:")  ppid="$v"  ;;
+				esac
+			done < "$f/status"
+
+			while read -d '' v; do
+				cmdline="${cmdline:+$cmdline }$v"
+			done < "$f/cmdline"
+		} 2>/dev/null ||
+			continue
+
+		if [ "$pid" = 2 ] || [ "$ppid" = 2 ]; then
+			name="[$name]"
+			continue
+		fi
+
+		[ -n "$cmdline" ] ||
+			cmdline="$name"
+
+		printf 'killall: pid:%-5s uid:%-2s %s %s\n' \
+			"$pid" "$uid" "$state" "$cmdline"
+	done
+}
 
 omitpid=
 omitpid_msg=
@@ -43,12 +85,25 @@ for pid in /.initrd/killall/[0-9]*; do
 	omitpid_msg="${omitpid_msg:+$omitpid_msg }$pid${exe:+[$exe]}"
 done
 
-seq=5
-killpids 'Asking all remaining processes to terminate:' 15 ||
-for seq in 1 2 3 4 5; do
-	killall5 -18 $omitpid || break
-	sleep 1
-done
-[ "$seq" = 5 ] || exit 0
+[ -z "${DEBUG-}" ] || processes ||:
 
-killpids 'Killing all remaining processes:' 9
+rc=0
+killpids 'Asking all remaining processes to terminate:' 15 ||
+	rc=$?
+
+[ "$rc" -ne 2 ] ||
+	exit 0
+
+seq=5
+if [ "$rc" -eq 0 ]; then
+	for seq in 1 2 3 4 5; do
+		killall5 -18 $omitpid || break
+		sleep 1
+	done
+fi
+
+if [ "$seq" -eq 5 ]; then
+	killpids 'Killing all remaining processes:' 9
+fi
+
+[ -z "${DEBUG-}" ] || processes ||:
