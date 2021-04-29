@@ -81,7 +81,7 @@ for pid in /.initrd/killall/[0-9]*; do
 	pid=${pid##*/}
 	omitpid="$omitpid -o $pid"
 
-	exe="$(readlink "/proc/$pid/exe" 2>/dev/null)" ||:
+	exe="$(sed -n -e 's/Name:[[:space:]]*\([^[:space:]]\+\)/\1/p' "/proc/$pid/status" 2>/dev/null)" ||:
 	omitpid_msg="${omitpid_msg:+$omitpid_msg }$pid${exe:+[$exe]}"
 done
 
