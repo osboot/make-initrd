@@ -263,7 +263,7 @@ stop_daemon()
 		return 1
 	fi
 
-	FLAGS="--stop"
+	FLAGS="--stop -q"
 	[ -z "$CMDNAME" ] &&
 		FLAGS="$FLAGS --exec $WHICH" ||
 		FLAGS="$FLAGS --name $CMDNAME"
