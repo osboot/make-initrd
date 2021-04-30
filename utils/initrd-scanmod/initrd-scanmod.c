@@ -7,8 +7,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <ctype.h>
-#include <error.h>
-#include <errno.h>
+#include <err.h>
 
 #include "initrd-scanmod.h"
 #include "config.h"
@@ -23,7 +22,7 @@ const struct option long_opts[] = {
 };
 
 static void __attribute__((noreturn))
-usage(int code)
+usage(const char *progname, int code)
 {
 	dprintf(STDOUT_FILENO,
 	        "Usage: %s [options] [--] rules-file [rules-file ...]\n"
@@ -36,26 +35,20 @@ usage(int code)
 	        "\n"
 	        "Report bugs to authors.\n"
 	        "\n",
-	        program_invocation_short_name);
+	        progname);
 	exit(code);
 }
 
 static inline void __attribute__((noreturn))
-print_version_and_exit(void)
+print_version_and_exit(const char *progname)
 {
-	dprintf(STDOUT_FILENO, "%s version %s\n", program_invocation_short_name, PACKAGE_VERSION);
+	dprintf(STDOUT_FILENO, "%s version %s\n", progname, PACKAGE_VERSION);
 	dprintf(STDOUT_FILENO,
 	        "Written by Alexey Gladkov.\n\n"
 	        "Copyright (C) 2018  Alexey Gladkov <gladkov.alexey@gmail.com>\n"
 	        "This is free software; see the source for copying conditions.  There is NO\n"
 	        "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
 	exit(EXIT_SUCCESS);
-}
-
-static void
-my_error_print_progname(void)
-{
-	fprintf(stderr, "%s: ", program_invocation_short_name);
 }
 
 int
@@ -67,8 +60,6 @@ main(int argc, char **argv)
 	const char *kversion = NULL;
 	const char *basedir  = NULL;
 
-	error_print_progname = my_error_print_progname;
-
 	while ((c = getopt_long(argc, argv, short_opts, long_opts, NULL)) != EOF) {
 		switch (c) {
 			case 'k':
@@ -78,19 +69,19 @@ main(int argc, char **argv)
 				basedir = optarg;
 				break;
 			case 'h':
-				usage(EXIT_SUCCESS);
+				usage(basename(argv[0]), EXIT_SUCCESS);
 				break;
 			case 'V':
-				print_version_and_exit();
+				print_version_and_exit(basename(argv[0]));
 				break;
 			case '?':
-				usage(EXIT_FAILURE);
+				usage(basename(argv[0]), EXIT_FAILURE);
 		}
 	}
 
 	if (argc == optind) {
-		error(0, 0, "rules file required");
-		usage(EXIT_FAILURE);
+		warnx("rules file required");
+		usage(basename(argv[0]), EXIT_FAILURE);
 	}
 
 	if (!basedir)
@@ -98,7 +89,7 @@ main(int argc, char **argv)
 
 	if (!kversion) {
 		if (uname(&u) < 0)
-			error(EXIT_FAILURE, errno, "ERROR: uname()");
+			err(EXIT_FAILURE, "ERROR: uname()");
 		kversion = u.release;
 	}
 

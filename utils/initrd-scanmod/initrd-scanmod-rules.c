@@ -3,8 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <regex.h>
-#include <error.h>
-#include <errno.h>
+#include <err.h>
 
 #include "initrd-scanmod.h"
 
@@ -70,17 +69,17 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 			n          = sscanf(a, "%ms %m[^\n]\n", &kw, &value);
 
 			if (n != 2)
-				error(EXIT_FAILURE, 0, "%s:%lu: bad line format", rulesfile, i);
+				errx(EXIT_FAILURE, "%s:%lu: bad line format", rulesfile, i);
 		}
 
 		if ((rule->keyword = get_keyword(kw)) == KW_UNKNOWN_KEYWORD)
-			error(EXIT_FAILURE, 0, "%s:%lu: unknown keyword", rulesfile, i);
+			errx(EXIT_FAILURE, "%s:%lu: unknown keyword", rulesfile, i);
 		xfree(kw);
 
 		rule->value = xmalloc(sizeof(regex_t));
 
 		if (regcomp(rule->value, value, REG_NOSUB | REG_EXTENDED))
-			error(EXIT_FAILURE, 0, "%s:%lu: '%s' is not a regular expression", rulesfile, i, value);
+			errx(EXIT_FAILURE, "%s:%lu: '%s' is not a regular expression", rulesfile, i, value);
 		xfree(value);
 
 		switch (rule->keyword) {

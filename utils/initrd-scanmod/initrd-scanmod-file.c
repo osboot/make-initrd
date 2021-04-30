@@ -5,8 +5,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <error.h>
-#include <errno.h>
+#include <err.h>
 
 #include "initrd-scanmod.h"
 
@@ -16,12 +15,12 @@ open_map(const char *filename, struct mapfile *f, int quiet)
 	struct stat sb;
 
 	if ((f->fd = open(filename, O_RDONLY | O_CLOEXEC)) < 0) {
-		error(EXIT_SUCCESS, errno, "open: %s", filename);
+		warn("open: %s", filename);
 		return -1;
 	}
 
 	if (fstat(f->fd, &sb) < 0) {
-		error(EXIT_SUCCESS, errno, "fstat: %s", filename);
+		warn("fstat: %s", filename);
 		return -1;
 	}
 
@@ -31,12 +30,12 @@ open_map(const char *filename, struct mapfile *f, int quiet)
 		close(f->fd);
 		f->fd = -1;
 		if (!quiet)
-			error(EXIT_SUCCESS, 0, "file %s is empty", filename);
+			warnx("file %s is empty", filename);
 		return 0;
 	}
 
 	if ((f->map = mmap(NULL, f->size, PROT_READ, MAP_PRIVATE, f->fd, 0)) == MAP_FAILED) {
-		error(EXIT_SUCCESS, errno, "mmap: %s", filename);
+		warn("mmap: %s", filename);
 		return -1;
 	}
 
@@ -51,7 +50,7 @@ close_map(struct mapfile *f)
 		return;
 
 	if (munmap(f->map, f->size) < 0)
-		error(EXIT_FAILURE, errno, "munmap: %s", f->filename);
+		err(EXIT_FAILURE, "munmap: %s", f->filename);
 
 	close(f->fd);
 	f->filename = NULL;

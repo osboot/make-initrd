@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <regex.h>
-#include <error.h>
+#include <err.h>
 #include <errno.h>
 
 #include <fts.h>
@@ -133,7 +133,8 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 				is_match = 1;
 
 		} else if (rc < 0) {
-			error(EXIT_SUCCESS, -rc, "Could not get information from '%s'", modname);
+			errno = -rc;
+			warn("Could not get information from '%s'", modname);
 			goto exit;
 		}
 	}
@@ -153,7 +154,8 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 				is_match = 1;
 
 		} else if (rc < 0 && rc != -ENOENT) {
-			error(EXIT_SUCCESS, -rc, "Could not get symbols from '%s'", modname);
+			errno = -rc;
+			warn("Could not get symbols from '%s'", modname);
 			goto exit;
 		}
 
@@ -171,7 +173,8 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 				is_match = 1;
 
 		} else if (rc < 0 && rc != -ENOENT) {
-			error(EXIT_SUCCESS, -rc, "Could not get dependency symbols from '%s'", modname);
+			errno = -rc;
+			warn("Could not get dependency symbols from '%s'", modname);
 			goto exit;
 		}
 	}
@@ -243,13 +246,13 @@ find_modules(const char *kerneldir)
 	char *argv[2];
 
 	if (!(ctx = kmod_new(kerneldir, NULL)))
-		error(EXIT_FAILURE, errno, "%s: kmod_new", kerneldir);
+		err(EXIT_FAILURE, "%s: kmod_new", kerneldir);
 
 	argv[0] = (char *) kerneldir;
 	argv[1] = NULL;
 
 	if (!(t = fts_open(argv, FTS_PHYSICAL, dsort)))
-		error(EXIT_FAILURE, errno, "%s: fts_open", kerneldir);
+		err(EXIT_FAILURE, "%s: fts_open", kerneldir);
 
 	while ((p = fts_read(t))) {
 		switch (p->fts_info) {
@@ -259,7 +262,7 @@ find_modules(const char *kerneldir)
 			case FTS_DNR:
 			case FTS_ERR:
 			case FTS_NS:
-				error(EXIT_FAILURE, errno, "%s: fts_read", p->fts_path);
+				err(EXIT_FAILURE, "%s: fts_read", p->fts_path);
 				break;
 			case FTS_D:
 			case FTS_DC:
@@ -276,7 +279,7 @@ find_modules(const char *kerneldir)
 	}
 
 	if (fts_close(t) < 0)
-		error(EXIT_FAILURE, errno, "%s: fts_close", kerneldir);
+		err(EXIT_FAILURE, "%s: fts_close", kerneldir);
 
 	kmod_unref(ctx);
 }
