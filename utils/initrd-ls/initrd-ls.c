@@ -94,8 +94,12 @@ main(int argc, char **argv)
 	if (optind >= argc)
 		error(EXIT_FAILURE, 0, "ERROR: Missing initrd file");
 
-	if (stat(argv[optind], &st) == -1)
+	errno = 0;
+	if (stat(argv[optind], &st) == -1) {
+		if (errno == ENOENT)
+			error(EXIT_FAILURE, 0, "ERROR: initrd does not exist: %s", argv[optind]);
 		error(EXIT_FAILURE, errno, "ERROR: %s: %d: stat", __FILE__, __LINE__);
+	}
 
 	if ((fd = open(argv[optind], O_RDONLY)) == -1)
 		error(EXIT_FAILURE, errno, "ERROR: %s: %d: open", __FILE__, __LINE__);
