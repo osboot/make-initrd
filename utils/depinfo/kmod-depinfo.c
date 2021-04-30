@@ -10,13 +10,13 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <errno.h>
-#include <error.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <libgen.h>
 #include <libkmod.h>
+#include <err.h>
 
 #include "config.h"
 
@@ -99,10 +99,13 @@ append_kernel_builtin(char *name)
 
 	new = calloc(1, sizeof(struct kernel_builtin));
 	if (!new)
-		error(EXIT_FAILURE, errno, "calloc");
+		errx(EXIT_FAILURE, "memory allocation failed");
 
 	new->name = strdup(name);
 	new->aliases = NULL;
+
+	if (new->name == NULL)
+		errx(EXIT_FAILURE, "memory allocation failed");
 
 	if (!kbuiltin) {
 		kbuiltin = new;
@@ -138,12 +141,12 @@ append_kernel_builtin_alias(char *name, char *alias)
 		}
 
 		if (next->aliases == NULL)
-			error(EXIT_FAILURE, errno, "memory allocation failed");
+			errx(EXIT_FAILURE, "memory allocation failed");
 
 		next->aliases[i] = strdup(alias);
 
 		if (next->aliases[i] == NULL)
-			error(EXIT_FAILURE, errno, "strdup");
+			errx(EXIT_FAILURE, "memory allocation failed");
 
 		next->aliases[i+1] = 0;
 		break;
@@ -183,12 +186,12 @@ read_kernel_builtin(char *module_dir, const char *modinfo)
 	if ((fd = open(filename, O_RDONLY)) < 0) {
 		if (errno == ENOENT)
 			return 0;
-		error(0, errno, "open: %s", filename);
+		warn("open: %s", filename);
 		return -1;
 	}
 
 	if (fstat(fd, &st) < 0) {
-		error(0, errno, "fstat: %s", filename);
+		warn("fstat: %s", filename);
 		return -1;
 	}
 
@@ -196,7 +199,7 @@ read_kernel_builtin(char *module_dir, const char *modinfo)
 
 	addr = mmap(NULL, (size_t) st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
 	if (addr == MAP_FAILED) {
-		error(0, errno, "mmap: %s", filename);
+		warn("mmap: %s", filename);
 		return -1;
 	}
 
@@ -206,11 +209,11 @@ read_kernel_builtin(char *module_dir, const char *modinfo)
 	while (bytes < (size_t) st.st_size) {
 		s = strdup(p);
 		if (!s)
-			error(EXIT_FAILURE, 0, "strdup: nomem");
+			errx(EXIT_FAILURE, "memory allocation failed");
 
 		char *value = strchr(s, '=');
 		if (!value) {
-			error(0, 0, "ERROR: Unexpected file format: %s (ignored).", filename);
+			warnx("ERROR: Unexpected file format: %s (ignored).", filename);
 			free(s);
 			goto ignore;
 		}
@@ -219,7 +222,7 @@ read_kernel_builtin(char *module_dir, const char *modinfo)
 
 		char *field = strrchr(s, '.');
 		if (!field) {
-			error(0, 0, "ERROR: Unexpected file format: %s (ignored).", filename);
+			warnx("ERROR: Unexpected file format: %s (ignored).", filename);
 			free(s);
 			goto ignore;
 		}
@@ -270,7 +273,7 @@ tracked_module(struct kmod_module *mod)
 	modules = realloc(modules, (n_modules + 2) * sizeof(void *));
 
 	if (!modules) {
-		error(0, errno, "realloc: allocating %lu bytes", (n_modules + 2) * sizeof(void *));
+		warn("realloc: allocating %lu bytes", (n_modules + 2) * sizeof(void *));
 		return -1;
 	}
 
@@ -278,7 +281,7 @@ tracked_module(struct kmod_module *mod)
 	modules[n_modules + 1] = NULL;
 
 	if (!(modules[n_modules])) {
-		error(0, errno, "strdup");
+		warnx("memory allocation failed");
 		return -1;
 	}
 
@@ -397,7 +400,8 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 	}
 
 	if ((ret = kmod_module_get_info(mod, &list)) < 0) {
-		error(0, ret, "ERROR: Could not get information from '%s'",
+		errno = ret;
+		warn("ERROR: Could not get information from '%s'",
 		      kmod_module_get_name(mod));
 		return -1;
 	}
@@ -453,7 +457,7 @@ depinfo_path(struct kmod_ctx *ctx, const char *path)
 	struct kmod_module *mod;
 
 	if (kmod_module_new_from_path(ctx, path, &mod) < 0) {
-		error(0, 0, "ERROR: Module file %s not found.", path);
+		warnx("ERROR: Module file %s not found.", path);
 		return ret;
 	}
 
@@ -496,7 +500,7 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req)
 			ret = 0;
 			goto end;
 		}
-		error(0, 0, "ERROR: Module alias %s not found.", alias);
+		warnx("ERROR: Module alias %s not found.", alias);
 		goto end;
 	}
 
@@ -505,12 +509,12 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req)
 			ret = 0;
 			goto end;
 		}
-		error(0, 0, "ERROR: Module %s not found.", alias);
+		warnx("ERROR: Module %s not found.", alias);
 		goto end;
 	}
 
 	if (kmod_module_apply_filter(ctx, KMOD_FILTER_BUILTIN, list, &filtered) < 0) {
-		error(0, 0, "ERROR: Failed to filter list: %m");
+		warn("ERROR: Failed to filter list");
 		goto end;
 	}
 
@@ -588,7 +592,7 @@ read_names(struct kmod_ctx *ctx, const char *file)
 		stream = fopen(file, "r");
 
 	if (!stream) {
-		error(0, errno, "fopen: %s", file);
+		warn("fopen: %s", file);
 		return -1;
 	}
 
@@ -721,10 +725,10 @@ main(int argc, char **argv)
 	}
 
 	if (!from_file && optind >= argc)
-		error(EXIT_FAILURE, 0, "ERROR: Missing module or filename.");
+		errx(EXIT_FAILURE, "ERROR: Missing module or filename.");
 
 	if (!(opts & SHOW_MODULES) && !(opts & SHOW_FIRMWARE))
-		error(EXIT_FAILURE, 0, "ERROR: Options --no-modules and --no-firmware are mutually exclusive.");
+		errx(EXIT_FAILURE, "ERROR: Options --no-modules and --no-firmware are mutually exclusive.");
 
 	if (!firmware_dir)
 		firmware_dir = firmware_defaultdir;
@@ -734,20 +738,20 @@ main(int argc, char **argv)
 
 	if (!kversion) {
 		if (uname(&u) < 0)
-			error(EXIT_FAILURE, errno, "ERROR: uname()");
+			err(EXIT_FAILURE, "ERROR: uname()");
 		kversion = u.release;
 	}
 
 	snprintf(module_dir, sizeof(module_dir), "%s/lib/modules/%s", base_dir, kversion);
 
 	if (read_kernel_builtin(module_dir, "kernel.builtin.modinfo") < 0)
-		error(EXIT_FAILURE, errno, "ERROR: read_kernel_builtin()");
+		err(EXIT_FAILURE, "ERROR: read_kernel_builtin()");
 
 	if (read_kernel_builtin(module_dir, "modules.builtin.modinfo") < 0)
-		error(EXIT_FAILURE, errno, "ERROR: read_kernel_builtin()");
+		err(EXIT_FAILURE, "ERROR: read_kernel_builtin()");
 
 	if (!(ctx = kmod_new(module_dir, NULL)))
-		error(EXIT_FAILURE, errno, "ERROR: kmod_new()");
+		err(EXIT_FAILURE, "ERROR: kmod_new()");
 
 	int ret = EXIT_SUCCESS;
 
