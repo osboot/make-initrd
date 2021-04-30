@@ -3,8 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
-#include <errno.h>
-#include <error.h>
+#include <err.h>
 #include <libgen.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -30,7 +29,7 @@ static const struct option cmdopts[] = {
 };
 
 static void __attribute__((noreturn))
-print_help(void)
+print_help(const char *progname)
 {
 	printf("Usage: %s [options] initramfs\n"
 	       "\n"
@@ -42,12 +41,12 @@ print_help(void)
 	       "   -V, --version        Show version of program and exit;\n"
 	       "   -h, --help           Show this text and exit.\n"
 	       "\n",
-	       program_invocation_short_name);
+	       progname);
 	exit(EXIT_SUCCESS);
 }
 
 static void __attribute__((noreturn))
-print_version(void)
+print_version(const char *progname)
 {
 	printf("%s version " PACKAGE_VERSION "\n"
 	       "Written by Alexey Gladkov <gladkov.alexey@gmail.com>\n"
@@ -56,21 +55,14 @@ print_version(void)
 	       "This is free software; see the source for copying conditions.  There is NO\n"
 	       "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
 	       "\n",
-	       program_invocation_short_name);
+	       progname);
 	exit(EXIT_SUCCESS);
-}
-
-static void
-my_error_print_progname(void)
-{
-	fprintf(stderr, "%s: ", program_invocation_short_name);
 }
 
 static void __attribute__((noreturn))
 bad_option_value(const char *optname, const char *value)
 {
-	error(EXIT_FAILURE, 0, "invalid value for \"%s\" option: %s", optname, value);
-	exit(EXIT_FAILURE);
+	errx(EXIT_FAILURE, "invalid value for \"%s\" option: %s", optname, value);
 }
 
 static int
@@ -98,8 +90,6 @@ main(int argc, char **argv)
 	unsigned long offset;
 	FILE *output = NULL;
 
-	error_print_progname = my_error_print_progname;
-
 	while ((c = getopt_long(argc, argv, cmdopts_s, cmdopts, &option_index)) != -1) {
 		switch (c) {
 			case 'a':
@@ -111,33 +101,33 @@ main(int argc, char **argv)
 				if (output)
 					fclose(output);
 				if ((output = fopen(optarg, "w")) == NULL)
-					error(EXIT_FAILURE, errno, "ERROR: %s: %d: fopen", __FILE__, __LINE__);
+					err(EXIT_FAILURE, "ERROR: fopen: %s", optarg);
 				break;
 			case 'V':
-				print_version();
+				print_version(basename(argv[0]));
 			case 'h':
-				print_help();
+				print_help(basename(argv[0]));
 			default:
 				exit(EXIT_FAILURE);
 		}
 	}
 
 	if (optind >= argc)
-		error(EXIT_FAILURE, 0, "Missing initrd file");
+		errx(EXIT_FAILURE, "Missing initrd file");
 
 	if (!output)
 		output = stdout;
 
 	if (stat(argv[optind], &st) == -1)
-		error(EXIT_FAILURE, errno, "ERROR: %s: %d: stat", __FILE__, __LINE__);
+		err(EXIT_FAILURE, "ERROR: stat: %s", argv[optind]);
 
 	if ((fd = open(argv[optind], O_RDONLY)) == -1)
-		error(EXIT_FAILURE, errno, "ERROR: %s: %d: open", __FILE__, __LINE__);
+		err(EXIT_FAILURE, "ERROR: open: %s", argv[optind]);
 
 	unsigned char *addr = mmap(NULL, (size_t) st.st_size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);
 
 	if (addr == MAP_FAILED)
-		error(EXIT_FAILURE, errno, "ERROR: %s: %d: mmap", __FILE__, __LINE__);
+		err(EXIT_FAILURE, "ERROR: mmap");
 
 	struct stream *s;
 	struct list_tail *l, *h;
@@ -148,7 +138,7 @@ main(int argc, char **argv)
 
 	l = list_append(&res.streams, sizeof(struct stream));
 	if (l == NULL)
-		error(EXIT_FAILURE, errno, "unable to add element to list");
+		err(EXIT_FAILURE, "unable to add element to list");
 	s = l->data;
 
 	s->addr      = addr;

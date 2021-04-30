@@ -3,8 +3,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <errno.h>
-#include <error.h>
+#include <err.h>
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -120,7 +119,7 @@ show_header(struct cpio_header *h)
 		rc = asprintf(&fmt, " %%%dju %%%dju %%%dju %%%du,%%%du %%s%%s",
 		              max_nlinks, max_uid, max_gid, max_size - max_maj - max_min, max_min);
 		if (rc == -1)
-			error(EXIT_FAILURE, errno, "ERROR: asprintf");
+			err(EXIT_FAILURE, "ERROR: asprintf");
 
 		fprintf(stdout, fmt,
 		        (uintmax_t) h->nlink,
@@ -134,7 +133,7 @@ show_header(struct cpio_header *h)
 		rc = asprintf(&fmt, " %%%dju %%%dju %%%dju %%%dju %%s%%s",
 		              max_nlinks, max_uid, max_gid, max_size);
 		if (rc == -1)
-			error(EXIT_FAILURE, errno, "ERROR: %s: %d: asprintf", __FILE__, __LINE__);
+			err(EXIT_FAILURE, "ERROR: asprintf");
 
 		fprintf(stdout, fmt,
 		        (uintmax_t) h->nlink,

@@ -1,6 +1,5 @@
 #include <stdlib.h>
-#include <errno.h>
-#include <error.h>
+#include <err.h>
 
 #include "initrd-common.h"
 #include "initrd-cpio.h"
@@ -27,11 +26,11 @@ read_stream(const char *compress, struct stream *arv, struct result *res)
 
 			//printf("Detected %s compressed data\n", compress_name);
 			if (decompress(arv->addr + offset, arv->size - offset, &unpack, &unpack_size, &readed) != DECOMP_OK)
-				error(EXIT_FAILURE, errno, "ERROR: %s: %d: decompressor failed", __FILE__, __LINE__);
+				err(EXIT_FAILURE, "ERROR: %s: %d: decompressor failed", __FILE__, __LINE__);
 
 			l = list_append(&res->streams, sizeof(struct stream));
 			if (l == NULL)
-				error(EXIT_FAILURE, errno, "ERROR: %s: %d: unable to add element to list", __FILE__, __LINE__);
+				err(EXIT_FAILURE, "ERROR: %s: %d: unable to add element to list", __FILE__, __LINE__);
 			a = l->data;
 
 			a->addr      = unpack;
@@ -46,7 +45,7 @@ read_stream(const char *compress, struct stream *arv, struct result *res)
 
 		l = list_append(&res->cpios, sizeof(struct cpio));
 		if (l == NULL)
-			error(EXIT_FAILURE, errno, "ERROR: %s: %d: unable to add element to list", __FILE__, __LINE__);
+			err(EXIT_FAILURE, "ERROR: %s: %d: unable to add element to list", __FILE__, __LINE__);
 		cpio = l->data;
 
 		cpio->compress = compress;

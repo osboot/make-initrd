@@ -2,8 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <error.h>
+#include <err.h>
 #include <bzlib.h>
 
 #include "initrd-decompress.h"
@@ -49,7 +48,7 @@ bunzip2(unsigned char *in, unsigned long in_size,
 		*out = realloc(*out, sizeof(unsigned char *) * (*out_size));
 
 		if (*out == NULL)
-			error(EXIT_FAILURE, errno, "ERROR: %s: %d: realloc", __FILE__, __LINE__);
+			err(EXIT_FAILURE, "ERROR: %s: %d: realloc", __FILE__, __LINE__);
 
 		memcpy(*out + out_offset, obuf, have);
 		out_offset += have;

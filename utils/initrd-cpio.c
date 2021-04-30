@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
-#include <errno.h>
-#include <error.h>
+#include <err.h>
 #include <libgen.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -82,17 +81,17 @@ read_cpio(struct cpio *a)
 
 	while (offset < a->size) {
 		if (a->size < (CPIO_FORMAT_LENGTH + CPIO_HEADER_SIZE))
-			error(EXIT_FAILURE, 0, "archive less than header");
+			errx(EXIT_FAILURE, "archive less than header");
 
 		if (memcmp(a->raw + offset, CPIO_FORMAT_OLDASCII, CPIO_FORMAT_LENGTH) == 0)
-			error(EXIT_FAILURE, 0, "incorrect cpio method used: use -H newc option");
+			errx(EXIT_FAILURE, "incorrect cpio method used: use -H newc option");
 
 		if (memcmp(a->raw + offset, CPIO_FORMAT_NEWASCII, CPIO_FORMAT_LENGTH))
-			error(EXIT_FAILURE, 0, "no cpio magic");
+			errx(EXIT_FAILURE, "no cpio magic");
 
 		e = list_append(&a->headers, sizeof(struct cpio_header));
 		if (e == NULL)
-			error(EXIT_FAILURE, errno, "unable to add element to list");
+			err(EXIT_FAILURE, "unable to add element to list");
 		h = e->data;
 
 		parse_header(a->raw + offset, h);

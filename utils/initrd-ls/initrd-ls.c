@@ -4,7 +4,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <errno.h>
-#include <error.h>
+#include <err.h>
 #include <libgen.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -92,22 +92,22 @@ main(int argc, char **argv)
 	}
 
 	if (optind >= argc)
-		error(EXIT_FAILURE, 0, "ERROR: Missing initrd file");
+		errx(EXIT_FAILURE, "ERROR: Missing initrd file");
 
 	errno = 0;
 	if (stat(argv[optind], &st) == -1) {
 		if (errno == ENOENT)
-			error(EXIT_FAILURE, 0, "ERROR: initrd does not exist: %s", argv[optind]);
-		error(EXIT_FAILURE, errno, "ERROR: %s: %d: stat", __FILE__, __LINE__);
+			errx(EXIT_FAILURE, "ERROR: initrd does not exist: %s", argv[optind]);
+		err(EXIT_FAILURE, "ERROR: stat: %s", argv[optind]);
 	}
 
 	if ((fd = open(argv[optind], O_RDONLY)) == -1)
-		error(EXIT_FAILURE, errno, "ERROR: %s: %d: open", __FILE__, __LINE__);
+		err(EXIT_FAILURE, "ERROR: open: %s", argv[optind]);
 
 	unsigned char *addr = mmap(NULL, (size_t) st.st_size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);
 
 	if (addr == MAP_FAILED)
-		error(EXIT_FAILURE, errno, "ERROR: %s: %d: mmap", __FILE__, __LINE__);
+		err(EXIT_FAILURE, "ERROR: mmap");
 
 	unsigned long n_cpio = 0;
 	struct stream *s;
@@ -119,7 +119,7 @@ main(int argc, char **argv)
 
 	l = list_append(&res.streams, sizeof(struct stream));
 	if (l == NULL)
-		error(EXIT_FAILURE, errno, "unable to add element to list");
+		err(EXIT_FAILURE, "unable to add element to list");
 	s = l->data;
 
 	s->addr      = addr;
@@ -155,7 +155,7 @@ main(int argc, char **argv)
 	        : asprintf(&fmt, "%%%dd ", bytes);
 
 	if (c == -1)
-		error(EXIT_FAILURE, errno, "ERROR: %s: %d: asprintf", __FILE__, __LINE__);
+		err(EXIT_FAILURE, "ERROR: asprintf");
 
 	c = 1;
 	l = res.cpios;

@@ -2,8 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <error.h>
+#include <err.h>
 
 #include <zstd.h>
 
@@ -14,7 +13,7 @@ xmalloc(size_t size)
 {
 	void *r = malloc(size);
 	if (!r)
-		error(EXIT_FAILURE, errno, "malloc: allocating %lu bytes", (unsigned long) size);
+		err(EXIT_FAILURE, "malloc: allocating %lu bytes", (unsigned long) size);
 	return r;
 }
 
@@ -29,16 +28,14 @@ unzstd(unsigned char *in, unsigned long in_size,
 	ZSTD_DStream *dstream = ZSTD_createDStream();
 
 	if (!dstream) {
-		error(EXIT_SUCCESS, 0, "ERROR: %s: %d: ZSTD_createDStream",
-		      __FILE__, __LINE__);
+		warnx("ERROR: %s: %d: ZSTD_createDStream", __FILE__, __LINE__);
 		return DECOMP_FAIL;
 	}
 
 	size_t result = ZSTD_initDStream(dstream);
 
 	if (ZSTD_isError(result)) {
-		error(EXIT_SUCCESS, 0, "ERROR: %s: %d: ZSTD_initDStream: %s",
-		      __FILE__, __LINE__, ZSTD_getErrorName(result));
+		warnx("ERROR: %s: %d: ZSTD_initDStream: %s", __FILE__, __LINE__, ZSTD_getErrorName(result));
 		ZSTD_freeDStream(dstream);
 		return DECOMP_FAIL;
 	}
@@ -64,7 +61,7 @@ unzstd(unsigned char *in, unsigned long in_size,
 			to_read = ZSTD_decompressStream(dstream, &output, &input);
 
 			if (ZSTD_isError(to_read)) {
-				error(EXIT_SUCCESS, 0, "ERROR: %s: %d: ZSTD_decompressStream: %s",
+				warnx("ERROR: %s: %d: ZSTD_decompressStream: %s",
 				      __FILE__, __LINE__, ZSTD_getErrorName(to_read));
 
 				ZSTD_freeDStream(dstream);
