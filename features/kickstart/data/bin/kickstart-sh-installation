@@ -1,6 +1,8 @@
+#!/bin/bash
+
 liveimg()
 {
-	local PROG TEMP archive=''
+	local PROG TEMP ret=0 archive='' isdir=''
 	local url='' proxy='' noverifyssl='' checksum=''
 
 	PROG="$FUNCNAME"
@@ -49,6 +51,9 @@ liveimg()
 		file://*)
 			archive="${url#file://}"
 			;;
+		dir://*)
+			archive="$url"
+			;;
 		*)
 			message "unexpected url: $url"
 			return 1
@@ -79,6 +84,11 @@ liveimg()
 		*.cpio)
 			cpio -id -D "$ks_rootdir" --no-absolute-filenames < "$archive" ||
 				ret=1
+			;;
+		dir://*)
+			verbose "syncing ${archive#dir://} directory"
+			rsync -abX --info=progress2 "${archive#dir://}/" "$ks_rootdir/" ||
+				ret 1
 			;;
 		*)
 			message "unsupported archive format: $archive"
