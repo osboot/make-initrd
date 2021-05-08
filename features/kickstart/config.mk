@@ -10,10 +10,6 @@ KICKSTART_PROGS_PATTERNS = \
 			   */mkfs.fat \
 			   */mkfs.reiserfs
 
-KICKSTART_FILES = \
-		  /lib/udev/rules.d/63-md-raid-arrays.rules \
-		  /lib/udev/rules.d/64-md-raid-assembly.rules
-
 KICKSTART_DATADIR = $(FEATURESDIR)/kickstart/data
 
 KICKSTART_CONFIGS ?=
