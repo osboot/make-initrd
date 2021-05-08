@@ -864,7 +864,9 @@ raid()
 				;;
 			--device) shift; device="$1"
 				;;
-			--level) shift; level="$1"
+			--level) shift
+				level="${1,,}"
+				level="${level#raid}"
 				;;
 			--fsoptions) shift; fsoptions="$1"
 				;;
