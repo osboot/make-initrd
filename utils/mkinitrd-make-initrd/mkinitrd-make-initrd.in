@@ -85,4 +85,7 @@ if [ -f "$IMAGEFILE" ] && [ -z "$FORCE" ]; then
 	exit 1
 fi
 
-exec make-initrd -k "$2"
+cwd="$(readlink -f "$0")"
+cwd="${cwd%/}"
+
+exec "$cwd"/make-initrd -k "$2"
