@@ -1,0 +1,25 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:
+# Required-Start:      cmdline
+# Should-Start:
+# Required-Stop:
+# X-Start-Before:      uevent
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Prepare kickstart
+# Description:         Prepare kickstart
+# X-LFS-Provided-By:   LFS
+### END INIT INFO
+
+[ "$1" = start ] || exit 0
+
+. /.initrd/initenv
+
+[ -n "${KSFILE-}" ] || exit 0
+
+. uevent-sh-functions
+
+mkdir -p -- "$uevent_confdb/queue/pause/udev"
+mkdir -p -- "$uevent_confdb/queue/pause/md-raid-member"
