@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ks_reboot()
 {
 	local PROG TEMP cmd
@@ -25,8 +27,8 @@ ks_reboot()
 	command "$@"
 }
 
-reboot()   { ks_reboot "$@" reboot -f -d; }
-halt()     { ks_reboot "$@" halt -f -p;   }
-poweroff() { ks_reboot "$@" halt -f -p;   }
-shutdown() { ks_reboot "$@" halt -f -p;   }
+reboot()   { ks_reboot "$@" -- reboot -f -d; }
+halt()     { ks_reboot "$@" -- halt -f -p;   }
+poweroff() { ks_reboot "$@" -- halt -f -p;   }
+shutdown() { ks_reboot "$@" -- halt -f -p;   }
 
