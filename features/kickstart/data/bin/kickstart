@@ -233,7 +233,7 @@ ks_run_section()
 	local num="$1"; shift
 
 	local PROG TEMP str args
-	local erroronfail='' interpreter='' logfile=''
+	local erroronfail='' interpreter='bash' logfile='' nochroot=''
 
 	PROG="%$name"
 
@@ -241,13 +241,16 @@ ks_run_section()
 	quote_shell_args str "${args[$num]}"
 	eval "set -- \"$PROG\" $str"
 
-	TEMP=`getopt -n "$PROG" -l 'erroronfail,interpreter:,log:,logfile:' -- "$@"` ||
+	TEMP=`getopt -n "$PROG" -l 'nochroot,erroronfail,interpreter:,log:,logfile:' -- "$@"` ||
 		return 1
 	eval set -- "$TEMP"
 
 	while :; do
 		case "$1" in
 			--) shift; break
+				;;
+			--nochroot)
+				nochroot=1
 				;;
 			--erroronfail)
 				erroronfail=1
@@ -263,14 +266,20 @@ ks_run_section()
 		shift
 	done
 
+	case "$nochroot$name" in
+		post)
+			interpreter="chroot "$ks_rootdir" $interpreter"
+			;;
+	esac
+
 	local script="$ks_datadir/ks:$name-$num"
 	local ret=0
 
 	if [ -n "$logfile" ]; then
-		$interpreter "$script" >"$logfile" 2>&1 ||
+		$interpreter < "$script" >"$logfile" 2>&1 ||
 			ret=1
 	else
-		$interpreter "$script" ||
+		$interpreter < "$script" ||
 			ret=1
 	fi
 	[ -n "$erroronfail" ] ||

@@ -1,6 +1,6 @@
 $(call feature-requires,devmapper luks lvm mdadm modules-filesystem system-glibc network)
 
-KICKSTART_PROGS  = sfdisk wipefs blkid findmnt mkswap mount mountpoint \
+KICKSTART_PROGS  = sfdisk wipefs blkid findmnt mkswap mount mountpoint chroot \
 		   rsync wget tar unzip cpio env sha256sum eject halt reboot
 
 KICKSTART_PROGS_PATTERNS = \
