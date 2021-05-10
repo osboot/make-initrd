@@ -5,6 +5,8 @@ __uevent_sh_functions=1
 
 . shell-error
 
+uevent_confdb='/.initrd/uevent/confdb'
+
 debugdir='/.initrd/uevent/debug'
 filterdir='/.initrd/uevent/queues'
 ueventdir='/.initrd/uevent/events'

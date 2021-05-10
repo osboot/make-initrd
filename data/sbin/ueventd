@@ -41,6 +41,8 @@ if [ "$UEVENT_MODE" = 'server' ]; then
 	}
 	set_cleanup_handler exit_handler
 
+	mkdir -p -- "$uevent_confdb/queue/pause"
+
 	export UEVENT_MODE='queue-processor'
 
 	for d in "$filterdir"/*; do
@@ -91,6 +93,11 @@ fi
 
 if [ "$evtype" = 'x' ]; then
 	kill "$PPID"
+	exit 0
+fi
+
+if [ -e "$uevent_confdb/queue/pause/.all" ] || [ -e "$uevent_confdb/queue/pause/$QUEUE" ]; then
+	message "$QUEUE: queue paused"
 	exit 0
 fi
 
