@@ -292,7 +292,8 @@ ks_run()
 	local i max
 	eval "max=\${#ks_$1[@]}"
 	for (( i=0; $i < $max; i++ )); do
-		ks_run_section "$1" "$i"
+		ks_run_section "$1" "$i" ||
+			return 1
 	done
 }
 
