@@ -136,6 +136,9 @@ clearpart()
 	case "$DISKLABEL" in
 		''|gpt|dos)
 			;;
+		mbr)
+			DISKLABEL=dos
+			;;
 		*)
 			message "unsupported disklabel: $DISKLABEL"
 			return 1
