@@ -53,7 +53,7 @@ AC_CHECK_FUNCS([ \
 		clock_gettime gettimeofday inet_ntoa localtime_r memset munmap \
 		regcomp setenv socket strchr strdup strerror strncasecmp strndup \
 		strpbrk strrchr strstr strtol strtoul strtoull uname \
-		twalk_r tdestroy])
+		twalk_r tdestroy updwtmp])
 
 AC_MSG_CHECKING([if in-tree build is required])
 AC_ARG_ENABLE(local-build,
