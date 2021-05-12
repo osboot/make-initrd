@@ -7,3 +7,7 @@ halt_SRCS = \
 	datasrc/halt/reboot.h
 
 PROGS += halt
+
+halt_SYMLINKS = \
+	$(dest_data_bindir)/reboot \
+	$(dest_data_bindir)/poweroff
