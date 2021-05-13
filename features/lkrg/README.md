@@ -9,3 +9,8 @@ individually protect all extensions of the kernel (modules). To make the project
 fully functional, the module should be initially loaded on a clean system.
 
 https://openwall.info/wiki/p_lkrg/Main
+
+## Boot parameters
+
+- `nolkrg` — do not load lkrg module during system boot.
+- `noearlylkrg` — do not load lkrg module at initrd stage.

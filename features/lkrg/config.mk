@@ -1,0 +1,1 @@
+LKRG_DATADIR 	?= $(FEATURESDIR)/lkrg/data
