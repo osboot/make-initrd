@@ -1026,6 +1026,9 @@ btrfs()
 		return 1
 	fi
 
+	[ -e /dev/btrfs-control ] ||
+		modprobe btrfs
+
 	for (( i=0; $i < $num; i++ )); do
 		arg=
 		case "$1" in
