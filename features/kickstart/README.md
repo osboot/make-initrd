@@ -103,6 +103,7 @@ Options:
 ```
 crypto [--name=NAME] [--passphrase=PASSPHRASE] [--cipher=CIPHER] [--pbkdf=PBKDF]
    [--pbkdf-memory=MEMORY] [--pbkdf-time=TIME] [--pbkdf-iterations=ITERATIONS]
+   [--passfile=FILE]
    <device>
 ```
 Creates LUKS encrypted volume.
@@ -111,6 +112,8 @@ Options:
 
 * `--passphrase=PASSPHRASE` - Specifies the passphrase to use when encrypting
   this device.
+
+* `--passfile=FILE` - Specifies the file that contains the password.
 
 * `--cipher=CIPHER` - Specifies which encryption algorithm should be used to
   encrypt the filesystem.
@@ -132,8 +135,8 @@ Options:
 part [--ondisk=DISK] [--onpart=ONPART] [--asprimary]
    [--fstype=FSTYPE] [--label=LABEL]
    [--useexisting] [--noformat]
-   [--encrypted] [--passphrase=PASSPHRASE] [--cipher=CIPHER] [--pbkdf=PBKDF]
-   [--pbkdf-memory=MEMORY] [--pbkdf-time=TIME] [--pbkdf-iterations=ITERATIONS]
+   [--encrypted] [--passphrase=PASSPHRASE] [--passfile=FILE] [--cipher=CIPHER]
+   [--pbkdf=PBKDF] [--pbkdf-memory=MEMORY] [--pbkdf-time=TIME] [--pbkdf-iterations=ITERATIONS]
    <mntpoint>
 ```
 Creates a partition on the system.
@@ -176,7 +179,7 @@ Options:
 
 * `--encrypted` - Specifies that this logical volume should be encrypted.
 
-* `--passphrase=PASSPHRASE`, `--cipher=CIPHER`, `--pbkdf=PBKDF`,
+* `--passphrase=PASSPHRASE`, `--passfile=FILE`, `--cipher=CIPHER`, `--pbkdf=PBKDF`,
   `--pbkdf-memory=MEMORY`, `--pbkdf-time=TIME`, `--pbkdf-iterations=ITERATIONS` -
   See options for the [crypto](#crypto) command.
 
@@ -204,8 +207,8 @@ logvol --vgname=VGNAME --name=NAME [--chunksize=SIZE] [--percent=PERCENT]
    [--size=SIZE] [--grow] [--resize] [--fsoptions=FSOPTS]
    [--fstype=FSTYPE] [--label=LABEL]
    [--useexisting] [--noformat]
-   [--encrypted] [--passphrase=PASSPHRASE] [--cipher=CIPHER] [--pbkdf=PBKDF]
-   [--pbkdf-memory=MEMORY] [--pbkdf-time=TIME] [--pbkdf-iterations=ITERATIONS]
+   [--encrypted] [--passphrase=PASSPHRASE] [--passfile=FILE] [--cipher=CIPHER]
+   [--pbkdf=PBKDF] [--pbkdf-memory=MEMORY] [--pbkdf-time=TIME] [--pbkdf-iterations=ITERATIONS]
    <mntpoint>
 ```
 Create a logical volume for Logical Volume Management (LVM).
@@ -234,7 +237,7 @@ Options:
 
 * `--encrypted` - Specifies that this logical volume should be encrypted.
 
-* `--passphrase=PASSPHRASE`, `--cipher=CIPHER`, `--pbkdf=PBKDF`,
+* `--passphrase=PASSPHRASE`, `--passfile=FILE`, `--cipher=CIPHER`, `--pbkdf=PBKDF`,
   `--pbkdf-memory=MEMORY`, `--pbkdf-time=TIME`, `--pbkdf-iterations=ITERATIONS` -
   See options for the [crypto](#crypto) command.
 
@@ -246,8 +249,8 @@ Options:
 raid --device=DEVICE [--level=LEVEL] [--chunksize=SIZE] [--fsoptions=FSOPTS]
    [--fstype=FSTYPE] [--label=LABEL]
    [--useexisting] [--noformat]
-   [--encrypted] [--passphrase=PASSPHRASE] [--cipher=CIPHER] [--pbkdf=PBKDF]
-   [--pbkdf-memory=MEMORY] [--pbkdf-time=TIME] [--pbkdf-iterations=ITERATIONS]
+   [--encrypted] [--passphrase=PASSPHRASE] [--passfile=FILE] [--cipher=CIPHER]
+   [--pbkdf=PBKDF] [--pbkdf-memory=MEMORY] [--pbkdf-time=TIME] [--pbkdf-iterations=ITERATIONS]
    <mntpoint> <partitions...>
 ```
 Assembles a software RAID device.
@@ -274,7 +277,7 @@ Options:
 
 * `--encrypted` - Specifies that this logical volume should be encrypted.
 
-* `--passphrase=PASSPHRASE`, `--cipher=CIPHER`, `--pbkdf=PBKDF`,
+* `--passphrase=PASSPHRASE`, `--passfile=FILE`, `--cipher=CIPHER`, `--pbkdf=PBKDF`,
   `--pbkdf-memory=MEMORY`, `--pbkdf-time=TIME`, `--pbkdf-iterations=ITERATIONS` -
   See options for the [crypto](#crypto) command.
 

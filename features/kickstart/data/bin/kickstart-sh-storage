@@ -303,11 +303,11 @@ makefs()
 	"mkfs.$fstype" -q ${label:+-L "$label"} "/dev/$dev"
 }
 
-getopt_crypto='cipher:,passphrase:,pbkdf:,pbkdf-memory:,pbkdf-time:,pbkdf-iterations:'
+getopt_crypto='cipher:,passphrase:,passfile:,pbkdf:,pbkdf-memory:,pbkdf-time:,pbkdf-iterations:'
 ks_set_crypto_args()
 {
 	case "$1" in
-		--cipher|--passphrase|--pbkdf|--pbkdf-memory|--pbkdf-time|--pbkdf-iterations)
+		--cipher|--passphrase|--passfile|--pbkdf|--pbkdf-memory|--pbkdf-time|--pbkdf-iterations)
 			crypto_args="${crypto_args-} \"$1=$2\""
 			shift_args=2
 			;;
@@ -318,7 +318,7 @@ crypto()
 {
 	local PROG TEMP
 	local luks_passphrase='' luks_cipher='' luks_pbkdf='' luks_pbkdf_memory=''
-	local luks_pbkdf_time='' luks_pbkdf_iterations=''
+	local luks_pbkdf_time='' luks_pbkdf_iterations='' luks_passfile=''
 
 	local ret=0
 
@@ -335,6 +335,8 @@ crypto()
 				;;
 			--passphrase) shift; luks_passphrase="$1"
 				;;
+			--passfile) shift; luks_passfile="$1"
+				;;
 			--pbkdf) shift; luks_pbkdf="$1"
 				;;
 			--pbkdf-memory) shift; luks_pbkdf_memory="$1"
@@ -349,7 +351,7 @@ crypto()
 		shift
 	done
 
-	if [ -z "$luks_passphrase" ]; then
+	if [ -z "$luks_passphrase" ] && [ -z "$luks_passfile" ]; then
 		message "specify the passphrase to use."
 		return 1
 	fi
@@ -373,7 +375,7 @@ crypto()
 
 	set -- cryptsetup \
 		--batch-mode \
-		--type luks2 \
+		--type luks \
 		${luks_cipher:+--cipher="$luks_cipher"} \
 		${luks_passphrase:+ --force-password} \
 		${luks_pbkdf:+--pbkdf="$luks_pbkdf"} \
@@ -382,9 +384,17 @@ crypto()
 		${luks_pbkdf_iterations:+--pbkdf-force-iterations="$luks_pbkdf_iterations"} \
 		luksFormat "/dev/$dev" \
 
+	if [ -n "$luks_passfile" ] && [ ! -f "$luks_passfile" ]; then
+		message "passfile does not exist: $luks_passfile"
+		return 1
+	fi
+
 	if [ -n "$luks_passphrase" ]; then
 		printf '%s' "$luks_passphrase" |
-			"$@" - ||
+			"$@" -d- ||
+			ret=1
+	elif [ -n "$luks_passfile" ]; then
+		"$@" -d- < "$luks_passfile" ||
 			ret=1
 	else
 		"$@" ||
@@ -396,11 +406,14 @@ crypto()
 		return 1
 	fi
 
-	set -- cryptsetup open "/dev/$dev" "${name:-${dev}_crypt}"
+	set -- cryptsetup luksOpen "/dev/$dev" "${name:-${dev}_crypt}"
 
 	if [ -n "$luks_passphrase" ]; then
 		printf '%s' "$luks_passphrase" |
-			"$@" - ||
+			"$@" -d- ||
+			ret=1
+	elif [ -n "$luks_passfile" ]; then
+		"$@" -d- < "$luks_passfile" ||
 			ret=1
 	else
 		"$@" ||
