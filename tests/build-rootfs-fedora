@@ -1,6 +1,0 @@
-#!/bin/sh -efux
-
-dnf install git-core util-linux coreutils findutils make gcc kmod help2man perl-Pod-Html automake autoconf elfutils zlib gzip bzip2 xz expect kmod-devel zlib-devel bzip2-devel xz-devel libzstd-devel elfutils-libelf-devel libtirpc-devel tar cpio pciutils device-mapper lvm2 cryptsetup mdadm  e2fsprogs btrfs-progs xfsprogs strace iproute systemd-udev kbd
-
-find / -xdev \( \! -path '/.*' -a \! -path '/usr/lib/locale/*' -a \! -path '/usr/share/locale/*' -a \! -path '/usr/share/doc/*' -a \! -path '/usr/share/man/*' -a \! -path '/usr/share/info/*' -a \! -path '/usr/share/icons/*' -a \! -path '/usr/share/zsh/*' -a \! -path '/rootfs.cpio' -a \! -path '/usr/lib/.build-id/*' -a \! -path '/var/cache/dnf/*' -a \! -name '*.pyc' \) -print0 | cpio -H newc -ov0 > /rootfs.cpio
-

@@ -1,0 +1,9 @@
+#!/bin/bash -efu
+
+expect -f- <<EOF
+set timeout -1
+spawn $*
+expect -re "Enter passphrase for /dev/.*: "
+send -- "qwerty\r"
+expect eof
+EOF

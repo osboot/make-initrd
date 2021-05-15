@@ -1,0 +1,308 @@
+#!/bin/bash -efu
+
+readonly ARCH=x86_64
+readonly IMAGE=alt:sisyphus
+readonly KERNEL_FLAVOR=-std-def
+readonly TIMEOUT=10m
+
+PROG="${0##*/}"
+TEST=
+message()
+{
+	printf >&2 '%s%s: %s\n' "$PROG" "${TEST:+ ($TESTNAME)}" "$*"
+}
+
+run()
+{
+	message "run: $*"
+	"$@"
+}
+
+cat_exec()
+{
+	cat > "$1"
+	chmod +x "$1"
+}
+
+valid_log()
+{
+	if grep -qse '^IT WORKS!' "$2"; then
+		message "$1 DONE"
+		return 0
+	else
+		message "$1 FAIL"
+		return 1
+	fi
+}
+
+topdir="$(readlink -ev "$0")"
+topdir="${topdir%/*/*}"
+
+TEST="$1"; shift
+
+KICKSTART_DISKS=0
+BOOT_DISKS=0
+BOOT_PROG=
+BOOT_CMDLINE='root=LABEL=ROOT'
+
+eval $(sed -n -e 's/^# param //p' "$topdir/testing/$TEST")
+
+TESTNAME="${TEST##*/}"
+TESTNAME="${TESTNAME%.cfg}"
+
+builddir=/srv
+workdir="$topdir/testing/cache"
+logdir="$topdir/testing/logs"
+
+mkdir -p -- \
+	"$workdir/$TESTNAME" \
+	"$logdir"
+cat \
+	"$topdir/testing/testing-ks-sysimage.cfg" \
+	"$topdir/testing/$TEST" \
+	"$topdir/testing/testing-ks-initrd.cfg" \
+	"$topdir/testing/testing-ks-done.cfg" \
+	> "$workdir/$TESTNAME/ks.cfg"
+
+sed -i \
+	-e "s#@CMDLINE@#$BOOT_CMDLINE#g" \
+	"$workdir/$TESTNAME/ks.cfg"
+
+msg='building from git tree'
+if [ ! -d "$topdir/.build/dest" ]; then
+	message "step: $msg"
+
+	cat_exec "$workdir/run.sh" <<-EOF
+	#!/bin/bash -efu
+
+	apt-get update
+	apt-get -y install \
+	 gcc make automake autoconf \
+	 udev \
+	 libkmod-devel zlib-devel bzlib-devel liblzma-devel \
+	 libzstd-devel libelf-devel libtirpc-devel libcrypt-devel
+
+	cd "$builddir"
+
+	./autogen.sh
+	./configure \
+		--enable-local-build \
+		--with-runtimedir=/lib/initrd1
+	make
+	EOF
+	podman run --rm -ti \
+		--volume="$topdir:$builddir" \
+		"$IMAGE" "$builddir/testing/cache/run.sh"
+
+	rm -f "$workdir/sysimage.tar"
+else
+	message "skip: $msg"
+fi
+
+msg='building sysimage'
+if [ ! -f "$workdir/sysimage.img" ]; then
+	message "step: $msg"
+
+	if [ -z "$(podman images -an --format='1' -f reference=localhost/mi:sysimage)" ]; then
+		run podman image build -t "localhost/mi:sysimage" --pull --squash --force-rm=true -f - <<-EOF
+		FROM $IMAGE
+		RUN \
+		 printf > /etc/initrd.mk '%s\n' \
+		 'AUTODETECT =' \
+		 'FEATURES += compress cleanup'
+		RUN \
+		 rpm -ql filesystem | xargs -r mkdir -p
+		RUN \
+		 apt-get update && \
+		 apt-get -y install kernel-image$KERNEL_FLAVOR sysvinit startup \
+		 mingetty grub mdadm lvm2 cryptsetup btrfs-progs e2fsprogs \
+		 xfsprogs dosfstools reiserfsprogs pwgen
+		RUN \
+		 find /lib/modules \( \
+		  -path '*/kernel/sound/*' -o \
+		  -path '*/kernel/drivers/media-core/*' -o \
+		  -path '*/kernel/drivers/power/*' -o \
+		  -path '*/kernel/drivers/video/*' -o \
+		  -path '*/kernel/drivers/leds/*' -o \
+		  -path '*/kernel/drivers/gpio/*' -o \
+		  -path '*/kernel/drivers/bluetooth/*' -o \
+		  -path '*/kernel/drivers/watchdog/*' -o \
+		  -path '*/kernel/drivers/nfc/*' -o \
+		  -path '*/kernel/drivers/hwmon/*' -o \
+		  -path '*/kernel/drivers/i2c/*' -o \
+		  -path '*/kernel/drivers/iio/*' -o \
+		  -path '*/kernel/drivers/isdn/*' -o \
+		  -path '*/kernel/drivers/usb/*' -o \
+		  -path '*/kernel/drivers/net/wireless/*' -o \
+		  -path '*/kernel/drivers/net/usb/*' -o \
+		  -path '*/kernel/drivers/input/touchscreen/*' -o \
+		  -path '*/kernel/drivers/input/joystick/*' -o \
+		  -path '*/kernel/drivers/input/misc/*' \
+		  \) -delete; \
+		 find /usr/share/license /usr/share/license-exception -delete; \
+		 find /usr/share/locale/ -mindepth 3 -maxdepth 3 -type f -name '*.mo' -delete; \
+		 find /usr/share/doc/ /usr/share/man/ /usr/share/info/ -mindepth 1 -delete; \
+		 find /var/lib/apt/lists/ /var/cache/apt/ -type f -delete;
+		EOF
+		rm -f "$workdir/sysimage.tar"
+	fi
+
+	if [ ! -f "$workdir/sysimage.tar" ]; then
+		run podman run --rm -ti \
+			--mount="type=image,src=localhost/mi:sysimage,dst=/image" \
+			--mount="type=tmpfs,destination=/image$builddir" \
+			--mount="type=bind,src=$topdir/.build/dest,dst=/image$builddir/.build/dest" \
+			--mount="type=bind,src=$topdir/data,dst=/image$builddir/data" \
+			--mount="type=bind,src=$topdir/features,dst=/image$builddir/features" \
+			--mount="type=bind,src=$topdir/guess,dst=/image$builddir/guess" \
+			--mount="type=bind,src=$topdir/kmodule.deps.d,dst=/image$builddir/kmodule.deps.d" \
+			--mount="type=bind,src=$topdir/tools,dst=/image$builddir/tools" \
+			--volume="$topdir:/host" \
+			"$IMAGE" tar -C /image -cf /host/testing/cache/sysimage.tar .
+	fi
+
+	sz_block=4096
+	n_blocks=$(( $(stat -c %s "$workdir/sysimage.tar") / $sz_block ))
+	n_inodes=$(tar -tf "$workdir/sysimage.tar" | wc -l)
+
+	blocks=$(( $n_blocks + ( ( $n_blocks * 15 ) / 100 ) ))
+
+	run genext2fs -z -N $n_inodes -B $sz_block -b $blocks \
+		-L SYSIMAGE -a "$workdir/sysimage.tar" \
+		"$workdir/sysimage.img"
+
+	run /sbin/tune2fs \
+		-O dir_index,has_journal,uninit_bg \
+		"$workdir/sysimage.img"
+
+	cat > "$workdir/qemu-sysimage" <<-EOF
+	 -blockdev driver=file,node-name=sysimage,filename=$workdir/sysimage.img
+	 -device virtio-blk,drive=sysimage
+	EOF
+else
+	message "skip: $msg"
+fi
+
+msg='creating kickstart image'
+if [ ! -f "$workdir/$TESTNAME/boot-ks-vmlinuz" ] || [ ! -f "$workdir/$TESTNAME/boot-ks-initrd.img" ]; then
+	message "step: $msg"
+
+	cat_exec "$workdir/run.sh" <<-EOF
+	#!/bin/bash -efu
+
+	cat > /etc/initrd.mk <<EOF1
+	 AUTODETECT =
+	 DISABLE_FEATURES += ucode
+	 FEATURES = add-modules kickstart qemu rdshell modules-virtio
+	 MODULES_ADD += sd_mod
+	 MODULES_PRELOAD += virtio-blk virtio-scsi virtio-pci
+	 KICKSTART_CONFIGS = $builddir/testing/cache/$TESTNAME/ks.cfg
+	 PUT_PROGS += pwgen
+	EOF1
+
+	cat > /etc/sysconfig/installkernel <<EOF1
+	 INITRD_GENERATOR=make-initrd
+	 MAKE_INITRD=$builddir/.build/dest/usr/sbin/make-initrd
+	 MKINITRD=$builddir/.build/dest/usr/sbin/mkinitrd-make-initrd
+	EOF1
+
+	apt-get update
+
+	apt-get -y install \
+	 e2fsprogs btrfs-progs xfsprogs dosfstools reiserfsprogs \
+	 cryptsetup lvm2 mdadm sfdisk util-linux rsync wget unzip \
+	 tar cpio eject sysvinit pwgen
+
+	apt-get -y install \
+	 kernel-image$KERNEL_FLAVOR
+
+	cp -L /boot/vmlinuz    $builddir/testing/cache/$TESTNAME/boot-ks-vmlinuz
+	cp -L /boot/initrd.img $builddir/testing/cache/$TESTNAME/boot-ks-initrd.img
+	EOF
+
+	podman run --rm -ti \
+		--volume="$topdir:$builddir" \
+		"$IMAGE" "$builddir/testing/cache/run.sh"
+else
+	message "skip: $msg"
+fi
+
+if [ -c /dev/kvm ]; then
+	echo -enable-kvm -cpu host
+else
+	echo -cpu max
+fi > "$workdir/qemu-cpu"
+
+cat > "$workdir/qemu-stdout" <<EOF
+ -nographic
+ -serial chardev:stdio
+ -chardev stdio,mux=on,id=stdio,signal=off
+ -mon chardev=stdio,mode=readline
+EOF
+
+if [ ! -f "$workdir/$TESTNAME/boot-ks-done" ]; then
+	msg='creating qemu kickstart disks'
+
+	for (( i=1; i <= KICKSTART_DISKS; i++ )); do
+		message "creating QEMU disk $i ..."
+
+		fn="$workdir/$TESTNAME/disk-$i.qcow2"
+		[ -f "$fn" ] ||
+			qemu-img create -q -f qcow2 "$fn" 10G
+
+		#printf '%s\n' "-drive media=disk,index=$i,file=$fn"
+
+		printf '%s\n' \
+		 "-blockdev driver=qcow2,node-name=disk$i,file.driver=file,file.node-name=file$i,file.filename=$fn" \
+		 "-device virtio-blk,drive=disk$i,id=virtio$i"
+
+	done > "$workdir/$TESTNAME/qemu-disks"
+
+	cat_exec "$workdir/run.sh" <<-EOF
+	#!/bin/bash
+	exec timeout --foreground --signal=TERM --kill-after=5s $TIMEOUT \
+	qemu-system-$ARCH -sdl \
+		-m 1G \
+		-no-reboot \
+		-kernel "$workdir/$TESTNAME/boot-ks-vmlinuz" \
+		-initrd "$workdir/$TESTNAME/boot-ks-initrd.img" \
+		-append 'console=ttyS0,115200n8 rdlog=console ksfile=ks.cfg' \
+		\$(cat "$workdir/qemu-cpu") \
+		\$(cat "$workdir/qemu-stdout") \
+		\$(cat "$workdir/qemu-sysimage") \
+		\$(cat "$workdir/$TESTNAME/qemu-disks")
+	EOF
+
+	script "$logdir/$TESTNAME.ks.log" -c "$workdir/run.sh"
+
+	valid_log 'kickstart' "$logdir/$TESTNAME.ks.log" ||
+		exit 1
+
+	:> "$workdir/$TESTNAME/boot-ks-done"
+fi
+
+if [ ! -f "$workdir/$TESTNAME/boot-done" ]; then
+	for (( i=1; i <= BOOT_DISKS; i++ )); do
+		fn="$workdir/$TESTNAME/disk-$i.qcow2"
+		printf '%s\n' \
+		 "-blockdev driver=qcow2,node-name=disk$i,file.driver=file,file.node-name=file$i,file.filename=$fn" \
+		 "-device virtio-blk,drive=disk$i,id=virtio$i"
+	done > "$workdir/$TESTNAME/qemu-disks"
+
+	cat_exec "$workdir/run.sh" <<-EOF
+	#!/bin/bash
+	exec timeout --foreground --signal=TERM --kill-after=5s $TIMEOUT \
+		${BOOT_PROG:+"$topdir/testing/$BOOT_PROG"} \
+		qemu-system-$ARCH -m 1G -no-reboot \
+		\$(cat "$workdir/qemu-cpu") \
+		\$(cat "$workdir/qemu-stdout") \
+		\$(cat "$workdir/$TESTNAME/qemu-disks")
+	EOF
+
+	script "$logdir/$TESTNAME.boot.log" -c "$workdir/run.sh"
+
+	valid_log 'boot check' "$logdir/$TESTNAME.boot.log" ||
+		exit 1
+
+	:> "$workdir/$TESTNAME/boot-done"
+fi
