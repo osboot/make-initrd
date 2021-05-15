@@ -100,13 +100,17 @@ readkey() {
 		return 0
 	case "${LUKS_KEY_FORMAT:-plain}" in
 		plain)
-			{ cat "$keyfile"; printf .; } |
-			sed \
-				-e ':a'      \
-				-e 'N'       \
-				-e '$!ba'    \
-				-e 's/\.$//' \
-				-e 's/\n$//'
+			local last
+
+			last="$(printf .; tail -c -1 "$keyfile"; printf .;)"
+			last="${last#.}"
+			last="${last%.}"
+
+			if [ "$last" = $'\n' ]; then
+				head -c -1 < "$keyfile"
+			else
+				cat "$keyfile"
+			fi
 			;;
 		raw)
 			cat "$keyfile"
