@@ -326,12 +326,14 @@ ks_parse()
 {
 	local l eof='' args kwd num section='body' lineno=0 cmdbase=0
 	while [ -z "$eof" ]; do
-		IFS='' read l || eof=1
-
 		if [ "$section" = 'body' ]; then
+			IFS='' read l || eof=1
+
 			if [[ "$l" =~ [[:space:]]*([^[:space:]].*) ]]; then
 				l="${BASH_REMATCH[1]}"
 			fi
+		else
+			IFS='' read -r l || eof=1
 		fi
 
 		lineno=$(( $lineno + 1 ))
