@@ -293,12 +293,12 @@ makefs()
 		return 1
 
 	if [ "$fstype" = swap ]; then
-		verbose "creating swap on /dev/$dev"
+		verbose "creating swap${label:+ (LABEL=$label)} on /dev/$dev"
 		mkswap -f ${label:+-L "$label"} "/dev/$dev" >/dev/null
 		return
 	fi
 
-	verbose "creating $fstype filesystem on /dev/$dev"
+	verbose "creating $fstype filesystem${label:+ (LABEL=$label)} on /dev/$dev"
 
 	"mkfs.$fstype" -q ${label:+-L "$label"} "/dev/$dev"
 }
@@ -551,7 +551,7 @@ part()
 			ks_get_dev_size "$dev" --list-free
 
 			if [ "$needbytes" -gt "$totalsize_bytes" ]; then
-				verbose "/dev/$dev is too small, ignoring."
+				verbose "/dev/$dev has too little free space, ignoring."
 				continue
 			fi
 

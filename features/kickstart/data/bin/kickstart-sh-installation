@@ -87,7 +87,7 @@ liveimg()
 			;;
 		dir://*)
 			verbose "syncing ${archive#dir://} directory"
-			rsync -abX --info=progress2 "${archive#dir://}/" "$ks_rootdir/" ||
+			rsync -abX ${verbose:+--info=progress2 --no-i-r} "${archive#dir://}/" "$ks_rootdir/" ||
 				ret 1
 			;;
 		*)

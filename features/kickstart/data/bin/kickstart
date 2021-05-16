@@ -188,10 +188,11 @@ ks_mount()
 
 	umount -q -R "$ks_rootdir" ||:
 
+	verbose "mounting destination ..."
+
 	findmnt -F "$ks_datadir/fstab" -n -o target | sort -d |
 	while read -r mntpoint; do
-		verbose "mounting $mntpoint"
-		mount -v -n --fstab="$ks_datadir/fstab" -o rw,X-mount.mkdir "$mntpoint"
+		mount $verbose -n --fstab="$ks_datadir/fstab" -o rw,X-mount.mkdir "$mntpoint"
 	done
 
 	mkdir -p -- "$ks_datadir/sysdata/etc"
@@ -266,20 +267,27 @@ ks_run_section()
 		shift
 	done
 
+	set -- $interpreter
+
+	local msg="running $num script"
+
 	case "$nochroot$name" in
 		post)
-			interpreter="chroot "$ks_rootdir" $interpreter"
+			set -- chroot "$ks_rootdir" "$@"
+			msg="$msg in chroot"
 			;;
 	esac
 
 	local script="$ks_datadir/ks:$name-$num"
 	local ret=0
 
+	verbose "$msg ${erroronfail:+and stop in case of failure }${logfile:+and log will be in '$logfile' }..."
+
 	if [ -n "$logfile" ]; then
-		$interpreter < "$script" >"$logfile" 2>&1 ||
+		"$@" < "$script" >"$logfile" 2>&1 ||
 			ret=1
 	else
-		$interpreter < "$script" ||
+		"$@" < "$script" ||
 			ret=1
 	fi
 	[ -n "$erroronfail" ] ||
