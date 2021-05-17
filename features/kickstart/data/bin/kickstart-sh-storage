@@ -319,6 +319,7 @@ crypto()
 	local PROG TEMP
 	local luks_passphrase='' luks_cipher='' luks_pbkdf='' luks_pbkdf_memory=''
 	local luks_pbkdf_time='' luks_pbkdf_iterations='' luks_passfile=''
+	local name=''
 
 	local ret=0
 
