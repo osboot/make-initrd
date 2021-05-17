@@ -1,3 +1,27 @@
+Version 2.17.0
+
+- Runtime:
+  + Import halt/reboot/poweroff from sysvinit.
+  + ueventd: Added the ability to stop processing events in the queue.
+  + The stop_daemon should not show stopped pids.
+  + Open rdshell by Alt-Uparrow hotkey.
+- New feature:
+  + kickstart: New feature for automated execution of actions.
+- Feature mdadm:
+  + Examine only arrays where mountpoints are located.
+- Feature luks:
+  + Remove only one new line in plain text key mode.
+- Feature lkrg:
+  + Add nolkrg and noearlylkrg cmdline options (thx Vladimir D. Seleznev).
+- Feature plymouth:
+  + Improve portability.
+  + Run plymouth helpers only if feature is enabled.
+- Utilities:
+  + depinfo: Check compression suffixes when looking for firmware.
+  + depinfo: Explore versioned subdirectories in the firmware search.
+- Misc:
+  + Rewrite tests.
+
 Version 2.16.0
 
 - Runtime:
