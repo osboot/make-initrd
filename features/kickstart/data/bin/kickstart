@@ -57,18 +57,18 @@ EOF
 
 KS_IGNORED='9999000000'
 KS_ORDERS=(
-	$KS_IGNORED:autostep
-	$KS_IGNORED:device
-	$KS_IGNORED:deviceprobe
-	$KS_IGNORED:dmraid
-	$KS_IGNORED:install
-	$KS_IGNORED:interactive
-	$KS_IGNORED:langsupport
-	$KS_IGNORED:method
-	$KS_IGNORED:monitor
-	$KS_IGNORED:mouse
-	$KS_IGNORED:multipath
-	$KS_IGNORED:upgrade
+	"$KS_IGNORED":autostep
+	"$KS_IGNORED":device
+	"$KS_IGNORED":deviceprobe
+	"$KS_IGNORED":dmraid
+	"$KS_IGNORED":install
+	"$KS_IGNORED":interactive
+	"$KS_IGNORED":langsupport
+	"$KS_IGNORED":method
+	"$KS_IGNORED":monitor
+	"$KS_IGNORED":mouse
+	"$KS_IGNORED":multipath
+	"$KS_IGNORED":upgrade
 	0000000000:cdrom
 	0000000000:cmdline
 	0000000000:driverdisk
@@ -281,6 +281,7 @@ ks_run_section()
 	local script="$ks_datadir/ks:$name-$num"
 	local ret=0
 
+	# shellcheck disable=SC2016
 	verbose "$msg ${erroronfail:+and stop in case of failure }${logfile:+and log will be in '$logfile' }..."
 
 	if [ -n "$logfile" ]; then
@@ -335,6 +336,7 @@ ks_parse()
 	local l eof='' args kwd num section='body' lineno=0 cmdbase=0
 	while [ -z "$eof" ]; do
 		if [ "$section" = 'body' ]; then
+			# shellcheck disable=SC2162
 			IFS='' read l || eof=1
 
 			if [[ "$l" =~ [[:space:]]*([^[:space:]].*) ]]; then

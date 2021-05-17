@@ -46,7 +46,7 @@ ignoredisk()
 	local drives='' onlyuse=''
 	local ret=0
 
-	PROG="$FUNCNAME"
+	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l 'drives:,only-use:' -- "$PROG" "$@"` ||
 		return 1
 	eval set -- "$TEMP"
@@ -96,7 +96,7 @@ clearpart()
 	local PROG TEMP dev skipped
 	local all='' disks='' list='' initlabel=''
 
-	PROG="$FUNCNAME"
+	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l 'all,drives:,list:,none,initlabel,disklabel:' -- "$PROG" "$@"` ||
 		return 1
 	eval set -- "$TEMP"
@@ -202,11 +202,11 @@ ks_get_dev_size()
 			bytes)   totalsize_bytes=$value ;;
 			sectors) totalsize_sectors=$value ;;
 		esac
-	done <<< $(
+	done <<< "$(
 		sfdisk "$@" "/dev/$dev" |
 			head -1 |
 			sed -n -e 's|^.*, \([0-9]\+\) bytes, \([0-9]\+\) sectors|bytes \1\nsectors \2|p'
-		)
+		)"
 }
 
 ks_fstab()
@@ -258,7 +258,7 @@ makefs()
 	local dev=''
 	local fstype='ext4' label=''
 
-	PROG="$FUNCNAME"
+	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "$getopt_makefs" -- "$PROG" "$@"` ||
 		return 1
 	eval set -- "$TEMP"
@@ -323,7 +323,7 @@ crypto()
 
 	local ret=0
 
-	PROG="$FUNCNAME"
+	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "name:,$getopt_crypto" -- "$PROG" "$@"` ||
 		return 1
 	eval set -- "$TEMP"
@@ -437,7 +437,7 @@ part()
 
 	local ret=0
 
-	PROG="$FUNCNAME"
+	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "asprimary,ondisk:,ondrive:,onpart:,usepart:,fsoptions:,size:,grow,resize,encrypted,$getopt_makefs,$getopt_crypto,$getopt_useexisting" -- "$PROG" "$@"` ||
 		return 1
 	eval set -- "$TEMP"
@@ -566,7 +566,7 @@ part()
 		prev_parttable=()
 		curr_parttable=()
 
-		readarray -t prev_parttable <<< $(sfdisk -d "/dev/$dev" | grep ^/dev/)
+		readarray -t prev_parttable <<< "$(sfdisk -d "/dev/$dev" | grep ^/dev/)"
 
 		if [ -z "$asprimary" ] && [ "$DISKLABEL" = dos ] && [ "${#prev_parttable[@]}" = 3 ]; then
 			verbose "creating new extended partition on /dev/$dev"
@@ -575,7 +575,7 @@ part()
 				sfdisk -q -W always --append "/dev/$dev" ||
 				break
 
-			readarray -t prev_parttable <<< $(sfdisk -d "/dev/$dev" | grep ^/dev/)
+			readarray -t prev_parttable <<< "$(sfdisk -d "/dev/$dev" | grep ^/dev/)"
 		fi
 
 		verbose "creating new partition on /dev/$dev"
@@ -590,7 +590,7 @@ part()
 			return 1
 		fi
 
-		readarray -t curr_parttable <<< $(sfdisk -d "/dev/$dev" | grep ^/dev/)
+		readarray -t curr_parttable <<< "$(sfdisk -d "/dev/$dev" | grep ^/dev/)"
 
 		sz=${#curr_parttable[@]}
 
@@ -628,7 +628,7 @@ part()
 		fi
 
 		local partnum
-		read partnum < "/sys/class/block/$partdev/partition"
+		read -r partnum < "/sys/class/block/$partdev/partition"
 
 		dev="$(readlink -ev "/sys/class/block/$partdev")"
 		dev="${dev%/*}"
@@ -676,7 +676,7 @@ volgroup()
 	local PROG TEMP shift_args
 	local useexisting='' pesize=''
 
-	PROG="$FUNCNAME"
+	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "pesize:,$getopt_useexisting" -- "$PROG" "$@"` ||
 		return 1
 	eval set -- "$TEMP"
@@ -714,7 +714,7 @@ volgroup()
 				;;
 			pv.*)
 				for arg in $(set +f; printf '%s\n' "$ks_datadir/"$1); do
-					read arg < "$arg"
+					read -r arg < "$arg"
 					set -- "$@" "/dev/$arg"
 				done
 				;;
@@ -750,7 +750,7 @@ logvol()
 	local encrypted='' makefs_args='' crypto_args=''
 	local ret=0
 
-	PROG="$FUNCNAME"
+	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "vgname:,name:,fsoptions:,chunksize:,percent:,size:,resize,grow,encrypted,$getopt_crypto,$getopt_makefs,$getopt_useexisting" -- "$PROG" "$@"` ||
 		return 1
 	eval set -- "$TEMP"
@@ -870,7 +870,7 @@ raid()
 	local device='' level='' chunksize='' useexisting='' fsoptions=''
 	local encrypted='' makefs_args='' crypto_args=''
 
-	PROG="$FUNCNAME"
+	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "device:,level:,chunksize:,encrypted,$getopt_crypto,$getopt_makefs,$getopt_useexisting" -- "$PROG" "$@"` ||
 		return 1
 	eval set -- "$TEMP"
@@ -922,7 +922,7 @@ raid()
 			'')
 				;;
 			raid.*)
-				read arg < "$ks_datadir/$1"
+				read -r arg < "$ks_datadir/$1"
 				set -- "$@" "/dev/$arg"
 				;;
 			*)
@@ -995,7 +995,7 @@ btrfs()
 	local subvol='' data='' metadata='' label='' name='' fsoptions='' useexisting=''
 	local mntpoint i num
 
-	PROG="$FUNCNAME"
+	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "subvol,name:,label:,data:,metadata:,fsoptions:,$getopt_useexisting" -- "$PROG" "$@"` ||
 		return 1
 	eval set -- "$TEMP"
@@ -1050,7 +1050,7 @@ btrfs()
 				;;
 			btrfs.*)
 				for arg in $(set +f; printf '%s\n' "$ks_datadir"/$1); do
-					read arg < "$arg"
+					read -r arg < "$arg"
 					set -- "$@" "/dev/$arg"
 				done
 				;;
