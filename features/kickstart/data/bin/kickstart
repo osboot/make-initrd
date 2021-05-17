@@ -386,6 +386,9 @@ ks_parse()
 			if [ -n "$l" ] && [ -z "${l##%*}" ]; then
 				kwd="${1#%}"
 				kwd="${kwd//-/_}"
+				if ! typeof="$(declare -p "ks_$kwd" 2>/dev/null)" || [ -n "${typeof##declare -a *}" ]; then
+					fatal "lineno=$lineno: unknown section: %$kwd"
+				fi
 				declare -n "args=ks_$kwd"
 				num=${#args[@]}
 				section="$kwd-$num"
