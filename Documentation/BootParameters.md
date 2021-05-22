@@ -16,13 +16,20 @@ The following parameters can be passed via kernel command line.
 
 Parameters responsible for mounting the root file system:
 
-- `root=<uuid|label|path|major:minor>` specifies the block device to use as the root filesystem.
+- `root=<DEVICE-SPEC>` specifies the block device to use as the root filesystem
+  (see [device spec](DeviceSpec.md)).
+- `rootflags=<options>` specifies additional mount options.
+- `rootfstype=<type>` specifies root filesystem type.
 - `rootdelay=<seconds>` specifies how long to wait for the root filesystem.
 - `rootonly` ignore all mountpoints except root filesystem.
-- `rootflags` specifies additional mount options.
-- `rootfstype=<type>` specifies root filesystem type.
 - `ro` mount root filesystem read-only.
 - `rw` mount root filesystem read-write.
+
+These parameters may not be specified if booting occurs on the same system and
+with the same configuration where the initramfs image was created. The `root=`,
+`rootfstype=`, `rootflags=` are stored internally when generating the image.
+If `root=` option is found in kernel command line, then all stored values are
+discarded.
 
 #### Resume
 
