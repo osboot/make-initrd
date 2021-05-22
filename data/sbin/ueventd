@@ -163,6 +163,6 @@ for fn in "$handlerdir"/*; do
 done
 
 if glob "$queuedir"/*; then
-	sleep 1
+	sleep ${RDUEVENT_TIMEOUT:-1}
 	:<"$filterdir/$QUEUE.timer"
 fi
