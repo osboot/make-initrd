@@ -95,7 +95,7 @@ $(foreach name,$(PROGS),\
 
 get_objects = $(foreach name,$(filter %.c,$(1)),$(OBJDIR)/$(name:.c=.o))
 get_depends = $(foreach name,$(filter %.c,$(1)),$(OBJDIR)/$(name:.c=.d))
-quiet_cmd   = $(if $(VERBOSE),$(3),$(Q)printf "  %-07s%s\n" "$(1)" $(2); $(3))
+quiet_cmd   = $(if $(VERBOSE),$(3),$(Q)printf "  %-08s%s\n" "$(1)" $(2); $(3))
 
 PATH       = $(CURDIR)/$(dest_sbindir):$(CURDIR)/$(dest_bindir):$(shell echo $$PATH)
 RULESFILES = $(addprefix $(dest_rulesdir)/,$(patsubst mk/%.in,%,$(wildcard mk/*.mk.in)))
@@ -190,56 +190,56 @@ release: PKGFILE=$(CURDIR)/$(PACKAGE_NAME)-$(PACKAGE_VERSION)
 release: PREFIX=$(PACKAGE_NAME)-$(PACKAGE_VERSION)
 
 ifeq ($(USE_BUSYBOX),yes)
-$(dest_runtimedir)/bin/busybox:
+$(OBJDIR)/external/busybox/.config: $(external_srcdir)/busybox/config
 	$(Q)mkdir -p -- "$(OBJDIR)/external/busybox"
-	cp -af -- \
-		"$(external_srcdir)/busybox/config" \
-		"$(OBJDIR)/external/busybox/.config"
+	$(Q)mkdir -p -- $(dest_runtimedir)
+	$(call quiet_cmd,SED,$@,@SED@) \
+	 -e "s,^CONFIG_PREFIX=.*,CONFIG_PREFIX=\"`realpath $(dest_runtimedir)`\",g" < "$<" > "$@"
+	$(Q)touch -r $< $@
+
+$(dest_runtimedir)/bin/busybox: $(OBJDIR)/external/busybox/.config
+	$(Q)mkdir -p -- "$(OBJDIR)/external/busybox"
 	$(MAKE) -C "$(OBJDIR)/external/busybox" \
 		-f "$(external_srcdir)/busybox/upstream/Makefile" \
 		KBUILD_SRC="$(external_srcdir)/busybox/upstream"
-	$(MAKE) -C "$(OBJDIR)/external/busybox" \
-		CONFIG_PREFIX="$(realpath $(dest_runtimedir))" \
-		install
+	$(MAKE) -C "$(OBJDIR)/external/busybox" install
 
 build-progs: $(dest_runtimedir)/bin/busybox
 endif
 
 ifeq ($(USE_LIBSHELL),yes)
-$(dest_bindir)/bin/shell-error:
-	$(MAKE) -C "$(external_srcdir)/libshell/upstream" \
-		bindir="$(realpath $(dest_bindir))" \
-		DESTDIR="" \
-		install-bin
+$(dest_bindir)/shell-%: $(external_srcdir)/libshell/upstream/shell-%
+	$(Q)mkdir -p -- $(dir $@)
+	$(call quiet_cmd,COPY,$@,cp) -a -- $< $@
 
-build-progs: $(dest_bindir)/bin/shell-error
+build-progs: $(foreach n,$(wildcard $(external_srcdir)/libshell/upstream/shell-*), $(dest_bindir)/$(notdir $(n)))
 endif
 
-$(dest_rulesdir)/%.mk: mk/%.mk.in Makefile
+$(dest_rulesdir)/%.mk: mk/%.mk.in
 	$(Q)mkdir -p -- $(dir $@)
 	$(call quiet_cmd,SED,$@,$(SED)) < $< > $@
 
-$(dest_man1dir)/%.1: man/%.1.inc Makefile
+$(dest_man1dir)/%.1: man/%.1.inc
 	$(Q)mkdir -p -- $(dir $@)
 	$(call quiet_cmd,MAN,$@,env -i PATH="${PATH}" $(HELP2MAN) -N) \
 	  -i $< -- $(notdir $*) >$@
 
-$(dest_projectdir)/%: % Makefile
+$(dest_projectdir)/%: %
 	$(Q)mkdir -p -- $(dir $@)
 	$(Q)rm -f -- "$@"
 	$(Q)ln -s -f -- "$(CURDIR)/$(notdir $@)" "$@"
 
-$(dest_sysconfdir)/%: conf/% Makefile
+$(dest_sysconfdir)/%: conf/%
 	$(Q)mkdir -p -- $(dir $@)
 	$(Q)cp -a -- $< $@
 
 cflags = $($(subst -,_,$(notdir $*))_c_CFLAGS)
-$(OBJDIR)/%.o: %.c Makefile
+$(OBJDIR)/%.o: %.c
 	$(Q)mkdir -p -- $(dir $@)
 	$(call quiet_cmd,CC,$<,$(COMPILE.c)) $(cflags) $(OUTPUT_OPTION) $<
 
 cflags = $($(subst -,_,$(notdir $*))_c_CFLAGS)
-$(OBJDIR)/%.d: %.c Makefile
+$(OBJDIR)/%.d: %.c
 	$(Q)mkdir -p -- $(dir $@)
 	$(call quiet_cmd,DEP,$<,$(CC)) -MM $(cflags) $(CPPFLAGS) $(CFLAGS) $< | \
 	  sed -e 's,\($(notdir $*)\)\.o[ :]*,$(@:.d=.o) $@: Makefile ,g' >$@
@@ -247,17 +247,21 @@ $(OBJDIR)/%.d: %.c Makefile
 define generate_link_target =
 DEPS += $(call get_depends,$($(1)_SRCS))
 
-$(1): $(call get_objects,$($(1)_SRCS))
+$($(1)_DEST): $(call get_objects,$($(1)_SRCS))
 	$(Q)mkdir -p -- $(dir $($(1)_DEST))
 	$(call quiet_cmd,CCLD,$($(1)_DEST),$(LINK.o)) -o $($(1)_DEST) $$^ $($(1)_LIBS)
+
+$(1): $($(1)_DEST)
 endef
 
 define generate_script_target =
-$(1): $($(1)_SRCS) Makefile
+$($(1)_DEST): $($(1)_SRCS)
 	$(Q)mkdir -p -- $$(dir $($(1)_DEST))
 	$(call quiet_cmd,SED,$($(1)_DEST),$(SED)) < $($(1)_SRCS) > $($(1)_DEST)
 	$(Q)touch -r $($(1)_SRCS) $($(1)_DEST)
 	$(Q)chmod --reference=$($(1)_SRCS) $($(1)_DEST)
+
+$(1): $($(1)_DEST)
 endef
 
 $(foreach name,$(PROGS),  $(eval $(call generate_link_target,$(name))))
