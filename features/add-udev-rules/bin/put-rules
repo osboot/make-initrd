@@ -1,0 +1,60 @@
+#!/bin/bash -efu
+
+. shell-error
+. shell-signal
+. sh-functions
+
+tempdir=
+exit_handler()
+{
+	[ -z "$tempdir" ] || rm -rf -- "$tempdir"
+}
+
+set_cleanup_handler exit_handler
+
+copy_rule()
+{
+	local rule="$1"; shift
+	local name="${rule##*/}"
+
+	if [ -e "$tempdir/etc/udev/rules.d/$name" ] && ! cmp -s "$rule" "$tempdir/etc/udev/rules.d/$name"; then
+		verbose "WARNING: Found two udev rules with the same name but different content: $rule"
+		return
+	fi
+
+	cp $verbose -aL -- "$rule" "$tempdir/etc/udev/rules.d/$name"
+}
+
+tempdir="${TEMPDIR:-/tmp}/modules"
+mkdir -p -- "$tempdir/etc/udev/rules.d"
+
+verbose "Copying udev rules ..."
+
+rules_dirs=()
+for d in "/lib/udev/initramfs-rules.d" "/lib/udev/rules.d" "/etc/udev/rules.d"; do
+	[ ! -d "$d" ] ||
+		rules_dirs+=("$d")
+done
+
+for n in ${PUT_UDEV_RULES-}; do
+	[ -n "$n" ] ||
+		continue
+
+	if [ -z "${n##/*}" ]; then
+		# Put the rules with the absolute path as is.
+		copy_rule "$n"
+		continue
+	fi
+
+	find "${rules_dirs[@]}" \( -name '*.rules' -a -name "$n" \) |
+	while read -r rule; do
+		copy_rule "$rule"
+	done
+done
+
+find "$tempdir/etc/udev/rules.d" -name '*.rules' |
+while read -r rule; do
+	find-udev-rule-externals "$rule" |
+		xargs -r put-file "$rootdir"
+done
+put-tree "$rootdir" "$tempdir"

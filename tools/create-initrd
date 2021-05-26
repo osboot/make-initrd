@@ -199,11 +199,4 @@ for d in lib etc; do
 				-name '*.conf' \
 			-exec cp -aLt ./etc/modprobe.d -- '{}' '+'
 	fi
-
-	if [ -d "/$d/udev/initramfs-rules.d" ]; then
-		verbose "Copying files from /$d/udev/initramfs-rules.d ..."
-		find -L "/$d/udev/initramfs-rules.d" \
-				-name '*.rules' \
-			-exec cp -aLt ./etc/udev/rules.d -- '{}' '+'
-	fi
 done

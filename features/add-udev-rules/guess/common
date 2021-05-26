@@ -1,0 +1,5 @@
+#!/bin/bash -efu
+
+. guess-functions
+
+guess_feature add-udev-rules

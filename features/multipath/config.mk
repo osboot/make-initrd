@@ -15,7 +15,6 @@ MULTIPATH_CONF    = \
 	$(SYSCONFDIR)/multipath
 MULTIPATH_DATADIR = \
 	$(FEATURESDIR)/multipath/data
-MULTIPATH_DATA    = \
-	/lib/udev/kpartx_id \
-	$(wildcard /lib/udev/rules.d/*-kpartx.rules) \
-	$(wildcard /lib/udev/rules.d/*-multipath.rules)
+MULTIPATH_RULES   = \
+	*-kpartx.rules \
+	*-multipath.rules

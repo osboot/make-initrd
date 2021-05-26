@@ -1,0 +1,132 @@
+#!/bin/bash -efu
+
+. shell-error
+. shell-quote
+
+readonly PREV_IFS="$IFS"
+
+UDEV_BUILTINS=()
+readarray -t UDEV_BUILTINS <<< "$(
+	"$UDEVADM" test-builtin --help 2>&1 >/dev/null |
+		sed -nr -e 's/^[[:space:]]+([^[:space:]]+)[[:space:]]+.*$/\1/p' |
+		sort -u
+)"
+
+FILES=()
+put_file()
+{
+	local a
+	for a in "${FILES[@]}"; do
+		[ "$1" != "$a" ] || return 0
+	done
+	FILES+=("$1")
+}
+
+is_builtin()
+{
+	local a
+	for a in "${UDEV_BUILTINS[@]}"; do
+		[ "$a" != "$1" ] || return 0
+	done
+	return 1
+}
+
+parse_command()
+{
+	local IFS="$PREV_IFS"
+	local hint cmd args arg path
+
+	hint="$1"; shift
+
+	quote_shell_args args "$1"
+	eval "set -- $args"
+
+	cmd=
+	for arg; do
+		case "$arg" in
+			'$'*|[A-Za-z_]*=*)
+				continue
+				;;
+		esac
+
+		cmd="$arg"
+		break
+	done
+
+	[ -n "$cmd" ] ||
+		return 0
+
+	if [ -z "${cmd##/*}" ]; then
+		# Absolute path is given.
+		put_file "$cmd"
+		return 0
+	fi
+
+	case "$hint" in
+		file)
+			fatal "it's not obvious where to look for '$cmd'"
+			;;
+		program|builtin)
+			! is_builtin "$cmd" ||
+				return 0
+			;;
+	esac
+
+	local PATH="/lib/udev:$PATH"
+
+	# Search external command
+	if path=$(type -P "$cmd" 2>/dev/null); then
+		put_file "$path"
+		return 0
+	fi
+
+	fatal "command not found: $cmd"
+}
+
+parse_rule()
+{
+	local a IFS=','
+
+	set -- $1
+
+	for a; do
+		[ -n "$a" ] ||
+			continue
+
+		if [[ "$a" =~ [[:space:]]*([^[:space:]].*)[[:space:]]* ]]; then
+			a="${BASH_REMATCH[1]}"
+		fi
+
+		local rule='' hint='program'
+
+		case "$a" in
+			'PROGRAM'[+:=]*)         rule='program'; hint='external' ;;
+			'RUN'[+:=]*)             rule='run';     hint='program'  ;;
+			'RUN{builtin}'[+:=]*)    rule='run';     hint='builtin'  ;;
+			'RUN{program}'[+:=]*)    rule='run';     hint='program'  ;;
+			'IMPORT{builtin}'[+:=]*) rule='import';  hint='builtin'  ;;
+			'IMPORT{program}'[+:=]*) rule='import';  hint='program'  ;;
+			'IMPORT{file}'[+:=]*)    rule='import';  hint='file'     ;;
+			*)
+				continue
+				;;
+		esac
+
+		a="${a#*\"}"
+		a="${a%\"*}"
+
+		verbose "$rule{$hint} = $a"
+		parse_command "$hint" "$a"
+	done
+}
+
+# shellcheck disable=SC2162
+while read l; do
+	[ -n "$l" ] && [ -n "${l##\#*}" ] ||
+		continue
+	parse_rule "$l"
+done < "$1"
+
+for a in "${FILES[@]}"; do
+	printf '%s\n' "$a"
+done
