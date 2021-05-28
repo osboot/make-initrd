@@ -370,6 +370,9 @@ crypto()
 		return 1
 	fi
 
+	[ -d /run/cryptsetup ] ||
+		mkdir -p /run/cryptsetup
+
 	dev="${1#/dev/}"
 
 	verbose "creating LUKS encrypted volume on /dev/$dev"
