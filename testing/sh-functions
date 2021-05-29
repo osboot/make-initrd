@@ -1,0 +1,93 @@
+#!/bin/bash
+
+workdir="$topdir/testing/cache"
+logdir="$topdir/testing/logs"
+statusdir="$topdir/testing/status"
+
+PROG="${0##*/}"
+TEST=
+message()
+{
+	printf >&2 '%s%s: %s\n' "$PROG" "${TEST:+ ($TESTNAME)}" "$*"
+}
+
+run()
+{
+	message "run: $*"
+	"$@"
+}
+
+cat_exec()
+{
+	cat > "$1"
+	chmod +x "$1"
+}
+
+valid_log()
+{
+	if grep -qse '^IT WORKS!' "$2"; then
+		message "$1 DONE"
+		return 0
+	else
+		message "$1 FAIL"
+		return 1
+	fi
+}
+
+test_failed()
+{
+	[ ! -d "$statusdir" ] ||
+		echo FAIL > "$statusdir/$VENDOR-$TESTNAME"
+	printf '\n\n'
+	printf 'FAIL %s\n' "$VENDOR-$TESTNAME"
+	printf '\n\n'
+}
+
+test_passed()
+{
+	[ ! -d "$statusdir" ] ||
+		echo PASS > "$statusdir/$VENDOR-$TESTNAME"
+	printf '\n\n'
+	printf 'PASS %s\n' "$VENDOR-$TESTNAME"
+	printf '\n\n'
+}
+
+exit_handler()
+{
+	trap - EXIT
+	if [ "$1" = 0 ]; then
+		test_passed
+	else
+		test_failed
+	fi
+	exit $1
+}
+
+prepare_testsuite()
+{
+	if [ -e "$workdir/vendor" ] && [ "$(cat "$workdir/vendor")" != "$VENDOR" ]; then
+		rm -rf -- "$topdir/.build"
+		rm -rf -- "$workdir"
+		podman rmi -f "localhost/mi-$VENDOR:sysimage"
+	fi
+
+	mkdir -p -- \
+		"$workdir/$TESTNAME" \
+		"$logdir" \
+		"$statusdir"
+	echo "$VENDOR" \
+		> "$workdir/vendor"
+	echo FAILED \
+		> "$statusdir/$VENDOR-$TESTNAME"
+	sed \
+		-e "s#@CMDLINE@#$BOOT_CMDLINE#g" \
+		\
+		"$topdir/testing/testing-$VENDOR-ks-sysimage.cfg" \
+		"$topdir/testing/$TEST" \
+		"$topdir/testing/testing-$VENDOR-ks-initrd.cfg" \
+		"$topdir/testing/testing-$VENDOR-ks-done.cfg" \
+		\
+		> "$workdir/$TESTNAME/ks.cfg"
+}
+
+trap 'exit_handler $?' EXIT HUP INT QUIT TERM
