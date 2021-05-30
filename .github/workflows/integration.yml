@@ -1,0 +1,95 @@
+name: "Integration Tests"
+on:
+  push:
+    branches:
+      - master
+jobs:
+  integration:
+    strategy:
+      matrix:
+        name: [
+          "altlinux",
+          "ubuntu",
+        ]
+        test: [
+          "btrfs-subvol",
+          "luks",
+          "luks+lukskey-plain",
+          "luks+lukskey-raw",
+          "luks-over-lvm",
+          "luks-over-raid1",
+          "lvm",
+          "lvm+luks",
+          "partition",
+          "raid1",
+          "raid1-degraded",
+          "raid1+raid5",
+          "raid5",
+        ]
+      fail-fast: false
+      #max-parallel: 6
+    runs-on: ubuntu-latest
+    name: "${{ matrix.name }}, root:${{ matrix.test }}"
+    steps:
+      - name: "Prepare cache"
+        run: touch ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ github.sha }}
+
+      - name: "Restore last status"
+        uses: actions/cache@v2
+        with:
+          path: ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ github.sha }}
+          key: ${{ matrix.name }}-${{ matrix.test }}-${{ github.sha }}
+
+      - name: "Read last status"
+        id: last-status
+        run: |
+          value="$(cat ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ github.sha }})"
+          echo "status=$value"
+          echo "::set-output name=status::$value"
+
+      - name: "Install packages"
+        if: steps.last-status.outputs.status != 'passed'
+        run: |
+          sudo apt-get -qq -y update
+          sudo apt-get -qq -y install git e2fsprogs genext2fs expect qemu-kvm
+
+      - name: "Checkout genext2fs"
+        if: steps.last-status.outputs.status != 'passed'
+        uses: actions/checkout@v2
+        with:
+          repository: bestouff/genext2fs
+
+      - name: "Build genext2fs"
+        if: steps.last-status.outputs.status != 'passed'
+        run: |
+          ./autogen.sh
+          ./configure
+          make
+          sudo cp -vaf ./genext2fs /usr/bin/genext2fs
+
+      - name: "Checkout Repository"
+        if: steps.last-status.outputs.status != 'passed'
+        uses: actions/checkout@v2
+
+      - name: "Checkout submodules"
+        if: steps.last-status.outputs.status != 'passed'
+        run: |
+          git submodule set-url external/busybox/upstream https://github.com/mirror/busybox
+          git submodule update --init --recursive
+
+      - name: "Test"
+        if: steps.last-status.outputs.status != 'passed'
+        env:
+          TIMEOUT: 20m
+        run: |
+          set -efux
+          ./testing/testing-${{ matrix.name }} test-root-${{ matrix.test }}
+          rm -vrf -- ./testing/cache/${{ matrix.name }}/${{ matrix.test }}
+          echo passed > ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ github.sha }}
+
+      - name: "Save the cache"
+        if: steps.last-status.outputs.status != 'passed'
+        uses: actions/cache@v2
+        with:
+          path: ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ github.sha }}
+          key: ${{ matrix.name }}-${{ matrix.test }}-${{ github.sha }}

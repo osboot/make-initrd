@@ -2,8 +2,10 @@
 
 expect -f- <<EOF
 set timeout -1
+set send_slow {1 .1}
 spawn $*
 expect -re "Enter passphrase for /dev/.*: "
-send -- "qwerty\r"
+sleep 3
+send -s -- "qwerty\r"
 expect eof
 EOF

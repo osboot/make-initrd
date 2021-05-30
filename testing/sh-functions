@@ -11,6 +11,22 @@ message()
 	printf >&2 '%s%s: %s\n' "$PROG" "${TEST:+ ($TESTNAME)}" "$*"
 }
 
+fatal()
+{
+	message "$*"
+	exit 1
+}
+
+gh_group_start()
+{
+	echo "::group::$*"
+}
+
+gh_group_end()
+{
+	echo "::endgroup::"
+}
+
 run()
 {
 	message "run: $*"
@@ -65,29 +81,34 @@ exit_handler()
 
 prepare_testsuite()
 {
-	if [ -e "$workdir/vendor" ] && [ "$(cat "$workdir/vendor")" != "$VENDOR" ]; then
-		rm -rf -- "$topdir/.build"
-		rm -rf -- "$workdir"
-		podman rmi -f "localhost/mi-$VENDOR:sysimage"
-	fi
-
 	mkdir -p -- \
-		"$workdir/$TESTNAME" \
+		"$workdir" \
 		"$logdir" \
 		"$statusdir"
-	echo "$VENDOR" \
-		> "$workdir/vendor"
 	echo FAILED \
 		> "$statusdir/$VENDOR-$TESTNAME"
 	sed \
 		-e "s#@CMDLINE@#$BOOT_CMDLINE#g" \
 		\
 		"$topdir/testing/testing-$VENDOR-ks-sysimage.cfg" \
-		"$topdir/testing/$TEST" \
+		"$topdir/testing/$TESTNAME.cfg" \
 		"$topdir/testing/testing-$VENDOR-ks-initrd.cfg" \
 		"$topdir/testing/testing-$VENDOR-ks-done.cfg" \
 		\
-		> "$workdir/$TESTNAME/ks.cfg"
+		> "$workdir/ks.cfg"
+
+	if [ -c /dev/kvm ]; then
+		echo -enable-kvm -cpu host
+	else
+		echo -cpu max
+	fi > "$workdir/qemu-cpu"
+
+	cat > "$workdir/qemu-stdout" <<-EOF
+	 -nographic
+	 -serial chardev:stdio
+	 -chardev stdio,mux=on,id=stdio,signal=off
+	 -mon chardev=stdio,mode=readline
+	EOF
 }
 
 trap 'exit_handler $?' EXIT HUP INT QUIT TERM

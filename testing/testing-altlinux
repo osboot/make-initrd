@@ -9,8 +9,8 @@ readonly VENDOR=altlinux
 readonly ARCH=x86_64
 readonly IMAGE=alt:sisyphus
 readonly KERNEL_FLAVOR=-std-def
-readonly TIMEOUT=10m
-readonly VENDOR_CMDLINE=
+readonly TIMEOUT=${TIMEOUT:-5m}
+readonly VENDOR_CMDLINE="quiet"
 
 readonly MAKE_INITRD_PACKAGES=(
 	"make"
@@ -23,260 +23,271 @@ readonly MAKE_INITRD_PACKAGES=(
 	"liblzma"
 )
 
-TEST="$1"; shift
+TESTNAME="$1"; shift
 
 KICKSTART_DISKS=0
 BOOT_DISKS=0
 BOOT_PROG=
-BOOT_CMDLINE='root=LABEL=ROOT'
+BOOT_CMDLINE="root=LABEL=ROOT $VENDOR_CMDLINE"
 
-eval $(sed -n -e 's/^# param //p' "$topdir/testing/$TEST")
+eval $(sed -n -e 's/^# param //p' "$topdir/testing/$TESTNAME.cfg")
 
-TESTNAME="${TEST##*/}"
-TESTNAME="${TESTNAME%.cfg}"
+readonly builddir=/srv
 
-builddir=/srv
-workdir="$topdir/testing/cache"
-logdir="$topdir/testing/logs"
+readonly workdir="testing/cache/$VENDOR/$TESTNAME"
+readonly logdir="testing/logs/$VENDOR/$TESTNAME"
+
+readonly top_workdir="$topdir/$workdir"
+readonly top_logdir="$topdir/$logdir"
 
 prepare_testsuite
 
-msg='building from git tree'
-if [ ! -d "$topdir/.build/dest" ]; then
-	message "step: $msg"
+[ "$#" -gt 0 ] ||
+	set -- build-git build-sysimage build-kickstart run-kickstart run-boot
 
-	cat_exec "$workdir/run.sh" <<-EOF
-	#!/bin/bash -efu
+for step in "$@"; do
+	case "$step" in
+		build-git)
+			gh_group_start "building from git tree"
 
-	apt-get update
-	apt-get -y install \
-	 gcc make automake autoconf \
-	 ${MAKE_INITRD_PACKAGES[*]} \
-	 libkmod-devel zlib-devel bzlib-devel liblzma-devel \
-	 libzstd-devel libelf-devel libtirpc-devel libcrypt-devel
+			cat_exec "$top_workdir/run.sh" <<-EOF
+			#!/bin/bash -efux
 
-	cd "$builddir"
+			apt-get -y -qq update
+			apt-get -y -qq install \
+			 gcc make automake autoconf \
+			 ${MAKE_INITRD_PACKAGES[*]} \
+			 libkmod-devel zlib-devel bzlib-devel liblzma-devel \
+			 libzstd-devel libelf-devel libtirpc-devel libcrypt-devel
 
-	./autogen.sh
-	./configure \
-		--enable-local-build \
-		--with-runtimedir=/lib/initrd1
-	make
-	EOF
-	podman run --rm -ti \
-		--volume="$topdir:$builddir" \
-		"$IMAGE" "$builddir/testing/cache/run.sh"
+			cd "$builddir"
 
-	rm -f "$workdir/sysimage.tar"
-else
-	message "skip: $msg"
-fi
+			./autogen.sh
+			./configure \
+				--enable-local-build \
+				--with-runtimedir=/lib/initrd1
+			make
+			EOF
 
-msg='building sysimage'
-if [ ! -f "$workdir/sysimage.img" ]; then
-	message "step: $msg"
+			run podman run --rm -ti \
+				--volume="$topdir:$builddir" \
+				"$IMAGE" "$builddir/$workdir/run.sh"
 
-	if [ -z "$(podman images -an --format='1' -f reference=localhost/mi-$VENDOR:sysimage)" ]; then
-		run podman image build -t "localhost/mi-$VENDOR:sysimage" --pull --squash --force-rm=true -f - <<-EOF
-		FROM $IMAGE
-		RUN \
-		 printf > /etc/initrd.mk '%s\n' \
-		 'AUTODETECT =' \
-		 'FEATURES += compress cleanup'
-		RUN \
-		 rpm -ql filesystem | xargs -r mkdir -p
-		RUN \
-		 apt-get update
-		RUN \
-		 apt-get -y install kernel-image$KERNEL_FLAVOR \
-		 ${MAKE_INITRD_PACKAGES[*]} \
-		 sysvinit startup mingetty grub mdadm lvm2 cryptsetup \
-		 btrfs-progs e2fsprogs xfsprogs dosfstools reiserfsprogs \
-		 pwgen
-		RUN \
-		 apt-get -y clean
-		RUN \
-		 find /lib/modules \( \
-		  -path '*/kernel/sound/*' -o \
-		  -path '*/kernel/drivers/media-core/*' -o \
-		  -path '*/kernel/drivers/power/*' -o \
-		  -path '*/kernel/drivers/video/*' -o \
-		  -path '*/kernel/drivers/leds/*' -o \
-		  -path '*/kernel/drivers/gpio/*' -o \
-		  -path '*/kernel/drivers/bluetooth/*' -o \
-		  -path '*/kernel/drivers/watchdog/*' -o \
-		  -path '*/kernel/drivers/nfc/*' -o \
-		  -path '*/kernel/drivers/hwmon/*' -o \
-		  -path '*/kernel/drivers/i2c/*' -o \
-		  -path '*/kernel/drivers/iio/*' -o \
-		  -path '*/kernel/drivers/isdn/*' -o \
-		  -path '*/kernel/drivers/usb/*' -o \
-		  -path '*/kernel/drivers/net/wireless/*' -o \
-		  -path '*/kernel/drivers/net/usb/*' -o \
-		  -path '*/kernel/drivers/input/touchscreen/*' -o \
-		  -path '*/kernel/drivers/input/joystick/*' -o \
-		  -path '*/kernel/drivers/input/misc/*' \
-		  \) -delete; \
-		 find /usr/share/license /usr/share/license-exception -delete; \
-		 find /usr/share/locale/ -mindepth 3 -maxdepth 3 -type f -name '*.mo' -delete; \
-		 find /usr/share/doc/ /usr/share/man/ /usr/share/info/ -mindepth 1 -delete; \
-		 find /var/lib/apt/lists/ /var/cache/apt/ -type f -delete;
-		EOF
-		rm -f "$workdir/sysimage.tar"
-	fi
+			gh_group_end
+			;;
+		build-sysimage)
+			if [ -z "$(podman images -an --format='1' -f reference=localhost/mi-$VENDOR:sysimage)" ]; then
+				gh_group_start "creating sysimage"
 
-	if [ ! -f "$workdir/sysimage.tar" ]; then
-		run podman run --rm -ti \
-			--mount="type=image,src=localhost/mi-$VENDOR:sysimage,dst=/image" \
-			--mount="type=tmpfs,destination=/image$builddir" \
-			--mount="type=bind,src=$topdir/.build/dest,dst=/image$builddir/.build/dest" \
-			--mount="type=bind,src=$topdir/data,dst=/image$builddir/data" \
-			--mount="type=bind,src=$topdir/features,dst=/image$builddir/features" \
-			--mount="type=bind,src=$topdir/guess,dst=/image$builddir/guess" \
-			--mount="type=bind,src=$topdir/kmodule.deps.d,dst=/image$builddir/kmodule.deps.d" \
-			--mount="type=bind,src=$topdir/tools,dst=/image$builddir/tools" \
-			--volume="$topdir:/host" \
-			"$IMAGE" tar -C /image -cf /host/testing/cache/sysimage.tar .
-	fi
+				run podman image build \
+					-t "localhost/mi-$VENDOR:sysimage" \
+					--pull --squash --force-rm=true \
+					-f - <<-EOF
+				FROM $IMAGE
+				RUN \
+				 printf > /etc/initrd.mk '%s\n' \
+				 'AUTODETECT =' \
+				 'FEATURES += compress cleanup'
+				RUN \
+				 rpm -ql filesystem | xargs -r mkdir -p
+				RUN \
+				 apt-get -y -qq update
+				RUN \
+				 apt-get -y -qq install kernel-image$KERNEL_FLAVOR \
+				 ${MAKE_INITRD_PACKAGES[*]} \
+				 sysvinit startup mingetty grub mdadm lvm2 cryptsetup \
+				 btrfs-progs e2fsprogs xfsprogs dosfstools reiserfsprogs \
+				 pwgen
+				RUN \
+				 apt-get -y -qq clean
+				RUN \
+				 find /lib/modules \( \
+				  -path '*/kernel/sound/*' -o \
+				  -path '*/kernel/drivers/media-core/*' -o \
+				  -path '*/kernel/drivers/power/*' -o \
+				  -path '*/kernel/drivers/video/*' -o \
+				  -path '*/kernel/drivers/leds/*' -o \
+				  -path '*/kernel/drivers/gpio/*' -o \
+				  -path '*/kernel/drivers/bluetooth/*' -o \
+				  -path '*/kernel/drivers/watchdog/*' -o \
+				  -path '*/kernel/drivers/nfc/*' -o \
+				  -path '*/kernel/drivers/hwmon/*' -o \
+				  -path '*/kernel/drivers/i2c/*' -o \
+				  -path '*/kernel/drivers/iio/*' -o \
+				  -path '*/kernel/drivers/isdn/*' -o \
+				  -path '*/kernel/drivers/usb/*' -o \
+				  -path '*/kernel/drivers/net/wireless/*' -o \
+				  -path '*/kernel/drivers/net/usb/*' -o \
+				  -path '*/kernel/drivers/input/touchscreen/*' -o \
+				  -path '*/kernel/drivers/input/joystick/*' -o \
+				  -path '*/kernel/drivers/input/misc/*' \
+				  \) -delete; \
+				 find /usr/share/license /usr/share/license-exception -delete; \
+				 find /usr/share/locale/ -mindepth 3 -maxdepth 3 -type f -name '*.mo' -delete; \
+				 find /usr/share/doc/ /usr/share/man/ /usr/share/info/ -mindepth 1 -delete; \
+				 find /var/lib/apt/lists/ /var/cache/apt/ -type f -delete;
+				EOF
 
-	sz_block=4096
-	n_blocks=$(( $(stat -c %s "$workdir/sysimage.tar") / $sz_block ))
-	n_inodes=$(tar -tf "$workdir/sysimage.tar" | wc -l)
+				gh_group_end
+			fi
 
-	blocks=$(( $n_blocks + ( ( $n_blocks * 15 ) / 100 ) ))
+			gh_group_start "adding make-initrd binaries"
 
-	run genext2fs -z -N $n_inodes -B $sz_block -b $blocks \
-		-L SYSIMAGE -a "$workdir/sysimage.tar" \
-		"$workdir/sysimage.img"
+			run podman run --rm -ti \
+				--mount="type=image,src=localhost/mi-$VENDOR:sysimage,dst=/image" \
+				--mount="type=tmpfs,destination=/image$builddir" \
+				--mount="type=bind,src=$topdir/.build/dest,dst=/image$builddir/.build/dest" \
+				--mount="type=bind,src=$topdir/data,dst=/image$builddir/data" \
+				--mount="type=bind,src=$topdir/features,dst=/image$builddir/features" \
+				--mount="type=bind,src=$topdir/guess,dst=/image$builddir/guess" \
+				--mount="type=bind,src=$topdir/kmodule.deps.d,dst=/image$builddir/kmodule.deps.d" \
+				--mount="type=bind,src=$topdir/tools,dst=/image$builddir/tools" \
+				--volume="$topdir:/host" \
+				"$IMAGE" tar -C /image -cf /host/$workdir/sysimage.tar .
 
-	run /sbin/tune2fs \
-		-O dir_index,has_journal,uninit_bg \
-		"$workdir/sysimage.img"
+			sz_block=4096
+			n_blocks=$(( $(stat -c %s "$top_workdir/sysimage.tar") / $sz_block ))
+			n_inodes=$(tar -tf "$top_workdir/sysimage.tar" | wc -l)
 
-	cat > "$workdir/qemu-sysimage" <<-EOF
-	 -blockdev driver=file,node-name=sysimage,filename=$workdir/sysimage.img
-	 -device virtio-blk,drive=sysimage
-	EOF
-else
-	message "skip: $msg"
-fi
+			blocks=$(( $n_blocks + ( ( $n_blocks * 15 ) / 100 ) ))
 
-msg='creating kickstart image'
-if [ ! -f "$workdir/$TESTNAME/boot-ks-vmlinuz" ] || [ ! -f "$workdir/$TESTNAME/boot-ks-initrd.img" ]; then
-	message "step: $msg"
+			(
+				flock -e 0
 
-	cat_exec "$workdir/run.sh" <<-EOF
-	#!/bin/bash -efu
+				run genext2fs -z -N $n_inodes -B $sz_block -b $blocks \
+					-L SYSIMAGE -a "$top_workdir/sysimage.tar" \
+					"$top_workdir/sysimage.img"
 
-	cat > /etc/initrd.mk <<EOF1
-	 AUTODETECT =
-	 DISABLE_FEATURES += ucode
-	 FEATURES = add-modules add-udev-rules kickstart qemu rdshell modules-virtio
-	 MODULES_ADD += sd_mod
-	 MODULES_PRELOAD += virtio-blk virtio-scsi virtio-pci
-	 KICKSTART_CONFIGS = $builddir/testing/cache/$TESTNAME/ks.cfg
-	 PUT_PROGS += pwgen
-	EOF1
+				run /sbin/tune2fs \
+					-O dir_index,has_journal,uninit_bg \
+					"$top_workdir/sysimage.img"
+			) < "$0"
 
-	cat > /etc/sysconfig/installkernel <<EOF1
-	 INITRD_GENERATOR=make-initrd
-	 MAKE_INITRD=$builddir/.build/dest/usr/sbin/make-initrd
-	 MKINITRD=$builddir/.build/dest/usr/sbin/mkinitrd-make-initrd
-	EOF1
+			rm -f -- "$top_workdir/sysimage.tar"
 
-	apt-get update
+			cat > "$top_workdir/qemu-sysimage" <<-EOF
+			 -blockdev driver=file,node-name=sysimage,filename=$top_workdir/sysimage.img
+			 -device virtio-blk,drive=sysimage
+			EOF
 
-	apt-get -y install \
-	 e2fsprogs btrfs-progs xfsprogs dosfstools reiserfsprogs \
-	 cryptsetup lvm2 mdadm sfdisk util-linux rsync wget unzip \
-	 tar cpio eject sysvinit pwgen
+			gh_group_end
+			;;
+		build-kickstart)
+			gh_group_start "creating kickstart image"
 
-	apt-get -y install \
-	 kernel-image$KERNEL_FLAVOR
+			cat_exec "$top_workdir/run.sh" <<-EOF
+			#!/bin/bash -efux
 
-	cp -L /boot/vmlinuz    $builddir/testing/cache/$TESTNAME/boot-ks-vmlinuz
-	cp -L /boot/initrd.img $builddir/testing/cache/$TESTNAME/boot-ks-initrd.img
-	EOF
+			cat > /etc/initrd.mk <<EOF1
+			 AUTODETECT =
+			 DISABLE_FEATURES += ucode
+			 FEATURES = add-modules add-udev-rules kickstart qemu rdshell modules-virtio
+			 MODULES_ADD += sd_mod
+			 MODULES_PRELOAD += virtio-blk virtio-scsi virtio-pci
+			 KICKSTART_CONFIGS = $builddir/$workdir/ks.cfg
+			 PUT_PROGS += pwgen
+			EOF1
 
-	podman run --rm -ti \
-		--volume="$topdir:$builddir" \
-		"$IMAGE" "$builddir/testing/cache/run.sh"
-else
-	message "skip: $msg"
-fi
+			cat > /etc/sysconfig/installkernel <<EOF1
+			 INITRD_GENERATOR=make-initrd
+			 MAKE_INITRD=$builddir/.build/dest/usr/sbin/make-initrd
+			 MKINITRD=$builddir/.build/dest/usr/sbin/mkinitrd-make-initrd
+			EOF1
 
-if [ -c /dev/kvm ]; then
-	echo -enable-kvm -cpu host
-else
-	echo -cpu max
-fi > "$workdir/qemu-cpu"
+			apt-get -y -qq update
 
-cat > "$workdir/qemu-stdout" <<EOF
- -nographic
- -serial chardev:stdio
- -chardev stdio,mux=on,id=stdio,signal=off
- -mon chardev=stdio,mode=readline
-EOF
+			apt-get -y -qq install \
+			 e2fsprogs btrfs-progs xfsprogs dosfstools reiserfsprogs \
+			 cryptsetup lvm2 mdadm sfdisk util-linux rsync wget unzip \
+			 tar cpio eject sysvinit pwgen
 
-if [ ! -f "$workdir/$TESTNAME/boot-ks-done" ]; then
-	msg='creating qemu kickstart disks'
+			apt-get -y -qq install \
+			 kernel-image$KERNEL_FLAVOR
 
-	for (( i=1; i <= KICKSTART_DISKS; i++ )); do
-		message "creating QEMU disk $i ..."
+			cp -L /boot/vmlinuz    $builddir/$workdir/boot-ks-vmlinuz
+			cp -L /boot/initrd.img $builddir/$workdir/boot-ks-initrd.img
+			EOF
 
-		fn="$workdir/$TESTNAME/disk-$i.qcow2"
-		[ -f "$fn" ] ||
-			qemu-img create -q -f qcow2 "$fn" 10G
+			podman run --rm -ti \
+				--volume="$topdir:$builddir" \
+				"$IMAGE" "$builddir/$workdir/run.sh"
 
-		#printf '%s\n' "-drive media=disk,index=$i,file=$fn"
+			gh_group_end
+			;;
+		run-kickstart)
+			gh_group_start "creating qemu kickstart disks"
 
-		printf '%s\n' \
-		 "-blockdev driver=qcow2,node-name=disk$i,file.driver=file,file.node-name=file$i,file.filename=$fn" \
-		 "-device virtio-blk,drive=disk$i,id=virtio$i"
+			for (( i=1; i <= KICKSTART_DISKS; i++ )); do
+				message "creating QEMU disk $i ..."
 
-	done > "$workdir/$TESTNAME/qemu-disks"
+				fn="$top_workdir/disk-$i.qcow2"
+				[ -f "$fn" ] ||
+					qemu-img create -q -f qcow2 "$fn" 2G
 
-	cat_exec "$workdir/run.sh" <<-EOF
-	#!/bin/bash
-	exec timeout --foreground --signal=TERM --kill-after=5s $TIMEOUT \
-	qemu-system-$ARCH -sdl \
-		-m 1G \
-		-no-reboot \
-		-kernel "$workdir/$TESTNAME/boot-ks-vmlinuz" \
-		-initrd "$workdir/$TESTNAME/boot-ks-initrd.img" \
-		-append 'console=ttyS0,115200n8 rdlog=console ksfile=ks.cfg' \
-		\$(cat "$workdir/qemu-cpu") \
-		\$(cat "$workdir/qemu-stdout") \
-		\$(cat "$workdir/qemu-sysimage") \
-		\$(cat "$workdir/$TESTNAME/qemu-disks")
-	EOF
+				printf '%s\n' \
+				 "-blockdev driver=qcow2,node-name=disk$i,file.driver=file,file.node-name=file$i,file.filename=$fn" \
+				 "-device virtio-blk,drive=disk$i,id=virtio$i"
+			done > "$top_workdir/qemu-disks"
 
-	script "$logdir/$TESTNAME.ks.log" -c "$workdir/run.sh"
+			cat_exec "$top_workdir/qemu.sh" <<-EOF
+			#!/bin/bash
+			exec qemu-system-$ARCH \
+				-m 1G \
+				-no-reboot \
+				-kernel "$top_workdir/boot-ks-vmlinuz" \
+				-initrd "$top_workdir/boot-ks-initrd.img" \
+				-append 'console=ttyS0,115200n8 quiet rdlog=console ksfile=ks.cfg' \
+				\$(cat "$top_workdir/qemu-cpu") \
+				\$(cat "$top_workdir/qemu-stdout") \
+				\$(cat "$top_workdir/qemu-sysimage") \
+				\$(cat "$top_workdir/qemu-disks")
+			EOF
 
-	valid_log 'kickstart' "$logdir/$TESTNAME.ks.log"
-	:> "$workdir/$TESTNAME/boot-ks-done"
-fi
+			cat_exec "$top_workdir/run.sh" <<-EOF
+			#!/bin/bash
+			exec timeout --foreground --signal=TERM --kill-after=5s $TIMEOUT \
+				"$top_workdir/qemu.sh"
+			EOF
 
-if [ ! -f "$workdir/$TESTNAME/boot-done" ]; then
-	for (( i=1; i <= BOOT_DISKS; i++ )); do
-		fn="$workdir/$TESTNAME/disk-$i.qcow2"
-		printf '%s\n' \
-		 "-blockdev driver=qcow2,node-name=disk$i,file.driver=file,file.node-name=file$i,file.filename=$fn" \
-		 "-device virtio-blk,drive=disk$i,id=virtio$i"
-	done > "$workdir/$TESTNAME/qemu-disks"
+			script "$top_logdir/ks.log" -c "$top_workdir/run.sh"
 
-	cat_exec "$workdir/run.sh" <<-EOF
-	#!/bin/bash
-	exec timeout --foreground --signal=TERM --kill-after=5s $TIMEOUT \
-		${BOOT_PROG:+"$topdir/testing/$BOOT_PROG"} \
-		qemu-system-$ARCH -m 1G -no-reboot \
-		\$(cat "$workdir/qemu-cpu") \
-		\$(cat "$workdir/qemu-stdout") \
-		\$(cat "$workdir/$TESTNAME/qemu-disks")
-	EOF
+			valid_log 'kickstart' "$top_logdir/ks.log"
 
-	script "$logdir/$TESTNAME.boot.log" -c "$workdir/run.sh"
+			gh_group_end
+			;;
+		run-boot)
+			gh_group_start "checking the ability to boot"
 
-	valid_log 'boot check' "$logdir/$TESTNAME.boot.log"
-	:> "$workdir/$TESTNAME/boot-done"
-fi
+			for (( i=1; i <= BOOT_DISKS; i++ )); do
+				fn="$top_workdir/disk-$i.qcow2"
+				printf '%s\n' \
+				 "-blockdev driver=qcow2,node-name=disk$i,file.driver=file,file.node-name=file$i,file.filename=$fn" \
+				 "-device virtio-blk,drive=disk$i,id=virtio$i"
+			done > "$top_workdir/qemu-disks"
+
+			cat_exec "$top_workdir/qemu.sh" <<-EOF
+			#!/bin/bash
+			exec qemu-system-$ARCH -m 1G -no-reboot \
+				\$(cat "$top_workdir/qemu-cpu") \
+				\$(cat "$top_workdir/qemu-stdout") \
+				\$(cat "$top_workdir/qemu-disks")
+			EOF
+
+			cat_exec "$top_workdir/run.sh" <<-EOF
+			#!/bin/bash
+			exec timeout --foreground --signal=TERM --kill-after=5s $TIMEOUT \
+				${BOOT_PROG:+"$topdir/testing/$BOOT_PROG"} \
+				"$top_workdir/qemu.sh"
+			EOF
+
+			script "$top_logdir/boot.log" -c "$top_workdir/run.sh"
+
+			valid_log 'boot check' "$top_logdir/boot.log"
+
+			gh_group_end
+		;;
+		*)
+			fatal "unknown step: $step"
+			;;
+	esac
+done
