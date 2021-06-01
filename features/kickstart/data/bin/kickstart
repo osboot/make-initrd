@@ -192,18 +192,21 @@ ks_mount()
 
 	findmnt -F "$ks_datadir/fstab" -n -o target | sort -d |
 	while read -r mntpoint; do
-		mount $verbose -n --fstab="$ks_datadir/fstab" -o rw,X-mount.mkdir "$mntpoint"
+		mkdir -p -- "$mntpoint"
+		mount $verbose -w -n --fstab="$ks_datadir/fstab" "$mntpoint"
 	done
 
 	mkdir -p -- "$ks_datadir/sysdata/etc"
 
-	findmnt -l -k -n -R -o UUID,TARGET,FSTYPE,OPTIONS "$ks_rootdir" |
-	while read -r source target fstype options; do
+	findmnt -l -k -n -R -o UUID,TARGET,FSTYPE "$ks_rootdir" |
+	while read -r source target fstype; do
 		freq=0 passno=0
 
 		if [ "$target" = "$ks_rootdir" ]; then
 			freq=1 passno=1
 		fi
+
+		options="$(findmnt -n -F "$ks_datadir/fstab" -o OPTIONS "$target")"
 
 		target="${target#$ks_rootdir}"
 		target="${target:-/}"
