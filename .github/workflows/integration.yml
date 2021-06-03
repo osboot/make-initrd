@@ -9,6 +9,7 @@ jobs:
       matrix:
         name: [
           "altlinux",
+          "fedora",
           "ubuntu",
         ]
         test: [
