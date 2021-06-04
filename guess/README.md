@@ -10,4 +10,3 @@
 - **net** - adds kernel modules for network devices (netboot).
 - **keyboard** - adds modules for the keyboard.
 - **rdshell** - gives the ability to get shell in initrd.
-- **drm** - adds drm modules.

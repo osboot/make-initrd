@@ -1,4 +1,4 @@
-$(call feature-requires,depmod-image)
+$(call feature-requires,depmod-image gpu-drm)
 
 PLYMOUTH_FONT  ?=
 PLYMOUTH_THEME ?=
