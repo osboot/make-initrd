@@ -93,7 +93,7 @@ append_progs \
 	blkid cat chmod chroot cp depmod dmesg findmnt grep kill killall5 ln \
 	logger ls lsmod mkdir mknod mktemp modprobe mount mountpoint mv \
 	readlink rm rmdir setsid sh sleep start-stop-daemon switch_root \
-	touch umount which bash ${PUT_FEATURE_PROGS-} ${PUT_PROGS-}
+	touch umount which ${PUT_FEATURE_PROGS-} ${PUT_PROGS-}
 
 while read -d: -r n; do
 	[ -n "$n" ] ||
@@ -163,19 +163,22 @@ initrd-release
 mkfifo ./.initrd/telinit
 mkfifo ./.initrd/rdshell
 
-printf '%s\n' "${DIRS[@]}"       |xargs -r put-tree .
-printf '%s\n' "${FILES[@]}"      |xargs -r put-file .
-printf '%s\n' "${LOCALFILES[@]}" |xargs -r put-file -r "$LOCALBUILDDIR" .
-
 ln_if_missing()
 {
 	[ -h "$2" ] || [ -e "$2" ] || ln $verbose -s -- "$1" "$2"
 }
 
-BASH="$(find ./bin ./sbin ./usr/bin ./usr/sbin ./usr/local/bin ./usr/local/sbin -name bash -print -quit)"
-BASH="${BASH#.}"
+BASH="$(find /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin -name bash -print -quit)"
 
-ln_if_missing "$BASH"    ./bin/bash
+put-file . "$BASH"
+
+ln_if_missing "$BASH" ./bin/sh
+ln_if_missing "$BASH" ./bin/bash
+
+printf '%s\n' "${DIRS[@]}"       |xargs -r put-tree .
+printf '%s\n' "${FILES[@]}"      |xargs -r put-file .
+printf '%s\n' "${LOCALFILES[@]}" |xargs -r put-file -r "$LOCALBUILDDIR" .
+
 ln_if_missing "$UDEVD"   ./sbin/udevd
 ln_if_missing "$UDEVADM" ./sbin/udevadm
 
