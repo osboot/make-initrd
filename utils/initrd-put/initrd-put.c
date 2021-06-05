@@ -461,16 +461,6 @@ static void process(struct file *p)
 		fill_stat(p, &sb);
 	}
 
-	p->dst = p->src;
-
-	if (prefix) {
-		size_t dst_len = strlen(p->dst);
-		if (dst_len >= prefix_len && p->dst[prefix_len] == '/' && !strncmp(p->dst, prefix, prefix_len - 1))
-			p->dst += prefix_len;
-		else if (!strcmp(p->dst, prefix))
-			p->dst = (char *) "";
-	}
-
 	add_parent_directory(p->src);
 
 	if (S_IFDIR == (p->stat.st_mode & S_IFMT)) {
@@ -979,12 +969,45 @@ int main(int argc, char **argv)
 		f->recursive = 1;
 	}
 
+	strncpy(install_path, destdir, sizeof(install_path) - 1);
+	install_path[destdir_len] = 0;
+
 	while (inqueue != NULL) {
 		struct file *queue = inqueue;
 
 		while (queue != NULL) {
 			void *ptr;
 			struct file *next = queue->next;
+
+			queue->dst = queue->src;
+
+			if (prefix) {
+				size_t dst_len = strlen(queue->dst);
+				if (dst_len >= prefix_len && queue->dst[prefix_len] == '/' &&
+				    !strncmp(queue->dst, prefix, prefix_len - 1))
+					queue->dst += prefix_len;
+				else if (!strcmp(queue->dst, prefix))
+					queue->dst = (char *) "";
+			}
+
+			if (!force) {
+				struct stat st;
+
+				strncpy(install_path + destdir_len, queue->dst, sizeof(install_path) - destdir_len - 1);
+
+				errno = 0;
+				if (lstat(install_path, &st) < 0) {
+					if (errno != ENOENT)
+						err(EX_OSERR, "unable to get access to %s", install_path);
+				} else if (!S_ISDIR(st.st_mode)) {
+					if (verbose > 1)
+						warnx("'%s' is already in the destdir", queue->src);
+					del_list(queue);
+					free_file(queue);
+					queue = next;
+					continue;
+				}
+			}
 
 			ptr = tsearch(queue, &files, compare);
 			if (!ptr)
@@ -1012,9 +1035,6 @@ int main(int argc, char **argv)
 	} else {
 		if (verbose > 1)
 			warnx("copying files ...");
-
-		strncpy(install_path, destdir, sizeof(install_path) - 1);
-		install_path[destdir_len] = 0;
 
 		umask(0);
 
