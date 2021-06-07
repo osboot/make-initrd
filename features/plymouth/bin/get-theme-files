@@ -1,9 +1,17 @@
 #!/bin/bash -efu
 
-[ "$#" -gt 0 ] ||
-	exit 0
-
 name="$1"; shift
+
+[ -n "$name" ] ||
+	# PLYMOUTH_LIBDIR variable doesn't need to be ignored.
+	name="$(env \
+		-u PLYMOUTH_CONFDIR \
+		-u PLYMOUTH_DATADIR \
+		-u PLYMOUTH_LIBEXECDIR \
+		-u PLYMOUTH_PLUGIN_PATH \
+		-u PLYMOUTH_POLICYDIR \
+		plymouth-set-default-theme 2>/dev/null ||:)"
+
 themedir="$DATADIR/plymouth/themes/$name"
 
 [ -f "$themedir/$name.plymouth" ] ||

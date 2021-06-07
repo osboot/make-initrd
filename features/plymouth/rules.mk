@@ -2,12 +2,10 @@ PLYMOUTH_LIBDIR := $(shell $(FEATURESDIR)/plymouth/bin/get-libdir)
 
 PLYMOUTH_PACK_MODULES := $(shell $(FEATURESDIR)/plymouth/bin/get-modules)
 PLYMOUTH_PACK_FONT    := $(or $(PLYMOUTH_FONT),$(shell fc-match -f '%{file}\n' 'DejaVuSans' ||:))
-PLYMOUTH_PACK_THEME   := $(or $(PLYMOUTH_THEME),$(shell plymouth-set-default-theme 2>/dev/null ||:))
-
-PLYMOUTH_PACK_THEME_FILES := $(shell env \
+PLYMOUTH_PACK_THEME   := $(shell env \
 		"LIBDIR=$(LIBDIR)" \
 		"DATADIR=$(DATADIR)" \
-		$(FEATURESDIR)/plymouth/bin/get-theme-files $(PLYMOUTH_PACK_THEME))
+		$(FEATURESDIR)/plymouth/bin/get-theme-files "$(PLYMOUTH_THEME)")
 
 PLYMOUTH_PACK_FILES ?= \
 	$(wildcard $(SYSCONFDIR)/plymouth/plymouthd.conf) \
@@ -22,7 +20,7 @@ PLYMOUTH_PACK_FILES ?= \
 	$(PLYMOUTH_LIBDIR)/renderers/drm.so \
 	$(PLYMOUTH_LIBDIR)/renderers/frame-buffer.so \
 	$(PLYMOUTH_PACK_FONT) \
-	$(PLYMOUTH_PACK_THEME_FILES)
+	$(PLYMOUTH_PACK_THEME)
 
 MODULES_ADD += $(PLYMOUTH_PACK_MODULES)
 MODULES_TRY_ADD += drivers/char/agp
