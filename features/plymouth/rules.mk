@@ -3,7 +3,7 @@ PLYMOUTH_LIBDIR := $(shell $(FEATURESDIR)/plymouth/bin/get-libdir)
 PLYMOUTH_PACK_MODULES := $(shell $(FEATURESDIR)/plymouth/bin/get-modules)
 PLYMOUTH_PACK_FONT    := $(or $(PLYMOUTH_FONT),$(shell fc-match -f '%{file}\n' 'DejaVuSans' ||:))
 PLYMOUTH_PACK_THEME   := $(shell env \
-		"LIBDIR=$(LIBDIR)" \
+		"PLYMOUTH_LIBDIR=$(PLYMOUTH_LIBDIR)" \
 		"DATADIR=$(DATADIR)" \
 		$(FEATURESDIR)/plymouth/bin/get-theme-files "$(PLYMOUTH_THEME)")
 

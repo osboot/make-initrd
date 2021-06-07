@@ -46,7 +46,7 @@ get_module()
 
 				set -- ${l#*=}
 
-				fn="$LIBDIR/plymouth/$*.so"
+				fn="$PLYMOUTH_LIBDIR/$*.so"
 
 				[ -f "$fn" ] ||
 					fatal "ModuleName: file not found: $fn"
