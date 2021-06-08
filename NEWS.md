@@ -1,3 +1,27 @@
+Version 2.18.0
+
+- Runtime:
+  + ueventd: Restore rduevent-timeout=SEC boot parameter.
+- New feature:
+  + Add new feature add-udev-rules. Udev rules require separate processing
+    because other utilities can be called from them.
+  + Add new feature gpu-drm. The feature adds to the image the modules needed
+    for one or more cards.
+- Feature kickstart:
+  + Add missing kickstart/data/root directory.
+  + Fix fs options that are passed when partitioning disks.
+  + Create /run/cryptsetup if it doesn't exist.
+- Feature plymouth:
+  + Run helpers only once.
+  + Fix definition of default theme.
+  + Fix plymouth libdir.
+- Utilities:
+  + initrd-put: Skip the file if it already exists in destdir.
+- Misc:
+  + Improve documentation.
+  + Add Github CI.
+  + Run tests for fedora and ubuntu.
+
 Version 2.17.0
 
 - Runtime:
