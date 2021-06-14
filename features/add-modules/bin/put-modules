@@ -91,7 +91,9 @@ get_depinfo()
 		return 0
 	local rc=0
 	sort -u "$1" |
-		depinfo --input=- --set-version="$kernel" || rc=$?
+		depinfo --input=- \
+			${USE_MODPROBE_BLACKLIST:+--use-blacklist} \
+			--set-version="$kernel" || rc=$?
 	:> "$1"
 	return $rc
 }

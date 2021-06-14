@@ -177,6 +177,7 @@ guess-modules: check-for-root guess
 	done | \
 	   depinfo \
 	      --input=- \
+	      $(if $(USE_MODPROBE_BLACKLIST),--use-blacklist) \
 	      --set-version="$(KERNEL)" \
 	      --no-prefix \
 	      --no-firmware \

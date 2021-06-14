@@ -45,6 +45,8 @@ static char firmware_defaultdir[] = "/lib/firmware/updates:/lib/firmware";
 static char **modules   = NULL;
 static size_t n_modules = 0;
 
+static int use_blacklist = 0;
+
 struct kernel_builtin {
 	char *name;
 	char **aliases;
@@ -513,6 +515,22 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req)
 		goto end;
 	}
 
+	if (use_blacklist) {
+		if (kmod_module_apply_filter(ctx, KMOD_FILTER_BLACKLIST, list, &filtered) < 0) {
+			warn("ERROR: Failed to filter (blacklist) list");
+			goto end;
+		}
+
+		if (!filtered) {
+			ret = 0;
+			goto end;
+		}
+
+		kmod_module_unref_list(list);
+		list = filtered;
+		filtered = NULL;
+	}
+
 	if (kmod_module_apply_filter(ctx, KMOD_FILTER_BUILTIN, list, &filtered) < 0) {
 		warn("ERROR: Failed to filter list");
 		goto end;
@@ -619,6 +637,7 @@ read_names(struct kmod_ctx *ctx, const char *file)
 
 static const char cmdopts_s[]        = "k:b:f:i:tDMFPBVh";
 static const struct option cmdopts[] = {
+	{ "use-blacklist", no_argument, 0, 1, },
 	{ "tree", no_argument, 0, 't' },
 	{ "no-deps", no_argument, 0, 'D' },
 	{ "no-modules", no_argument, 0, 'M' },
@@ -653,6 +672,7 @@ print_help(const char *progname)
 	       "   -b, --base-dir=DIR          Use DIR as filesystem root for /lib/modules;\n"
 	       "   -f, --firmware-dir=DIR      Use DIR as colon-separated list of firmware directories\n"
 	       "                               (default: %s);\n"
+	       "       --use-blacklist         Apply blacklist commands in the configuration files.\n"
 	       "   -i, --input=FILE            Read names from FILE;\n"
 	       "   -V, --version               Show version of program and exit;\n"
 	       "   -h, --help                  Show this text and exit.\n"
@@ -687,6 +707,9 @@ main(int argc, char **argv)
 
 	while ((c = getopt_long(argc, argv, cmdopts_s, cmdopts, NULL)) != -1) {
 		switch (c) {
+			case 1:
+				use_blacklist = 1;
+				break;
 			case 'D':
 				opts ^= SHOW_DEPS;
 				break;
