@@ -168,8 +168,10 @@ ln_if_missing()
 	[ -h "$2" ] || [ -e "$2" ] || ln $verbose -s -- "$1" "$2"
 }
 
-BASH="$(find /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin -name bash -print -quit)"
+BASH="$(find /bin/ /sbin/ /usr/bin/ /usr/sbin/ /usr/local/bin/ /usr/local/sbin/ -name bash -print -quit)"
 
+[ -n "$BASH" ] ||
+	fatal "bash not found"
 put-file . "$BASH"
 
 ln_if_missing "$BASH" ./bin/sh
