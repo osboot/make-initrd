@@ -1,3 +1,14 @@
+Version 2.19.0
+
+- Feature gpu-drm:
+  + Check only devices of class PCI_CLASS_DISPLAY_VGA.
+- Utilities:
+  + depinfo: Add blacklist support.
+- Misc:
+  + Show an error if bash not found.
+  + Fix feature-info subcommand.
+  + Improve documentation.
+
 Version 2.18.0
 
 - Runtime:
