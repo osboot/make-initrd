@@ -197,6 +197,7 @@ for dir in ${MOUNTPOINTS-}; do
 	done
 
 	guess_feature rootfs
+	guess_feature add-udev-rules
 
 	pass="$pass$dir "
 done

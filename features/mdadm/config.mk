@@ -1,4 +1,5 @@
 $(call feature-disables,raid)
+$(call feature-requires,add-udev-rules)
 
 # mdadm < 3.3
 MDAMD_RULES_OLD = \

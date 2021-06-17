@@ -1,4 +1,4 @@
-$(call feature-requires,depmod-image)
+$(call feature-requires,depmod-image add-udev-rules)
 
 MODULES_ADD     ?=
 MODULES_TRY_ADD ?=

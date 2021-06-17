@@ -1,4 +1,4 @@
-$(call feature-requires,depmod-image devmapper)
+$(call feature-requires,depmod-image add-udev-rules devmapper)
 
 MULTIPATH_PRELOAD = \
 	dm-multipath \

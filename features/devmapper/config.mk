@@ -1,4 +1,4 @@
-$(call feature-requires,depmod-image)
+$(call feature-requires,depmod-image add-udev-rules)
 
 DM_PROGS	?= dmsetup
 DM_UDEV_RULES	?= *-dm.rules \

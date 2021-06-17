@@ -1,4 +1,4 @@
-$(call feature-requires,depmod-image)
+$(call feature-requires,depmod-image add-udev-rules)
 
 PIPELINE_DATADIR = $(FEATURESDIR)/pipeline/data
 
