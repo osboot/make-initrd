@@ -187,14 +187,24 @@ guess-modules: check-for-root guess
 	$Qrm -rf -- "$(GUESSDIR)"
 	$Qrmdir -- "$(WORKDIR)"
 
-ifneq "$(filter feature-info,$(MAKECMDGOALS))" ''
+ifneq "$(filter show-feature-info,$(MAKECMDGOALS))" ''
 INITRD_CONFIG = /dev/null
+
+.PHONY: $(INITRD_CONFIG)
+
 include @projectdir@/mk/config.mk
 $(call show-feature-dependency,$(FEATURE_NAMES))
 
-feature-info:
+.PHONY: show-eature-info
+
+show-feature-info:
 	@:
 endif
+
+.PHONY: feature-info
+
+feature-info:
+	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk show-feature-info
 
 bug-report: check-for-root
 	@mkdir -m 755 -p -- $(REPORTDIR)
