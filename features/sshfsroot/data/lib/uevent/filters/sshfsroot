@@ -1,0 +1,20 @@
+#!/bin/bash
+
+. /.initrd/initenv
+
+[ -n "$SSHFSROOT" ] || [ "$ROOT" != '/dev/sshfs' ] ||
+	SSHFSROOT='auto'
+
+[ -n "$SSHFSROOT" ] ||
+	exit 0
+
+. network-sh-functions
+
+! is_loopback "$INTERFACE" ||
+       exit 0
+
+. uevent-sh-functions
+
+event="$(make_event)"
+environ -q > "$event"
+release_event sshfsroot "$event"

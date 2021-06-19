@@ -1,0 +1,6 @@
+#!/bin/bash -efu
+
+. initrd-sh-functions
+
+omit_pid "$BASHPID"
+exec ssh "$@"

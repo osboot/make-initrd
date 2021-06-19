@@ -1,0 +1,45 @@
+#!/bin/bash
+
+. /.initrd/initenv
+. initrd-sh-functions
+. uevent-sh-functions
+. network-sh-functions
+
+handler() {
+	! mountpoint -q "$rootmnt" ||
+		return 0
+
+	# get sshfs root from dhcp
+	[ "$SSHFSROOT" != 'auto' ] ||
+		SSHFSROOT="$(cat "$net_autoconfdir/ifaces/$INTERFACE/rootpath)")"
+
+	set -- -o ssh_command=/bin/sshfs-client
+
+	[ -z "$READONLY" ] &&
+		set -- "$@" -o rw ||
+		set -- "$@" -o ro
+	[ ! -e /home/root/.ssh/id_key ] ||
+		set -- "$@" -o IdentityFile=/home/root/.ssh/id_key
+	[ -e /home/root/.ssh/known_hosts ] ||
+		set -- "$@" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+	[ -z "$SSHFSOPTS" ] ||
+		set -- "$@" -o "$SSHFSOPTS"
+
+	sshfs "$@" "$SSHFSROOT" "$rootmnt" ||
+		return 1
+
+	local pid
+	for pid in $(fuser /dev/fuse); do
+		omit_pid "$pid"
+	done
+}
+
+rc=0
+for e in "$eventdir"/sshfsroot.*; do
+	[ -f "$e" ] || break
+	( . "$e"; handler; ) ||
+		rc=1
+	done_event "$e"
+done
+
+exit $rc

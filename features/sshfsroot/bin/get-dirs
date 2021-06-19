@@ -1,0 +1,25 @@
+#!/bin/bash -efu
+
+DIR="$WORKDIR/root"
+mkdir -p -- \
+	"$DIR/home/root"
+
+mkdir -p -m 700 -- "$DIR/home/root/.ssh"
+
+if [ -n "${SSHFS_KEY-}" ]; then
+	cp -- "$SSHFS_KEY" "$DIR/home/root/.ssh/id_key"
+	chmod 600 -- "$DIR/home/root/.ssh/id_key"
+fi
+
+for f in ${SSHFS_KEYS-}; do
+	cp -- "$f" "$DIR/home/root/.ssh/"
+	chmod 600 -- "$DIR/home/root/.ssh/${f##*/}"
+done
+
+[ ! -n "${SSHFS_KNOWN_HOSTS-}" ] ||
+	cp -- "$SSHFS_KNOWN_HOSTS" "$DIR/home/root/.ssh/known_hosts"
+
+[ ! -n "${SSHFS_CONFIG-}" ] ||
+	cp -- "$SSHFS_CONFIG" "$DIR/home/root/.ssh/config"
+
+printf '%s\n' "$DIR"
