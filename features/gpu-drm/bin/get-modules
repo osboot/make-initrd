@@ -24,39 +24,9 @@ in_cards()
 	return 1
 }
 
-get_class()
-{
-	local syspath="$1"
-
-	while [ -n "$syspath" ] && [ "$syspath" != "$SYSFS_PATH/devices" ]; do
-		if [ -e "$syspath/class" ]; then
-			cat "$syspath/class"
-			break
-		fi
-		syspath="${syspath%/*}"
-	done
-}
-
 for p in $(set +f; echo "$SYSFS_PATH"/class/drm/*); do
 	[ -e "$p" ] ||
 		break
-
-	p="$(readlink -ev "$p")"
-
-	[ -n "$p" ] && [ -z "${p##$SYSFS_PATH/devices/*}" ] ||
-		continue
-
-	class="$(get_class "$p")"
-
-	# From: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/linux/pci_ids.h
-	case "$class" in
-		0x0300*) # PCI_CLASS_DISPLAY_VGA
-			;;
-		*)
-			continue
-			;;
-	esac
-
 	! in_cards "${p##*/}" ||
 		guess_device "${p#$SYSFS_PATH}"
 done
