@@ -1,3 +1,12 @@
+Version 2.19.1
+
+- Feature gpu-drm:
+  + Revert "Feature gpu-drm: Check only devices of class PCI_CLASS_DISPLAY_VGA"
+  + As a workaround, allow the absence of a module for devices
+- New feature:
+  + Add new feature sshfsroot. Feature adds the ability to mount the root using
+    SSH (more precisely, the SFTP subsystem).
+
 Version 2.19.0
 
 - Feature gpu-drm:
