@@ -1,9 +1,35 @@
-#!/bin/bash -efu
+#!/bin/bash -eu
 
 . guess-functions
 
-! grep -qs -E '^[[:space:]]*(KEYTABLE|SYSFONT)=' \
+grep -qs -E '^[[:space:]]*(KEYTABLE|SYSFONT)=' \
 		"$SYSCONFDIR/sysconfig/consolefont" \
 		"$SYSCONFDIR/sysconfig/keyboard" \
 		2>/dev/null ||
-	guess_feature kbd
+	exit 0
+
+guess_feature kbd
+
+# Check (M)odular console driver.
+# See: linux/Documentation/driver-api/console.rst
+
+for f in "$SYSFS_PATH"/class/vtconsole/vtcon*/name; do
+	[ -e "$f" ] ||
+		continue
+
+	p="${f%/*}"
+
+	bind=0
+	readline bind "$p/bind"
+
+	[ "$bind" = 1 ] ||
+		continue
+
+	name=
+	readline name "$p/name"
+
+	[ "$name" = "(M) frame buffer device" ] ||
+		continue
+
+	guess_feature gpu-drm
+done
