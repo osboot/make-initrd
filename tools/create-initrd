@@ -149,12 +149,13 @@ mkdir_save_symlinks()
 	done
 }
 
+mkdir -p -- {,home/}root
+
 mkdir_save_symlinks \
-	{dev,mnt,root,run,proc,sys,tmp,{,usr/}{,s}bin,{,usr/}{share,lib{,32,x32,64}},var/{cache,lock/subsys,log,run}} \
+	{dev,mnt,run,proc,sys,tmp,{,usr/}{,s}bin,{,usr/}{share,lib{,32,x32,64}},var/{cache,lock/subsys,log,run}} \
 	lib/{modules,udev,initrd/{all,kmodules,post,pre}} \
 	etc/{{initrd,modprobe.d,sysconfig},udev/rules.d} \
 	.initrd/{killall,uevent/events,uevent/queues/udev/.tmp} \
-	home/root \
 	"${KERNEL_MODULES_DIR#/}" \
 	#
 
