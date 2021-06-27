@@ -10,19 +10,18 @@ handler() {
 		NFSROOT="$(cat "$net_autoconfdir/ifaces/$INTERFACE/rootpath)")"
 	else
 	# nfsroot=[<server-ip>:]<root-dir>[,<nfs-options>]
-		[ "${NFSROOT#*,}" = "$NFSROOT" ] || NFSOPTS="-o ${NFSROOT#*,}"
+		[ "${NFSROOT#*,}" = "$NFSROOT" ] || NFSOPTS="${NFSROOT#*,}"
 		NFSROOT=${NFSROOT%%,*}
 	fi
-	[ "${NFSROOT#*:}" != "$NFSROOT" ] || NFSROOT="$ROOTSERVER:$NFSROOT"
 
 	# nfs options are an optional arg
-	[ -n "$NFSOPTS" ] || NFSOPTS="-o retrans=10"
+	[ -n "$NFSOPTS" ] || NFSOPTS="retrans=10"
 
 	local roflag='-o rw'
 	[ -z "$READONLY" ] || roflag='-o ro'
 
 	mountpoint -q "$rootmnt" ||
-		nfsmount -o nolock $roflag $NFSOPTS "$NFSROOT" "$rootmnt" ||
+		nfsmount -o nolock $roflag ${NFSOPTS:+-o $NFSOPTS} "$NFSROOT" "$rootmnt" ||
 		return 1
 }
 
