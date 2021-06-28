@@ -27,5 +27,10 @@ if [ -s "$KSFILE" ]; then
 
 	kickstart -v "$KSFILE"
 
+	. uevent-sh-functions
+
+	rmdir -- "$uevent_confdb/queue/pause/udev"
+	rmdir -- "$uevent_confdb/queue/pause/md-raid-member"
+
 	cp -f /etc/initrd/method.prev /etc/initrd/method
 fi
