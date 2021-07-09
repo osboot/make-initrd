@@ -1,0 +1,19 @@
+#!/bin/bash
+
+check_for_smart_card()
+{
+	local serial=$1
+	if [ "$serial" ]
+	then
+		opensc-tool --serial | tr -d " \t" | grep -i "$serial" &> /dev/null || return 1
+	else
+		opensc-tool --serial &> /dev/null || return 1
+	fi
+
+	return 0
+}
+
+get_pkcs11_module()
+{
+	cat /.initrd/pkcs11/pkcs11.module
+}

@@ -121,6 +121,7 @@ PUT_FEATURE_DIRS  =
 PUT_FEATURE_FILES =
 PUT_FEATURE_PROGS =
 PUT_FEATURE_PROGS_WILDCARD =
+PUT_FEATURE_LIBS =
 
 feature-configs = $(call wildcard-features,config.mk)
 

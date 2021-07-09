@@ -88,6 +88,49 @@ append_progs()
 	done
 }
 
+append_libs()
+{
+        local n fn
+        local SEARCH_PATH=$(ldconfig -vNX 2>/dev/null | grep ^/ | cut -d: -f1)
+
+        for n; do
+                [ -n "$n" ] ||
+                        continue
+                if [ -z "${n##/*}" ]; then
+                        append_uniq FILES "$n"
+                        continue
+                elif [ -z "${n##*/*}" ]; then
+                        message "WARNING: it doesn't make sense to search in PATH for a library with subpath: $n"
+                        n="${n##*/}"
+                fi
+		
+		local fn="$n"
+		names=("$fn")
+		[[ "$fn" == *".so"* ]] || { fn="$fn.so"; names+=("$fn"); }
+		[[ "$fn" == "lib"* ]]  || { fn="lib$fn"; names+=("$fn");}
+                
+		found=
+                for path in $SEARCH_PATH; do
+                        [ -n "$path" ] ||
+                                continue
+
+			for fn in "${names[@]}"; do
+				f="$path/$fn"
+				if [ -f "$f" ] || [ -h "$f" ]; then
+					found=1
+					break 2
+				fi
+			done
+                done
+
+                [ -n "$found" ] ||
+                        fatal "Not found library: $n"
+		
+		append_uniq FILES "$f"
+
+        done
+}
+
 for n in \
 	"$RUNTIMEDIR" "$BASEDATADIR" \
 	${LOCALBUILDDIR:+"${LOCALBUILDDIR-}$RUNTIMEDIR"} \
@@ -120,6 +163,10 @@ append_progs \
 	logger ls lsmod mkdir mknod mktemp modprobe mount mountpoint mv \
 	readlink rm rmdir setsid sh sleep start-stop-daemon switch_root \
 	touch umount which ${PUT_FEATURE_PROGS-} ${PUT_PROGS-}
+
+if [ -n "${PUT_FEATURE_LIBS-}" ]; then
+        append_libs ${PUT_FEATURE_LIBS-}
+fi
 
 while read -d: -r n; do
 	[ -n "$n" ] ||
