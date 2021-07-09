@@ -2,6 +2,7 @@
 
 . shell-error
 
+FEATUREFILES=()
 LOCALFILES=()
 FILES=()
 DIRS=()
@@ -18,12 +19,31 @@ append_uniq()
 	eval "$1+=(\"\$2\")"
 }
 
+in_runtimedir()
+{
+	local f="${1#$LOCALBUILDDIR}"
+	[ -z "${f##$RUNTIMEDIR/*}" ]
+}
+
+in_features_bindir()
+{
+	local f="${1#$LOCALBUILDDIR}"
+	[ -z "${f##$BIN_FEATURESDIR/*}" ]
+}
+
 append_progs()
 {
-	local n f SEARCH_PATH=''
+	local n f d SEARCH_PATH=''
 
 	[ -z "$LOCALBUILDDIR" ] ||
 		SEARCH_PATH="$LOCALBUILDDIR$RUNTIMEDIR/sbin:$LOCALBUILDDIR$RUNTIMEDIR/bin"
+
+	for n in $ALL_ACTIVE_FEATURES; do
+		for d in "$LOCALBUILDDIR$BIN_FEATURESDIR/$n"/{bin,sbin} "$BIN_FEATURESDIR/$n"/{bin,sbin}; do
+			[ ! -d "$d" ] ||
+				SEARCH_PATH="${SEARCH_PATH:+$SEARCH_PATH:}$d"
+		done
+	done
 
 	SEARCH_PATH="${SEARCH_PATH:+$SEARCH_PATH:}$BUSYBOX_PATH:$SYSTEM_PATH"
 
@@ -52,11 +72,17 @@ append_progs()
 		[ -n "$found" ] ||
 			fatal "Not found utility: $n"
 
-		[ -n "${f##$RUNTIMEDIR/*}" ] ||
+		# We ignore the files from RUNTIMEDIR because this entire
+		# directory will be copied later.
+		! in_runtimedir "$f" ||
 			continue
 
-		[ -z "$LOCALBUILDDIR" ] || [ -n "${f##$LOCALBUILDDIR/*}" ] ||
+		# We put these utilities on a separate list because we need to
+		# remove a prefix from them.
+		if in_features_bindir "$f"; then
+			append_uniq FEATUREFILES "$f"
 			continue
+		fi
 
 		append_uniq FILES "$f"
 	done
@@ -177,6 +203,13 @@ put-file . "$BASH"
 
 ln_if_missing "$BASH" ./bin/sh
 ln_if_missing "$BASH" ./bin/bash
+
+for f in "${FEATUREFILES[@]}"; do
+	n="${f#$LOCALBUILDDIR}"
+	n="${n#$BIN_FEATURESDIR/*/}"
+	p="${f%/$n}"
+	put-file -r "$p" . "$f"
+done
 
 printf '%s\n' "${DIRS[@]}"       |xargs -r put-tree .
 printf '%s\n' "${FILES[@]}"      |xargs -r put-file .

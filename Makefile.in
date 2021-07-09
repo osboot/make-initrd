@@ -34,7 +34,7 @@ localbuilddir = $(CURDIR)/$(build_prefix)/dest
 statedir = /tmp
 endif
 
-
+FEATURESDIR = features
 OBJDIR = $(build_prefix)/obj
 
 dest_projectdir   := $(build_prefix)/dest$(projectdir)
@@ -47,6 +47,10 @@ dest_rulesdir     := $(build_prefix)/dest$(rulesdir)
 dest_runtimedir   := $(build_prefix)/dest$(runtimedir)
 dest_data_bindir  := $(dest_runtimedir)/bin
 dest_data_sbindir := $(dest_runtimedir)/sbin
+dest_featuredir   := $(dest_execdir)/$(FEATURESDIR)
+
+dest_feature_bindir  := $(dest_featuredir)/bin
+dest_feature_sbindir := $(dest_featuredir)/sbin
 
 HAVE_GZIP        := @HAVE_GZIP@
 HAVE_GZIP_LIBS   := @HAVE_GZIP_LIBS@
@@ -81,7 +85,8 @@ SCRIPTS =
 
 -include \
 	$(wildcard utils/*/Makefile.mk) \
-	$(wildcard datasrc/*/Makefile.mk)
+	$(wildcard datasrc/*/Makefile.mk) \
+	$(wildcard $(FEATURESDIR)/*/src/Makefile.mk)
 
 define VAR_c_CFLAGS =
 $(1)_c_CFLAGS = $(2)
@@ -134,7 +139,7 @@ SED = @SED@ \
 	-e 's|@feature_kbd_kbddir[@]|$(feature_kbd_kbddir)|g' \
 	-e 's|@projectdir[@]|$(localbuilddir)$(projectdir)|g' \
 	-e 's|@localbuilddir[@]|$(localbuilddir)|g' \
-	-e 's|@execdir[@]|$(localbuilddir)$(execdir)|g'
+	-e 's|@execdir[@]|$(execdir)|g'
 
 .PHONY: $(PROGS) $(SCRIPTS)
 
