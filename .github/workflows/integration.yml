@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - for-master
 jobs:
   integration:
     strategy:
