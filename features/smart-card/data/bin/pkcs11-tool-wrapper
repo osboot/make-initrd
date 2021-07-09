@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -- pkcs11-tool\
+	${type:+--type "$type"}\
+	${output_file:+--output-file "$output_file"}\
+	${module:+--module "$module"}\
+	${application_label:+--application-label "$application_label"}\
+	${id:+--id "$id"}\
+	${flags}\
+	"$@"
+
+if [ -n "${add_new_line-}" ]; then
+	read -r pin
+	echo "$pin" |"$@"
+	exit
+fi
+
+"$@"
