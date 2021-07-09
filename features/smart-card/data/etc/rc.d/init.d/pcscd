@@ -1,0 +1,48 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides: pcscd
+# Required-Start:    udev
+# Required-Stop:     udev
+# Should-Start:      $syslog
+# Should-Stop:       $syslog
+# Default-Start:     3 4 5
+# Default-Stop:
+# Short-Description: Daemon to access a smart card using PC/SC
+# Description:       The PC/SC daemon is used to dynamically
+#                    allocate/deallocate reader drivers at runtime and manage
+#                    connections to the readers.
+### END INIT INFO
+
+. /etc/init.d/functions
+. /etc/init.d/template
+
+NAME=pcscd
+PIDFILE="$IPCDIR/$NAME.pid"
+ARGS="--lockfile "$LOCKFILE" --pidfile "$PIDFILE" --name "$NAME""
+
+
+start()
+{
+	local ipcdir=/var/run/pcscd
+	# create $IPCDIR with correct access rights
+	if [ ! -d "$ipcdir" ]
+	then
+		rm -rf "$ipcdir"
+		mkdir "$ipcdir"
+	fi
+	chmod 0755 "$ipcdir"
+
+	start_daemon $ARGS -- "$NAME"
+
+	RETVAL=$?
+	return $RETVAL
+}
+
+stop()
+{
+	stop_daemon $ARGS --retry=3 -- "$NAME"
+	RETVAL="$?"
+	return $RETVAL
+}
+
+switch "${1-}"
