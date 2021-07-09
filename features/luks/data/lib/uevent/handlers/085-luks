@@ -7,6 +7,8 @@
 
 mnt="/mnt/luks-key"
 tab='	'
+pkcs11_luks_key="/tmp/pkcs11-luks.key"
+
 
 match_dev_in_array() {
 	[ "$#" = 2 ] || return 2
@@ -38,8 +40,61 @@ match_dev_in_array() {
 	return 1
 }
 
+read_pkcs11_key() {
+	local keyid="$1"
+
+	keyid=${keyid#pkcs11:}
+	keyid="${keyid%;};"
+
+	local serial id label application_label module type output_file flags rc=1
+	export id application_label module type output_file flags
+
+	while [ "$keyid" ]; do
+		local v="${keyid%%;*}"
+
+		case "$v" in
+			"serial="*|"id="*|"label="*) ;;
+			*) fatal "Unknown PKCS#11 object identifier" ;;
+		esac
+
+		local "${v%%=*}"="${v#*=}"
+
+		keyid="${keyid#*;}"
+	done
+
+	. smart-card
+
+	check_for_smart_card "$serial" || return 2
+
+	path="$pkcs11_luks_key"
+
+	id="$id"
+	application_label="$label"
+	module="$(get_pkcs11_module)"
+	type="data"
+	output_file="$path"
+	flags="-l -r"
+	if plymouth --ping 2>/dev/null; then
+		add_new_line="true"\
+		plymouth ask-for-password \
+                                --prompt "Please enter passphrase for smart card:" \
+                                --number-of-tries=3 \
+                                --command="pkcs11-tool-wrapper"
+		rc=$?
+	else
+		rc=1
+                while [ "$rc" != "0" ]; do
+			pkcs11-tool-wrapper
+			rc="$?"
+                done
+	fi
+
+	return "$rc"
+}
+
 freekey() {
 	[ -d "$mnt" ] && umount "$mnt" && rmdir "$mnt" ||:
+	rm -f "$pkcs11_luks_key"
 }
 
 findkey() {
@@ -48,7 +103,7 @@ findkey() {
 	[ -f /etc/luks.keys ] ||
 		return 2
 
-	while IFS='' read -r s; do
+	while IFS='' read -u 3 -r s; do
 		for n in path keydev luksdev; do
 			v=
 			if [ -n "$s" ] && [ -z "${s##*$tab*}" ]; then
@@ -69,7 +124,10 @@ findkey() {
 		if [ -n "$luksdev" ]; then
 			get_dev "$luksdev" ||
 				continue
+
+			[ "${luksdev#/dev/}" = "${LUKS_ROOT#/dev/}" ] || continue
 		fi
+
 
 		prefix=
 		if [ -n "$keydev" ]; then
@@ -79,16 +137,26 @@ findkey() {
 			prefix=$mnt
 		fi
 
+		if [[ "$path" = "pkcs11:"* ]]; then
+			local pkcs11_id="$path"
+			# assign path variable inside
+			read_pkcs11_key "$pkcs11_id"
+			local rc=$?
+			[ "$rc" == "2" ] && printf "No smart card found\n" >&2 && return $rc
+			[ "$rc" != "0" ] && printf "ERROR(luks): can't read key '%s' from smart card\n" "$pkcs11_id" >&2 && return $rc
+		fi
+
 		if [ ! -f "$prefix/$path" ]; then
 			printf "ERROR(luks): %s: keyfile not found.\n" "$path" >&2
 			return 1
 		fi
 
 		keyfile="$prefix/$path"
+
 		printf "Found keyfile '%s' for '%s' encrypted partition.\n" "$path" "${LUKS_ROOT#/dev/}"
 		return 0
 
-	done < /etc/luks.keys
+	done 3< /etc/luks.keys
 
 	# Keyfile not found yet.
 	return 2
@@ -96,6 +164,7 @@ findkey() {
 
 readkey() {
 	local keyfile="$1"
+
 	[ -s "$keyfile" ] ||
 		return 0
 	case "${LUKS_KEY_FORMAT:-plain}" in

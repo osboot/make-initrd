@@ -6,12 +6,20 @@ Feature adds the ability to boot from LUKS partition.
 
 - `no-luks` disables crypto LUKS detection.
 
-- `luks-key=<keypath>[:<keydev>][:<luksdev>]` key for luks device on removable device
+- `luks-key=`
+
+  `<keypath>[:<keydev>][:<luksdev>]` key for luks device on removable device
+
+  `pkcs11:<pkcs11-path>[:<luksdev>]` key for luks device on smart-card device
   - `keypath` is a path to key file to look for.
   - `keydev` is a device on which key file resides (see [device spec](../../Documentation/DeviceSpec.md)).
   - If `luksdev` is given, the specified key will only be applied for that LUKS device.
     Possible values are the same as for keydev. Unless you have several LUKS devices,
     you don’t have to specify this parameter.
+  - `pkcs11-path` is a path to data object on pkcs11 device in format: [serial=<serial>];id=<id>|label=<label>
+    - `serial` is smart card serial number
+    - `id` is id of data object
+    - `label` is application label of data object
 
 - `luks-key-format=<format>` defines the format of the key file
   (possible values: `plain`, `raw`)
@@ -42,3 +50,14 @@ is specified, then the key will be used to all found LUKS partitions. If the key
 is on a separate device (`key-device`), then `key-path` must be specified from
 the root of this device.
 
+## Examples
+
+Luks key on device:
+```
+luks-key=keys/luks.key:UUID='eee52cfb-4029-423b-8736-b494a252c387'
+```
+
+Luks key on the smart card:
+```
+luks-key=pkcs11:label=luks-key luks-key-format=raw
+```
