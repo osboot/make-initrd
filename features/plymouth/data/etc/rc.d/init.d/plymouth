@@ -4,6 +4,7 @@
 # Required-Start:      udev
 # Should-Start:
 # Required-Stop:
+# X-Start-Before:      uevent
 # Should-Stop:
 # Default-Start:       3 4 5
 # Default-Stop:

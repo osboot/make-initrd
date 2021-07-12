@@ -3,6 +3,7 @@
 # Provides: pcscd
 # Required-Start:    udev
 # Required-Stop:     udev
+# X-Start-Before:    uevent
 # Should-Start:      $syslog
 # Should-Stop:       $syslog
 # Default-Start:     3 4 5

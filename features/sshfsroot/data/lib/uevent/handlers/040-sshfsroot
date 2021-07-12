@@ -4,6 +4,7 @@
 . initrd-sh-functions
 . uevent-sh-functions
 . network-sh-functions
+. rdshell-sh-functions
 
 handler() {
 	! mountpoint -q "$rootmnt" ||
@@ -25,7 +26,7 @@ handler() {
 	[ -z "$SSHFSOPTS" ] ||
 		set -- "$@" -o "$SSHFSOPTS"
 
-	sshfs "$@" "$SSHFSROOT" "$rootmnt" ||
+	SSH_ASKPASS_REQUIRE=force SSH_ASKPASS=ask-pass-common sshfs "$@" "$SSHFSROOT" "$rootmnt" ||
 		return 1
 
 	local pid
@@ -33,6 +34,12 @@ handler() {
 		omit_pid "$pid"
 	done
 }
+
+while ! console_lock; do
+        sleep 0.5
+done
+
+exec 0</dev/console >/dev/console 2>&1
 
 rc=0
 for e in "$eventdir"/sshfsroot.*; do
@@ -42,4 +49,5 @@ for e in "$eventdir"/sshfsroot.*; do
 	done_event "$e"
 done
 
+console_unlock
 exit $rc
