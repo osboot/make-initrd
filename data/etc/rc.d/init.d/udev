@@ -2,7 +2,7 @@
 ### BEGIN INIT INFO
 # Provides:            udev
 # Required-Start:      cmdline modules mountvirtfs
-# Should-Start:        $syslog uevent
+# Should-Start:        $syslog
 # Required-Stop:
 # Should-Stop:
 # Default-Start:       3 4 5
