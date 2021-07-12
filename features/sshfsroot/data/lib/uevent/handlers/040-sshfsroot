@@ -26,7 +26,7 @@ handler() {
 	[ -z "$SSHFSOPTS" ] ||
 		set -- "$@" -o "$SSHFSOPTS"
 
-	SSH_ASKPASS_REQUIRE=force SSH_ASKPASS=ask-pass sshfs "$@" "$SSHFSROOT" "$rootmnt" ||
+	SSH_ASKPASS_REQUIRE=force SSH_ASKPASS=ask-pass-common sshfs "$@" "$SSHFSROOT" "$rootmnt" ||
 		return 1
 
 	local pid

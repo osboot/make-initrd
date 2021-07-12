@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ "$#" = "0" ]; then
+	prompt="Enter passphrase:"
+else
+	prompt="$1"
+fi
+
+if plymouth --ping 2>/dev/null; then
+	plymouth ask-for-password --prompt "$prompt"
+	exit $?
+fi
+
+ask-pass "$prompt"
+exit $?
