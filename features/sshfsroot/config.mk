@@ -10,9 +10,10 @@ SSHFS_KEY ?=
 SSHFS_KEYS ?=
 
 ifdef SSHFS_CONFIG
-    SMART_CARD_PKCS11_MODULE ?= $(shell grep -w PKCS11Provider "$(SSHFS_CONFIG)" | tail -n1 | sed -e 's/[[:space:]]\+/ /g' -e 's/^ //' | cut -d" " -f 2)
+SSHFS_PKCS11_MODULE := $(shell $(FEATURESDIR)/sshfsroot/bin/get-pkcs11-module "$(SSHFS_CONFIG)")
 endif
 
-ifdef SMART_CARD_PKCS11_MODULE
-    $(call feature-requires,smart-card)
+ifdef SSHFS_PKCS11_MODULE
+SMART_CARD_PKCS11_MODULE = $(SSHFS_PKCS11_MODULE)
+$(call feature-requires,smart-card)
 endif

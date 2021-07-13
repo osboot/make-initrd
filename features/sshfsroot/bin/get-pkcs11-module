@@ -1,0 +1,9 @@
+#!/bin/bash -efu
+
+SSHFS_CONFIG="$1"
+shift
+
+grep -w PKCS11Provider "$SSHFS_CONFIG" |
+	tail -n1 |
+	sed -e 's/[[:space:]]\+/ /g' -e 's/^ //' |
+	cut -d" " -f 2
