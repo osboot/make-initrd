@@ -49,9 +49,6 @@ dest_data_bindir  := $(dest_runtimedir)/bin
 dest_data_sbindir := $(dest_runtimedir)/sbin
 dest_featuredir   := $(dest_execdir)/$(FEATURESDIR)
 
-dest_feature_bindir  := $(dest_featuredir)/bin
-dest_feature_sbindir := $(dest_featuredir)/sbin
-
 HAVE_GZIP        := @HAVE_GZIP@
 HAVE_GZIP_LIBS   := @HAVE_GZIP_LIBS@
 HAVE_GZIP_CFLAGS := @HAVE_GZIP_CFLAGS@
