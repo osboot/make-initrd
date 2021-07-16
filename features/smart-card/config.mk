@@ -7,5 +7,4 @@ SMART_CARD_FILES	?= $(wildcard $(SYSCONFDIR)/opensc) \
 			   $(SYSCONFDIR)/reader.conf.d \
 			   $(LIBDIR)/pcsc
 
-SMART_CARD_PKCS11_MODULE ?= opensc-pkcs11.so
-SMART_CARD_LIBS		?= $(SMART_CARD_PKCS11_MODULE)
+SMART_CARD_PKCS11_MODULE ?=

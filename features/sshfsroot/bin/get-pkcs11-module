@@ -1,6 +1,0 @@
-#!/bin/bash -efu
-
-SSHFS_CONFIG="$1"
-shift
-
-sed -n -e 's/^[[:space:]]*PKCS11Provider[[:space:]]\+//p' "$SSHFS_CONFIG"
