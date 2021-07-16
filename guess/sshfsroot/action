@@ -1,0 +1,25 @@
+#!/bin/bash -efu
+
+. guess-functions
+
+get-pkcs11-module() {
+	local SSHFS_CONFIG="$1"
+	shift
+
+	sed -n -e 's/^[[:space:]]*PKCS11Provider[[:space:]]\+//p' "$SSHFS_CONFIG" | uniq
+}
+
+if [ -n "${SSHFS_CONFIG-}" ] && [ -z "${SMART_CARD_PKCS11_MODULE-}" ] ; then
+	SSHFS_PKCS11_MODULES="$(get-pkcs11-module "${SSHFS_CONFIG}")"
+
+	SSHFS_PKCS11_MODULES_COUNT=`echo -e "${SSHFS_PKCS11_MODULES}" | wc -l`
+	if [ "${SSHFS_PKCS11_MODULES_COUNT}" -gt "1" ]; then
+		echo  "Different PKCS11 providers are not supported for sshfsroot" 1>&2
+		exit 1
+	fi
+
+	if [ "${SSHFS_PKCS11_MODULES_COUNT}" = "1" ]; then
+		guess_feature "smart-card"
+		guess_variable "SMART_CARD_PKCS11_MODULE" "$SSHFS_PKCS11_MODULES"
+	fi
+fi
