@@ -39,6 +39,39 @@ ifeq "$(MAKECMDGOALS)" 'guess-modules'
 AUTODETECT := root device
 endif
 
+-include $(GUESSDIR)/guessed.mk
+
+GUESS_CONFIG_MODULES = \
+		$(foreach mod1, \
+			$(if $(findstring all,$(AUTODETECT)), \
+				$(realpath $(wildcard $(DETECTDIR)/*)), \
+				$(foreach mod,$(AUTODETECT),$(realpath $(DETECTDIR)/$(mod)))), \
+			$(wildcard $(mod1)/config.mk))
+
+GUESS_MODULES = \
+	$(sort $(filter-out $(sort $(PASSED_GUESS_MODULES)), \
+		$(if $(findstring all,$(AUTODETECT)), \
+			$(notdir $(call filter-dirs,$(wildcard $(DETECTDIR)/*))), \
+			$(AUTODETECT))))
+
+-include $(GUESS_CONFIG_MODULES)
+
+ifdef VERBOSE
+$(info GUESS_MODULES        = $(notdir $(GUESS_MODULES)))
+$(info PASSED_GUESS_MODULES = $(notdir $(PASSED_GUESS_MODULES)))
+endif
+
+ifneq "$(GUESS_MODULES)" ''
+GUESS_DEVICE_SCRIPTS = $(call wildcard-features,guess/device)
+GUESS_FSTYPE_SCRIPTS = $(call wildcard-features,guess/fstype)
+ALL_ACTIVE_FEATURES  := $(get-all-active-features)
+
+include \
+	$(sort $(filter-out \
+		$(foreach exl,$(DISABLE_GUESS),$(realpath $(exl:%=$(DETECTDIR)/%/rules.mk))), \
+		$(foreach mod,$(GUESS_MODULES),$(realpath $(DETECTDIR)/$(mod)/rules.mk))))
+
+else
 unknown_features = \
 	$(filter-out \
 		$(notdir $(wildcard $(FEATURESDIR)/*)), \
@@ -53,37 +86,28 @@ deprecated_features = $(filter $(DEPRECATED_FEATURES),$(sort $(FEATURES)))
 ifneq "$(deprecated_features)" ''
 $(info WARNING: Deprecated features found and will do nothing: $(deprecated_features))
 endif
-
-GUESS_MODULES = \
-	$(sort $(if $(findstring all,$(AUTODETECT)), \
-		$(realpath $(wildcard $(DETECTDIR)/*)), \
-		$(foreach mod,$(AUTODETECT),$(realpath $(DETECTDIR)/$(mod)))))
-
-ifneq "$(GUESS_MODULES)" ''
-include \
-	$(wildcard $(foreach mod,$(GUESS_MODULES),$(mod)/config.mk))
-
-GUESS_DEVICE_SCRIPTS = $(call wildcard-features,guess/device)
-GUESS_FSTYPE_SCRIPTS = $(call wildcard-features,guess/fstype)
-
-include \
-	$(sort $(filter-out \
-		$(foreach exl,$(DISABLE_GUESS),$(realpath $(exl:%=$(DETECTDIR)/%/rules.mk))), \
-		$(foreach mod,$(GUESS_MODULES),$(realpath $(mod)/rules.mk))))
 endif # GUESS_MODULES
 
 .PHONY: pre-guess guess
 
-pre-guess: depmod-host check-for-root
+pre-guess: check-for-root
 	@mkdir -m 755 -p -- $(GUESSDIR)
 	@for n in modules:rescue modules:add modalias:rescue modalias:add features; do \
-	   :> "$(GUESSDIR)/guess:$$n"; \
+	   :>> "$(GUESSDIR)/guess:$$n"; \
 	done
 
+ifneq "$(GUESS_MODULES)" ''
 guess: pre-guess
 	$V printf '============================================================\n\n' >&2
 	@$(TOOLSDIR)/guess-config > $(GUESSDIR)/guessed.mk
 	$V printf '============================================================\n\n' >&2
+	@$(MSG) Guess new config
+	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk guess\
+		PASSED_GUESS_MODULES+="$(GUESS_MODULES)"
+else
+guess: depmod-host
+	@$(MSG) Complete guessing config
+endif
 
 endif # MAKECMDGOALS = guess guess-config guess-modules
 
@@ -133,11 +157,9 @@ genimage: install
 	@$(MSG) "Image is saved as $(IMAGEFILE)"
 	@echo
 
-ALL_FEATURES         := $(sort $(filter-out ,$(call expand-features,FEATURE-REQUIRES,$(FEATURES))))
-ALL_DISABLE_FEATURES := $(sort $(filter-out ,$(DISABLE_FEATURES) $(call expand-disabled-features,$(ALL_FEATURES))))
-ALL_ACTIVE_FEATURES  := $(sort $(filter-out \
-	$(call expand-list,FEATURE-REQUIRED,$(DEPRECATED_FEATURES) $(ALL_DISABLE_FEATURES)),\
-	$(ALL_FEATURES)))
+ALL_FEATURES         := $(get-all-features)
+ALL_DISABLE_FEATURES := $(get-all-disable-features)
+ALL_ACTIVE_FEATURES  := $(get-all-active-features)
 
 ifdef VERBOSE
 $(info FEATURES              : $(sort $(FEATURES)))
