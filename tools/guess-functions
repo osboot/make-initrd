@@ -104,4 +104,13 @@ slaves() {
 	done
 }
 
+is_active_feature()
+{
+	local n
+	for n in ${ALL_ACTIVE_FEATURES-}; do
+		[ "$1" != "$n" ] || return 0
+	done
+	return 1
+}
+
 fi #__included_make_initrd_guess_functions

@@ -46,7 +46,7 @@ endef
 define wildcard-features
 $(if $(1),\
 	$(filter-out \
-		$(foreach exl,$(DEPRECATED_FEATURES) $(ALL_DISABLE_FEATURES),\
+		$(foreach exl,$(DEPRECATED_FEATURES) $(get-all-disable-features),\
 			$(realpath $(exl:%=$(FEATURESDIR)/%/$(1)))), \
 		$(realpath $(wildcard $(FEATURESDIR)/*/$(1)))))
 endef
@@ -58,6 +58,20 @@ $(foreach n,$(if $(1),$(1),$(sort $(foreach f,$(wildcard $(FEATURESDIR)/*/rules.
 	$(info $(space) disables : $(sort $(FEATURE-DISABLES-$(n)))) \
 	$(info $(space) required : $(sort $(FEATURE-REQUIRED-$(n)))) \
 	$(info $(null)))
+endef
+
+define get-all-features
+$(sort $(filter-out ,$(call expand-features,FEATURE-REQUIRES,$(FEATURES))))
+endef
+
+define get-all-disable-features
+$(sort $(filter-out ,$(DISABLE_FEATURES) $(call expand-disabled-features,$(get-all-features))))
+endef
+
+define get-all-active-features
+$(sort $(filter-out \
+        $(call expand-list,FEATURE-REQUIRED,$(DEPRECATED_FEATURES) $(get-all-disable-features)),\
+        $(get-all-features)))
 endef
 
 # The following functions should be available in both config.mk and rules.mk
@@ -105,9 +119,22 @@ require = \
 			$(abspath $(n:%=$(FEATURESDIR)/%/rules.mk))), \
 			$(call include-feature,$(n),$(inc))))
 
+# $(call if-active-feature,<name> [<name1> ...])
+if-active-feature = $(if $(1),$(filter $(1),$(get-all-active-features)))
+
+# $(call if-module-guessable,<name> [<name1> ...])
+if-module-guessable = $(if $(1),$(filter $(1),\
+					$(if $(findstring all,$(AUTODETECT)), \
+						$(notdir $(call filter-dirs,$(wildcard $(DETECTDIR)/*))), \
+						$(AUTODETECT))))
+
 # $(call if_feature,<name> [<name1> ...])
 # Return a list of features without obsolete and disabled features.
 if_feature = $(if $(1),$(filter-out $(DEPRECATED_FEATURES) $(DISABLE_FEATURES) $(ALL_DISABLE_FEATURES),$(1)))
+
+define filter-dirs
+$(realpath $(filter %/,$(addsuffix /,$(1))))
+endef
 
 # $(call expand-list,<variable-prefix>,<suffix-list>)
 # Return a content of $(<variable-prefix>-<suffix>)
