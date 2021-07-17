@@ -109,7 +109,7 @@ endif # GUESS_MODULES
 endif # MAKECMDGOALS = guess guess-config guess-modules
 
 ifeq "$(MAKECMDGOALS)" 'genimage'
-include $(GUESSDIR)/guessed.mk
+-include $(GUESSDIR)/guessed.mk
 
 # The previous call to 'guess' has already done this.
 IGNORE_DEPMOD := 1
