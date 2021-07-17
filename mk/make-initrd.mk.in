@@ -83,9 +83,8 @@ guess: pre-guess
 	$V printf '============================================================\n\n' >&2
 	@$(TOOLSDIR)/guess-config > $(GUESSDIR)/guessed.mk
 	$V printf '============================================================\n\n' >&2
-	@$(MSG) Guess new config
-	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk guess\
-		PASSED_GUESS_MODULES+="$(GUESS_MODULES)"
+	@$(MSG) "Guessing config ..."
+	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk guess PASSED_GUESS_MODULES+="$(GUESS_MODULES)"
 
 else # !GUESS_MODULES
 
@@ -103,7 +102,7 @@ $(info WARNING: Deprecated features found and will do nothing: $(deprecated_feat
 endif
 
 guess: depmod-host
-	@$(MSG) Complete guessing config
+	@$(MSG) "Guessing is complete"
 
 endif # GUESS_MODULES
 endif # MAKECMDGOALS = guess guess-config guess-modules
