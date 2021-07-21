@@ -1,8 +1,0 @@
-#!/bin/bash -efu
-
-. guess-functions
-
-grep -E -qs "^CONFIG_MICROCODE(|_INTEL|_AMD)=[my]" "$KERNEL_CONFIG" ||
-	exit 0
-
-guess_feature "ucode"

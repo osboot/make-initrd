@@ -1,0 +1,342 @@
+#!/bin/bash -efu
+
+. guess-functions
+. shell-error
+. shell-quote
+
+VERBOSE=1
+
+PROG="GUESSv1"
+verbose=${verbose:-${VERBOSE:+-v}}
+RULES=()
+VARS=()
+
+remember_var()
+{
+	local v
+	for v in "${VARS[@]}"; do
+		[ "$v" != "$1" ] || return 0
+	done
+	VARS+=("$1")
+}
+
+append_word()
+{
+	local retval="$1"; shift
+	local word="$1"; shift
+	local arr n
+
+	eval "arr=\"\${$retval-}\""
+
+	for n in $arr; do
+		[ "$n" != "$word" ] || return 0
+	done
+
+	eval "$retval=\"\${$retval:+\$$retval }$word\""
+}
+
+remove_word()
+{
+	local retval="$1"; shift
+	local word="$1"; shift
+	local arr i
+
+	eval "arr=\"\${$retval-}\""
+	set -- $arr
+
+	i="$#"
+	while [ "$i" != 0 ]; do
+		[ "$1" = "$word" ] || set -- "$@" "$1"
+		shift
+		i=$(($i - 1))
+	done
+
+	eval "$retval=\"\$*\""
+	eval "export $retval"
+}
+
+check_var()
+{
+	eval "local var=\"\${$1-}\""
+
+	case "$2" in
+		'!=')
+			test "$var" != "$3"
+			;;
+		'==')
+			test "$var" = "$3"
+			;;
+		'+=')
+			verbose "In $rule_name: $1 += $3"
+			append_word "$1" "$3"
+			remember_var "$1"
+			;;
+		'-=')
+			verbose "In $rule_name: $1 -= $3"
+			remove_word "$1" "$3"
+			remember_var "$1"
+			;;
+		'=')
+			verbose "In $rule_name: $1 = $3"
+			eval "$1=\"\$3\""
+			eval "export $1"
+			remember_var "$1"
+			;;
+		*)
+			fatal "unknown operator $rule_name (word=$rule_word_nr): $2"
+			return 1
+			;;
+	esac
+}
+
+_check_boolean()
+{
+	local op expect=0 ret=0
+
+	case "${1,,}" in
+		1|yes|true) expect=0 ;;
+		0|no|false) expect=1 ;;
+		*) fatal "unknown value: $rule_name (word=$rule_word_nr): $1" ;;
+	esac
+	shift
+
+	case "$1" in
+		'!=') op='-ne' ;;
+		'==') op='-eq' ;;
+		*) fatal "unknown operation: $rule_name (word=$rule_word_nr): $1" ;;
+	esac
+	shift
+
+	"$@" || ret=1
+	test "$ret" "$op" "$expect"
+}
+
+check_exists()
+{
+	_check_boolean "$3" "$2" test -e "$1"
+}
+
+check_emptyvar()
+{
+	_check_varempty()
+	{
+		eval "set -- \"\${$1-}\""
+		test -z "$1"
+	}
+	_check_boolean "$3" "$2" _check_varempty "$1"
+}
+
+check_contains()
+{
+	local arr e
+	eval "arr=\"\${$1-}\""
+	for e in $arr; do
+		[ "$e" != "$2" ] || return 0
+	done
+	return 1
+}
+
+check_kconfig()
+{
+	local val='' not='' op=''
+
+	[ -e "$KERNEL_CONFIG" ] ||
+		return 1
+
+	case "${3,,}" in
+		y|builtin) val="(y)"   not=0 ;;
+		m|module)  val="(m)"   not=0 ;;
+		enabled)   val="(m|y)" not=0 ;;
+		disabled)  val="(m|y)" not=1 ;;
+		*) fatal "unknown value: $rule_name (word=$rule_word_nr): $3" ;;
+	esac
+
+	case "$2" in
+		'!=') op='-ne' ;;
+		'==') op='-eq' ;;
+		*) fatal "unknown operation: $rule_name (word=$rule_word_nr): $2" ;;
+	esac
+
+	local ret=0
+	grep -E -qs "^CONFIG_$1=$val\$" "$KERNEL_CONFIG" || ret=1
+
+	case "$not:$ret" in
+		1:0) ret=1 ;;
+		1:1) ret=0 ;;
+	esac
+
+	test "$ret" "$op" 0
+}
+
+check_kmodule()
+{
+	local val='' not='' op=''
+
+	case "${3,,}" in
+		y|builtin) val="builtin"          not=0 ;;
+		m|module)  val="module"           not=0 ;;
+		enabled)   val="(builtin|module)" not=0 ;;
+		disabled)  val="(builtin|module)" not=1 ;;
+		*) fatal "unknown value: $rule_name (word=$rule_word_nr): $3" ;;
+	esac
+
+	case "$2" in
+		'!=') op='-ne' ;;
+		'==') op='-eq' ;;
+		*) fatal "unknown operation: $rule_name (word=$rule_word_nr): $2" ;;
+	esac
+
+	local ret=0
+	depinfo ${KERNEL:+-k "$KERNEL"} --no-deps --no-firmware "$1" 2>/dev/null |
+		grep -E -qs "^$val " ||
+		ret=1
+
+	case "$not:$ret" in
+		1:0) ret=1 ;;
+		1:1) ret=0 ;;
+	esac
+
+	test "$ret" "$op" 0
+}
+
+action()
+{
+	case "${1,,}" in
+		run)
+			"$2" || return
+			;;
+	esac
+}
+
+process_expressions()
+{
+	local rule_word rule_word_nr=0
+
+	export GUESS_SUFFIX="add:guess-v1"
+
+	for rule_word; do
+		[ -n "$rule_word" ] ||
+			continue
+
+		rule_word_nr=$(($rule_word_nr + 1))
+
+		shopt -s nocasematch
+
+		if [[ "$rule_word" =~ (CONTAINS)\{([^,}]+),([^,}]+)\} ]]; then
+			shopt -u nocasematch
+			check_${BASH_REMATCH[1],,} "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" ||
+				break
+		elif [[ "$rule_word" =~ (KCONFIG|KMODULE)\{([^,}]+)\}((\!=|==)(m|module|y|builtin|enabled|disabled))? ]]; then
+			shopt -u nocasematch
+			check_${BASH_REMATCH[1],,} "${BASH_REMATCH[2]}" "${BASH_REMATCH[4]:-==}" "${BASH_REMATCH[5]:-enabled}" ||
+				break
+		elif [[ "$rule_word" =~ (EXISTS|EMPTYVAR)\{([^}]+)\}((\!=|==)(.*))? ]]; then
+			shopt -u nocasematch
+			check_${BASH_REMATCH[1],,} "${BASH_REMATCH[2]}" "${BASH_REMATCH[4]:-==}" "${BASH_REMATCH[5]:-true}" ||
+				break
+		elif [[ "$rule_word" =~ (VAR)\{([^}]+)\}(\!=|==|\+=|\-=|=)(.*) ]]; then
+			shopt -u nocasematch
+			check_${BASH_REMATCH[1],,} "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}" ||
+				break
+		elif [[ "$rule_word" =~ (ACTION)\{([^}]+)\}(=)(.*) ]]; then
+			shopt -u nocasematch
+			${BASH_REMATCH[1],,} "${BASH_REMATCH[2]}" "${BASH_REMATCH[4]}" ||
+				break
+		else
+			shopt -u nocasematch
+			fatal "unknown expression: $rule_name (word=$rule_word_nr): $rule_word"
+		fi
+	done
+}
+
+check_guess_files()
+{
+	local n
+
+	if [ -e "$guessdir/guess:modalias:add:guess-v1" ]; then
+		while read -r n; do
+			check_var MODALIAS += "$n"
+		done < "$guessdir/guess:modalias:add:guess-v1"
+		rm -f "$guessdir/guess:modalias:add:guess-v1"
+	fi
+	if [ -e "$guessdir/guess:modules:add:guess-v1" ]; then
+		while read -r n; do
+			check_var MODULES += "$n"
+		done < "$guessdir/guess:modules:add:guess-v1"
+		rm -f "$guessdir/guess:modules:add:guess-v1"
+	fi
+	if [ -e "$guessdir/guess:features:add:guess-v1" ]; then
+		while read -r n; do
+			check_var FEATURES += "$n"
+		done < "$guessdir/guess:features:add:guess-v1"
+		rm -f "$guessdir/guess:features:add:guess-v1"
+	fi
+}
+
+parse_rules()
+{
+	local disabled i arg rule rule_name rule_source
+
+	for i; do
+		rule="${RULES[$i]}"
+		rule_name="${rule%%=*}"
+
+		eval "rule_source=\"\${${rule_name%%_RULE*}_SOURCE:-none}\""
+
+		for disabled in ${DISABLE_GUESS-}; do
+			for arg in $rule_source; do
+				if [ "$arg" = "$disabled" ]; then
+					verbose "Rule $rule_name disabled"
+					unset RULES[$i]
+					continue 3
+				fi
+			done
+		done
+
+		quote_shell_args arg "${rule#*=}"
+		eval "local rule=$arg"
+
+		process_expressions $rule
+		check_guess_files
+		unset RULES[$i]
+
+		#echo "GUESS_RULE: $rule"
+	done
+}
+
+readarray -t RULES < <(set |grep -E '^GUESSv1_[^=]+_RULE[0-9]*=') ||:
+
+[ "${#RULES[@]}" -gt 0 ] ||
+	exit 0
+
+while [ "${#RULES[@]}" -gt 0 ]; do
+	parse_rules "${!RULES[@]}"
+done
+
+GUESS_SUFFIX='add:guess-v1'
+
+for v in "${VARS[@]}"; do
+	case "$v" in
+		FEATURES)
+			eval "arr=\"\${$v-}\""
+			for n in $arr; do
+				guess_feature "$n"
+			done
+			;;
+		MODULES)
+			eval "arr=\"\${$v-}\""
+			for n in $arr; do
+				guess_module "$n"
+			done
+			;;
+		MODALIAS)
+			eval "arr=\"\${$v-}\""
+			for n in $arr; do
+				guess_modalias "$n"
+			done
+			;;
+		*)
+			eval "guess_variable \"$v\" \"\${$v-}\""
+			;;
+	esac
+done
