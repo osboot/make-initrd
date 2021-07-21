@@ -1,0 +1,1 @@
+GUESSv1_DEVICE_RULE = ACTION{RUN}=$(FEATURESDIR)/device/bin/guess
