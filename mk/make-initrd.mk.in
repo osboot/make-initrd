@@ -41,6 +41,8 @@ endif
 
 -include $(GUESSDIR)/guessed.mk
 
+RECENTLY_ACTIVATED_FEATURES := $(filter-out $(ALL_ACTIVE_FEATURES),$(get-all-active-features))
+
 GUESS_CONFIG_MODULES = \
 		$(foreach mod1, \
 			$(if $(findstring all,$(AUTODETECT)), \

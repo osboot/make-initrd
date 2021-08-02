@@ -122,6 +122,9 @@ require = \
 # $(call if-active-feature,<name> [<name1> ...])
 if-active-feature = $(if $(1),$(filter $(1),$(get-all-active-features)))
 
+# $(call if-recently-activated-feature,<name> [<name1> ...])
+if-recently-activated-feature = $(if $(1),$(filter $(1),$(RECENTLY_ACTIVATED_FEATURES)))
+
 # $(call if-module-guessable,<name> [<name1> ...])
 if-module-guessable = $(if $(1),$(filter $(1),\
 					$(if $(findstring all,$(AUTODETECT)), \
