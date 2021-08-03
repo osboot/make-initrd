@@ -124,7 +124,7 @@ create: depmod-host
 
 pack: create
 	@$(MSG) "Sorting sysvinit services ..."
-	@sort-lsb --rootdir="$(ROOTDIR)" --result=symlink
+	@sort-lsb --rootdir="$(ROOTDIR)" --result=symlink --quiet
 	@$(MSG) "Packing image to archive ..."
 	@$(TOOLSDIR)/pack-image
 
