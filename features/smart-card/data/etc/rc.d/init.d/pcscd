@@ -18,20 +18,17 @@
 . /etc/init.d/template
 
 NAME=pcscd
+IPCDIR=/var/run/pcscd
 PIDFILE="$IPCDIR/$NAME.pid"
-ARGS="--lockfile "$LOCKFILE" --pidfile "$PIDFILE" --name "$NAME""
+ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --name $NAME"
 
 
 start()
 {
-	local ipcdir=/var/run/pcscd
 	# create $IPCDIR with correct access rights
-	if [ ! -d "$ipcdir" ]
-	then
-		rm -rf "$ipcdir"
-		mkdir "$ipcdir"
-	fi
-	chmod 0755 "$ipcdir"
+	[ -d "$IPCDIR" ] ||
+		mkdir -- "$IPCDIR"
+	chmod 0755 "$IPCDIR"
 
 	start_daemon $ARGS -- "$NAME"
 
