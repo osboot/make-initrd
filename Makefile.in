@@ -177,6 +177,14 @@ verify:
 	    [ -n "$${ftype##*shell script*}" ] || \
 	    shellcheck -s bash -e SC1003,SC1090,SC1091,SC2004,SC2006,SC2015,SC2034,SC2086,SC2154 "$$f"; \
 	done
+	@rc=0; \
+	for d in guess/*; do \
+	    [ -d "$$d" ] || continue; \
+	    if [ ! -f "$$d/README.md" ]; then \
+	        echo >&2 "ERROR: Guess module has no README: $$d"; \
+	        rc=1; \
+	    fi; \
+	done; exit $$rc \
 
 release:
 	$(Q)git archive -o $(PKGFILE).tar --prefix=$(PREFIX)/ HEAD
