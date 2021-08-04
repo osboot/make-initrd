@@ -90,8 +90,9 @@ append_progs()
 
 append_libs()
 {
-	local n fn
-	local SEARCH_PATH=$(ldconfig -vNX 2>/dev/null | grep ^/ | cut -d: -f1)
+	local n fn SEARCH_PATH
+
+	SEARCH_PATH="$(ldconfig -vNX 2>/dev/null | grep ^/ | cut -d: -f1)"
 
 	for n; do
 		[ -n "$n" ] ||

@@ -26,6 +26,7 @@ is_raid()
 {
 	local MD_UUID='' MD_DEVICES='' MD_METADATA='' MD_DEVNAME='' MD_NAME=''
 
+	# shellcheck disable=SC2046
 	eval $(mdadm --detail --export "/dev/block/$1")
 
 	[ -n "$MD_UUID" ] && [ -f "/etc/initrd/md/${MD_UUID//:}" ] ||

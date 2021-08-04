@@ -126,7 +126,7 @@ stop()
 				continue
 			case "$t" in
 				/dev) ;;
-				$rootmnt|$rootmnt/*) [ -z "${UMOUNT_ROOTMNT-}" ] || printf '%s ' "$t" ;;
+				"$rootmnt"|"$rootmnt"/*) [ -z "${UMOUNT_ROOTMNT-}" ] || printf '%s ' "$t" ;;
 				*) printf '%s ' "$t" ;;
 			esac
 		done
@@ -142,7 +142,7 @@ stop()
 				continue
 			case "$t" in
 				/|/proc) ;;
-				$rootmnt|$rootmnt/*) [ -z "${UMOUNT_ROOTMNT-}" ] || printf '%s ' "$t" ;;
+				"$rootmnt"|"$rootmnt"/*) [ -z "${UMOUNT_ROOTMNT-}" ] || printf '%s ' "$t" ;;
 				*) printf '%s ' "$t" ;;
 			esac
 		done

@@ -21,7 +21,7 @@
 
 processes()
 {
-	for pid in $(cd /proc; printf '%s\n' [0-9]* |sort -g); do
+	for pid in $(cd /proc || exit; printf '%s\n' [0-9]* |sort -g); do
 		f="/proc/$pid"
 
 		[ -e "$f/cmdline" ] ||
@@ -30,6 +30,7 @@ processes()
 		uid='' name='' pid='' ppid='' state='' cmdline='' n='' v=''
 
 		{
+			# shellcheck disable=SC2162
 			while read n v _; do
 				case "$n" in
 					"Name:")  name="$v"  ;;
@@ -40,6 +41,7 @@ processes()
 				esac
 			done < "$f/status"
 
+			# shellcheck disable=SC2162
 			while read -d '' v; do
 				cmdline="${cmdline:+$cmdline }$v"
 			done < "$f/cmdline"
