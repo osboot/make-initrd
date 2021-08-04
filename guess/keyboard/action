@@ -53,7 +53,7 @@ detect()
 			p="${p%/*}"
 		done
 	done
-} 
+}
 
 detect
 
