@@ -171,20 +171,21 @@ clean:
 	$(Q)rm -f -r -- $(build_prefix)
 
 verify:
-	find data features guess tools utils kmodule.deps.d -type f | \
-	while read f; do \
-	    ftype=$$(file -b "$$f"); \
-	    [ -n "$${ftype##*shell script*}" ] || \
-	    shellcheck -s bash -e SC1003,SC1090,SC1091,SC2004,SC2006,SC2015,SC2034,SC2086,SC2154 "$$f"; \
-	done
+	@if SHELLCHECK="$$(which shellcheck 2>/dev/null)"; then \
+	    find $(SHELLCHECK_DIRS) -type f -exec file -N '{}' '+' | grep -e 'shell script' | cut -d: -f1 | \
+	        xargs -r $$SHELLCHECK -s bash -e "$(SHELLCHECK_EXCLUDE)"; \
+	else \
+	    echo >&2 "WARNING: shellcheck utility not found."; \
+	fi
 	@rc=0; \
-	for d in guess/*; do \
-	    [ -d "$$d" ] || continue; \
-	    if [ ! -f "$$d/README.md" ]; then \
-	        echo >&2 "ERROR: Guess module has no README: $$d"; \
-	        rc=1; \
-	    fi; \
-	done; exit $$rc \
+	for d in `find guess -mindepth 1 -maxdepth 1 -type d`; do \
+	    [ -f "$$d/README.md" ] || { \
+	        echo >&2 "ERROR: Guess module has no README: $$d"; rc=1; \
+	    }; \
+	done; exit $$rc; \
+
+verify: SHELLCHECK_DIRS = data features guess tools utils kmodule.deps.d
+verify: SHELLCHECK_EXCLUDE = SC1003,SC1090,SC1091,SC2004,SC2006,SC2015,SC2034,SC2086,SC2154
 
 release:
 	$(Q)git archive -o $(PKGFILE).tar --prefix=$(PREFIX)/ HEAD
