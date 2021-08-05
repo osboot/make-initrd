@@ -1,0 +1,26 @@
+#!/bin/sh
+
+. shell-error
+. /.initrd/initenv
+
+prefix=
+conf=
+n='bootloader.conf'
+
+for d in '' '/boot'; do
+	if [ -e "$rootmnt$d/$n" ]; then
+		prefix="$d"
+		conf="$rootmnt$d/$n"
+		break
+	fi
+done
+
+[ -n "$conf" ] ||
+	fatal "Unable to mount boot"
+
+message "Found $conf"
+
+if [ -z "${BOOT_CONFIG-}" ]; then
+	echo "BOOT_CONFIG=\"$conf\""
+	echo "BOOT_PREFIX=\"$prefix\""
+fi >> /.initrd/initenv
