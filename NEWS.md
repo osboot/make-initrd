@@ -1,3 +1,34 @@
+Version 2.20.0
+
+- Runtime:
+  + Always create /root and /home/root as a directories.
+  + udev: Remove start dependency on uevent service.
+- New feature:
+  + Add smart-card feature. Feature adds smart card daemon and smart card
+    utilities.
+- Feature smart-card:
+  + Add ability to put pkcs#11 modules into initrd.
+- Feature sshfsroot:
+  + Add plymouth support.
+  + Enable asking passphrase.
+  + Detect smart-card feature dependency according ssh config file.
+- Feature kbd:
+  + Require gpu-drm if framebuffer is used on vtconsole.
+- Feature kickstart:
+  + Unpause ueventd queues after KSFILE processing.
+- Feature luks:
+  + Add smart card support.
+- Feature nfsroot:
+  + Fix inconsistency in nfsopts processing.
+- Guess subsystem:
+  + Guess modules can use infomantion about active feature and re-run guess.
+  + Add RECENTLY_ACTIVATED_FEATURE variable to monitor recently added features.
+- Misc:
+  + create-initrd: Add ability add libraries by name using PUT_FEATURES_LIBS var.
+  + Allow to compile and install feature-specific utilities.
+  + Add README for all guess modules.
+  + Do not fail if autodetection is disabled.
+
 Version 2.19.1
 
 - Feature gpu-drm:
