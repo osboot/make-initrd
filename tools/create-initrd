@@ -276,6 +276,8 @@ for n in group gshadow passwd shadow fstab; do
 	touch "./etc/$n"
 done
 
+ln -s /proc/self/mounts ./etc/mtab
+
 # No shell access inside initramfs by default.
 [ -s ./etc/sysconfig/rdshell ] ||
 	printf 'RDSHELL_MODE=disable\n' >./etc/sysconfig/rdshell
