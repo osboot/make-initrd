@@ -3,18 +3,15 @@
 . sh-functions
 . shell-error
 
-compress=
 case "$compress_method" in
-	gzip|gz)   compress='gzip'  ;;
-	bzip2|bz2) compress='bzip2' ;;
-	lzma)      compress='lzma'  ;;
-	lzo)       compress='lzop'  ;;
-	xz)        compress='xz'    ;;
-	'')        compress=''      ;;
+	gzip|gz)   set -- gzip --best  ;;
+	bzip2|bz2) set -- bzip2 --best ;;
+	lzma)      set -- lzma --best  ;;
+	lzo)       set -- lzop --best  ;;
+	xz)        set -- xz --best    ;;
+	'')        exit 0              ;;
 	*) fatal "Unknown compress method: $compress_method"
 esac
 
-if [ -n "$compress" ]; then
-	$compress -9 < "$outfile" > "$outfile.x"
-	mv -f -- "$outfile.x" "$outfile"
-fi
+"$@" < "$outfile" > "$outfile.x"
+mv -f -- "$outfile.x" "$outfile"
