@@ -1,3 +1,12 @@
+Version 2.20.1
+
+- Feature gpu-drm:
+  + Drop prefix from output which resulted in an image build error.
+- Feature smart-card:
+  + Fixes for smart-card feature: remove odd quotes around opensc-pkcs11.so string.
+- Guess subsystem:
+  + Rename guess/sshfsroot to guess/smart-card.
+
 Version 2.20.0
 
 - Runtime:
