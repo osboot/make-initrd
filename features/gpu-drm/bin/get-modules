@@ -9,7 +9,7 @@ guess_modalias()
 {
 	# For some modalias, the module may not be found. Until a better
 	# device filtering is invented, we should ignore the error.
-	depinfo ${KERNEL:+-k "$KERNEL"} --no-deps --no-firmware "$1" 2>/dev/null ||:
+	depinfo ${KERNEL:+-k "$KERNEL"} --no-prefix --no-deps --no-firmware "$1" 2>/dev/null ||:
 }
 
 in_cards()
