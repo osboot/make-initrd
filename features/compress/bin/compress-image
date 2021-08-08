@@ -8,7 +8,7 @@ case "$compress_method" in
 	bzip2|bz2) set -- bzip2 --best ;;
 	lzma)      set -- lzma --best  ;;
 	lzo)       set -- lzop --best  ;;
-	xz)        set -- xz --best    ;;
+	xz)        set -- xz --best --check=crc32 ;;
 	'')        exit 0              ;;
 	*) fatal "Unknown compress method: $compress_method"
 esac
