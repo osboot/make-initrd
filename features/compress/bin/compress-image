@@ -6,9 +6,11 @@
 case "$compress_method" in
 	gzip|gz)   set -- gzip --best  ;;
 	bzip2|bz2) set -- bzip2 --best ;;
+	lz4)       set -- lz4 --best   ;;
 	lzma)      set -- lzma --best  ;;
 	lzo)       set -- lzop --best  ;;
 	xz)        set -- xz --best --check=crc32 ;;
+	zstd)      set -- zstd -19 ;;
 	'')        exit 0              ;;
 	*) fatal "Unknown compress method: $compress_method"
 esac
