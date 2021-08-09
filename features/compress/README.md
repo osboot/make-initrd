@@ -5,4 +5,4 @@ If the previous image has been compressed, it will use the same compression algo
 
 ## Parameters
 
-- **COMPRESS** -- Determines compress method for the image. Valid values are: `gzip`, `bzip2`, `lzma`, `lzo`.
+- **COMPRESS** -- Determines compress method for the image. Valid values are: `gzip`, `bzip2`, 'lz4', `lzma`, `lzo`, 'xz', and 'zstd'.
