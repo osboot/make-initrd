@@ -238,7 +238,7 @@ $(dest_man1dir)/%.1: man/%.1.inc
 $(dest_projectdir)/%: %
 	$(Q)mkdir -p -- $(dir $@)
 	$(Q)rm -f -- "$@"
-	$(Q)ln -s -f -- "$(CURDIR)/$(notdir $@)" "$@"
+	$(call quiet_cmd,SLINK,$@,ln) -sf -- "$(CURDIR)/$(notdir $@)" "$@"
 
 $(dest_sysconfdir)/%: conf/%
 	$(Q)mkdir -p -- $(dir $@)
