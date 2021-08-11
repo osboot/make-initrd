@@ -123,7 +123,7 @@ iface_list(int *iface)
 
 	newtFormAddHotKey(w.form, NEWT_KEY_ESCAPE);
 	newtFormAddHotKey(w.form, NEWT_KEY_ENTER);
-	newtLabelSetText(w.labelHint2, "Press any to interupt automatic boot");
+	newtLabelSetText(w.labelHint2, "Press Enter to continue boot. Press any other key to interupt automatic boot");
 
 	int listboxSize = (int) round(w.winrows / 2);
 	newtComponent listbox = newtListbox(1, 0, listboxSize, NEWT_FLAG_SCROLL | NEWT_FLAG_BORDER);
@@ -164,7 +164,7 @@ iface_list(int *iface)
 			input_pending = SLang_input_pending(10);
 		}
 
-		if (!input_pending) {
+		if (!input_pending || SLang_getkey() == 0x0D) {
 			*iface = INTERFACE_DONE;
 			goto set;
 		}
