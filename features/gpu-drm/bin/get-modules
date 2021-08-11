@@ -29,6 +29,22 @@ in_cards()
 for p in $(set +f; echo "$SYSFS_PATH"/class/drm/*); do
 	[ -e "$p" ] ||
 		break
-	! in_cards "${p##*/}" ||
-		guess_device "${p#$SYSFS_PATH}"
+
+	in_cards "${p##*/}" ||
+		continue
+
+	enabled=
+	{ read -r enabled < "$p/enabled"; } 2>/dev/null ||
+		continue
+
+	if [ "$enabled" != 'enabled' ]; then
+		status=
+		{ read -r status < "$p/status"; } 2>/dev/null ||
+			continue
+
+		[ "$status" = 'connected' ] ||
+			continue
+	fi
+
+	guess_device "${p#$SYSFS_PATH}"
 done
