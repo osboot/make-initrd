@@ -418,7 +418,8 @@ static int process_regular_file(const char *filename)
 
 	buf[LINE_MAX - 1] = 0;
 
-	if (buf[0] == '#' &&
+	if (!access(filename, X_OK) &&
+	    buf[0] == '#' &&
 	    buf[1] == '!') {
 		char *p, *q;
 
