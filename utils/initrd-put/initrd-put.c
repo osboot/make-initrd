@@ -536,48 +536,6 @@ static void free_file(void *ptr)
 	free(p);
 }
 
-/*
-static void remove_recursive(char *path)
-{
-	FTS *t = NULL;
-	char *argv[2] = { path, NULL };
-
-	if (verbose)
-		warnx("removing: %s", argv[0]);
-
-	if ((t = fts_open(argv, FTS_PHYSICAL, NULL)) == NULL)
-		err(EXIT_FAILURE, "fts_open");
-
-
-	FTSENT *p;
-	while ((p = fts_read(t))) {
-		switch (p->fts_info) {
-			case FTS_DNR:
-			case FTS_ERR:
-			case FTS_NS:
-				errno = p->fts_errno;
-				warn("fts_read: %s", p->fts_path);
-				continue;
-			case FTS_D:
-			case FTS_DC:
-			case FTS_DOT:
-			case FTS_NSOK:
-				break;
-			case FTS_DP:
-			case FTS_F:
-			case FTS_SL:
-			case FTS_SLNONE:
-			case FTS_DEFAULT:
-				errno = 0;
-				if (remove(p->fts_accpath) < 0)
-					err(EX_OSERR, "remove: %s", p->fts_path);
-				break;
-		}
-	}
-
-	fts_close(t);
-}*/
-
 static char install_path[PATH_MAX + 1];
 static int use_copy_file_range = 1;
 static int use_sendfile = 1;
