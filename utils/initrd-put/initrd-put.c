@@ -292,7 +292,7 @@ enum ftype {
 	FTYPE_ELF_DYNAMIC,
 };
 
-static enum ftype elf_file(int fd)
+static enum ftype elf_file(const char *filename, int fd)
 {
 	int is_dynamic;
 	Elf *e;
@@ -301,7 +301,7 @@ static enum ftype elf_file(int fd)
 	int rc = FTYPE_ERROR;
 
 	if ((e = elf_begin(fd, ELF_C_READ, NULL)) == NULL) {
-		warnx("elf_begin: %s", elf_errmsg(-1));
+		warnx("%s: elf_begin: %s", filename, elf_errmsg(-1));
 		goto err;
 	}
 
@@ -316,7 +316,7 @@ static enum ftype elf_file(int fd)
 	}
 
 	if (elf_getshdrstrndx(e, &shstrndx) != 0) {
-		warnx("elf_getshdrstrndx: %s", elf_errmsg(-1));
+		warnx("%s: elf_getshdrstrndx: %s", filename, elf_errmsg(-1));
 		goto end;
 	}
 
@@ -326,7 +326,7 @@ static enum ftype elf_file(int fd)
 		GElf_Shdr  shdr;
 
 		if (gelf_getshdr(scn , &shdr) != &shdr) {
-			warnx("gelf_getshdr: %s", elf_errmsg(-1));
+			warnx("%s: gelf_getshdr: %s", filename, elf_errmsg(-1));
 			goto end;
 		}
 
@@ -440,7 +440,7 @@ static int process_regular_file(const char *filename)
 	    buf[1] == ELFMAG[1] &&
 	    buf[2] == ELFMAG[2] &&
 	    buf[3] == ELFMAG[3] &&
-	    elf_file(fd) == FTYPE_ELF_DYNAMIC) {
+	    elf_file(filename, fd) == FTYPE_ELF_DYNAMIC) {
 		ret = shared_object_dependencies(filename);
 		goto end;
 	}
