@@ -411,6 +411,7 @@ static int process_regular_file(const char *filename)
 		return -1;
 	}
 
+	buf[0] = 0;
 	if (pread(fd, buf, sizeof(buf), 0) < 0) {
 		warn("read: %s", filename);
 		goto end;
