@@ -1,2 +1,4 @@
 DEBUG_TOOLS_PROGS := gdb strace
 DEBUG_TOOLS_FILES := $(DATADIR)/gdb
+
+GDB_SOURCES ?=
