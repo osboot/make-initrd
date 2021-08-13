@@ -24,7 +24,6 @@ create()
 	mv -f -- lib libinfo
 
 	mkdir -p -- \
-		.host \
 		dev \
 		sys \
 		proc \
@@ -41,8 +40,6 @@ create()
 	makenod random  c 1 8
 	makenod ptmx    c 5 2
 
-	mount --bind -o ro / .host
-
 	for n in \
 		etc/protocols \
 		etc/rpc \
@@ -55,8 +52,11 @@ create()
 		lib \
 		lib64;
 	do
-		[ -e "./$n" ] || [ -L "./$n" ] ||
-			ln -s -- "/.host/$n" "./$n"
+		[ -e "./$n" ] || [ -L "./$n" ] || {
+			[ ! -f "/$n" ] || touch "./$n"
+			[ ! -d "/$n" ] || mkdir -p "./$n"
+			mount --bind -o ro "/$n" "./$n"
+		}
 	done
 
 	touch "boot/System.map-$kver"
@@ -70,8 +70,6 @@ create()
 	[ -f etc/initrd.mk ] ||
 		cat > etc/initrd.mk <<-EOF
 		AUTODETECT = all
-		FEATURES += qemu
-		KERNEL = $kver
 		EOF
 }
 
