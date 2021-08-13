@@ -9,7 +9,7 @@
 # Fix console loglevel
 dmesg -n "${LOGLEVEL:-1}"
 
-mount -t proc -o nodev,noexec,nosuid proc /proc
+mount -n -t proc -o nodev,noexec,nosuid proc /proc
 
 quiet=n
 __set_quiet()
