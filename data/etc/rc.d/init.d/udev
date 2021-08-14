@@ -66,7 +66,7 @@ stop() {
 		RETVAL=$?
 
 	# ignore any failed event because the init script will trigger again all events
-	udevadm control --exit
+	udevadm control --exit 2>/dev/null ||:
 	udevadm info --cleanup-db
 
 	return $RETVAL
