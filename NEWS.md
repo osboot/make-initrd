@@ -1,3 +1,18 @@
+Version 2.21.0
+
+- Runtime:
+  + Ignore errors if we were unable to send udevd a signal to exit.
+  + Mount /proc without writing in /etc/mtab.
+- Feature compress:
+  + Pass --best instead of -9 to compressors.
+  + Force xz to use crc32 polynomial for integrity check.
+  + Add zstd and lz4 support.
+- Feature gpu-drm:
+  + Filter enabled and/or connected drm devices.
+- Utilities:
+  + initrd-put: Check shebang only in an executable file.
+  + initrd-put: Fix false warnings from libelf.
+
 Version 2.20.1
 
 - Feature gpu-drm:
