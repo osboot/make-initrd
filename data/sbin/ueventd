@@ -67,14 +67,23 @@ if [ "$UEVENT_MODE" = 'queue-processor' ]; then
 
 			export UEVENT_MODE='queue-handler'
 			export QUEUE="$name"
+			export INDIR="$event"
 
 			message "$QUEUE: Starting sub-process ..."
 
 			mkdir -p -- "$ueventdir/$QUEUE"
 
+			:> "$event.startup"
 			:> "$event.pid"
 			:> "$event.timer"
-			"$inotifyd" "$0" "$pidfile:x" "$event.pid:x" "$event.timer:0" "$event:ny" &
+
+			"$inotifyd" "$0" "$pidfile:x" "$event.pid:x" "$event.startup:0" "$event.timer:0" "$event:ny" &
+
+			while [ -e "$event.startup" ]; do
+				:<"$event.startup"
+				sleep 0.1
+			done
+
 			echo "$!" >"$event.pid"
 			;;
 		d)
@@ -90,6 +99,12 @@ fi
 
 [ "$UEVENT_MODE" = 'queue-handler' ] ||
 	fatal "unexpected mode: $UEVENT_MODE"
+
+if [ "$2" = "$INDIR.startup" ]; then
+	[ "$evtype" = '0' ] ||
+		exit 0
+	rm -f "$INDIR.startup"
+fi
 
 if [ "$evtype" = 'x' ]; then
 	kill "$PPID"
@@ -110,12 +125,11 @@ glob()
 
 queuedir="$ueventdir/$QUEUE"
 
-if [ "$evtype" != '0' ]; then
-	mv -f -- "$2"/* "$queuedir" 2>/dev/null ||:
-else
-	message "$QUEUE: retrying with failed events ..."
-fi
+mv -f -- "$INDIR"/* "$queuedir" 2>/dev/null ||:
 glob "$queuedir"/* || exit 0
+
+[ "$evtype" != '0' ] || [ "$2" = "$INDIR.startup" ] ||
+	message "$QUEUE: retrying with failed events ..."
 
 message "$QUEUE: Processing events ..."
 
