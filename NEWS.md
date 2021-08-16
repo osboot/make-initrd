@@ -1,3 +1,13 @@
+Version 2.22.0
+
+- Runtime:
+  + ueventd: Process events that were already in the queue before the daemon
+    startup. This is a fix initramfs boot if ueventd is started after udevd due
+    to dependencies.
+- Feature rootfs:
+  + Add fstype kernel module only if module exists. Some filesystems cannot be
+    built as modules. For example tmpfs is neither a builtin nor a loadable module.
+
 Version 2.21.0
 
 - Runtime:
