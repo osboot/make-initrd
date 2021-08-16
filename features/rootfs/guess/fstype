@@ -5,4 +5,20 @@
 devname="$1"; shift
 fstype="$1"; shift
 
-guess_module "$fstype"
+fsmod="${fstype%%.*}"
+
+found=
+while read -r fsname more; do
+	if [ "${more:-$fsname}" = "$fsmod" ]; then
+		found=1
+		break
+	fi
+done < /proc/filesystems
+
+[ -n "$found" ] ||
+	fatal "No filesystem found for '$fstype'"
+
+depinfo ${KERNEL:+-k "$KERNEL"} -D "fs-$fsmod" >/dev/null 2>&1 ||
+	exit 0
+
+guess_modalias "fs-$fsmod"
