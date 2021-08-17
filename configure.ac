@@ -97,6 +97,39 @@ AC_ARG_WITH([projectdir],
 	[], [with_projectdir='${datarootdir}/${PACKAGE_NAME}'])
 AC_SUBST([projectdir], [$with_projectdir])
 
+AC_ARG_WITH([imagename],
+	[AS_HELP_STRING([--with-imagename],
+			[Initrd image name format (For example: 'initrd-$(KERNEL)$(IMAGE_SUFFIX).img' default: auto)])],
+	[], [with_imagename='auto'])
+AC_MSG_CHECKING([imagename format])
+if test "$with_imagename" = "auto"; then
+	with_imagename=""
+
+	KERNEL="$(uname -r)"
+	IMAGE_SUFFIX=
+
+	for format in	'initrd-$(KERNEL)$(IMAGE_SUFFIX).img' \
+			'initramfs-$(KERNEL)$(IMAGE_SUFFIX).img' \
+			'initrd.img-$(KERNEL)$(IMAGE_SUFFIX)' \
+			'initramfs.img-$(KERNEL)$(IMAGE_SUFFIX)' \
+			'initrd-$(KERNEL)$(IMAGE_SUFFIX)' \
+			'initramfs-$(KERNEL)$(IMAGE_SUFFIX)'; do
+		eval "file=$bootdir/$(echo $format | tr '()' '{}')"
+		if test -f "$file"; then
+			test -z "$with_imagename" || AC_MSG_FAILURE(["Autodetection of image name format is ambiguous"])
+			with_imagename="$format"
+		fi
+	done
+
+	if test -z "$with_imagename"; then
+		with_imagename='initrd-$(KERNEL)$(IMAGE_SUFFIX).img'
+		AC_MSG_WARN(["Can't determinate image name format. Used default: $with_imagename"])
+	fi
+fi
+AC_MSG_RESULT([$with_imagename])
+with_imagename=$(echo "$with_imagename" | sed 's/\$/\$\$/g')
+AC_SUBST([imagename], ["$with_imagename"])
+
 AC_ARG_WITH([busybox],
 	[AS_HELP_STRING([--with-busybox],
 			[Use builtin busybox (default: auto)])],

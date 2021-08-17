@@ -28,6 +28,7 @@ external_srcdir = $(CURDIR)/external
 
 localbuilddir =
 build_prefix = .build
+imagename = @imagename@
 
 ifneq ($(MKLOCAL),no)
 localbuilddir = $(CURDIR)/$(build_prefix)/dest
@@ -136,7 +137,8 @@ SED = @SED@ \
 	-e 's|@feature_kbd_kbddir[@]|$(feature_kbd_kbddir)|g' \
 	-e 's|@projectdir[@]|$(localbuilddir)$(projectdir)|g' \
 	-e 's|@localbuilddir[@]|$(localbuilddir)|g' \
-	-e 's|@execdir[@]|$(execdir)|g'
+	-e 's|@execdir[@]|$(execdir)|g' \
+	-e 's|@imagename[@]|$(imagename)|g'
 
 .PHONY: $(PROGS) $(SCRIPTS)
 
