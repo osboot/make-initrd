@@ -103,7 +103,7 @@ ifneq "$(MAKELEVEL)" '0'
 # User defaults
 FEATURES		?=
 IMAGE_SUFFIX		?=
-IMAGEFILE		?= $(BOOTDIR)/initrd-$(KERNEL)$(IMAGE_SUFFIX).img
+IMAGEFILE		?= $(BOOTDIR)/@imagename@
 FIRMWARE_DIRS		?= /lib/firmware/updates /lib/firmware /lib/firmware/$(KERNEL)/updates /lib/firmware/$(KERNEL)
 VERBOSE			?=
 BLACKLIST_MODULES	?=
