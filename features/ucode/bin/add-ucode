@@ -46,8 +46,10 @@ prep_early_firmware()
 		fi
 	done
 
-	[ -n "$fw_file" ] ||
-		fatal "$fw not found"
+	if [ -z "$fw_file" ]; then
+		message "firmware file not found for \`$fw'. Microcode update unavailable."
+		return 0
+	fi
 
 	cd "$workdir"
 	mkdir -p kernel/x86/microcode
