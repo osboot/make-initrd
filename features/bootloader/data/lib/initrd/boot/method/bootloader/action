@@ -22,11 +22,11 @@ read kernel < kernel
 read initrd < initrd
 read append < append
 
-ln -sf -- "$rootmnt$BOOT_PREFIX" /boot
+ln -sf -- "${BOOT_CONFIG%/*}" /boot
 
 kexec \
-	--load "$kernel" \
-	${initrd:+--initrd="$initrd"} \
+	--load "/boot/$kernel" \
+	${initrd:+--initrd="/boot/$initrd"} \
 	${append:+--append="$append"}
 kexec -x -e
 
