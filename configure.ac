@@ -261,12 +261,52 @@ PKG_CHECK_MODULES(HAVE_LIBKMOD, libkmod, [HAVE_LIBKMOD=yes], [HAVE_LIBKMOD=no])
 AS_IF([test "x$HAVE_LIBKMOD" != xyes],
 	[AC_MSG_ERROR([libkmod was not found: https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git])])
 
+AC_ARG_WITH([feature-bootloader],
+	[AS_HELP_STRING([--with-feature-bootloader],
+			[build bootloader feature (default: auto)])],
+	[],
+	[: m4_divert_text([DEFAULTS], [with_feature_bootloader=auto])])
+
+USE_FEATURE_BOOTLOADER=no
+HAVE_LIBNEWT=no
+HAVE_LIBSLANG=no
+HAVE_LIBINIPARSER=no
+
+if test "x$with_feature_bootloader" != xno; then
+	PKG_CHECK_MODULES(HAVE_LIBNEWT, libnewt, [HAVE_LIBNEWT=yes], [HAVE_LIBNEWT=no]);
+	PKG_CHECK_MODULES(HAVE_LIBSLANG, slang, [HAVE_LIBSLANG=yes], [HAVE_LIBSLANG=no]);
+	AC_CHECK_LIB(iniparser, iniparser_load, [
+		HAVE_LIBINIPARSER=yes
+		HAVE_LIBINIPARSER_LIBS=-liniparser
+		HAVE_LIBINIPARSER_CFLAGS=''
+	], [HAVE_LIBINIPARSER=no])
+
+	if test "x$with_feature_bootloader" != xauto; then
+		AS_IF([test "x$HAVE_LIBNEWT" != xyes],
+			[AC_MSG_ERROR([libnewt was not found: https://fedorahosted.org/releases/n/e/newt/])])
+		AS_IF([test "x$HAVE_LIBSLANG" != xyes],
+			[AC_MSG_ERROR([slang was not found: https://www.jedsoft.org/slang/])])
+		AS_IF([test "x$HAVE_LIBINIPARSER" != xyes],
+			[AC_MSG_ERROR([libiniparser was not found: https://github.com/ndevilla/iniparser])])
+	fi
+
+	if test "x-$HAVE_LIBNEWT-$HAVE_LIBSLANG-$HAVE_LIBINIPARSER" = x-yes-yes-yes; then
+		USE_FEATURE_BOOTLOADER=yes
+	fi
+fi
+
 AC_SUBST([HAVE_GZIP])
 AC_SUBST([HAVE_BZIP2])
 AC_SUBST([HAVE_LZMA])
 AC_SUBST([HAVE_ZSTD])
 AC_SUBST([HAVE_LIBELF])
 AC_SUBST([HAVE_LIBKMOD])
+AC_SUBST([HAVE_LIBNEWT])
+AC_SUBST([HAVE_LIBSLANG])
+AC_SUBST([HAVE_LIBINIPARSER])
+AC_SUBST([HAVE_LIBINIPARSER_LIBS])
+AC_SUBST([HAVE_LIBINIPARSER_CFLAGS])
+AC_SUBST([USE_FEATURE_BOOTLOADER])
 AC_SUBST([MKLOCAL])
 
 AC_CONFIG_FILES([Makefile])

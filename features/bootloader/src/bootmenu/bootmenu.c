@@ -10,7 +10,7 @@
 
 #include <slang.h>
 #include <newt.h>
-#include <iniparser/iniparser.h>
+#include <iniparser.h>
 
 #define INTERFACE_DONE 0
 #define INTERFACE_LIST 1
