@@ -18,8 +18,13 @@ cd /tmp/bootmenu
 
 setsid -c /bin/bootmenu "$BOOT_CONFIG" .
 
+# shellcheck disable=SC2094,SC2162
 read kernel < kernel
+
+# shellcheck disable=SC2094,SC2162
 read initrd < initrd
+
+# shellcheck disable=SC2094,SC2162
 read append < append
 
 ln -sf -- "${BOOT_CONFIG%/*}" /boot
