@@ -122,4 +122,15 @@ rootdelay_paused()
 	[ -d "$_rootdelay_pause" ]
 }
 
+initrd_features=/.initrd/features
+
+has_feature()
+{
+	while [ "$#" -gt 0 ]; do
+		[ -d "$initrd_features/$1" ] ||
+			return 1
+		shift
+	done
+}
+
 fi

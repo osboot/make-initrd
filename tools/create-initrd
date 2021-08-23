@@ -290,3 +290,7 @@ for d in lib etc; do
 			-exec cp -aLt ./etc/modprobe.d -- '{}' '+'
 	fi
 done
+
+for n in $ALL_ACTIVE_FEATURES; do
+	mkdir -p "./.initrd/features/$n"
+done
