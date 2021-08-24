@@ -176,8 +176,11 @@ system_findmnt()
 
 fi	# MAKE_INITRD_BUG_REPORT
 
+[ "${MOUNTPOINTS-}" == "/" ] ||
+	echo "Warning: Using MOUNTPOINTS variable for guess module is deprecated. Use GUESS_MOUNTPOINTS instead" 1>&2
+
 pass=' '
-for dir in ${GUESS_MOUNTPOINTS-}; do
+for dir in ${MOUNTPOINTS-} ${GUESS_MOUNTPOINTS-}; do
 	[ -n "${pass##* $dir *}" ] ||
 		continue
 
