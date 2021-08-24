@@ -177,7 +177,7 @@ system_findmnt()
 fi	# MAKE_INITRD_BUG_REPORT
 
 pass=' '
-for dir in ${MOUNTPOINTS-}; do
+for dir in ${GUESS_MOUNTPOINTS-}; do
 	[ -n "${pass##* $dir *}" ] ||
 		continue
 
@@ -201,3 +201,5 @@ for dir in ${MOUNTPOINTS-}; do
 
 	pass="$pass$dir "
 done
+
+guess_variable MOUNTPOINTS "${pass}"
