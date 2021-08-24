@@ -153,18 +153,18 @@ case "${1-}" in
 			fatal "More arguments required"
 
 		INITRD_CONFIG=/dev/null
-		MOUNTPOINTS=
+		GUESS_MOUNTPOINTS=
 		DEVICES=
 
 		if [ -d "$2" ]; then
-			MOUNTPOINTS="$2"
+			GUESS_MOUNTPOINTS="$2"
 		elif [ -b "$2" ]; then
 			DEVICES="$2"
 		else
 			fatal "$2: argument type unsupported"
 		fi
 
-		export MOUNTPOINTS DEVICES INITRD_CONFIG
+		export GUESS_MOUNTPOINTS DEVICES INITRD_CONFIG
 
 		set -- "$1"
 		;;

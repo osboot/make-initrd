@@ -5,5 +5,5 @@ filesystem itself (if they are not added in the kernel).
 
 # Parameters
 
-- **MOUNTPOINTS** -- this is a list of mountpoints. The kernel modules will be
+- **GUESS_MOUNTPOINTS** -- this is a list of mountpoints. The kernel modules will be
   found for devices mounted at these mountpoints.
