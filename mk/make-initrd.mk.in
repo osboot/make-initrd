@@ -32,7 +32,7 @@ STARTUP_TIME   = $(shell date +'%s')
 WORKDIR_SUFFIX = $(basename $(notdir $(INITRD_CONFIG)))
 endif
 
-ifneq "$(filter guess guess-config guess-modules,$(MAKECMDGOALS))" ''
+ifneq "$(filter guess guess-modules,$(MAKECMDGOALS))" ''
 AUTODETECT ?= all
 
 ifeq "$(MAKECMDGOALS)" 'guess-modules'
@@ -186,7 +186,8 @@ process-config: $(INITRD_CONFIG)
 	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk guess
 	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk genimage
 
-guess-config: check-for-root guess
+guess-config: check-for-root
+	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk guess
 	@cat $(GUESSDIR)/guessed.mk >&4
 	$Qrm -rf -- "$(GUESSDIR)"
 	$Qrmdir -- "$(WORKDIR)"
