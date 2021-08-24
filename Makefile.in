@@ -155,7 +155,7 @@ build-rules: $(RULESFILES)
 
 build-data: $(DATAFILES)
 
-install: build-progs build-manpages
+install: build build-manpages
 	@root="$(CURDIR)/$(build_prefix)/dest"; \
 	find "$$root" -mindepth 1 | sort -d | while read -r n; do \
 	  dst="$(DESTDIR)/$${n##$$root/}"; \
