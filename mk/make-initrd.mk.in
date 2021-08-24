@@ -216,7 +216,7 @@ INITRD_CONFIG = /dev/null
 include @projectdir@/mk/config.mk
 $(call show-feature-dependency,$(FEATURE_NAMES))
 
-.PHONY: show-eature-info
+.PHONY: show-feature-info
 
 show-feature-info:
 	@:
