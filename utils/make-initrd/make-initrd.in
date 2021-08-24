@@ -34,7 +34,7 @@ show_help() {
 
 	Usage: make-initrd [<option>]
 	   or: make-initrd guess-modules [<device>|<directory>]
-	   or: make-initrd guess-config
+	   or: make-initrd guess-config [-c <config>]
 	   or: make-initrd bug-report
 
 	make-initrd is a new, uevent-driven initramfs
@@ -50,6 +50,8 @@ show_help() {
 	guess-config
 	               guesses the current configuration
 	               and generates the config file;
+	               guesses extention of the config file
+	               if -c option passed;
 
 	guess-modules [<device>|<directory>]
 	               shows kernel module needed to mount
@@ -146,7 +148,11 @@ while :; do
 done
 
 case "${1-}" in
-	guess-config|bug-report)
+	bug-report)
+		;;
+	guess-config)
+		[ -z "$config" ] ||
+			export INITRD_CONFIG="$config"
 		;;
 	guess-modules)
 		[ "$#" -eq 2 ] ||
