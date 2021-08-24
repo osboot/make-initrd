@@ -159,10 +159,11 @@ install: build-progs build-manpages
 	@root="$(CURDIR)/$(build_prefix)/dest"; \
 	find "$$root" -mindepth 1 | sort -d | while read -r n; do \
 	  dst="$(DESTDIR)/$${n##$$root/}"; \
-	  if [ ! -L "$$n" ] && [ -d "$$n" ]; then \
-	    mkdir -p -- "$$dst"; continue; \
-	  elif [ -L "$$n" ]; then \
+	  [ -d "$$n" ] && mkdir -p -- "$$dst"; \
+	  [ ! -L "$$n" ] && [ -d "$$n" ] && continue; \
+	  if [ -L "$$n" ]; then \
 	    t="$$(readlink "$$n")"; [ -n "$${t##$(CURDIR)/*}" ] || n="$$t"; \
+	    [ -d "$$n" ] && n="$$n/."; \
 	  fi; \
 	  cp -a $(if $(VERBOSE),-v,) -- "$$n" "$$dst"; \
 	done
