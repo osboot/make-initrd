@@ -36,6 +36,12 @@
 /* Define to 1 if you have the `inet_ntoa' function. */
 #undef HAVE_INET_NTOA
 
+/* Define to 1 if you have the <iniparser.h> header file. */
+#undef HAVE_INIPARSER_H
+
+/* Define to 1 if you have the <iniparser/iniparser.h> header file. */
+#undef HAVE_INIPARSER_INIPARSER_H
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 

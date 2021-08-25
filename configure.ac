@@ -281,6 +281,13 @@ if test "x$with_feature_bootloader" != xno; then
 		HAVE_LIBINIPARSER_CFLAGS=''
 	], [HAVE_LIBINIPARSER=no])
 
+	if test "x$HAVE_LIBINIPARSER" = xyes; then
+		AC_CHECK_HEADERS([iniparser.h iniparser/iniparser.h])
+		if test "x$ac_cv_header_iniparser_iniparser_h" = "xyes"; then
+			HAVE_LIBINIPARSER_CFLAGS="-I${includedir}/iniparser"
+		fi
+	fi
+
 	if test "x$with_feature_bootloader" != xauto; then
 		AS_IF([test "x$HAVE_LIBNEWT" != xyes],
 			[AC_MSG_ERROR([libnewt was not found: https://fedorahosted.org/releases/n/e/newt/])])
