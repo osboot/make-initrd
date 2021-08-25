@@ -151,7 +151,7 @@ FILES+=(
 
 for n in \
 	/lib/udev/{edd_id,vol_id,path_id,usb_id,firmware} \
-	/usr/share/terminfo/l \
+	$(find-terminfo linux) \
 	/var/resolv \
 	"$KERNEL_MODULES_DIR"/modules.{builtin,order,builtin.modinfo} \
 	/etc/modprobe.conf;

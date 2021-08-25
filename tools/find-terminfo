@@ -1,0 +1,80 @@
+#!/bin/bash -efu
+
+. shell-error
+
+show_usage()
+{
+	cat <<-EOF
+	Usage: $PROG [options] [termname]
+
+	The utility shows the path to terminfo entry.
+
+	Options:
+	  -f, --first   show only first found result;
+	  -h, --help    show this text and exit.
+
+	Report bugs to authors.
+
+	EOF
+	exit
+}
+
+TEMP=`getopt -n "$PROG" -o "f" -l "first" -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
+
+only_first=
+while :; do
+	case "$1" in
+		-f|--first)
+			only_first=1
+			;;
+		-h|--help)
+			show_usage
+			;;
+		--) shift; break
+			;;
+		*) fatal "unrecognized option: $1"
+			;;
+	esac
+	shift
+done
+
+case "$#" in
+	0) set -- "$TERM" ;;
+	1) ;;
+	*) fatal "one argument expected" ;;
+esac
+
+[ -n "$1" ] ||
+	fatal "a non-empty argument is expected"
+
+DIRS=(
+	"/usr/share/terminfo"
+	"/lib/terminfo"
+	"/etc/terminfo"
+)
+
+if infocmp=$(type -P infocmp); then
+	readarray -t DIRS < <($infocmp -D)
+elif toe="$(type -P toe)"; then
+	readarray -t DIRS < <(toe -a -s | grep '^-\+>' |cut -d\  -f2-)
+fi
+
+sub=
+[ -z "${1##*/*}" ] ||
+	sub="${1:0:1}/"
+
+found=
+for dir in "${DIRS[@]}"; do
+	if [ -f "$dir/$sub$1" ]; then
+		printf '%s\n' "$dir/$sub$1"
+		found=1
+
+		[ -z "$only_first" ] ||
+			break
+	fi
+done
+
+[ -n "$found" ] ||
+	fatal "'$1' not found"
