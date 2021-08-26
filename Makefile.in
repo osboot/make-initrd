@@ -122,14 +122,7 @@ get_objects = $(foreach name,$(filter %.c,$(1)),$(OBJDIR)/$(name:.c=.o))
 get_depends = $(foreach name,$(filter %.c,$(1)),$(OBJDIR)/$(name:.c=.d))
 quiet_cmd   = $(if $(VERBOSE),$(3),$(Q)printf "  %-08s%s\n" "$(1)" $(2); $(3))
 
-PATH       = $(CURDIR)/$(dest_sbindir):$(CURDIR)/$(dest_bindir):$(shell echo $$PATH)
-RULESFILES = $(addprefix $(dest_rulesdir)/,$(patsubst mk/%.in,%,$(wildcard mk/*.mk.in)))
-MANPAGES   = $(addprefix $(dest_man1dir)/,$(notdir $(basename $(wildcard man/*.1.inc))))
-DATAFILES  = \
-	$(addprefix $(dest_sysconfdir)/,$(patsubst conf/%,%,$(wildcard conf/*))) \
-	$(addprefix $(dest_projectdir)/,data guess tools kmodule.deps.d) \
-	$(addprefix $(dest_projectdir)/features/, $(filter-out $(SKIP_FEATURES),$(notdir $(wildcard features/*))))
-
+PATH = $(CURDIR)/$(dest_sbindir):$(CURDIR)/$(dest_bindir):$(shell echo $$PATH)
 CFLAGS = @CFLAGS@ \
 	-Wall -Wextra -W -Wshadow -Wcast-align \
 	-Wwrite-strings -Wconversion -Waggregate-return -Wstrict-prototypes \
@@ -167,33 +160,14 @@ SED = @SED@ \
 
 all: build
 
-build: build-progs build-rules build-data
-
 build-progs: $(PROGS) $(SCRIPTS)
 
-ifneq ($(HELP2MAN),)
-build-manpages: build-progs $(MANPAGES)
-build: build-manpages
-endif
+PROJECT_SUBDIRS = data guess tools kmodule.deps.d
+FEATURES_SUBDIRS = $(filter-out $(SKIP_FEATURES),$(notdir $(wildcard $(FEATURESDIR)/*)))
 
-build-rules: $(RULESFILES)
-
-build-data: $(DATAFILES)
-
-install: build-progs build-manpages
-	@root="$(CURDIR)/$(build_prefix)/dest"; \
-	find "$$root" -mindepth 1 | sort -d | while read -r n; do \
-	  dst="$(DESTDIR)/$${n##$$root/}"; \
-	  if [ ! -L "$$n" ] && [ -d "$$n" ]; then \
-	    mkdir -p -- "$$dst"; continue; \
-	  elif [ -L "$$n" ]; then \
-	    t="$$(readlink "$$n")"; [ -n "$${t##$(CURDIR)/*}" ] || n="$$t"; \
-	  fi; \
-	  cp -a $(if $(VERBOSE),-v,) -- "$$n" "$$dst"; \
-	done
-
-clean:
-	$(Q)rm -f -r -- $(build_prefix)
+build: $(addprefix $(dest_projectdir)/,$(PROJECT_SUBDIRS))
+build: $(addprefix $(dest_projectdir)/features/,$(FEATURES_SUBDIRS))
+build: build-progs
 
 verify:
 	@if SHELLCHECK="$$(which shellcheck 2>/dev/null)"; then \
@@ -225,49 +199,38 @@ release:
 release: PKGFILE=$(CURDIR)/$(PACKAGE_NAME)-$(PACKAGE_VERSION)
 release: PREFIX=$(PACKAGE_NAME)-$(PACKAGE_VERSION)
 
-ifeq ($(USE_BUSYBOX),yes)
-$(OBJDIR)/external/busybox/.config: $(external_srcdir)/busybox/config
-	$(Q)mkdir -p -- "$(OBJDIR)/external/busybox"
-	$(Q)mkdir -p -- $(dest_runtimedir)
-	$(call quiet_cmd,SED,$@,@SED@) \
-	 -e "s,^CONFIG_PREFIX=.*,CONFIG_PREFIX=\"`realpath $(dest_runtimedir)`\",g" < "$<" > "$@"
-	$(Q)touch -r $< $@
-
-$(dest_runtimedir)/bin/busybox: $(OBJDIR)/external/busybox/.config
-	$(Q)mkdir -p -- "$(OBJDIR)/external/busybox"
-	$(MAKE) -C "$(OBJDIR)/external/busybox" \
-		-f "$(external_srcdir)/busybox/upstream/Makefile" \
-		KBUILD_SRC="$(external_srcdir)/busybox/upstream"
-	$(MAKE) -C "$(OBJDIR)/external/busybox" install
-
-build-progs: $(dest_runtimedir)/bin/busybox
-endif
-
-ifeq ($(USE_LIBSHELL),yes)
-$(dest_bindir)/shell-%: $(external_srcdir)/libshell/upstream/shell-%
-	$(Q)mkdir -p -- $(dir $@)
-	$(call quiet_cmd,COPY,$@,cp) -a -- $< $@
-
-build-progs: $(foreach n,$(wildcard $(external_srcdir)/libshell/upstream/shell-*), $(dest_bindir)/$(notdir $(n)))
-endif
+RULE_NAMES = $(patsubst mk/%.in,%,$(wildcard mk/*.mk.in))
 
 $(dest_rulesdir)/%.mk: mk/%.mk.in
 	$(Q)mkdir -p -- $(dir $@)
 	$(call quiet_cmd,SED,$@,$(SED)) < $< > $@
+
+build: $(addprefix $(dest_rulesdir)/,$(RULE_NAMES))
+
+ifneq ($(HELP2MAN),)
+MANPAGE_NAMES = $(notdir $(basename $(wildcard man/*.1.inc)))
 
 $(dest_man1dir)/%.1: man/%.1.inc
 	$(Q)mkdir -p -- $(dir $@)
 	$(call quiet_cmd,MAN,$@,env -i PATH="${PATH}" $(HELP2MAN) -N) \
 	  -i $< -- $(notdir $*) >$@
 
+build-manpages: build-progs $(addprefix $(dest_man1dir)/,$(MANPAGE_NAMES))
+build: build-manpages
+endif
+
 $(dest_projectdir)/%: %
 	$(Q)mkdir -p -- $(dir $@)
 	$(Q)rm -f -- "$@"
 	$(call quiet_cmd,SLINK,$@,ln) -sf -- "$(CURDIR)/$(@:$(dest_projectdir)/%=%)" "$@"
 
+SYSCONF_NAMES = $(patsubst conf/%,%,$(wildcard conf/*))
+
 $(dest_sysconfdir)/%: conf/%
 	$(Q)mkdir -p -- $(dir $@)
-	$(Q)cp -a -- $< $@
+	$(call quiet_cmd,COPY,$@,cp) -a -- $< $@
+
+build: $(addprefix $(dest_sysconfdir)/,$(SYSCONF_NAMES))
 
 cflags = $($(subst -,_,$(notdir $*))_c_CFLAGS)
 $(OBJDIR)/%.o: %.c
@@ -280,7 +243,29 @@ $(OBJDIR)/%.d: %.c
 	$(call quiet_cmd,DEP,$<,$(CC)) -MM $(cflags) $(CPPFLAGS) $(CFLAGS) $< | \
 	  sed -e 's,\($(notdir $*)\)\.o[ :]*,$(@:.d=.o) $@: Makefile ,g' >$@
 
+BIN_NAMES          =
+SBIN_NAMES         =
+RUNTIME_BIN_NAMES  =
+RUNTIME_SBIN_NAMES =
+
+define classify_file =
+ifeq ($(1:$(dest_bindir)/%=),)
+BIN_NAMES += $(notdir $(1))
+endif
+ifeq ($(1:$(dest_sbindir)/%=),)
+SBIN_NAMES += $(notdir $(1))
+endif
+ifeq ($(1:$(dest_data_bindir)/%=),)
+RUNTIME_BIN_NAMES += $(notdir $(1))
+endif
+ifeq ($(1:$(dest_data_sbindir)/%=),)
+RUNTIME_SBIN_NAMES += $(notdir $(1))
+endif
+endef
+
 define generate_link_target =
+$(call classify_file,$($(1)_DEST))
+
 DEPS += $(call get_depends,$($(1)_SRCS))
 
 $($(1)_DEST): $(call get_objects,$($(1)_SRCS))
@@ -291,6 +276,8 @@ $(1): $($(1)_DEST)
 endef
 
 define generate_script_target =
+$(call classify_file,$($(1)_DEST))
+
 $($(1)_DEST): $($(1)_SRCS)
 	$(Q)mkdir -p -- $$(dir $($(1)_DEST))
 	$(call quiet_cmd,SED,$($(1)_DEST),$(SED)) < $($(1)_SRCS) > $($(1)_DEST)
@@ -304,6 +291,8 @@ $(foreach name,$(PROGS),  $(eval $(call generate_link_target,$(name))))
 $(foreach name,$(SCRIPTS),$(eval $(call generate_script_target,$(name))))
 
 define generate_symlink_target =
+$(call classify_file,$(1))
+
 $(1): $($(2)_DEST)
 	$(Q)mkdir -p -- $$(dir $(1))
 	$(call quiet_cmd,SLINK,$(1),ln) -rsf -- $($(2)_DEST) $(1)
@@ -318,3 +307,81 @@ $(foreach name,$(PROGS),\
 ifeq ($(filter verify clean,$(MAKECMDGOALS)),)
 -include $(DEPS)
 endif
+
+ifeq ($(USE_BUSYBOX),yes)
+$(OBJDIR)/external/busybox/.config: $(external_srcdir)/busybox/config
+	$(Q)mkdir -p -- "$(OBJDIR)/external/busybox"
+	$(Q)mkdir -p -- $(dest_runtimedir)
+	$(call quiet_cmd,SED,$@,@SED@) \
+	 -e "s,^CONFIG_PREFIX=.*,CONFIG_PREFIX=\"`realpath $(dest_runtimedir)`\",g" < "$<" > "$@"
+	$(Q)touch -r $< $@
+
+$(dest_data_bindir)/busybox: $(OBJDIR)/external/busybox/.config
+	$(Q)mkdir -p -- "$(OBJDIR)/external/busybox"
+	$(MAKE) -C "$(OBJDIR)/external/busybox" \
+		-f "$(external_srcdir)/busybox/upstream/Makefile" \
+		KBUILD_SRC="$(external_srcdir)/busybox/upstream"
+	$(MAKE) -C "$(OBJDIR)/external/busybox" busybox.links
+	$(Q)cp -a -- "$(OBJDIR)/external/busybox/busybox" "$@"
+	$(Q)while read -r busybox_link; do \
+	 ln -srf -- "$@" "$(dest_runtimedir)$$busybox_link"; \
+	done < "$(OBJDIR)/external/busybox/busybox.links"
+
+build-progs: $(dest_data_bindir)/busybox
+
+RUNTIME_BIN_NAMES += busybox
+endif
+
+ifeq ($(USE_LIBSHELL),yes)
+LIBSHELL_NAMES = $(notdir $(wildcard $(external_srcdir)/libshell/upstream/shell-*))
+
+$(dest_bindir)/shell-%: $(external_srcdir)/libshell/upstream/shell-%
+	$(Q)mkdir -p -- $(dir $@)
+	$(call quiet_cmd,COPY,$@,cp) -a -- $< $@
+
+build-progs: $(addprefix $(dest_bindir)/,$(LIBSHELL_NAMES))
+
+BIN_NAMES += $(LIBSHELL_NAMES)
+endif
+
+clean:
+	$(Q)rm -f -r -- $(build_prefix)
+
+installdirs:
+	$(Q)mkdir -p -- \
+	 $(DESTDIR)$(bindir) \
+	 $(DESTDIR)$(sbindir) \
+	 $(DESTDIR)$(sysconfdir) \
+	 $(DESTDIR)$(man1dir) \
+	 $(DESTDIR)$(rulesdir) \
+	 $(DESTDIR)$(projectdir)/$(FEATURESDIR) \
+	 $(DESTDIR)$(execdir)/$(FEATURESDIR) \
+	 $(DESTDIR)$(runtimedir)/bin \
+	 $(DESTDIR)$(runtimedir)/sbin
+
+install: build-progs build-manpages installdirs
+	$(Q)cp -at "$(DESTDIR)$(bindir)" -- $(addprefix $(dest_bindir)/,$(BIN_NAMES))
+	$(Q)cp -at "$(DESTDIR)$(sbindir)" -- $(addprefix $(dest_sbindir)/,$(SBIN_NAMES))
+	$(Q)cp -at "$(DESTDIR)$(sysconfdir)" -- $(addprefix $(dest_sysconfdir)/,$(SYSCONF_NAMES))
+	$(Q)cp -at "$(DESTDIR)$(rulesdir)" -- $(addprefix $(dest_rulesdir)/,$(RULE_NAMES))
+	$(Q)cp -at "$(DESTDIR)$(projectdir)" -- \
+	    $$(readlink -e $(addprefix $(dest_projectdir)/,$(PROJECT_SUBDIRS)))
+	$(Q)cp -at "$(DESTDIR)$(projectdir)/$(FEATURESDIR)" -- \
+	    $$(readlink -e $(addprefix $(dest_projectdir)/$(FEATURESDIR)/,$(FEATURES_SUBDIRS)))
+	$(Q)cp -at "$(DESTDIR)$(execdir)/$(FEATURESDIR)" -- $(wildcard $(dest_execdir)/$(FEATURESDIR)/*)
+	$(Q)cp -at "$(DESTDIR)$(runtimedir)/bin" -- $(addprefix $(dest_data_bindir)/,$(RUNTIME_BIN_NAMES))
+	$(Q)cp -at "$(DESTDIR)$(runtimedir)/sbin" -- $(addprefix $(dest_data_sbindir)/,$(RUNTIME_SBIN_NAMES))
+ifneq ($(HELP2MAN),)
+	$(Q)cp -at "$(DESTDIR)$(man1dir)" -- $(addprefix $(dest_man1dir)/,$(MANPAGE_NAMES))
+endif
+ifeq ($(USE_BUSYBOX),yes)
+	$(Q)while read -r busybox_link; do \
+	 ln -srf -- "$(DESTDIR)$(runtimedir)/bin/busybox" "$(DESTDIR)$(runtimedir)$$busybox_link"; \
+	done < $(OBJDIR)/external/busybox/busybox.links
+endif
+
+uninstall:
+	$(Q)rm -f -- $(addprefix $(DESTDIR)$(bindir)/,$(BIN_NAMES))
+	$(Q)rm -f -- $(addprefix $(DESTDIR)$(sbindir)/,$(SBIN_NAMES))
+	$(Q)rm -f -- $(addprefix $(DESTDIR)$(man1dir)/,$(MANPAGE_NAMES))
+	$(Q)rm -rf -- $(DESTDIR)$(rulesdir) $(DESTDIR)$(projectdir) $(DESTDIR)$(execdir) $(DESTDIR)$(runtimedir)
