@@ -90,7 +90,10 @@ append_progs()
 
 append_libs()
 {
-	local n fn SEARCH_PATH
+	local n fn SEARCH_PATH optional
+
+	optional="$1"
+	shift
 
 	SEARCH_PATH="$(ldconfig -vNX 2>/dev/null | grep ^/ | cut -d: -f1)"
 
@@ -125,8 +128,11 @@ append_libs()
 			done
 		done
 
-		[ -n "$found" ] ||
-			fatal "Not found library: $n"
+		if [ -z "$found" ]; then
+			[ "$optional" = optional ] ||
+				fatal "Not found library: $n"
+			continue
+		fi
 
 		append_uniq FILES "$f"
 
@@ -166,9 +172,11 @@ append_progs \
 	readlink rm rmdir setsid sh sleep start-stop-daemon switch_root \
 	touch umount which ${PUT_FEATURE_PROGS-} ${PUT_PROGS-}
 
-if [ -n "${PUT_FEATURE_LIBS-}" ]; then
-        append_libs ${PUT_FEATURE_LIBS-}
-fi
+[ -z "${PUT_FEATURE_LIBS-}" ] ||
+        append_libs required ${PUT_FEATURE_LIBS-}
+
+[ -z "${PUT_FEATURE_OPTIONAL_LIBS-}" ] ||
+        append_libs optional ${PUT_FEATURE_OPTIONAL_LIBS-}
 
 while read -d: -r n; do
 	[ -n "$n" ] ||

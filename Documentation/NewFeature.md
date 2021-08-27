@@ -64,6 +64,10 @@ special variables to do this.
   found in the PATH and copied to the image.
 * `PUT_FEATURE_PROGS_WILDCARD` contains a list of glob patterns for the full
   path to utilities in the `PATH`.
+* `PUT_FEATURE_LIBS` contains a list of libraries that are copied to the image.
+  The library will be copied with all linked dependencies.
+* `PUT_FEATURE_OPTIONAL_LIBS` this is the same as `PUT_FEATURE_LIBS` but only if
+  the library is not found the error does not happen.
 
 ```make
 PUT_FEATURE_DIRS  += $(MDADM_DATADIR)
