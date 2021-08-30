@@ -38,7 +38,7 @@ start()
 
 stop()
 {
-	stop_daemon $ARGS --retry=3 -- "$NAME"
+	stop_daemon $ARGS --retry 3 -- "$NAME"
 	RETVAL="$?"
 	return $RETVAL
 }
