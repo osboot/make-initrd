@@ -3,7 +3,8 @@ GDB_PROG = gdb
 endif
 
 ifneq '$(shell ldd "$(shell which $(GDB_PROG))" | grep libpython)' ''
-GDB_PYTHON_PATHS = $(shell $(GDB_PROG) -q --ex 'python print(" ".join(sys.path))' --ex 'quit')
+GDB_PYTHON_PATHS := $(shell $(GDB_PROG) -q --ex 'python print(" ".join(sys.path))' --ex 'quit')
+GDB_PYTHON_PATHS := $(filter-out %/dist-packages %/site-packages,$(GDB_PYTHON_PATHS))
 endif
 
 PUT_FEATURE_PROGS += $(DEBUG_TOOLS_PROGS) $(GDB_PROG)
