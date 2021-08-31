@@ -1,0 +1,46 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            sysctl
+# Required-Start:      mountvirtfs
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Makes changes to the proc filesystem
+# Description:         Makes changes to the proc filesystem as defined in
+#                      /etc/sysctl.conf.  See 'man sysctl(8)'.
+# X-LFS-Provided-By:   LFS
+### END INIT INFO
+
+[ "$1" = start ] || exit 0
+
+. /etc/init.d/functions
+
+# Configure kernel parameters
+[ ! -x /sbin/systemd-sysctl ] ||
+	action 'Configuring kernel parameters:' systemd-sysctl
+
+conflist()
+{
+	for d in run etc lib usr/lib; do
+		for f in /"$d"/sysctl.d/*.conf; do
+			[ ! -f "$f" ] || echo "${f##*/}	$f"
+		done
+	done | sort -k1,1 | cut -f2
+	f=/etc/sysctl.conf
+	[ ! -f "$f" ] || echo "$f"
+}
+
+sysctl_system()
+{
+	conflist | while read -r f; do sysctl -q -p "$f" || exit $?; done
+}
+
+if [ -x /sbin/sysctl ]; then
+	if [ -f /proc/sys/kernel/modprobe ]; then
+		sysctl -w kernel.modprobe="/sbin/modprobe" >/dev/null 2>&1
+		sysctl -w kernel.hotplug="/bin/true" >/dev/null 2>&1
+	fi
+	action_shell 'Setting kernel runtime parameters:' sysctl_system
+fi

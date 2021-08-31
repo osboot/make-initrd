@@ -1,0 +1,16 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            runinit
+# Required-Start:
+# Should-Start:        killall
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       2
+# Default-Stop:
+# Short-Description:   Tells init to start real init.
+# Description:         Tells init to start real init.
+### END INIT INFO
+
+[ "$1" = start ] || exit 0
+
+echo 9 > /.initrd/telinit

@@ -1,0 +1,394 @@
+#!/bin/bash -efu
+
+. shell-error
+. shell-temp
+
+known_levels=( 0 1 2 3 4 5 6 )
+
+lvl_types=( S K )
+run_levels=( "${known_levels[@]}" )
+rc_dir=/etc/rc.d
+do_json=
+dry_run=
+
+show_usage()
+{
+	cat <<-EOF
+	Usage: $PROG [options] <service> [<service1> ...]
+
+	The utility sorts services on the basis of LSB headers.
+
+	Options:
+	  --rcdir=DIR         defines initscripts base directory (default: '$rc_dir');
+	  --json              show services in json format;
+	  -S, --start         show the order of starting services;
+	  -K, --stop          show the order of stopping services;
+	  -l, --level=NUM     process only specified level;
+	  -h, --help          show this text and exit.
+
+	Report bugs to authors.
+
+	EOF
+	exit
+}
+
+services=0
+setlist()
+{
+	local n
+	n="$1" && shift
+	eval "svc${services}_${n}+=(\"\$@\")"
+}
+
+init_service()
+{
+	eval "svc${services}_name=\"\$1\""
+	set -- \
+		S_require S_should S_level S_before \
+		K_require K_should K_level K_before \
+		provide
+	while [ "$#" -gt 0 ]; do
+		eval "svc${services}_${1}=()"
+		shift
+	done
+}
+
+dump_list()
+{
+	local val
+	declare -n "val=$1"
+	[ "${#val[@]}" -eq 0 ] ||
+		printf ' "%q"' "${val[@]}"
+}
+
+parse_service()
+{
+	local block eof kwds
+
+	if [ ! -x "$1" ]; then
+		message "service is not executable"
+		return 1
+	fi
+
+	init_service "$1"
+	setlist provide "${1##*/}"
+
+	kwds=()
+	eof=
+	block=0
+	while [ -z "$eof" ]; do
+		local l
+
+		# shellcheck disable=SC2162
+		read l || eof=1
+
+		local vname='' vkwd=''
+		case "$l" in
+			'### BEGIN INIT INFO')
+				[ "$block" = 0 ] || break
+				block=1
+				;;
+			'### END INIT INFO')
+				[ "$block" = 1 ] || continue
+				block=2
+				break
+				;;
+			'# Provides:'*)       vkwd="Provides";       vname='provide'   ;;
+			'# Default-Start:'*)  vkwd="Default-Start";  vname='S_level'   ;;
+			'# Required-Start:'*) vkwd="Required-Start"; vname='S_require' ;;
+			'# Should-Start:'*)   vkwd="Should-Start";   vname='S_should'  ;;
+			'# Default-Stop:'*)   vkwd="Default-Stop";   vname='K_level'   ;;
+			'# Required-Stop:'*)  vkwd="Required-Stop";  vname='K_require' ;;
+			'# Should-Stop:'*)    vkwd="Should-Stop";    vname='K_should'  ;;
+			'# X-Start-Before:'*) vkwd="X-Start-Before"; vname='S_before'  ;;
+		esac
+
+		if [ "$block" = 1 ] && [ -n "$vname" ]; then
+			for kwd in "${kwds[@]}"; do
+				if [ "$kwd" = "$vname" ]; then
+					message "duplicate keyword: $vkwd"
+					return 1
+				fi
+			done
+			setlist "$vname" ${l#*:}
+			kwds+=("$vname")
+		fi
+	done < "$1"
+
+	if [ "$block" -eq 1 ]; then
+		message "unfinished LSB header"
+		return 1
+	fi
+
+	if [ "$block" -eq 0 ]; then
+		message "Service without LSB header (ignored)"
+		return 1
+	fi
+
+	local n
+
+	eval "n=\${#svc${services}_K_require[@]}"
+	[ "$n" -gt 0 ] || eval "svc${services}_K_require=(\"\${svc${services}_S_require[@]}\")"
+
+	eval "n=\${#svc${services}_K_should[@]}"
+	[ "$n" -gt 0 ] || eval "svc${services}_K_should=(\"\${svc${services}_S_should[@]}\")"
+
+	eval "set -- \"\${svc${services}_S_level[@]}\""
+
+	local level s_level
+
+	for level in "${known_levels[@]}"; do
+		for s_level; do
+			[ "$level" != "$s_level" ] || continue 2
+		done
+		setlist K_level $level
+	done
+
+	services=$(( $services + 1 ))
+}
+
+parse_services()
+{
+	while [ "$#" -gt 0 ]; do
+		[ -f "$1" ] ||
+			fatal "$1 is not a regular file"
+
+		parse_service "$1" ||
+			return 1
+
+		shift
+	done
+}
+
+in_levels()
+{
+	local lvl levels
+
+	declare -n "levels=$2"
+
+	for lvl in "${levels[@]}"; do
+		[ "$lvl" != "$1" ] || return 0
+	done
+
+	return 1
+}
+
+find_provide()
+{
+	local i n provide
+
+	i=0
+	while [ "$i" -lt "$services" ]; do
+		if ! in_levels "$level" "svc${i}_${lvltype}_level"; then
+			i=$(( $i + 1 ))
+			continue
+		fi
+
+		declare -n "provide=svc${i}_provide"
+
+		for n in "${provide[@]}"; do
+			if [ "$1" = "$n" ]; then
+				eval "svc=svc$i"
+				return 0
+			fi
+		done
+
+		i=$(( $i + 1 ))
+	done
+
+	return 1
+}
+
+create_deps()
+{
+	local i n prvname name svc require deps
+
+	i=0
+	while [ "$i" -lt "$services" ]; do
+		eval "deps${i}=()"
+		i=$(( $i + 1 ))
+	done
+
+	i=0
+	while [ "$i" -lt "$services" ]; do
+		if ! in_levels "$level" "svc${i}_${lvltype}_level"; then
+			i=$(( $i + 1 ))
+			continue
+		fi
+
+		declare -n "deps=deps${i}"
+		declare -n "name=svc${i}_name"
+
+		declare -n "require=svc${i}_${lvltype}_require"
+
+		for n in "${require[@]}"; do
+			find_provide "$n" ||
+				fatal "unknown dependence \`$n' in the ${name##*/} service"
+			declare -n "prvname=${svc}_name"
+			deps+=("$svc")
+		done
+
+		declare -n "require=svc${i}_${lvltype}_should"
+
+		for n in "${require[@]}"; do
+			find_provide "$n" ||
+				continue
+			deps+=("$svc")
+		done
+
+		declare -n "require=svc${i}_${lvltype}_before"
+
+		for n in "${require[@]}"; do
+			find_provide "$n" ||
+				continue
+			declare -n "deps=deps${svc#svc}"
+			deps+=("svc${i}")
+		done
+
+		i=$(( $i + 1 ))
+	done
+}
+
+order_services()
+{
+	local deps i
+
+	i=0
+	while [ "$i" -lt "$services" ]; do
+		if ! in_levels "$level" "svc${i}_${lvltype}_level"; then
+			i=$(( $i + 1 ))
+			continue
+		fi
+
+		declare -n "deps=deps${i}"
+
+		for dep in "${deps[@]}"; do
+			echo "svc$i $dep"
+		done
+		echo "svc$i ."
+
+		i=$(( $i + 1 ))
+	done |
+		tsort
+}
+
+sort_runlevel()
+{
+	create_deps
+
+	if ! order_services > "$workdir/tsort.out" 2>"$workdir/tsort.err"; then
+		while read -r prefix rest; do
+			case "$rest" in
+				'-: '*)
+					rest="${rest#-: }"
+					;;
+				svc*)
+					eval "rest=\"\$${rest}_name\""
+					rest="${rest##*/}"
+					;;
+			esac
+			message "$rest"
+		done < "$workdir/tsort.err"
+		exit 1
+	fi
+
+	case  "$lvltype" in
+		S) tac "$workdir/tsort.out" ;;
+		K) cat "$workdir/tsort.out" ;;
+	esac
+}
+
+make_symlinks()
+{
+	local name priority link
+
+	[ -n "$dry_run" ] ||
+		mkdir -p -- "$rc_dir/rc$level.d"
+
+	priority=1
+	while read -r svc; do
+		[ "$svc" != . ] ||
+			continue
+
+		declare -n "name=${svc}_name"
+		printf -v link "%s/rc%s.d/${lvltype}%0${#services}d:%s" "$rc_dir" "$level" "$priority" "${name##*/}"
+
+		if [ -z "$dry_run" ]; then
+			ln -s -r -- "$name" "$link"
+		else
+			message "create symlink: $link"
+		fi
+
+		priority=$(($priority + 1))
+	done
+}
+
+TEMP=`getopt -n "$PROG" -o "S,K,l:,h" -l "json,dry-run,start,stop,level:,rcdir:,help" -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
+
+while :; do
+	case "$1" in
+		--json)
+			do_json=1
+			;;
+		--dry-run)
+			dry_run=1
+			;;
+		-S|--start)
+			lvl_types=(S)
+			;;
+		-K|--stop)
+			lvl_types=(K)
+			;;
+		-l|--level) shift
+			run_levels=("$1")
+			;;
+		--rcdir) shift
+			rc_dir="$1"
+			;;
+		-h|--help)
+			show_usage
+			;;
+		--) shift; break
+			;;
+		*) fatal "unrecognized option: $1"
+			;;
+	esac
+	shift
+done
+
+[ "$#" -gt 0 ] ||
+	fatal "more arguments required"
+
+parse_services "$@"
+
+if [ -n "$do_json" ]; then
+	echo "["
+	delim=,
+	i=0
+	while [ $i -lt $services ]; do
+		echo "  {"
+		echo "    \"provides\":       [$( dump_list svc${i}_provide   ) ],"
+		echo "    \"required-start\": [$( dump_list svc${i}_S_require ) ],"
+		echo "    \"should-start\":   [$( dump_list svc${i}_S_should  ) ],"
+		echo "    \"required-stop\":  [$( dump_list svc${i}_K_require ) ],"
+		echo "    \"should-stop\":    [$( dump_list svc${i}_K_should  ) ],"
+		echo "    \"default-start\":  [$( dump_list svc${i}_S_level   ) ],"
+		echo "    \"default-stop\":   [$( dump_list svc${i}_K_level   ) ]"
+		echo "  }$delim"
+		[ $i -lt $(($services - 2)) ] || delim=
+		i=$(($i + 1))
+	done
+	echo "]"
+	exit 0
+fi
+
+create_temporary workdir
+
+for lvltype in "${lvl_types[@]}"; do
+	for level in "${run_levels[@]}"; do
+		sort_runlevel > "$workdir/order"
+		make_symlinks < "$workdir/order"
+	done
+done

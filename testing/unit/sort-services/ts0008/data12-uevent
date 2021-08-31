@@ -1,0 +1,34 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            uevent
+# Required-Start:      cmdline fstab mountvirtfs
+# Should-Start:        $syslog
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Process kernel events.
+# Description:         Processing kernel events.
+### END INIT INFO
+
+. /.initrd/initenv
+. /etc/init.d/template
+. uevent-sh-functions
+
+NAME=ueventd
+PIDFILE=/var/run/$NAME.pid
+ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --displayname $NAME --name $NAME"
+
+start() {
+	start_daemon --background $ARGS -- "$NAME"
+	RETVAL=$?
+	return $RETVAL
+}
+
+stop() {
+	stop_daemon $ARGS -- "$NAME"
+	RETVAL=$?
+	return $RETVAL
+}
+
+switch "${1-}"

@@ -1,0 +1,8 @@
+sort-services: create symlink: /etc/rc.d/rc0.d/K1:data01
+sort-services: create symlink: /etc/rc.d/rc1.d/K1:data01
+sort-services: create symlink: /etc/rc.d/rc2.d/K1:data01
+sort-services: create symlink: /etc/rc.d/rc3.d/S1:data01
+sort-services: create symlink: /etc/rc.d/rc4.d/K1:data01
+sort-services: create symlink: /etc/rc.d/rc5.d/K1:data01
+sort-services: create symlink: /etc/rc.d/rc6.d/K1:data01
+rc=0

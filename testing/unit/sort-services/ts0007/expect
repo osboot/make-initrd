@@ -1,0 +1,120 @@
+[
+  {
+    "provides":       [ "data00-cmdline" "cmdline" ],
+    "required-start": [ "shell" ],
+    "should-start":   [ ],
+    "required-stop":  [ "shell" ],
+    "should-stop":    [ ],
+    "default-start":  [ "3" "4" "5" ],
+    "default-stop":   [ "0" "1" "2" "6" ]
+  },
+  {
+    "provides":       [ "data01-fstab" "fstab" ],
+    "required-start": [ "cmdline" ],
+    "should-start":   [ ],
+    "required-stop":  [ "cmdline" ],
+    "should-stop":    [ ],
+    "default-start":  [ "3" "4" "5" ],
+    "default-stop":   [ "0" "1" "2" "6" ]
+  },
+  {
+    "provides":       [ "data02-killall" "killall" ],
+    "required-start": [ ],
+    "should-start":   [ ],
+    "required-stop":  [ ],
+    "should-stop":    [ ],
+    "default-start":  [ "0" "2" "6" ],
+    "default-stop":   [ "1" "3" "4" "5" ]
+  },
+  {
+    "provides":       [ "data03-modules" "modules" ],
+    "required-start": [ "sysctl" "cmdline" ],
+    "should-start":   [ ],
+    "required-stop":  [ "sysctl" "cmdline" ],
+    "should-stop":    [ ],
+    "default-start":  [ "3" "4" "5" ],
+    "default-stop":   [ "0" "1" "2" "6" ]
+  },
+  {
+    "provides":       [ "data04-mountfs" "mountfs" "mountvirtfs" "\$local_fs" ],
+    "required-start": [ "fstab" ],
+    "should-start":   [ ],
+    "required-stop":  [ "fstab" ],
+    "should-stop":    [ ],
+    "default-start":  [ "3" "4" "5" ],
+    "default-stop":   [ "0" "1" "2" "6" ]
+  },
+  {
+    "provides":       [ "data05-mountsrc" "mountsrc" ],
+    "required-start": [ "udev" "uevent" ],
+    "should-start":   [ ],
+    "required-stop":  [ "udev" "uevent" ],
+    "should-stop":    [ ],
+    "default-start":  [ "3" "4" "5" ],
+    "default-stop":   [ "0" "1" "2" "6" ]
+  },
+  {
+    "provides":       [ "data06-plymouth" "plymouth" ],
+    "required-start": [ "udev" ],
+    "should-start":   [ ],
+    "required-stop":  [ "udev" ],
+    "should-stop":    [ ],
+    "default-start":  [ "3" "4" "5" ],
+    "default-stop":   [ "0" "1" "2" "6" ]
+  },
+  {
+    "provides":       [ "data07-poll" "poll" ],
+    "required-start": [ "cmdline" "mountvirtfs" ],
+    "should-start":   [ ],
+    "required-stop":  [ "cmdline" "mountvirtfs" ],
+    "should-stop":    [ ],
+    "default-start":  [ "3" "4" "5" ],
+    "default-stop":   [ "0" "1" "2" "6" ]
+  },
+  {
+    "provides":       [ "data08-runinit" "runinit" ],
+    "required-start": [ ],
+    "should-start":   [ "killall" ],
+    "required-stop":  [ ],
+    "should-stop":    [ "killall" ],
+    "default-start":  [ "2" ],
+    "default-stop":   [ "0" "1" "3" "4" "5" "6" ]
+  },
+  {
+    "provides":       [ "data09-shell" "shell" ],
+    "required-start": [ ],
+    "should-start":   [ ],
+    "required-stop":  [ ],
+    "should-stop":    [ ],
+    "default-start":  [ "3" "4" "5" ],
+    "default-stop":   [ "0" "1" "2" "6" ]
+  },
+  {
+    "provides":       [ "data10-sysctl" "sysctl" ],
+    "required-start": [ "mountvirtfs" ],
+    "should-start":   [ ],
+    "required-stop":  [ "mountvirtfs" ],
+    "should-stop":    [ ],
+    "default-start":  [ "3" "4" "5" ],
+    "default-stop":   [ "0" "1" "2" "6" ]
+  },
+  {
+    "provides":       [ "data11-udev" "udev" ],
+    "required-start": [ "cmdline" "modules" "mountvirtfs" ],
+    "should-start":   [ "\$syslog" ],
+    "required-stop":  [ "cmdline" "modules" "mountvirtfs" ],
+    "should-stop":    [ "\$syslog" ],
+    "default-start":  [ "3" "4" "5" ],
+    "default-stop":   [ "0" "1" "2" "6" ]
+  },
+  {
+    "provides":       [ "data12-uevent" "uevent" ],
+    "required-start": [ "cmdline" "fstab" "mountvirtfs" ],
+    "should-start":   [ "\$syslog" ],
+    "required-stop":  [ "cmdline" "fstab" "mountvirtfs" ],
+    "should-stop":    [ "\$syslog" ],
+    "default-start":  [ "3" "4" "5" ],
+    "default-stop":   [ "0" "1" "2" "6" ]
+  }
+]
+rc=0

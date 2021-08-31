@@ -1,0 +1,12 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            udev
+# Required-Start:      cmdline modules mountvirtfs
+# Should-Start:        $syslog
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Populates /dev with device nodes.
+# Description:         Mounts a tempfs on /dev and starts the udevd daemon.
+#                      Device nodes are created as defined by udev.

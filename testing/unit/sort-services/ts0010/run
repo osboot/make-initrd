@@ -1,0 +1,5 @@
+#!/bin/bash -eu
+
+cwd="${0%/*}"
+
+tools/sort-services --dry-run "$cwd"/data* 2>&1

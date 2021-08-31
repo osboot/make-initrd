@@ -1,0 +1,13 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            plymouth
+# Required-Start:      udev
+# Should-Start:
+# Required-Stop:
+# X-Start-Before:      uevent
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Show Plymouth Boot Screen
+### END INIT INFO
+

@@ -1,0 +1,12 @@
+[
+  {
+    "provides":       [ "data" "udev" ],
+    "required-start": [ "cmdline" "modules" "mountvirtfs" ],
+    "should-start":   [ "\$syslog" ],
+    "required-stop":  [ "cmdline" "modules" "mountvirtfs" ],
+    "should-stop":    [ "\$syslog" ],
+    "default-start":  [ "3" "4" "5" ],
+    "default-stop":   [ "0" "1" "2" "6" ]
+  },
+]
+rc=0

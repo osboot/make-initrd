@@ -1,0 +1,75 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            udev
+# Required-Start:      cmdline modules mountvirtfs
+# Should-Start:        $syslog
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Populates /dev with device nodes.
+# Description:         Mounts a tempfs on /dev and starts the udevd daemon.
+#                      Device nodes are created as defined by udev.
+### END INIT INFO
+
+. /.initrd/initenv
+. /etc/init.d/template
+. initrd-sh-functions
+
+PIDFILE=/var/run/udevd.pid
+
+load_modules() {
+	local modname args
+	# shellcheck disable=SC2162
+	[ ! -e /etc/initrd/modules-"$1" ] ||
+	while read modname args; do
+		[ -n "${modname##\#*}" ] ||
+			continue
+		check="/lib/initrd/kmodules/check-$modname"
+		[ ! -x "$check" ] || "$check" ||
+			continue
+		modprobe "$modname" $args ||:
+	done < /etc/initrd/modules-"$1" 2>"/var/log/udev-$1.log"
+}
+
+post_start() {
+	load_modules postudev ||:
+}
+
+start() {
+	start_daemon --make-pidfile --pidfile "$PIDFILE" --lockfile "$LOCKFILE" \
+		-- /lib/initrd/udevd --resolve-names=never ||
+		RETVAL=$?
+
+	[ "$RETVAL" = 0 ] ||
+		return $RETVAL
+
+	udevadm control --log-priority=info
+	[ -z "${DEBUG-}" ] || udevadm control --log-priority=debug
+
+	udevadm control --property=STARTUP=1
+	udevadm control --reload >/dev/null 2>&1 ||:
+
+	udevadm trigger --type=subsystems --action=add >/dev/null 2>&1
+	udevadm trigger --type=devices    --action=add >/dev/null 2>&1
+
+	post_start
+}
+
+stop() {
+	# Stop udevd, we'll miss a few events while we run init, but we catch up
+	udevadm settle
+	udevadm control --stop-exec-queue
+
+	stop_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --name udevd \
+		-- udevd ||
+		RETVAL=$?
+
+	# ignore any failed event because the init script will trigger again all events
+	udevadm control --exit 2>/dev/null ||:
+	udevadm info --cleanup-db
+
+	return $RETVAL
+}
+
+switch "${1-}"

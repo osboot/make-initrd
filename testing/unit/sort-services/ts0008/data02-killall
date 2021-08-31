@@ -1,0 +1,111 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            killall
+# Required-Start:
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       0 2 6
+# Default-Stop:
+# Short-Description:   It kills all processes.
+# Description:         It kills all processes.
+# X-LFS-Provided-By:   LFS
+### END INIT INFO
+
+[ -z "${1-}" ] || [ "$1" = start ] || exit 0
+
+. /.initrd/initenv
+
+# Source function library.
+. /etc/init.d/functions
+
+processes()
+{
+	for pid in $(cd /proc || exit; printf '%s\n' [0-9]* |sort -g); do
+		f="/proc/$pid"
+
+		[ -e "$f/cmdline" ] ||
+			continue
+
+		uid='' name='' pid='' ppid='' state='' cmdline='' n='' v=''
+
+		{
+			# shellcheck disable=SC2162
+			while read n v _; do
+				case "$n" in
+					"Name:")  name="$v"  ;;
+					"State:") state="$v" ;;
+					"Uid:")   uid="$v"   ;;
+					"Pid:")   pid="$v"   ;;
+					"PPid:")  ppid="$v"  ;;
+				esac
+			done < "$f/status"
+
+			# shellcheck disable=SC2162
+			while read -d '' v; do
+				cmdline="${cmdline:+$cmdline }$v"
+			done < "$f/cmdline"
+		} 2>/dev/null ||
+			continue
+
+		if [ "$pid" = 2 ] || [ "$ppid" = 2 ]; then
+			name="[$name]"
+			continue
+		fi
+
+		[ -n "$cmdline" ] ||
+			cmdline="$name"
+
+		printf 'killall: pid:%-5s uid:%-2s %s %s\n' \
+			"$pid" "$uid" "$state" "$cmdline"
+	done
+}
+
+omitpid=
+omitpid_msg=
+killpids()
+{
+	echo_msg "$1"
+	killall5 "-$2" $omitpid
+	local rc=$?
+	local msg="sig=$2${omitpid_msg:+ (except $omitpid_msg)}"
+	case "$rc" in
+		2) passed "$msg"; exit 0 ;;
+		0) success "$msg" ;;
+		*) failure "$msg" ;;
+	esac
+	return $rc
+}
+
+[ -n "${IGNORE_OMITPIDS-}" ] ||
+for pid in /.initrd/killall/[0-9]*; do
+	[ -f "$pid" ] || break
+	pid=${pid##*/}
+	omitpid="$omitpid -o $pid"
+
+	exe="$(sed -n -e 's/Name:[[:space:]]*\([^[:space:]]\+\)/\1/p' "/proc/$pid/status" 2>/dev/null)" ||:
+	omitpid_msg="${omitpid_msg:+$omitpid_msg }$pid${exe:+[$exe]}"
+done
+
+[ -z "${DEBUG-}" ] || processes ||:
+
+rc=0
+killpids 'Asking all remaining processes to terminate:' 15 ||
+	rc=$?
+
+[ "$rc" -ne 2 ] ||
+	exit 0
+
+seq=5
+if [ "$rc" -eq 0 ]; then
+	for seq in 1 2 3 4 5; do
+		killall5 -18 $omitpid || break
+		sleep 1
+	done
+fi
+
+if [ "$seq" -eq 5 ]; then
+	killpids 'Killing all remaining processes:' 9
+fi
+
+[ -z "${DEBUG-}" ] || processes ||:

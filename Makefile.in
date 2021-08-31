@@ -186,6 +186,16 @@ verify:
 verify: SHELLCHECK_DIRS = data features guess tools utils kmodule.deps.d
 verify: SHELLCHECK_EXCLUDE = SC1003,SC1090,SC1091,SC2004,SC2006,SC2015,SC2034,SC2086,SC2154
 
+UNITTEST_SUITES = $(patsubst testing/unit/%/run-tetsts,%,$(wildcard testing/unit/*/run-tetsts))
+check-unit:
+	@rc=0; \
+	for testsuite in $(UNITTEST_SUITES); do \
+		echo "=== Check $$testsuite"; \
+		testing/unit/$$testsuite/run-tetsts || rc=1; \
+	done; exit $$rc
+
+check: check-unit
+
 release:
 	$(Q)git archive -o $(PKGFILE).tar --prefix=$(PREFIX)/ HEAD
 	$(Q)git submodule update --init --checkout --depth=1 --force

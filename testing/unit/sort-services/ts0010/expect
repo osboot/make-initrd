@@ -1,0 +1,6 @@
+sort-services: input contains a loop:
+sort-services: data04
+sort-services: data03
+sort-services: data02
+sort-services: data01
+rc=1

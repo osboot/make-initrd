@@ -1,0 +1,10 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            service2
+# Required-Start:      service1
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+### END INIT INFO

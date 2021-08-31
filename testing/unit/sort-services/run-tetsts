@@ -1,0 +1,27 @@
+#!/bin/bash -eu
+
+export LANG=C
+export LC_ALL=C
+
+cwd="$(readlink -ev "$0")"
+cwd="${cwd%/*}"
+
+ret=0
+for ts in "$cwd"/ts*; do
+	[ -d "$ts" ] ||
+		continue
+	{
+		rc=0
+		"$ts"/run || rc=$?
+		echo "rc=$rc";
+	} > "$ts"/output 2>&1
+
+	if ! cmp -s "$ts"/output "$ts"/expect; then
+		echo "Test ${ts##*/} failed"
+		ret=1
+	else
+		rm -f -- "$ts"/output
+	fi
+done
+
+exit "$ret"

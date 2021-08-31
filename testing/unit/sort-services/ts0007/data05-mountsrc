@@ -1,0 +1,21 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            mountsrc
+# Required-Start:      udev uevent
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   low level mount event
+# Description:         low level mount event
+### END INIT INFO
+
+[ "$1" = start ] || exit 0
+
+grep -qs -e ',x-initrd-mount-source ' /etc/fstab ||
+	exit 0
+
+. /etc/init.d/functions
+
+action 'Sending low level mount event:' /lib/uevent/filters/mountdev

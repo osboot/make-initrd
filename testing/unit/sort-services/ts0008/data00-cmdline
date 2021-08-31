@@ -1,0 +1,192 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            cmdline
+# Required-Start:      shell
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Parse cmdline arguments.
+# Description:         Parse cmdline arguments.
+### END INIT INFO
+
+[ "$1" = start ] || exit 0
+
+. /etc/init.d/functions
+
+. rdshell-sh-functions
+
+. shell-error
+. shell-var
+. shell-cmdline
+
+defaults()
+{
+	[ ! -s /etc/initrd/initramfs.conf ] || . /etc/initrd/initramfs.conf
+
+	export PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin
+	export RUN_INITRD=1
+	export rootmnt='/root'
+
+	UDEV_VERSION="$(udevd --version)" ||:
+	export UDEV_VERSION
+}
+
+readonly VAR_S=1
+readonly VAR_N=2
+readonly VAR_B=3
+readonly VAR_ARR=10
+
+__register()
+{
+	[ -n "${__vars##* $1:*}" ] ||
+		return 0
+	eval "export $1=\"\$2\""
+	__vars="$__vars$1:$3 "
+}
+
+__get_type()
+{
+	case "$2" in
+		string) eval "$1=\$VAR_S" ;;
+		number) eval "$1=\$VAR_N" ;;
+		bool)   eval "$1=\$VAR_B" ;;
+	esac
+}
+
+register_parameter()
+{
+	local v=0
+	__get_type v "$1"
+	__register "$2" "${3-}" $v
+}
+
+register_array()
+{
+	local v=0
+	__get_type v "$1"
+	__register "$2" "0" $(($v + $VAR_ARR))
+}
+
+register_alias()
+{
+	local n="$1"
+	shift
+	while [ "$#" != 0 ]; do
+		[ -z "${__aliases##* $1:*}" ] ||
+			__aliases="$__aliases$1:$n "
+		shift
+	done
+}
+
+__set_var()
+{
+	local n="$1" v="$2" flags x
+
+	n="$(replace -s= "[a-z]-." "[A-Z]__" "$n")"
+
+	while [ -z "${__aliases##* $n:*}" ]; do
+		n="${__aliases##* $n:}"
+		n="${n%% *}"
+	done
+
+	[ -z "${__vars##* $n:*}" ] ||
+		return 0
+
+	flags="${__vars##* $n:}"
+	flags="${flags%% *}"
+
+	case "$flags" in
+		*$VAR_S)
+			;;
+		*$VAR_N)
+			x="${v#-}"
+			if [ -z "${x##*[!0-9]*}" ]; then
+				message "$n: $v: invalid number"
+				return 0
+			fi
+			v=$(( $v ))
+			;;
+		*$VAR_B)
+			if [ -n "$v" ]; then
+				if shell_var_is_yes "$v"; then
+					v="1"
+				elif shell_var_is_no "$v"; then
+					v=
+				else
+					message "$n: $v: invalid bool"
+					return 0
+				fi
+			else
+				v="1"
+			fi
+			;;
+		*)
+			message "$n: $flags: unknown type"
+			return 0
+			;;
+	esac
+
+	# backward compatibility
+	case "$n" in
+		RO) READONLY=1 ;;
+		RW) READONLY=  ;;
+	esac
+
+	if [ $flags -gt $VAR_ARR ]; then
+		local i
+		eval "i=\${$n:-0}"
+		eval "export $n=$(($i + 1))"
+		eval "export $n$i=\"\$v\""
+	else
+		eval "export $n=\"\$v\""
+	fi
+}
+
+parse()
+{
+	local x __vars=' ' __aliases=' ' CMDLINE_PARAMS=''
+
+	for x in /etc/initrd/cmdline.d/*; do
+		. "$x"
+		# backward compatibility
+		for n in $CMDLINE_PARAMS; do
+			case "$n" in
+				*:m) register_array string "${n%:m}" ;;
+				*)   register_parameter string "$n"  ;;
+			esac
+		done
+		CMDLINE_PARAMS=
+	done
+
+	defaults
+
+	[ -n "${CMDLINE-}" ] ||
+		read -r CMDLINE < /proc/cmdline
+	export CMDLINE
+
+	cmdline_foreach "$CMDLINE" __set_var
+
+	[ -z "$DEBUG" ] || QUIET=
+	STOP=",$STOP,"
+
+	if [ -z "$IP" ] || [ "$IP" = 0 ]; then
+		# Special case for nfsroot.
+		if [ -n "$NFSROOT" ] || [ "$ROOT" = '/dev/nfs' ]; then
+			export IP0=dhcp
+			export IP=1
+		fi
+	fi
+
+	{
+		echo __initrd_initenv=1
+		environ -q -s -p 'export ' -u '_*,INITLOG_FILE,RUNLEVEL,runlevel,PWD,SHLVL'
+	} > /.initrd/initenv
+}
+
+action_shell 'Parsing cmdline arguments:' parse
+
+for x in /lib/initrd/cmdline.d/*; do
+	[ ! -x "$x" ] || "$x"
+done
