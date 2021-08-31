@@ -36,7 +36,7 @@ find_modules()
 
 	for n; do
 		if [ -n "${n##*[/\[\].*&^\$\\\\/]*}" ]; then
-			normalize_modname "$n"
+			printf '%s\n' "$n"
 			continue
 		fi
 
