@@ -8,3 +8,4 @@ SMART_CARD_FILES	?= $(wildcard $(SYSCONFDIR)/opensc) \
 			   $(LIBDIR)/pcsc
 
 SMART_CARD_PKCS11_MODULE ?=
+SMART_CARD_UDEV_RULES ?= *fido-id.rules
