@@ -15,7 +15,19 @@ set_cleanup_handler exit_handler
 tempdir="${TEMPDIR:-/tmp}/modules"
 mkdir -p -- "$tempdir"
 
-in_blacklist() {
+normalize_modname()
+{
+	local x="$*"
+	printf '%s\n' "${x//-/_}"
+}
+
+blacklist="${BLACKLIST_MODULES-}"
+
+[ -z "$blacklist" ] ||
+	blacklist="$(normalize_modname "$blacklist")"
+
+in_blacklist()
+{
 	local m f="$1"
 	for m in ${blacklist-}; do
 		[ "$f" != "$m" ] || return 0

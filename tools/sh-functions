@@ -15,7 +15,6 @@ export reportdir="${REPORTDIR:?Bug report directory required}"
 export kmoddepsdir="${KMODDEPSDIR:?Module deps directory required}"
 export imagefile="${IMAGEFILE-}"
 export modules_ignore=" ${MODULES_IGNORE-} "
-export blacklist="${BLACKLIST_MODULES-}"
 
 export compress_method="${COMPRESS-}"
 export outfile="$workdir/initrd.img"
@@ -39,13 +38,6 @@ fi
 
 [ -d "$kernel_modules_dir" ] ||
 	fatal "Directory \"$kernel_modules_dir\" doesn't exist or not accessible."
-
-normalize_modname() {
-	printf '%s\n' "$*" |tr '-' '_'
-}
-
-[ -z "$blacklist" ] ||
-	blacklist="$(normalize_modname "$blacklist")"
 
 get_majmin() {
 	local v devnode
