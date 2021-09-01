@@ -1,0 +1,6 @@
+sort-services: service `data01' requires himself
+sort-services: service `data02' requires himself
+sort-services: service `data03' requires himself
+sort-services: service `data04' requires himself
+sort-services: service `data05' requires himself
+rc=1

@@ -1,0 +1,5 @@
+#!/bin/bash -eu
+
+cwd="${0%/*}"
+
+tools/sort-services --dry-run --level=3 "$cwd"/data*

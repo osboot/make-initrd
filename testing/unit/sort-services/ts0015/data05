@@ -1,0 +1,6 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides: service1 service2
+# Should-Stop: service2
+# Default-Stop: 3
+### END INIT INFO

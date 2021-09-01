@@ -1,0 +1,10 @@
+#!/bin/bash -eu
+
+cwd="${0%/*}"
+
+! tools/sort-services --dry-run -S --level=3 "$cwd"/data01
+! tools/sort-services --dry-run -S --level=3 "$cwd"/data02
+! tools/sort-services --dry-run -S --level=3 "$cwd"/data03
+! tools/sort-services --dry-run -K --level=3 "$cwd"/data04
+! tools/sort-services --dry-run -K --level=3 "$cwd"/data05
+exit 1

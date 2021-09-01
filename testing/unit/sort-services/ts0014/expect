@@ -1,0 +1,2 @@
+sort-services: The `service2' is provided more than once. Providers: data01, data02
+rc=1

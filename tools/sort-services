@@ -177,7 +177,7 @@ find_provide()
 {
 	local i n provide
 
-	i=0
+	i=${2:-0}
 	while [ "$i" -lt "$services" ]; do
 		if ! in_levels "$level" "svc${i}_${lvltype}_level"; then
 			i=$(( $i + 1 ))
@@ -201,7 +201,7 @@ find_provide()
 
 create_deps()
 {
-	local i n prvname name svc require deps
+	local i n prvname name svc require deps provide
 
 	i=0
 	while [ "$i" -lt "$services" ]; do
@@ -219,11 +219,33 @@ create_deps()
 		declare -n "deps=deps${i}"
 		declare -n "name=svc${i}_name"
 
+		declare -n "provide=svc${i}_provide"
+
+		for n in "${provide[@]}"; do
+			local providers=""
+
+			find_provide "$n" ||
+				fatal "${name##*/}: really?"
+
+			declare -n "prvname=${svc}_name"
+			providers="${prvname##*/}"
+
+			find_provide "$n" "$(( ${svc#svc} + 1 ))" ||
+				continue
+
+			declare -n "prvname=${svc}_name"
+			providers+=", ${prvname##*/}"
+
+			fatal "The \`$n' is provided more than once. Providers: $providers"
+		done
+
 		declare -n "require=svc${i}_${lvltype}_require"
 
 		for n in "${require[@]}"; do
 			find_provide "$n" ||
 				fatal "unknown dependence \`$n' in the ${name##*/} service"
+			[ "$svc" != "svc${i}" ] ||
+				fatal "service \`${name##*/}' requires himself"
 			declare -n "prvname=${svc}_name"
 			deps+=("$svc")
 		done
@@ -233,6 +255,8 @@ create_deps()
 		for n in "${require[@]}"; do
 			find_provide "$n" ||
 				continue
+			[ "$svc" != "svc${i}" ] ||
+				fatal "service \`${name##*/}' requires himself"
 			deps+=("$svc")
 		done
 
@@ -241,6 +265,8 @@ create_deps()
 		for n in "${require[@]}"; do
 			find_provide "$n" ||
 				continue
+			[ "$svc" != "svc${i}" ] ||
+				fatal "service \`${name##*/}' requires himself"
 			declare -n "deps=deps${svc#svc}"
 			deps+=("svc${i}")
 		done
