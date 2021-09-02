@@ -1,0 +1,6 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            runinit
+# Should-Start:        killall
+# Default-Start:       2
+### END INIT INFO

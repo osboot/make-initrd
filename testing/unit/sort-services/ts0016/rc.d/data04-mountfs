@@ -1,0 +1,6 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            mountfs mountvirtfs $local_fs
+# Required-Start:      fstab
+# Default-Start:       3 4 5
+### END INIT INFO

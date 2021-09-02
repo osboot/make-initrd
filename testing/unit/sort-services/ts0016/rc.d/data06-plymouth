@@ -1,0 +1,7 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            plymouth
+# Required-Start:      udev
+# X-Start-Before:      uevent
+# Default-Start:       3 4 5
+### END INIT INFO

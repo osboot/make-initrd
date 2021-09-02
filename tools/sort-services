@@ -66,9 +66,16 @@ parse_service()
 	local block eof kwds
 
 	if [ ! -x "$1" ]; then
-		message "service is not executable"
+		message "${1##*/}: service is not executable"
 		return 1
 	fi
+
+	case "${1##*/}" in
+		.*|*.rpm*|*.swp|*.bak|*,v|*~|*'.#')
+			message "${1##*/}: file does not look like a service"
+			return 1
+			;;
+	esac
 
 	init_service "$1"
 	setlist provide "${1##*/}"
@@ -363,6 +370,27 @@ done
 
 [ "$#" -gt 0 ] ||
 	fatal "more arguments required"
+
+if [ "$#" -eq 1 ] && [ -d "$1" ]; then
+	args=()
+	readarray -t args < <(
+		set +f;
+		for f in "$1"/*; do
+			case "${f##*/}" in
+				.*|*.rpm*|*.swp|*.bak|*,v|*~|*'.#')
+					continue
+					;;
+			esac
+			[ -x "$f" ] ||
+				continue
+			printf '%s\n' "$f"
+		done
+	)
+	set -- "${args[@]}"
+
+	[ "$#" -gt 0 ] ||
+		fatal "no services found"
+fi
 
 parse_services "$@"
 
