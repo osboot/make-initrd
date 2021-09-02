@@ -177,23 +177,18 @@ find_provide()
 {
 	local i n provide
 
-	i=${2:-0}
-	while [ "$i" -lt "$services" ]; do
-		if ! in_levels "$level" "svc${i}_${lvltype}_level"; then
-			i=$(( $i + 1 ))
+	for (( i=${2:-0}; i < $services; i++ )); do
+		in_levels "$level" "svc${i}_${lvltype}_level" ||
 			continue
-		fi
 
 		declare -n "provide=svc${i}_provide"
 
 		for n in "${provide[@]}"; do
 			if [ "$1" = "$n" ]; then
-				eval "svc=svc$i"
+				printf -v svc '%s' "svc$i"
 				return 0
 			fi
 		done
-
-		i=$(( $i + 1 ))
 	done
 
 	return 1
@@ -203,18 +198,13 @@ create_deps()
 {
 	local i n prvname name svc require deps provide
 
-	i=0
-	while [ "$i" -lt "$services" ]; do
+	for (( i=0; i < $services; i++ )); do
 		eval "deps${i}=()"
-		i=$(( $i + 1 ))
 	done
 
-	i=0
-	while [ "$i" -lt "$services" ]; do
-		if ! in_levels "$level" "svc${i}_${lvltype}_level"; then
-			i=$(( $i + 1 ))
+	for (( i=0; i < $services; i++ )); do
+		in_levels "$level" "svc${i}_${lvltype}_level" ||
 			continue
-		fi
 
 		declare -n "deps=deps${i}"
 		declare -n "name=svc${i}_name"
@@ -270,30 +260,17 @@ create_deps()
 			declare -n "deps=deps${svc#svc}"
 			deps+=("svc${i}")
 		done
-
-		i=$(( $i + 1 ))
 	done
 }
 
 order_services()
 {
 	local deps i
-
-	i=0
-	while [ "$i" -lt "$services" ]; do
-		if ! in_levels "$level" "svc${i}_${lvltype}_level"; then
-			i=$(( $i + 1 ))
-			continue
+	for (( i=0; i < $services; i++ )); do
+		if in_levels "$level" "svc${i}_${lvltype}_level"; then
+			declare -n "deps=deps${i}"
+			printf "svc$i %s\n" "${deps[@]}" .
 		fi
-
-		declare -n "deps=deps${i}"
-
-		for dep in "${deps[@]}"; do
-			echo "svc$i $dep"
-		done
-		echo "svc$i ."
-
-		i=$(( $i + 1 ))
 	done |
 		tsort
 }
@@ -392,8 +369,7 @@ parse_services "$@"
 if [ -n "$do_json" ]; then
 	echo "["
 	delim=,
-	i=0
-	while [ $i -lt $services ]; do
+	for (( i=0; i < $services; i++ )); do
 		echo "  {"
 		echo "    \"provides\":       [$( dump_list svc${i}_provide   ) ],"
 		echo "    \"required-start\": [$( dump_list svc${i}_S_require ) ],"
@@ -404,7 +380,6 @@ if [ -n "$do_json" ]; then
 		echo "    \"default-stop\":   [$( dump_list svc${i}_K_level   ) ]"
 		echo "  }$delim"
 		[ $i -lt $(($services - 2)) ] || delim=
-		i=$(($i + 1))
 	done
 	echo "]"
 	exit 0
