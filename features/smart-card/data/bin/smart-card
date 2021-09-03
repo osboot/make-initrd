@@ -2,15 +2,14 @@
 
 check_for_smart_card()
 {
-	local serial=$1
-	if [ "$serial" ]
-	then
-		opensc-tool --serial | tr -d " \t" | grep -i "$serial" &> /dev/null || return 1
-	else
-		opensc-tool --serial &> /dev/null || return 1
-	fi
+        local serial=$1
 
-	return 0
+        opensc-tool --serial &> /dev/null || return 1
+
+        [ -z "$serial" ] || opensc-tool --serial 2>/dev/null | tr -d " \t" | grep -i "$serial" &> /dev/null || return 2
+
+
+        return 0
 }
 
 get_pkcs11_module()
