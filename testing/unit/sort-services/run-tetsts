@@ -18,6 +18,7 @@ for ts in "$cwd"/ts*; do
 
 	if ! cmp -s "$ts"/output "$ts"/expect; then
 		echo "Test ${ts##*/} failed"
+		diff -u -- "$ts"/output "$ts"/expect
 		ret=1
 	else
 		rm -f -- "$ts"/output
