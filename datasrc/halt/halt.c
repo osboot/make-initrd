@@ -75,9 +75,9 @@ static void do_shutdown(const char *fl, const char *pw, const char *tm);
 void usage(void)
 {
 	fprintf(stderr, "usage: %s [-n] [-w] [-d] [-f] [-h] [-i]%s%s\n",
-		progname,
-		strcmp(progname, "halt") ? "" : " [-p]",
-		strcmp(progname, "reboot") ? "" : " [-k]");
+	        progname,
+	        strcmp(progname, "halt") ? "" : " [-p]",
+	        strcmp(progname, "reboot") ? "" : " [-k]");
 	fprintf(stderr, "\t-n: don't sync before halting the system\n");
 	fprintf(stderr, "\t-w: only write a wtmp reboot record and exit.\n");
 	fprintf(stderr, "\t-d: don't write a wtmp record.\n");
@@ -118,9 +118,9 @@ int get_runlevel(void)
 
 	/* This should not happen but warn the user! */
 	fprintf(stderr, "WARNING: could not determine runlevel"
-		" - doing soft %s\n", progname);
+	        " - doing soft %s\n", progname);
 	fprintf(stderr, "  (it's better to use shutdown instead of %s"
-		" from the command line)\n", progname);
+	        " from the command line)\n", progname);
 
 	return -1;
 }
@@ -217,7 +217,7 @@ int main(int argc, char **argv)
 			default:
 				usage();
 		}
-	 }
+	}
 	if (argc != optind) usage();
 
 	if (geteuid() != 0) {
@@ -238,11 +238,11 @@ int main(int argc, char **argv)
 		 */
 		if (c != '6' && do_reboot && do_kexec) {
 			fprintf(stderr, "ERROR: using -k at this"
-				" runlevel requires also -f\n"
-				"  (You probably want instead to reboot"
-				" normally and let your reboot\n"
-				"   script, usually /etc/init.d/reboot,"
-				" specify -k)\n");
+			        " runlevel requires also -f\n"
+			        "  (You probably want instead to reboot"
+			        " normally and let your reboot\n"
+			        "   script, usually /etc/init.d/reboot,"
+			        " specify -k)\n");
 			exit(1);
 		}
 
@@ -251,7 +251,7 @@ int main(int argc, char **argv)
 		 */
 		if (c != '0' && c != '6')
 			do_shutdown(do_reboot ? "-r" : "-h",
-				    do_poweroff ? "-P" : (do_reboot ? NULL : "-H"), tm);
+			            do_poweroff ? "-P" : (do_reboot ? NULL : "-H"), tm);
 	}
 
 	/*

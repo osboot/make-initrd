@@ -75,8 +75,8 @@ static struct file *add_list(const char *str, ssize_t len)
 		err(EX_OSERR, "calloc");
 
 	new->src = (len < 0)
-		? xstrdup(str)
-		: xstrndup(str, (size_t) len);
+	           ? xstrdup(str)
+	           : xstrndup(str, (size_t) len);
 
 	if (verbose > 1)
 		warnx("add to list: %s", new->src);
@@ -325,7 +325,7 @@ static enum ftype elf_file(const char *filename, int fd)
 	for (scn = NULL; (scn = elf_nextscn(e, scn)) != NULL;) {
 		GElf_Shdr  shdr;
 
-		if (gelf_getshdr(scn , &shdr) != &shdr) {
+		if (gelf_getshdr(scn, &shdr) != &shdr) {
 			warnx("%s: gelf_getshdr: %s", filename, elf_errmsg(-1));
 			goto end;
 		}
@@ -511,21 +511,37 @@ static void print_file(struct file *p)
 	char type;
 
 	switch (p->stat.st_mode & S_IFMT) {
-		case S_IFBLK:  type = 'b'; break;
-		case S_IFCHR:  type = 'c'; break;
-		case S_IFDIR:  type = 'd'; break;
-		case S_IFIFO:  type = 'p'; break;
-		case S_IFLNK:  type = 'l'; break;
-		case S_IFREG:  type = 'f'; break;
-		case S_IFSOCK: type = 's'; break;
-		default:       type = '?'; break;
+		case S_IFBLK:
+			type = 'b';
+			break;
+		case S_IFCHR:
+			type = 'c';
+			break;
+		case S_IFDIR:
+			type = 'd';
+			break;
+		case S_IFIFO:
+			type = 'p';
+			break;
+		case S_IFLNK:
+			type = 'l';
+			break;
+		case S_IFREG:
+			type = 'f';
+			break;
+		case S_IFSOCK:
+			type = 's';
+			break;
+		default:
+			type = '?';
+			break;
 	}
 
 	fprintf(logout, "%c\t%s\t%s%s%s\t%s\n",
-		type,
-		p->src,
-		destdir, (p->dst[0] == '/' ? "" : "/"), p->dst,
-		(p->symlink ? p->symlink : ""));
+	        type,
+	        p->src,
+	        destdir, (p->dst[0] == '/' ? "" : "/"), p->dst,
+	        (p->symlink ? p->symlink : ""));
 }
 
 static void free_file(void *ptr)
@@ -549,14 +565,30 @@ static void install_file(struct file *p)
 		return;
 
 	switch (p->stat.st_mode & S_IFMT) {
-		case S_IFBLK:  ftype = "block device";     break;
-		case S_IFCHR:  ftype = "character device"; break;
-		case S_IFDIR:  ftype = "directory";        break;
-		case S_IFIFO:  ftype = "FIFO/pipe";        break;
-		case S_IFLNK:  ftype = "symlink";          break;
-		case S_IFREG:  ftype = "regular file";     break;
-		case S_IFSOCK: ftype = "socket";           break;
-		default:       ftype = "unknown";          break;
+		case S_IFBLK:
+			ftype = "block device";
+			break;
+		case S_IFCHR:
+			ftype = "character device";
+			break;
+		case S_IFDIR:
+			ftype = "directory";
+			break;
+		case S_IFIFO:
+			ftype = "FIFO/pipe";
+			break;
+		case S_IFLNK:
+			ftype = "symlink";
+			break;
+		case S_IFREG:
+			ftype = "regular file";
+			break;
+		case S_IFSOCK:
+			ftype = "socket";
+			break;
+		default:
+			ftype = "unknown";
+			break;
 	}
 
 	strncpy(install_path + destdir_len, p->dst, sizeof(install_path) - destdir_len - 1);
@@ -791,14 +823,14 @@ static void *twalk_r_closure;
 static void (*twalk_r_action)(const void *nodep, VISIT which, void *closure);
 
 static void twalk_handler(const void *nodep, VISIT which,
-		int depth __attribute__((unused)))
+                          int depth __attribute__((unused)))
 {
 	twalk_r_action(nodep, which, twalk_r_closure);
 }
 
 static void twalk_r(const void *root,
-		void (*action)(const void *nodep, VISIT which, void *closure),
-		void *closure)
+                    void (*action)(const void *nodep, VISIT which, void *closure),
+                    void *closure)
 {
 	twalk_r_action  = action;
 	twalk_r_closure = closure;
@@ -808,50 +840,50 @@ static void twalk_r(const void *root,
 
 #ifndef HAVE_TDESTROY
 static inline void tdestroy(
-		void *root __attribute__((unused)),
-		void (*free_node)(void *nodep) __attribute__((unused)))
+        void *root __attribute__((unused)),
+        void (*free_node)(void *nodep) __attribute__((unused)))
 {}
 #endif
 
 static void show_help(int rc)
 {
 	fprintf(stdout,
-		"Usage: %1$s [<options>] <destdir> directory [directory ...]\n"
-		"   or: %1$s [<options>] <destdir> file [file ...]\n"
-		"\n"
-		"Utility allows to copy files and directories along with their dependencies\n"
-		"into a specified destination directory.\n"
-		"\n"
-		"This utility follows symbolic links and binary dependencies and copies them\n"
-		"along with the specified files.\n"
-		"\n"
-		"Options:\n"
-		"   -n, --dry-run              don't do nothing.\n"
-		"   -f, --force                overwrite destination file if exists.\n"
-		"   -l, --log=FILE             white log about what was copied.\n"
-		"   -r, --remove-prefix=PATH   ignore prefix in path.\n"
-		"   -v, --verbose              print a message for each action/\n"
-		"   -V, --version              output version information and exit.\n"
-		"   -h, --help                 display this help and exit.\n"
-		"\n"
-		"Report bugs to authors.\n"
-		"\n",
-		progname
-	);
+	        "Usage: %1$s [<options>] <destdir> directory [directory ...]\n"
+	        "   or: %1$s [<options>] <destdir> file [file ...]\n"
+	        "\n"
+	        "Utility allows to copy files and directories along with their dependencies\n"
+	        "into a specified destination directory.\n"
+	        "\n"
+	        "This utility follows symbolic links and binary dependencies and copies them\n"
+	        "along with the specified files.\n"
+	        "\n"
+	        "Options:\n"
+	        "   -n, --dry-run              don't do nothing.\n"
+	        "   -f, --force                overwrite destination file if exists.\n"
+	        "   -l, --log=FILE             white log about what was copied.\n"
+	        "   -r, --remove-prefix=PATH   ignore prefix in path.\n"
+	        "   -v, --verbose              print a message for each action/\n"
+	        "   -V, --version              output version information and exit.\n"
+	        "   -h, --help                 display this help and exit.\n"
+	        "\n"
+	        "Report bugs to authors.\n"
+	        "\n",
+	        progname
+	       );
 	exit(rc);
 }
 
 static void show_version(void)
 {
 	fprintf(stdout,
-		"%1$s version " PACKAGE_VERSION "\n"
-		"Written by Alexey Gladkov.\n"
-		"\n"
-		"Copyright (C) 2012-2020  Alexey Gladkov <gladkov.alexey@gmail.com>\n"
-		"This is free software; see the source for copying conditions.  There is NO\n"
-		"warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n",
-		progname
-	);
+	        "%1$s version " PACKAGE_VERSION "\n"
+	        "Written by Alexey Gladkov.\n"
+	        "\n"
+	        "Copyright (C) 2012-2020  Alexey Gladkov <gladkov.alexey@gmail.com>\n"
+	        "This is free software; see the source for copying conditions.  There is NO\n"
+	        "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n",
+	        progname
+	       );
 	exit(EXIT_SUCCESS);
 }
 
@@ -902,7 +934,7 @@ int main(int argc, char **argv)
 				break;
 			default:
 				fprintf(stderr, "Try '%s --help' for more information.\n",
-					progname);
+				        progname);
 				return EX_USAGE;
 		}
 	}

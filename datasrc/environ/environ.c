@@ -20,7 +20,8 @@ static unsigned int shell = 0;
 static void __attribute__ ((noreturn))
 show_usage(int ret)
 {
-	fprintf(stderr, "Usage: environ [-c|-q|-s|-h] [-p PREFIX] [-i include0,include1,...] [-u unset0,unset1,...] [-f filename] [command [arg]...]\n");
+	fprintf(stderr,
+	        "Usage: environ [-c|-q|-s|-h] [-p PREFIX] [-i include0,include1,...] [-u unset0,unset1,...] [-f filename] [command [arg]...]\n");
 	exit(ret);
 }
 

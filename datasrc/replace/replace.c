@@ -216,12 +216,12 @@ main(int argc, char **argv)
 
 			if (revert)
 				(!src[k])
-				    ? print_ch(dst[len - 1])
-				    : print_ch(argv[i][j]);
+				? print_ch(dst[len - 1])
+				: print_ch(argv[i][j]);
 			else
 				(src[k])
-				    ? print_ch(dst[(k < len) ? k : len - 1])
-				    : print_ch(argv[i][j]);
+				? print_ch(dst[(k < len) ? k : len - 1])
+				: print_ch(argv[i][j]);
 			j++;
 		}
 		while (argv[i][j])

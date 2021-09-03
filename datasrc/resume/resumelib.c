@@ -60,9 +60,9 @@ int resume(const char *resume_file, unsigned long long resume_offset)
 		goto fail_r;
 
 	len = snprintf(device_string, sizeof device_string,
-		       "%u:%u:%llu",
-		       major(resume_device), minor(resume_device),
-		       resume_offset);
+	               "%u:%u:%llu",
+	               major(resume_device), minor(resume_device),
+	               resume_offset);
 
 	/* This should never happen */
 	if (len >= (ssize_t) sizeof(device_string))
@@ -82,6 +82,6 @@ failure:
 
 fail_r:
 	fprintf(stderr, "Cannot write /sys/power/resume "
-			"(no software suspend kernel support?)\n");
+	        "(no software suspend kernel support?)\n");
 	goto failure;
 }

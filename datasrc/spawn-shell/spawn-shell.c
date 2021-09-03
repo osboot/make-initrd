@@ -54,8 +54,8 @@ static int is_a_console(int fd)
 {
 	char arg = 0;
 	return (isatty(fd) &&
-			!ioctl(fd, KDGKBTYPE, &arg) &&
-			((arg == KB_101) || (arg == KB_84)));
+	        !ioctl(fd, KDGKBTYPE, &arg) &&
+	        ((arg == KB_101) || (arg == KB_84)));
 }
 
 static int open_a_console(const char *fnam)

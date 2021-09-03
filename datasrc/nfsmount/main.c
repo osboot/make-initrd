@@ -115,7 +115,7 @@ static void parse_opts(char *options)
 				*(opts->val) = parse_int(val, opts->name);
 			else {
 				fprintf(stderr, "%s: bad option '%s'\n",
-					progname, cp);
+				        progname, cp);
 				longjmp(abort_buf, 1);
 			}
 		} else {
@@ -127,7 +127,7 @@ static void parse_opts(char *options)
 				mount_data.flags |= opts->or_mask;
 			} else {
 				fprintf(stderr, "%s: bad option '%s'\n",
-					progname, cp);
+				        progname, cp);
 				longjmp(abort_buf, 1);
 			}
 		}
@@ -136,16 +136,16 @@ static void parse_opts(char *options)
 	   old "v2" and "v3" options */
 	if (nfs_version != 0) {
 		switch (nfs_version) {
-		case 2:
-			mount_data.flags &= ~NFS_MOUNT_VER3;
-			break;
-		case 3:
-			mount_data.flags |= NFS_MOUNT_VER3;
-			break;
-		default:
-			fprintf(stderr, "%s: bad NFS version '%d'\n",
-				progname, nfs_version);
-			longjmp(abort_buf, 1);
+			case 2:
+				mount_data.flags &= ~NFS_MOUNT_VER3;
+				break;
+			case 3:
+				mount_data.flags |= NFS_MOUNT_VER3;
+				break;
+			default:
+				fprintf(stderr, "%s: bad NFS version '%d'\n",
+				        progname, nfs_version);
+				longjmp(abort_buf, 1);
 		}
 	}
 }
@@ -155,7 +155,7 @@ static uint32_t parse_addr(const char *ip)
 	struct in_addr in;
 	if (inet_aton(ip, &in) == 0) {
 		fprintf(stderr, "%s: can't parse IP address '%s'\n",
-			progname, ip);
+		        progname, ip);
 		longjmp(abort_buf, 1);
 	}
 	return in.s_addr;
@@ -175,7 +175,7 @@ static void check_path(const char *path)
 }
 
 int main(int argc, char *argv[])
-    __attribute__ ((weak, alias("nfsmount_main")));
+__attribute__ ((weak, alias("nfsmount_main")));
 
 int nfsmount_main(int argc, char *argv[])
 {
@@ -207,16 +207,16 @@ int nfsmount_main(int argc, char *argv[])
 
 	while ((c = getopt(argc, argv, "o:p:")) != EOF) {
 		switch (c) {
-		case 'o':
-			parse_opts(optarg);
-			break;
-		case 'p':
-			portmap_file = optarg;
-			break;
-		case '?':
-			fprintf(stderr, "%s: invalid option -%c\n",
-				progname, optopt);
-			return 1;
+			case 'o':
+				parse_opts(optarg);
+				break;
+			case 'p':
+				portmap_file = optarg;
+				break;
+			case '?':
+				fprintf(stderr, "%s: invalid option -%c\n",
+				        progname, optopt);
+				return 1;
 		}
 	}
 
@@ -271,7 +271,7 @@ int nfsmount_main(int argc, char *argv[])
 
 	ret = 0;
 	if (nfs_mount(rem_name, hostname, server, rem_path, path,
-		      &mount_data) != 0)
+	              &mount_data) != 0)
 		ret = 1;
 
 	/* If we set up the spoofer, tear it down now */

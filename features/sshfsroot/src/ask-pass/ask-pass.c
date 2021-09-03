@@ -6,20 +6,20 @@
 #include <string.h>
 #include <errno.h>
 
-void get_password(char** password, FILE* stream);
+void get_password(char **password, FILE *stream);
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
-	char* password;
-	FILE* console;
+	char *password;
+	FILE *console;
 
 	fclose(stdin);
 	console=fopen("/dev/console", "a+");
 
 	if (console == NULL) {
-                fprintf(stderr, "ask-pass error: Can't open /dev/console: %s\n", strerror(errno));
-                return 1;
-        }
+		fprintf(stderr, "ask-pass error: Can't open /dev/console: %s\n", strerror(errno));
+		return 1;
+	}
 
 	if (argc > 1) {
 		fprintf(console, "%s\n", argv[1]);
@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-void get_password(char** password, FILE* stream)
+void get_password(char **password, FILE *stream)
 {
 	static struct termios oldt, newt;
 	size_t n;

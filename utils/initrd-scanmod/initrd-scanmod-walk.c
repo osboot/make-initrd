@@ -63,8 +63,7 @@ match(struct kmod_list *symlist, struct rule_pair **filters, get_list_key_t *get
 	r = filters[i++];
 
 	while (r) {
-		kmod_list_foreach(l, symlist)
-		{
+		kmod_list_foreach(l, symlist) {
 			if (get_key) {
 				const char *key = get_key(l);
 
@@ -267,7 +266,7 @@ find_modules(const char *kerneldir)
 			case FTS_D:
 			case FTS_DC:
 			case FTS_SLNONE:
-				// Ignore directories and broken symlinks
+			// Ignore directories and broken symlinks
 			default:
 				continue;
 		}

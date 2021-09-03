@@ -18,7 +18,7 @@ xmalloc(size_t size)
 
 	if (!r)
 		err(EXIT_FAILURE, "malloc: allocating %lu bytes",
-		      (unsigned long) size);
+		    (unsigned long) size);
 	return r;
 }
 
@@ -33,7 +33,7 @@ xrealloc(void *ptr, size_t nmemb, size_t elem_size)
 
 	if (!r)
 		err(EXIT_FAILURE, "realloc: allocating %lu*%lu bytes",
-		      (unsigned long) nmemb, (unsigned long) elem_size);
+		    (unsigned long) nmemb, (unsigned long) elem_size);
 	return r;
 }
 
@@ -44,7 +44,7 @@ xcalloc(size_t nmemb, size_t size)
 
 	if (!r)
 		err(EXIT_FAILURE, "calloc: allocating %lu*%lu bytes",
-		      (unsigned long) nmemb, (unsigned long) size);
+		    (unsigned long) nmemb, (unsigned long) size);
 	return r;
 }
 

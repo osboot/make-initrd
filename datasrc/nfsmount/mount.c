@@ -72,7 +72,7 @@ static int get_ports(uint32_t server, const struct nfs_mount_data *data)
 			if (proto == IPPROTO_TCP) {
 				struct in_addr addr = { server };
 				fprintf(stderr, "NFS over TCP not "
-					"available from %s\n", inet_ntoa(addr));
+				        "available from %s\n", inet_ntoa(addr));
 				return -1;
 			}
 			nfs_port = NFS_PORT;
@@ -96,8 +96,8 @@ static inline size_t pad_len(size_t len)
 }
 
 static inline void dump_params(uint32_t server,
-			       const char *path,
-			       const struct nfs_mount_data *data)
+                               const char *path,
+                               const struct nfs_mount_data *data)
 {
 	(void)server;
 	(void)path;
@@ -155,7 +155,7 @@ static inline void dump_fh(const char *data, size_t len)
 static struct mount_reply mnt_reply;
 
 static int mount_call(uint32_t proc, uint32_t version,
-		      const char *path, struct client *clnt)
+                      const char *path, struct client *clnt)
 {
 	struct mount_call *mnt_call = NULL;
 	size_t path_len, call_len;
@@ -192,13 +192,13 @@ static int mount_call(uint32_t proc, uint32_t version,
 
 	if (rpc.reply_len < MNT_REPLY_MINSIZE) {
 		fprintf(stderr, "incomplete reply: %zu < %zu\n",
-			rpc.reply_len, MNT_REPLY_MINSIZE);
+		        rpc.reply_len, MNT_REPLY_MINSIZE);
 		goto bail;
 	}
 
 	if (mnt_reply.status != 0) {
 		fprintf(stderr, "mount call failed - server replied: %s.\n",
-			strerror(ntohl(mnt_reply.status)));
+		        strerror(ntohl(mnt_reply.status)));
 		goto bail;
 	}
 
@@ -215,7 +215,7 @@ done:
 }
 
 static int mount_v2(const char *path,
-		    struct nfs_mount_data *data, struct client *clnt)
+                    struct nfs_mount_data *data, struct client *clnt)
 {
 	int ret = mount_call(MNTPROC_MNT, NFS_MNT_VERSION, path, clnt);
 
@@ -236,7 +236,7 @@ static inline int umount_v2(const char *path, struct client *clnt)
 }
 
 static int mount_v3(const char *path,
-		    struct nfs_mount_data *data, struct client *clnt)
+                    struct nfs_mount_data *data, struct client *clnt)
 {
 	int ret = mount_call(MNTPROC_MNT, NFS_MNT3_VERSION, path, clnt);
 
@@ -261,8 +261,8 @@ static inline int umount_v3(const char *path, struct client *clnt)
 }
 
 int nfs_mount(const char *pathname, const char *hostname,
-	      uint32_t server, const char *rem_path, const char *path,
-	      struct nfs_mount_data *data)
+              uint32_t server, const char *rem_path, const char *path,
+              struct nfs_mount_data *data)
 {
 	struct client *clnt = NULL;
 	struct sockaddr_in addr;
@@ -324,8 +324,8 @@ int nfs_mount(const char *pathname, const char *hostname,
 	if (ret == -1) {
 		if (errno == ENODEV) {
 			fprintf(stderr, "mount: the kernel lacks NFS v%d "
-				"support\n",
-				(data->flags & NFS_MOUNT_VER3) ? 3 : 2);
+			        "support\n",
+			        (data->flags & NFS_MOUNT_VER3) ? 3 : 2);
 		} else {
 			perror("mount");
 		}

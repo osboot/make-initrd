@@ -64,7 +64,7 @@ static dev_t try_name(char *name, unsigned long int part)
 	/* if partition is within range - we got it */
 	if (part < range) {
 		dprintf("kinit: try_name %s,%d = %s\n", name, part,
-			bdevname(res + part));
+		        bdevname(res + part));
 		return res + part;
 	}
 

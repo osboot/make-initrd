@@ -196,6 +196,11 @@ check-unit:
 
 check: check-unit
 
+.PHONY: indent-c
+indent-c:
+	@find . \! -path './external/*' -name '*.[ch]' \
+	    -exec astyle -n --quiet --options=.astylerc '{}' '+'
+
 release:
 	$(Q)git archive -o $(PKGFILE).tar --prefix=$(PREFIX)/ HEAD
 	$(Q)git submodule update --init --checkout --depth=1 --force

@@ -166,7 +166,7 @@ write_cpio(struct cpio_header *data, unsigned long offset, FILE *output)
 	char s[256];
 
 	sprintf(s, "%s%08lX%08X%08lX%08lX%08lX%08lX"
-	           "%08lX%08lX%08lX%08lX%08lX%08lX%08X",
+	        "%08lX%08lX%08lX%08lX%08lX%08lX%08X",
 	        CPIO_FORMAT_NEWASCII, /* magic */
 	        data->ino,            /* ino */
 	        data->mode,           /* mode */
@@ -214,7 +214,7 @@ write_trailer(unsigned long offset, FILE *output)
 	const char name[] = "TRAILER!!!";
 
 	sprintf(s, "%s%08X%08X%08lX%08lX%08X%08lX"
-	           "%08X%08X%08X%08X%08X%08X%08X",
+	        "%08X%08X%08X%08X%08X%08X%08X",
 	        CPIO_FORMAT_NEWASCII,        /* magic */
 	        0,                           /* ino */
 	        0,                           /* mode */

@@ -10,8 +10,7 @@ main (int ac, char *av[])
 {
 	if (ac < 3)
 		fprintf (stderr, "usage: %s program [arguments]\n", basename(av[0]));
-	else
-	{
+	else {
 		const char *path = av[2];
 
 		av[2] = av[1];

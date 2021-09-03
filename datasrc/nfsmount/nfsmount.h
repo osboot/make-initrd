@@ -7,8 +7,8 @@ extern int nfs_port;
 
 extern int nfsmount_main(int argc, char *argv[]);
 int nfs_mount(const char *rem_name, const char *hostname,
-	      uint32_t server, const char *rem_path,
-	      const char *path, struct nfs_mount_data *data);
+              uint32_t server, const char *rem_path,
+              const char *path, struct nfs_mount_data *data);
 
 enum nfs_proto {
 	v2 = 2,

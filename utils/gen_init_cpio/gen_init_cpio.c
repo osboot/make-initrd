@@ -76,21 +76,21 @@ static void cpio_trailer(void)
 	const char name[] = "TRAILER!!!";
 
 	sprintf(s, "%s%08X%08X%08lX%08lX%08X%08lX"
-	       "%08X%08X%08X%08X%08X%08X%08X",
-		"070701",		/* magic */
-		0,			/* ino */
-		0,			/* mode */
-		(long) 0,		/* uid */
-		(long) 0,		/* gid */
-		1,			/* nlink */
-		(long) 0,		/* mtime */
-		0,			/* filesize */
-		0,			/* major */
-		0,			/* minor */
-		0,			/* rmajor */
-		0,			/* rminor */
-		(unsigned)strlen(name)+1, /* namesize */
-		0);			/* chksum */
+	        "%08X%08X%08X%08X%08X%08X%08X",
+	        "070701",		/* magic */
+	        0,			/* ino */
+	        0,			/* mode */
+	        (long) 0,		/* uid */
+	        (long) 0,		/* gid */
+	        1,			/* nlink */
+	        (long) 0,		/* mtime */
+	        0,			/* filesize */
+	        0,			/* major */
+	        0,			/* minor */
+	        0,			/* rmajor */
+	        0,			/* rminor */
+	        (unsigned)strlen(name)+1, /* namesize */
+	        0);			/* chksum */
 	push_hdr(s);
 	push_rest(name);
 
@@ -101,28 +101,28 @@ static void cpio_trailer(void)
 }
 
 static int cpio_mkslink(const char *name, const char *target,
-			 unsigned int mode, uid_t uid, gid_t gid)
+                        unsigned int mode, uid_t uid, gid_t gid)
 {
 	char s[256];
 
 	if (name[0] == '/')
 		name++;
 	sprintf(s,"%s%08X%08X%08lX%08lX%08X%08lX"
-	       "%08X%08X%08X%08X%08X%08X%08X",
-		"070701",		/* magic */
-		ino++,			/* ino */
-		S_IFLNK | mode,		/* mode */
-		(long) uid,		/* uid */
-		(long) gid,		/* gid */
-		1,			/* nlink */
-		(long) default_mtime,	/* mtime */
-		(unsigned)strlen(target)+1, /* filesize */
-		3,			/* major */
-		1,			/* minor */
-		0,			/* rmajor */
-		0,			/* rminor */
-		(unsigned)strlen(name) + 1,/* namesize */
-		0);			/* chksum */
+	        "%08X%08X%08X%08X%08X%08X%08X",
+	        "070701",		/* magic */
+	        ino++,			/* ino */
+	        S_IFLNK | mode,		/* mode */
+	        (long) uid,		/* uid */
+	        (long) gid,		/* gid */
+	        1,			/* nlink */
+	        (long) default_mtime,	/* mtime */
+	        (unsigned)strlen(target)+1, /* filesize */
+	        3,			/* major */
+	        1,			/* minor */
+	        0,			/* rmajor */
+	        0,			/* rminor */
+	        (unsigned)strlen(name) + 1,/* namesize */
+	        0);			/* chksum */
 	push_hdr(s);
 	push_string(name);
 	push_pad();
@@ -145,33 +145,33 @@ static int cpio_mkslink_line(const char *line)
 		goto fail;
 	}
 	rc = cpio_mkslink(name, target, mode, uid, gid);
- fail:
+fail:
 	return rc;
 }
 
 static int cpio_mkgeneric(const char *name, unsigned int mode,
-		       uid_t uid, gid_t gid)
+                          uid_t uid, gid_t gid)
 {
 	char s[256];
 
 	if (name[0] == '/')
 		name++;
 	sprintf(s,"%s%08X%08X%08lX%08lX%08X%08lX"
-	       "%08X%08X%08X%08X%08X%08X%08X",
-		"070701",		/* magic */
-		ino++,			/* ino */
-		mode,			/* mode */
-		(long) uid,		/* uid */
-		(long) gid,		/* gid */
-		2,			/* nlink */
-		(long) default_mtime,	/* mtime */
-		0,			/* filesize */
-		3,			/* major */
-		1,			/* minor */
-		0,			/* rmajor */
-		0,			/* rminor */
-		(unsigned)strlen(name) + 1,/* namesize */
-		0);			/* chksum */
+	        "%08X%08X%08X%08X%08X%08X%08X",
+	        "070701",		/* magic */
+	        ino++,			/* ino */
+	        mode,			/* mode */
+	        (long) uid,		/* uid */
+	        (long) gid,		/* gid */
+	        2,			/* nlink */
+	        (long) default_mtime,	/* mtime */
+	        0,			/* filesize */
+	        3,			/* major */
+	        1,			/* minor */
+	        0,			/* rmajor */
+	        0,			/* rminor */
+	        (unsigned)strlen(name) + 1,/* namesize */
+	        0);			/* chksum */
 	push_hdr(s);
 	push_rest(name);
 	return 0;
@@ -213,12 +213,12 @@ static int cpio_mkgeneric_line(const char *line, enum generic_types gt)
 
 	if (4 != sscanf(line, "%" str(PATH_MAX) "s %o %d %d", name, &mode, &uid, &gid)) {
 		fprintf(stderr, "Unrecognized %s format '%s'",
-			line, generic_type_table[gt].type);
+		        line, generic_type_table[gt].type);
 		goto fail;
 	}
 	mode |= generic_type_table[gt].mode;
 	rc = cpio_mkgeneric(name, mode, uid, gid);
- fail:
+fail:
 	return rc;
 }
 
@@ -238,8 +238,8 @@ static int cpio_mksock_line(const char *line)
 }
 
 static int cpio_mknod(const char *name, unsigned int mode,
-		       uid_t uid, gid_t gid, char dev_type,
-		       unsigned int maj, unsigned int min)
+                      uid_t uid, gid_t gid, char dev_type,
+                      unsigned int maj, unsigned int min)
 {
 	char s[256];
 
@@ -251,21 +251,21 @@ static int cpio_mknod(const char *name, unsigned int mode,
 	if (name[0] == '/')
 		name++;
 	sprintf(s,"%s%08X%08X%08lX%08lX%08X%08lX"
-	       "%08X%08X%08X%08X%08X%08X%08X",
-		"070701",		/* magic */
-		ino++,			/* ino */
-		mode,			/* mode */
-		(long) uid,		/* uid */
-		(long) gid,		/* gid */
-		1,			/* nlink */
-		(long) default_mtime,	/* mtime */
-		0,			/* filesize */
-		3,			/* major */
-		1,			/* minor */
-		maj,			/* rmajor */
-		min,			/* rminor */
-		(unsigned)strlen(name) + 1,/* namesize */
-		0);			/* chksum */
+	        "%08X%08X%08X%08X%08X%08X%08X",
+	        "070701",		/* magic */
+	        ino++,			/* ino */
+	        mode,			/* mode */
+	        (long) uid,		/* uid */
+	        (long) gid,		/* gid */
+	        1,			/* nlink */
+	        (long) default_mtime,	/* mtime */
+	        0,			/* filesize */
+	        3,			/* major */
+	        1,			/* minor */
+	        maj,			/* rmajor */
+	        min,			/* rminor */
+	        (unsigned)strlen(name) + 1,/* namesize */
+	        0);			/* chksum */
 	push_hdr(s);
 	push_rest(name);
 	return 0;
@@ -283,18 +283,18 @@ static int cpio_mknod_line(const char *line)
 	int rc = -1;
 
 	if (7 != sscanf(line, "%" str(PATH_MAX) "s %o %d %d %c %u %u",
-			 name, &mode, &uid, &gid, &dev_type, &maj, &min)) {
+	                name, &mode, &uid, &gid, &dev_type, &maj, &min)) {
 		fprintf(stderr, "Unrecognized nod format '%s'", line);
 		goto fail;
 	}
 	rc = cpio_mknod(name, mode, uid, gid, dev_type, maj, min);
- fail:
+fail:
 	return rc;
 }
 
 static int cpio_mkfile(const char *name, const char *location,
-			unsigned int mode, uid_t uid, gid_t gid,
-			unsigned int nlinks)
+                       unsigned int mode, uid_t uid, gid_t gid,
+                       unsigned int nlinks)
 {
 	char s[256];
 	char *filebuf = NULL;
@@ -341,21 +341,21 @@ static int cpio_mkfile(const char *name, const char *location,
 			name++;
 		namesize = strlen(name) + 1;
 		sprintf(s,"%s%08X%08X%08lX%08lX%08X%08lX"
-		       "%08lX%08X%08X%08X%08X%08lX%08X",
-			"070701",		/* magic */
-			ino,			/* ino */
-			mode,			/* mode */
-			(long) uid,		/* uid */
-			(long) gid,		/* gid */
-			nlinks,			/* nlink */
-			(long) buf.st_mtime,	/* mtime */
-			size,			/* filesize */
-			3,			/* major */
-			1,			/* minor */
-			0,			/* rmajor */
-			0,			/* rminor */
-			namesize,		/* namesize */
-			0);			/* chksum */
+		        "%08lX%08X%08X%08X%08X%08lX%08X",
+		        "070701",		/* magic */
+		        ino,			/* ino */
+		        mode,			/* mode */
+		        (long) uid,		/* uid */
+		        (long) gid,		/* gid */
+		        nlinks,			/* nlink */
+		        (long) buf.st_mtime,	/* mtime */
+		        size,			/* filesize */
+		        3,			/* major */
+		        1,			/* minor */
+		        0,			/* rmajor */
+		        0,			/* rminor */
+		        namesize,		/* namesize */
+		        0);			/* chksum */
 		push_hdr(s);
 		push_string(name);
 		push_pad();
@@ -373,7 +373,7 @@ static int cpio_mkfile(const char *name, const char *location,
 	}
 	ino++;
 	rc = 0;
-	
+
 error:
 	if (filebuf) free(filebuf);
 	if (file >= 0) close(file);
@@ -390,7 +390,7 @@ static char *cpio_replace_env(char *new_location)
 		*start = *end = 0;
 		var = getenv(start + 2);
 		snprintf(expanded, sizeof expanded, "%s%s%s",
-			 new_location, var ? var : "", end + 1);
+		         new_location, var ? var : "", end + 1);
 		strcpy(new_location, expanded);
 	}
 
@@ -411,8 +411,8 @@ static int cpio_mkfile_line(const char *line)
 	int rc = -1;
 
 	if (5 > sscanf(line, "%" str(PATH_MAX) "s %" str(PATH_MAX)
-				"s %o %d %d %n",
-				name, location, &mode, &uid, &gid, &end)) {
+	               "s %o %d %d %n",
+	               name, location, &mode, &uid, &gid, &end)) {
 		fprintf(stderr, "Unrecognized file format '%s'", line);
 		goto fail;
 	}
@@ -432,7 +432,7 @@ static int cpio_mkfile_line(const char *line)
 		do {
 			nend = 0;
 			if (sscanf(line + end, "%" str(PATH_MAX) "s %n",
-					name, &nend) < 1)
+			           name, &nend) < 1)
 				break;
 			len = strlen(name) + 1;
 			memcpy(dname + dname_len, name, len);
@@ -445,7 +445,7 @@ static int cpio_mkfile_line(const char *line)
 	}
 	rc = cpio_mkfile(dname, cpio_replace_env(location),
 	                 mode, uid, gid, nlinks);
- fail:
+fail:
 	if (dname_len) free(dname);
 	return rc;
 }
@@ -453,43 +453,43 @@ static int cpio_mkfile_line(const char *line)
 static void usage(const char *prog)
 {
 	fprintf(stderr, "Usage:\n"
-		"\t%s [-t <timestamp>] <cpio_list>\n"
-		"\n"
-		"<cpio_list> is a file containing newline separated entries that\n"
-		"describe the files to be included in the initramfs archive:\n"
-		"\n"
-		"# a comment\n"
-		"file <name> <location> <mode> <uid> <gid> [<hard links>]\n"
-		"dir <name> <mode> <uid> <gid>\n"
-		"nod <name> <mode> <uid> <gid> <dev_type> <maj> <min>\n"
-		"slink <name> <target> <mode> <uid> <gid>\n"
-		"pipe <name> <mode> <uid> <gid>\n"
-		"sock <name> <mode> <uid> <gid>\n"
-		"\n"
-		"<name>       name of the file/dir/nod/etc in the archive\n"
-		"<location>   location of the file in the current filesystem\n"
-		"             expands shell variables quoted with ${}\n"
-		"<target>     link target\n"
-		"<mode>       mode/permissions of the file\n"
-		"<uid>        user id (0=root)\n"
-		"<gid>        group id (0=root)\n"
-		"<dev_type>   device type (b=block, c=character)\n"
-		"<maj>        major number of nod\n"
-		"<min>        minor number of nod\n"
-		"<hard links> space separated list of other links to file\n"
-		"\n"
-		"example:\n"
-		"# A simple initramfs\n"
-		"dir /dev 0755 0 0\n"
-		"nod /dev/console 0600 0 0 c 5 1\n"
-		"dir /root 0700 0 0\n"
-		"dir /sbin 0755 0 0\n"
-		"file /sbin/kinit /usr/src/klibc/kinit/kinit 0755 0 0\n"
-		"\n"
-		"<timestamp> is time in seconds since Epoch that will be used\n"
-		"as mtime for symlinks, special files and directories. The default\n"
-		"is to use the current time for these entries.\n",
-		prog);
+	        "\t%s [-t <timestamp>] <cpio_list>\n"
+	        "\n"
+	        "<cpio_list> is a file containing newline separated entries that\n"
+	        "describe the files to be included in the initramfs archive:\n"
+	        "\n"
+	        "# a comment\n"
+	        "file <name> <location> <mode> <uid> <gid> [<hard links>]\n"
+	        "dir <name> <mode> <uid> <gid>\n"
+	        "nod <name> <mode> <uid> <gid> <dev_type> <maj> <min>\n"
+	        "slink <name> <target> <mode> <uid> <gid>\n"
+	        "pipe <name> <mode> <uid> <gid>\n"
+	        "sock <name> <mode> <uid> <gid>\n"
+	        "\n"
+	        "<name>       name of the file/dir/nod/etc in the archive\n"
+	        "<location>   location of the file in the current filesystem\n"
+	        "             expands shell variables quoted with ${}\n"
+	        "<target>     link target\n"
+	        "<mode>       mode/permissions of the file\n"
+	        "<uid>        user id (0=root)\n"
+	        "<gid>        group id (0=root)\n"
+	        "<dev_type>   device type (b=block, c=character)\n"
+	        "<maj>        major number of nod\n"
+	        "<min>        minor number of nod\n"
+	        "<hard links> space separated list of other links to file\n"
+	        "\n"
+	        "example:\n"
+	        "# A simple initramfs\n"
+	        "dir /dev 0755 0 0\n"
+	        "nod /dev/console 0600 0 0 c 5 1\n"
+	        "dir /root 0700 0 0\n"
+	        "dir /sbin 0755 0 0\n"
+	        "file /sbin/kinit /usr/src/klibc/kinit/kinit 0755 0 0\n"
+	        "\n"
+	        "<timestamp> is time in seconds since Epoch that will be used\n"
+	        "as mtime for symlinks, special files and directories. The default\n"
+	        "is to use the current time for these entries.\n",
+	        prog);
 }
 
 struct file_handler file_handler_table[] = {
@@ -536,19 +536,19 @@ int main (int argc, char *argv[])
 		if (opt == -1)
 			break;
 		switch (opt) {
-		case 't':
-			default_mtime = strtol(optarg, &invalid, 10);
-			if (!*optarg || *invalid) {
-				fprintf(stderr, "Invalid timestamp: %s\n",
-						optarg);
+			case 't':
+				default_mtime = strtol(optarg, &invalid, 10);
+				if (!*optarg || *invalid) {
+					fprintf(stderr, "Invalid timestamp: %s\n",
+					        optarg);
+					usage(argv[0]);
+					exit(1);
+				}
+				break;
+			case 'h':
+			case '?':
 				usage(argv[0]);
-				exit(1);
-			}
-			break;
-		case 'h':
-		case '?':
-			usage(argv[0]);
-			exit(opt == 'h' ? 0 : 1);
+				exit(opt == 'h' ? 0 : 1);
 		}
 	}
 
@@ -561,7 +561,7 @@ int main (int argc, char *argv[])
 		cpio_list = stdin;
 	else if (!(cpio_list = fopen(filename, "r"))) {
 		fprintf(stderr, "ERROR: unable to open '%s': %s\n\n",
-			filename, strerror(errno));
+		        filename, strerror(errno));
 		usage(argv[0]);
 		exit(1);
 	}
@@ -579,8 +579,8 @@ int main (int argc, char *argv[])
 
 		if (! (type = strtok(line, " \t"))) {
 			fprintf(stderr,
-				"ERROR: incorrect format, could not locate file type line %d: '%s'\n",
-				line_nr, line);
+			        "ERROR: incorrect format, could not locate file type line %d: '%s'\n",
+			        line_nr, line);
 			ec = -1;
 			break;
 		}
@@ -597,8 +597,8 @@ int main (int argc, char *argv[])
 
 		if (! (args = strtok(NULL, "\n"))) {
 			fprintf(stderr,
-				"ERROR: incorrect format, newline required line %d: '%s'\n",
-				line_nr, line);
+			        "ERROR: incorrect format, newline required line %d: '%s'\n",
+			        line_nr, line);
 			ec = -1;
 		}
 
@@ -615,7 +615,7 @@ int main (int argc, char *argv[])
 
 		if (NULL == file_handler_table[type_idx].type) {
 			fprintf(stderr, "unknown file type line %d: '%s'\n",
-				line_nr, line);
+			        line_nr, line);
 		}
 	}
 	if (ec == 0)

@@ -43,11 +43,11 @@
  *	Log an event in the wtmp file (reboot, runlevel)
  */
 void write_wtmp(
-const char *user,		/* name of user */
-const char *id,			/* inittab ID */
-int pid,			/* PID of process */
-short type,			/* TYPE of entry */
-const char *line)		/* Which line is this */
+        const char *user,		/* name of user */
+        const char *id,			/* inittab ID */
+        int pid,			/* PID of process */
+        short type,			/* TYPE of entry */
+        const char *line)		/* Which line is this */
 {
 	int fd;
 	struct utmp utmp;
@@ -80,11 +80,11 @@ const char *line)		/* Which line is this */
 	utmp.ut_pid  = pid;
 	utmp.ut_type = type;
 	strncpy(utmp.ut_name, user, sizeof(utmp.ut_name));
-	strncpy(utmp.ut_id  , id  , sizeof(utmp.ut_id  ));
+	strncpy(utmp.ut_id, id, sizeof(utmp.ut_id  ));
 	strncpy(utmp.ut_line, line, sizeof(utmp.ut_line));
 
-        /* Put the OS version in place of the hostname */
-        if (uname(&uname_buf) == 0)
+	/* Put the OS version in place of the hostname */
+	if (uname(&uname_buf) == 0)
 		strncpy(utmp.ut_host, uname_buf.release, sizeof(utmp.ut_host));
 
 #if HAVE_UPDWTMP

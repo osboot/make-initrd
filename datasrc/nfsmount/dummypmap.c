@@ -63,24 +63,24 @@ static int bind_portmap(void)
 static const char *protoname(uint32_t proto)
 {
 	switch (ntohl(proto)) {
-	case IPPROTO_TCP:
-		return "tcp";
-	case IPPROTO_UDP:
-		return "udp";
-	default:
-		return NULL;
+		case IPPROTO_TCP:
+			return "tcp";
+		case IPPROTO_UDP:
+			return "udp";
+		default:
+			return NULL;
 	}
 }
 
 static void *get_auth(struct rpc_auth *auth)
 {
 	switch (ntohl(auth->flavor)) {
-	case AUTH_NULL:
-	/* Fallthrough */
-	case AUTH_UNIX:
-		return (char *)&auth->body + ntohl(auth->len);
-	default:
-		return NULL;
+		case AUTH_NULL:
+		/* Fallthrough */
+		case AUTH_UNIX:
+			return (char *)&auth->body + ntohl(auth->len);
+		default:
+			return NULL;
 	}
 }
 
@@ -131,12 +131,12 @@ out:
 static int check_cred(struct rpc_auth *cred)
 {
 	switch (ntohl(cred->flavor)) {
-	case AUTH_NULL:
-		return 0;
-	case AUTH_UNIX:
-		return check_unix_cred(cred);
-	default:
-		return -1;
+		case AUTH_NULL:
+			return 0;
+		case AUTH_UNIX:
+			return check_unix_cred(cred);
+		default:
+			return -1;
 	}
 }
 
@@ -166,7 +166,7 @@ static int dummy_portmap(int sock, FILE *portmap_file)
 	for (;;) {
 		addrlen = sizeof sin;
 		pktlen = recvfrom(sock, &rpc->hdr.udp, MAX_UDP_PACKET,
-				  0, (struct sockaddr *)&sin, &addrlen);
+		                  0, (struct sockaddr *)&sin, &addrlen);
 
 		if (pktlen < 0) {
 			if (errno == EINTR)
@@ -196,42 +196,42 @@ static int dummy_portmap(int sock, FILE *portmap_file)
 		} else if (rpc->prog_vers != htonl(2)) {
 			rply.rpc.reply_state = htonl(PROG_MISMATCH);
 		} else if (!(vrf = get_auth(cred)) ||
-			   (char *)vrf > ((char *)&rpc->hdr.udp + pktlen - 8 -
-					  sizeof(*args)) ||
-			   !(args = get_auth(vrf)) ||
-			   (char *)args > ((char *)&rpc->hdr.udp + pktlen -
-					   sizeof(*args)) ||
-			   check_cred(cred) || check_vrf(vrf)) {
+		           (char *)vrf > ((char *)&rpc->hdr.udp + pktlen - 8 -
+		                          sizeof(*args)) ||
+		           !(args = get_auth(vrf)) ||
+		           (char *)args > ((char *)&rpc->hdr.udp + pktlen -
+		                           sizeof(*args)) ||
+		           check_cred(cred) || check_vrf(vrf)) {
 			/* Can't deal with credentials data; the kernel
 			   won't send them */
 			rply.rpc.reply_state = htonl(SYSTEM_ERR);
 		} else {
 			switch (ntohl(rpc->proc)) {
-			case PMAP_PROC_NULL:
-				break;
-			case PMAP_PROC_SET:
-				if (args->proto == htonl(IPPROTO_TCP) ||
-				    args->proto == htonl(IPPROTO_UDP)) {
-					if (portmap_file)
-						fprintf(portmap_file,
-							"%u %u %s %u\n",
-							ntohl(args->program),
-							ntohl(args->version),
-							protoname(args->proto),
-							ntohl(args->port));
+				case PMAP_PROC_NULL:
+					break;
+				case PMAP_PROC_SET:
+					if (args->proto == htonl(IPPROTO_TCP) ||
+					    args->proto == htonl(IPPROTO_UDP)) {
+						if (portmap_file)
+							fprintf(portmap_file,
+							        "%u %u %s %u\n",
+							        ntohl(args->program),
+							        ntohl(args->version),
+							        protoname(args->proto),
+							        ntohl(args->port));
+						rply.port = htonl(1);	/* TRUE = success */
+					}
+					break;
+				case PMAP_PROC_UNSET:
 					rply.port = htonl(1);	/* TRUE = success */
-				}
-				break;
-			case PMAP_PROC_UNSET:
-				rply.port = htonl(1);	/* TRUE = success */
-				break;
-			case PMAP_PROC_GETPORT:
-				break;
-			case PMAP_PROC_DUMP:
-				break;
-			default:
-				rply.rpc.reply_state = htonl(PROC_UNAVAIL);
-				break;
+					break;
+				case PMAP_PROC_GETPORT:
+					break;
+				case PMAP_PROC_DUMP:
+					break;
+				default:
+					rply.rpc.reply_state = htonl(PROC_UNAVAIL);
+					break;
 			}
 		}
 
@@ -249,7 +249,7 @@ pid_t start_dummy_portmap(const char *file)
 	portmap_filep = fopen(file, "w");
 	if (!portmap_filep) {
 		fprintf(stderr, "%s: cannot write portmap file: %s\n",
-			progname, file);
+		        progname, file);
 		return -1;
 	}
 
@@ -260,7 +260,7 @@ pid_t start_dummy_portmap(const char *file)
 		else {
 			fclose(portmap_filep);
 			fprintf(stderr, "%s: portmap spoofing failed\n",
-				progname);
+			        progname);
 			return -1;
 		}
 	}

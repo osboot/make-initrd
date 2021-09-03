@@ -56,7 +56,7 @@ uint32_t portmap(uint32_t server, uint32_t program, uint32_t version, uint32_t p
 
 	if (rpc.reply_len < sizeof(reply)) {
 		fprintf(stderr, "incomplete reply: %zu < %zu\n",
-			rpc.reply_len, sizeof(reply));
+		        rpc.reply_len, sizeof(reply));
 		goto bail;
 	}
 
@@ -64,7 +64,7 @@ uint32_t portmap(uint32_t server, uint32_t program, uint32_t version, uint32_t p
 
 bail:
 	dprintf("Port for %d/%d[%s]: %d\n", program, version,
-		proto == IPPROTO_TCP ? "tcp" : "udp", port);
+	        proto == IPPROTO_TCP ? "tcp" : "udp", port);
 
 	if (clnt)
 		client_free(clnt);

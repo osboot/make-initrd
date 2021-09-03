@@ -19,13 +19,13 @@ static int rpc_do_reply(struct client *clnt, struct rpc *rpc, size_t off)
 	ssize_t ret;
 
 	if ((ret = read(clnt->sock,
-			((char *)rpc->reply) + off,
-			rpc->reply_len - off)) == -1) {
+	                ((char *)rpc->reply) + off,
+	                rpc->reply_len - off)) == -1) {
 		perror("read");
 		goto bail;
 	} else if ((size_t) ret < sizeof(struct rpc_reply) - off) {
 		fprintf(stderr, "short read: %ld < %zu\n", ret,
-			sizeof(struct rpc_reply) - off);
+		        sizeof(struct rpc_reply) - off);
 		goto bail;
 	}
 	rpc->reply_len = ret + off;
@@ -78,10 +78,10 @@ static int rpc_call_tcp(struct client *clnt, struct rpc *rpc)
 	ret = rpc_do_reply(clnt, rpc, 0);
 	goto done;
 
-      bail:
+bail:
 	ret = -1;
 
-      done:
+done:
 	return (int) ret;
 }
 
@@ -105,13 +105,13 @@ static int rpc_call_udp(struct client *clnt, struct rpc *rpc)
 	for (i = 0; i < MAX_TRIES; i++) {
 		int timeout_ms = TIMEOUT_MS + (lrand48() % (TIMEOUT_MS / 2));
 		if ((ret = write(clnt->sock,
-				 ((char *)rpc->call) + UDP_HDR_OFF,
-				 rpc->call_len)) == -1) {
+		                 ((char *)rpc->call) + UDP_HDR_OFF,
+		                 rpc->call_len)) == -1) {
 			perror("write");
 			goto bail;
 		} else if ((size_t) ret < rpc->call_len) {
 			fprintf(stderr, "short write: %ld < %zu\n", ret,
-				rpc->call_len);
+			        rpc->call_len);
 			goto bail;
 		}
 		for (; i < MAX_TRIES; i++) {
@@ -127,15 +127,15 @@ static int rpc_call_udp(struct client *clnt, struct rpc *rpc)
 				goto done;
 			} else {
 				dprintf("Failed on try #%d - retrying\n",
-					i + 1);
+				        i + 1);
 			}
 		}
 	}
 
-      bail:
+bail:
 	ret = -1;
 
-      done:
+done:
 	return (int) ret;
 }
 
@@ -175,12 +175,12 @@ struct client *tcp_client(uint32_t server, uint16_t port, uint32_t flags)
 	}
 
 	goto done;
-      bail:
+bail:
 	if (clnt) {
 		free(clnt);
 		clnt = NULL;
 	}
-      done:
+done:
 	return clnt;
 }
 
@@ -231,12 +231,12 @@ struct client *udp_client(uint32_t server, uint16_t port, uint32_t flags)
 	}
 
 	goto done;
-      bail:
+bail:
 	if (clnt) {
 		free(clnt);
 		clnt = NULL;
 	}
-      done:
+done:
 	return clnt;
 }
 

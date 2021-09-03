@@ -151,8 +151,8 @@ main(int argc, char **argv)
 	bytes = snprintf(NULL, 0, "%ju", n_cpio);
 
 	c = (opts & SHOW_COMPRESSION)
-	        ? asprintf(&fmt, "%%%dd %%%ds ", bytes, max_compress_name)
-	        : asprintf(&fmt, "%%%dd ", bytes);
+	    ? asprintf(&fmt, "%%%dd %%%ds ", bytes, max_compress_name)
+	    : asprintf(&fmt, "%%%dd ", bytes);
 
 	if (c == -1)
 		err(EXIT_FAILURE, "ERROR: asprintf");
@@ -163,11 +163,11 @@ main(int argc, char **argv)
 		h = ((struct cpio *) l->data)->headers;
 		while (h) {
 			(opts & SHOW_COMPRESSION)
-			    ? fprintf(stdout, fmt, c, ((struct cpio *) l->data)->compress)
-			    : fprintf(stdout, fmt, c);
+			? fprintf(stdout, fmt, c, ((struct cpio *) l->data)->compress)
+			: fprintf(stdout, fmt, c);
 			(opts & SHOW_NAME_ONLY)
-			    ? fprintf(stdout, "%s\n", ((struct cpio_header *) h->data)->name)
-			    : show_header(h->data);
+			? fprintf(stdout, "%s\n", ((struct cpio_header *) h->data)->name)
+			: show_header(h->data);
 			h = h->next;
 		}
 		l = l->next;

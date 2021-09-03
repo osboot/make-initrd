@@ -397,14 +397,16 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 	ret = tracked_module(mod);
 
 	switch (ret) {
-		case  1: return  0;
-		case -1: return -1;
+		case  1:
+			return  0;
+		case -1:
+			return -1;
 	}
 
 	if ((ret = kmod_module_get_info(mod, &list)) < 0) {
 		errno = ret;
 		warn("ERROR: Could not get information from '%s'",
-		      kmod_module_get_name(mod));
+		     kmod_module_get_name(mod));
 		return -1;
 	}
 
@@ -426,8 +428,7 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 			show_tree++;
 	}
 
-	kmod_list_foreach(l, list)
-	{
+	kmod_list_foreach(l, list) {
 		const char *key = kmod_module_info_get_key(l);
 		const char *val = kmod_module_info_get_value(l);
 
@@ -540,8 +541,7 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req)
 
 	if (!filtered) {
 		if (opts & SHOW_BUILTIN) {
-			kmod_list_foreach(l, list)
-			{
+			kmod_list_foreach(l, list) {
 				mod = kmod_module_get_module(l);
 
 				if (opts & SHOW_PREFIX)
@@ -555,8 +555,7 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req)
 		}
 	}
 
-	kmod_list_foreach(l, filtered)
-	{
+	kmod_list_foreach(l, filtered) {
 		mod = kmod_module_get_module(l);
 		if (depinfo(ctx, mod) < 0)
 			ret = -1;
@@ -592,8 +591,8 @@ static inline int
 process_name(struct kmod_ctx *ctx, const char *arg)
 {
 	return is_filename(arg)
-		? depinfo_alias(ctx, arg, ALIAS_REQUIRED)
-		: depinfo_path(ctx, arg);
+	       ? depinfo_alias(ctx, arg, ALIAS_REQUIRED)
+	       : depinfo_path(ctx, arg);
 }
 
 static int

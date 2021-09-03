@@ -71,13 +71,13 @@ const char *v_hddown = "@(#)hddown.c  1.02  22-Apr-2003  miquels@cistron.nl";
 #define DISK_FLUSHONLY	0x00000020
 
 static char *strstrip(char *str);
-static FILE *hdopen(const char* const format, const char* const name);
+static FILE *hdopen(const char *const format, const char *const name);
 static int flush_cache_ext(const char *device);
 
 /*
  *	Find all disks through /sys/block.
  */
-static char *list_disks(DIR* blk, unsigned int* flags)
+static char *list_disks(DIR *blk, unsigned int *flags)
 {
 	struct dirent *d;
 
@@ -155,7 +155,7 @@ static char *list_disks(DIR* blk, unsigned int* flags)
 
 			ptr = fgets(buf, sizeof(buf), fp);
 			fclose(fp);
-			if (ptr == (char*)0)
+			if (ptr == (char *)0)
 				continue;		/* should not happen */
 
 			ptr = strstrip(buf);
@@ -186,11 +186,11 @@ static char *list_disks(DIR* blk, unsigned int* flags)
 			break;				/* Removable disk like USB stick to shutdown */
 		}
 	}
-	if (d == (struct dirent*)0)
+	if (d == (struct dirent *)0)
 		goto empty;
 	return d->d_name;
 empty:
-	return (char*)0;
+	return (char *)0;
 }
 
 /*
@@ -226,15 +226,15 @@ static int do_standby_disk(char *device, unsigned int flags)
 		return -1;
 
 	switch (flags & DISK_EXTFLUSH) {
-	case DISK_EXTFLUSH:
-		if ((ret = ioctl(fd, HDIO_DRIVE_CMD, &flush1)) == 0)
+		case DISK_EXTFLUSH:
+			if ((ret = ioctl(fd, HDIO_DRIVE_CMD, &flush1)) == 0)
+				break;
+			/* Extend flush rejected, try standard flush */
+			__attribute__ ((fallthrough));
+		default:
+			ret = ioctl(fd, HDIO_DRIVE_CMD, &flush2) &&
+			      ioctl(fd, BLKFLSBUF);
 			break;
-		/* Extend flush rejected, try standard flush */
-		__attribute__ ((fallthrough));
-	default:
-		ret = ioctl(fd, HDIO_DRIVE_CMD, &flush2) &&
-		      ioctl(fd, BLKFLSBUF);
-		break;
 	}
 
 	if ((flags & DISK_FLUSHONLY) == 0x0) {
@@ -260,7 +260,7 @@ int hddown(void)
 	char *disk;
 	DIR *blk;
 
-	if ((blk = opendir(SYS_BLK)) == (DIR*)0)
+	if ((blk = opendir(SYS_BLK)) == (DIR *)0)
 		return -1;
 
 	while ((disk = list_disks(blk, &flags)))
@@ -278,7 +278,7 @@ int hdflush(void)
 	char *disk;
 	DIR *blk;
 
-	if ((blk = opendir(SYS_BLK)) == (DIR*)0)
+	if ((blk = opendir(SYS_BLK)) == (DIR *)0)
 		return -1;
 
 	while ((disk = list_disks(blk, &flags)))
@@ -294,7 +294,7 @@ static char *strstrip(char *str)
 {
 	const size_t len = strlen(str);
 	if (len) {
-		char* end = str + len - 1;
+		char *end = str + len - 1;
 		while ((end != str) && ISSPACE(*end))
 			end--;
 		*(end + 1) = '\0';			/* remove trailing white spaces */
@@ -306,10 +306,10 @@ static char *strstrip(char *str)
  * Open a sysfs file without getting a controlling tty
  * and return FILE* pointer.
  */
-static FILE *hdopen(const char* const format, const char* const name)
+static FILE *hdopen(const char *const format, const char *const name)
 {
 	char buf[NAME_MAX+1];
-	FILE *fp = (FILE*)-1;
+	FILE *fp = (FILE *)-1;
 	int fd, ret;
 
 	ret = snprintf(buf, sizeof(buf), format, name);
@@ -320,12 +320,12 @@ static FILE *hdopen(const char* const format, const char* const name)
 	if (fd < 0) {
 		if (errno != ENOENT)
 			goto error;	/* error */
-		fp = (FILE*)0;
+		fp = (FILE *)0;
 		goto error;		/* no entry `removable' */
 	}
 
 	fp = fdopen(fd, "r");
-	if (fp == (FILE*)0)
+	if (fp == (FILE *)0)
 		close(fd);		/* should not happen */
 error:
 	return fp;
@@ -341,7 +341,7 @@ static int flush_cache_ext(const char *device)
 #define WIN_IDENTIFY		0xEC
 #endif
 	unsigned char args[4+IDBYTES];
-	unsigned short *id = (unsigned short*)(&args[4]);
+	unsigned short *id = (unsigned short *)(&args[4]);
 	char buf[NAME_MAX+1], *ptr;
 	int fd = -1, ret = 0;
 	FILE *fp;
@@ -355,7 +355,7 @@ static int flush_cache_ext(const char *device)
 
 	ptr = fgets(buf, sizeof(buf), fp);
 	fclose(fp);
-	if (ptr == (char*)0)
+	if (ptr == (char *)0)
 		goto out;		/* should not happen */
 
 	ptr = strstrip(buf);

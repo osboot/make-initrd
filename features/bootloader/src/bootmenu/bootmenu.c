@@ -315,7 +315,8 @@ fail:
 }
 
 static void
-suspend(void *d __attribute__((unused))) {
+suspend(void *d __attribute__((unused)))
+{
 	newtSuspend();
 	raise(SIGTSTP);
 	newtResume();
