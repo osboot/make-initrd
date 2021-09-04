@@ -1,0 +1,8 @@
+KERNEL=="sr*",\
+	ENV{DISK_EJECT_REQUEST}!="?*", ENV{ID_CDROM_MEDIA_TRACK_COUNT_DATA}=="?*", ENV{ID_CDROM_MEDIA_SESSION_LAST_OFFSET}=="", \
+  IMPORT{builtin}="blkid --noraid"
+
+SUBSYSTEM=="tifm", ENV{TIFM_CARD_TYPE}=="SD", RUN{builtin}+="kmod load tifm_sd"
+
+# media eject button pressed
+ENV{DISK_EJECT_REQUEST}=="?*", RUN+="xcdrom_id --eject-media $devnode", GOTO="cdrom_end"

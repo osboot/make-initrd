@@ -1,0 +1,7 @@
+#!/bin/bash -efu
+
+export UDEVADM="true"
+
+cwd="${0%/*}"
+
+tools/find-udev-rule-externals "$cwd/data.rules"

@@ -1,0 +1,37 @@
+#!/bin/bash -eu
+
+export LANG=C
+export LC_ALL=C
+
+cwd="$(readlink -ev "$0")"
+cwd="${cwd%/*}"
+
+ret=0
+for ts in "$cwd"/ts*; do
+	[ -d "$ts" ] ||
+		continue
+	{
+		rc=0
+		"$ts"/run || rc=$?
+		echo "rc=$rc";
+	} > "$ts"/output 2>&1
+
+	[ ! -f "$ts"/expect.in ] ||
+		sed \
+			-e "s#@ts@#${ts##*/}#g" \
+			-e "s#@cwd@#$cwd#g" \
+			< "$ts"/expect.in > "$ts"/expect
+
+	if ! cmp -s "$ts"/expect "$ts"/output; then
+		echo "Test ${ts##*/} failed"
+		diff -u -- "$ts"/expect "$ts"/output ||:
+		ret=1
+	else
+		rm -f -- "$ts"/output
+	fi
+
+	[ ! -f "$ts"/expect.in ] ||
+		rm -f -- "$ts"/expect
+done
+
+exit "$ret"

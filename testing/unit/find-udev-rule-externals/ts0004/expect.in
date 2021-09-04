@@ -1,0 +1,4 @@
+@cwd@/@ts@/bin/blkid
+@cwd@/@ts@/bin/kmod
+@cwd@/@ts@/bin/xcdrom_id
+rc=0

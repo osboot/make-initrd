@@ -1,0 +1,23 @@
+#!/bin/bash
+
+cat >&2 <<EOF
+udevadm test-builtin [OPTIONS] COMMAND DEVPATH
+
+Test a built-in command.
+
+  -h --help     Print this message
+  -V --version  Print version of the program
+
+Commands:
+  blkid           Filesystem and partition probing
+  btrfs           btrfs volume management
+  hwdb            Hardware database
+  input_id        Input device properties
+  keyboard        Keyboard scan code to key mapping
+  kmod            Kernel module loader
+  net_id          Network device properties
+  net_setup_link  Configure network link
+  path_id         Compose persistent device path
+  usb_id          USB device properties
+  uaccess         Manage device node user ACL
+EOF
