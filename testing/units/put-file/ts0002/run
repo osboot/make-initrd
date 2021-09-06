@@ -1,0 +1,65 @@
+#!/bin/bash -efu
+
+set -o pipefail
+
+cwd="${0%/*}"
+
+. "$cwd"/../sh-functions
+
+BASH="$(readlink -ev /bin/bash)"
+
+rm -rf -- "$cwd/bin"
+mkdir -p "$cwd/bin"
+
+################################################################################
+echo "#!$BASH -efu" > "$cwd/bin/foo"
+
+{
+	print_info "$cwd/bin/foo" | sed -e 's#^.*/bin/foo #./bin/foo #'
+} 2>&1 |
+	sort -u -d -o "$cwd/want"
+
+rm -rf -- "$cwd/to"
+mkdir -p -- "$cwd/to"
+
+{
+	tools/put-file -r "$cwd" "$cwd/to" "$cwd/bin/foo"
+
+	cd "$cwd/to"
+	print_info . f
+	cd - >/dev/null
+} 2>&1 |
+	sort -u -d -o "$cwd/actual"
+
+diff -u "$cwd/want" "$cwd/actual"
+rm -f "$cwd/want" "$cwd/actual"
+
+################################################################################
+chmod +x "$cwd/bin/foo"
+
+{
+	lib_info "$BASH"
+	print_info "$BASH"        | sed -e "s#^$BASH #.$BASH #"
+	print_info "$cwd/bin/foo" | sed -e 's#^.*/bin/foo #./bin/foo #'
+} |
+	sort -u -d -o "$cwd/want"
+
+rm -rf -- "$cwd/to"
+mkdir -p -- "$cwd/to"
+
+{
+	tools/put-file -r "$cwd" "$cwd/to" "$cwd/bin/foo"
+
+	cd "$cwd/to"
+	print_info . f
+	cd - >/dev/null
+} 2>&1 |
+	sort -u -d -o "$cwd/actual"
+
+diff -u "$cwd/want" "$cwd/actual"
+rm -f "$cwd/want" "$cwd/actual"
+
+################################################################################
+rm -rf -- \
+	"$cwd/bin" \
+	"$cwd/to"

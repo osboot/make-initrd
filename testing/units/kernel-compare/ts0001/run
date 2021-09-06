@@ -1,0 +1,22 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+compare()
+{
+	echo "Compare $*"
+	local rc=0
+	tools/kernel-compare "$@" || rc=1
+	echo rc=$rc
+}
+
+compare gt 0.0.1 0.0.0
+compare gt 0.1.0 0.0.0
+compare gt 1.0.0 0.0.0
+compare gt 1     0.0.1
+compare gt 5.14 5.12.1
+compare gt 5.12.1 5.14
+compare gt 5.12.1 5.12.1
+compare eq 5.12.1 5.12.1
+compare eq 5.12 5.12.0
+compare lt 5.12.1 5.14.1

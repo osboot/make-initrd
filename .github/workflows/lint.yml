@@ -97,6 +97,10 @@ jobs:
          ./autogen.sh
          ./configure
 
+      - name: "build"
+        run: |
+         make
+
       - name: "unittests"
         run: |
          export PATH="$PWD/external/libshell/upstream:$PATH"

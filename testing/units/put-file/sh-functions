@@ -1,0 +1,26 @@
+#!/bin/bash
+
+print_info()
+{
+	find "$1" \
+		\! -type d \
+		${2:+-a -type "$2"} \
+		-printf '%p %#m %y %s %l\n'
+}
+
+lib_info()
+{
+	ldd "$@" |
+	while read -r f; do
+		f="${f% (0x*)}"
+		f="${f##* => }"
+		f="${f##[!/]*}"
+
+		[ -n "$f" ] ||
+			continue
+
+		print_info "$(readlink -ev "$f")"
+	done |
+		sed -e 's#^/#./#'
+}
+

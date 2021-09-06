@@ -1,0 +1,21 @@
+Compare gt 0.0.1 0.0.0
+rc=0
+Compare gt 0.1.0 0.0.0
+rc=0
+Compare gt 1.0.0 0.0.0
+rc=0
+Compare gt 1 0.0.1
+rc=0
+Compare gt 5.14 5.12.1
+rc=0
+Compare gt 5.12.1 5.14
+rc=1
+Compare gt 5.12.1 5.12.1
+rc=1
+Compare eq 5.12.1 5.12.1
+rc=0
+Compare eq 5.12 5.12.0
+rc=0
+Compare lt 5.12.1 5.14.1
+rc=0
+rc=0

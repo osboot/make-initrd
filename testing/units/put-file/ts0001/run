@@ -1,0 +1,84 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+. "$cwd"/../sh-functions
+
+make_fs()
+{
+	rm -rf -- "$1"
+	for n in bin lib lib32 lib64 libx32; do
+		if [ -L /$n ]; then
+			mkdir -p -- "$1/usr/$n"
+			ln -s -- "usr/$n" "$1/$n"
+		else
+			mkdir -p -- "$1/$n"
+		fi
+	done
+}
+
+make --no-print-directory -C "$cwd/src" >/dev/null
+
+make_fs "$cwd/from"
+
+################################################################################
+cp -a -- "$cwd/src/foo" "$cwd/from/bin/"
+
+bin="$(readlink -ev "$cwd/from/bin/foo")"
+
+{
+	lib_info "$bin"
+	print_info "$bin"
+} 2>&1 |
+	sed -e "s#^$cwd/from/#./#" |
+	sort -u -d -o "$cwd/want"
+
+make_fs "$cwd/to"
+{
+	tools/put-file -r "$cwd/from" "$cwd/to" "$cwd/from/bin/foo"
+
+	cd "$cwd/to"
+	print_info . f
+	cd - >/dev/null
+} 2>&1 |
+	sort -u -d -o "$cwd/actual"
+
+diff -u "$cwd/want" "$cwd/actual"
+rm -f -- "$cwd/want" "$cwd/actual"
+
+################################################################################
+cp -a -- "$cwd/src/foo"       "$cwd/from/bin/"
+cp -a -- "$cwd/src/libfoo.so" "$cwd/from/lib/"
+
+bin="$(readlink -ev "$cwd/from/bin/foo")"
+lib="$(readlink -ev "$cwd/from/lib/libfoo.so")"
+
+{
+	lib_info "$bin"
+	print_info "$bin"
+	print_info "$lib"
+} 2>&1 |
+	sed -e "s#^$cwd/from/#./#" |
+	sort -u -d -o "$cwd/want"
+
+make_fs "$cwd/to"
+{
+	export LD_LIBRARY_PATH="$cwd/from/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+	tools/put-file -r "$cwd/from" "$cwd/to" "$cwd/from/bin/foo"
+
+	cd "$cwd/to"
+	print_info . f
+	cd - >/dev/null
+} 2>&1 |
+	sort -u -d -o "$cwd/actual"
+
+diff -u "$cwd/want" "$cwd/actual"
+rm -f -- "$cwd/want" "$cwd/actual"
+
+################################################################################
+rm -rf -- \
+	"$cwd/from" \
+	"$cwd/to"
+
+make --no-print-directory -C "$cwd/src" clean
