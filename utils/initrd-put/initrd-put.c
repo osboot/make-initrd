@@ -792,9 +792,11 @@ static void apply_permissions(struct file *p)
 			warn("chown: %s", install_path);
 	}
 
-	errno = 0;
-	if (chmod(install_path, p->stat.st_mode) < 0)
-		err(EXIT_FAILURE, "chmod: %s", install_path);
+	if (S_IFLNK != (p->stat.st_mode & S_IFMT)) {
+		errno = 0;
+		if (chmod(install_path, p->stat.st_mode) < 0)
+			err(EXIT_FAILURE, "chmod: %s", install_path);
+	}
 }
 
 static void walk_action(const void *nodep, VISIT which, void *closure)
