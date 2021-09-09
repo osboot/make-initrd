@@ -51,13 +51,10 @@ prep_early_firmware()
 		return 0
 	fi
 
-	cd "$workdir"
-	mkdir -p kernel/x86/microcode
-	cp ${VERBOSE:+-v} -- "$fw_file" kernel/x86/microcode/"$cpu_vendor".bin
-	find ./kernel | cpio -o -H newc >"$workdir"/ucode.cpio && \
-	    rm -rf -- kernel
-
-	return $?
+	mkdir "$workdir"/ucode ||
+		return
+	mkdir -p -- "$workdir"/ucode/kernel/x86/microcode
+	cp ${VERBOSE:+-v} -- "$fw_file" "$workdir"/ucode/kernel/x86/microcode/"$cpu_vendor".bin
 }
 
 prep_amd_ucode()
@@ -89,8 +86,10 @@ prep_intel_ucode()
 					--quiet \
 					$iucode_scan_system \
 					--write-earlyfw="$workdir"/ucode.cpio \
-					"$fw_path"/intel-ucode && \
-				return 0 ||:
+					"$fw_path"/intel-ucode
+			mkdir "$workdir"/ucode &&
+				cpio -D "$workdir"/ucode --quiet -id < "$workdir"/ucode.cpio
+			return
 		fi
 	done
 
@@ -105,5 +104,22 @@ case "$cpu_vendor" in
 	*) exit 0
 		;;
 esac
+rc=$?
 
-exit $?
+if [ -d "$workdir/ucode" ]; then
+	cd "$workdir/ucode"
+
+	find . -execdir touch -c -m --date="1970-01-01 00:00:00 +0000" '{}' '+'
+
+	# shellcheck disable=SC2185
+	find -O2 . -mindepth 1 \
+		   \( -type f -a -printf 'file %p %p %#m 0 0\n'  \) \
+		-o \( -type l -a -printf 'slink %p %l %#m 0 0\n' \) \
+		-o \( -type d -a -printf 'dir %p %#m 0 0\n'      \) |
+		sort |
+		gen_init_cpio -t 0 - > "$workdir"/ucode.cpio
+
+	rm -rf -- "$workdir/ucode"
+fi
+
+exit $rc
