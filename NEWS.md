@@ -1,3 +1,33 @@
+Version 2.23.0
+
+- Runtime:
+  + Add fstab dependency to udev service.
+  + Add the ability to find out with what features the image was built.
+- New feature:
+  + Add bootloader feature. The feature adds the ability to create an image that
+    can act as a bootloader.
+  + Add debug-tools feature. The feature adds a debug tools (gdb, strace) to
+    initrd image.
+- Feature smart-card:
+  + Add udev rules to setup enviroment for fido devices.
+  + Fix typos and move guessing GUESS_NET_IFACE to net module.
+  + Fix number of retries in the initramfs service.
+- Feature ucode:
+  + The absence of the firmware file is not an error.
+  + Set mtime of files and directories to 01-01-1970.
+- Guess subsystem:
+  + root: Replace MOUNTPOINTS to GUESS_MOUNTPOINTS inside guess module. The
+    MOUNTPOINTS variable continues to work for backward compatibility.
+- Utilities:
+  + initrd-put: Do not run chmod for symlinks.
+- Misc:
+  + Add new tool to sort services and switch from sort-lsb to sort-services.
+  + Add PUT_FEATURE_OPTIONAL_LIBS to pack optional libraries.
+  + Detect terminfo in more portable way.
+  + Set mtime of all initramfs files and directories to 01-01-1970. The reproducibility
+    of the build image has appeared.
+  + Add unit tests for some utilities.
+
 Version 2.22.0
 
 - Runtime:
