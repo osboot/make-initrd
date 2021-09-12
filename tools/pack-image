@@ -26,7 +26,7 @@ printf >> "$workdir"/initcpio 'nod ./dev/%s\n' \
 	"console 0600 0 0 c 5 1" \
 	"ptmx    0666 0 0 c 5 2"
 
-find . -execdir touch -c -m --date="1970-01-01 00:00:00 +0000" '{}' '+'
+find -P . -type f -execdir touch -c -m --date="1970-01-01 00:00:00 +0000" '{}' '+'
 
 sort "$workdir"/initcpio |
 	gen_init_cpio -t 0 - > "$outfile"
