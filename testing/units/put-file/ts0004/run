@@ -1,0 +1,18 @@
+#!/bin/bash -efu
+
+set -o pipefail
+
+cwd="${0%/*}"
+
+. "$cwd"/../sh-functions
+
+rm -rf -- "$cwd/to"
+mkdir -p -- "$cwd/to"
+
+tools/put-file -vvv -r "$cwd/from" "$cwd/to" "$cwd/from/bin/bar"
+
+cd "$cwd/to"
+print_info . | sort -u -d
+cd - >/dev/null
+
+rm -rf -- "$cwd/to"

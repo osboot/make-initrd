@@ -35,7 +35,8 @@ for testsuite in "$cwd"/*; do
 		if ! cmp -s "$ts"/expect "$ts"/output; then
 			echo "!!! Test ${ts##*/} failed:"
 			diff -u -- "$ts"/expect "$ts"/output ||:
-			ret=1
+			[ -e "$ts/known-failure" ] ||
+				ret=1
 		else
 			rm -f -- "$ts"/output
 		fi

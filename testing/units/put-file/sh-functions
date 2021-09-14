@@ -1,5 +1,12 @@
 #!/bin/bash
 
+print_info_any()
+{
+	find "$1" \
+		${2:+-type "$2"} \
+		-printf '%p %#m %y %s %l\n'
+}
+
 print_info()
 {
 	find "$1" \
