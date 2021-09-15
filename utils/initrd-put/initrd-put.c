@@ -786,16 +786,16 @@ static void apply_permissions(struct file *p)
 
 	errno = 0;
 	if (lchown(install_path, p->stat.st_uid, p->stat.st_gid) < 0) {
+		if (errno != EPERM || verbose > 2)
+			warn("unable to change owner and group to uid=%d and gid=%d of `%s'", p->stat.st_uid, p->stat.st_gid, install_path);
 		if (errno != EPERM)
-			err(EXIT_FAILURE, "chown: %s", install_path);
-		if (verbose > 2)
-			warn("chown: %s", install_path);
+			exit(EXIT_FAILURE);
 	}
 
 	if (S_IFLNK != (p->stat.st_mode & S_IFMT)) {
 		errno = 0;
 		if (chmod(install_path, p->stat.st_mode) < 0)
-			err(EXIT_FAILURE, "chmod: %s", install_path);
+			err(EXIT_FAILURE, "change file mode of `%s' to %jo", install_path, (uintmax_t) p->stat.st_mode);
 	}
 }
 
