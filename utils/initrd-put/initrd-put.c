@@ -327,8 +327,24 @@ static void process_symlink(const char *name)
 	bool end_in_extra_buffer = false;
 	bool failed = true;
 
-	dest = rname;
-	*dest++ = '/';
+	if (name == NULL) {
+		errno = EINVAL;
+		err(EXIT_FAILURE, "process_symlink: parameter is a null pointer");
+	}
+
+	if (name[0] == '\0') {
+		errno = ENOENT;
+		err(EXIT_FAILURE, "process_symlink: parameter points to an empty string");
+	}
+
+	if (!IS_ABSOLUTE_FILE_NAME(name)) {
+		if (getcwd(rname, sizeof(rname)) == NULL)
+			err(EXIT_FAILURE, "unable to get current directory");
+		dest = rawmemchr(rname, '\0');
+	} else {
+		dest = rname;
+		*dest++ = '/';
+	}
 
 	for (start = name; *start; start = end) {
 		/*
