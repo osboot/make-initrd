@@ -9,6 +9,7 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>
@@ -141,7 +142,6 @@ static void process_directory(char *path)
 	if ((t = fts_open(argv, FTS_PHYSICAL, NULL)) == NULL)
 		err(EXIT_FAILURE, "fts_open");
 
-
 	FTSENT *p;
 	while ((p = fts_read(t))) {
 		switch (p->fts_info) {
@@ -189,7 +189,10 @@ static int mksock(const char *path)
 	return ret;
 }
 
+static char const dir_suffix[] = "/./";
+
 #define IS_DIR_SEPARATOR(c) ((c) == '/')
+#define IS_ABSOLUTE_FILE_NAME(f) IS_DIR_SEPARATOR((f)[0])
 #define IS_NUL_OR_DIR_SEPARATOR(c) ((c) == '\0' || (c) == '/')
 #define SKIP_DIR_SEPARATOR(s_) while (IS_DIR_SEPARATOR(*(s_))) (s_)++
 
@@ -260,27 +263,180 @@ static void canonicalize_path(const char *s, char *d)
 	*d = '\0';
 }
 
-static void canonicalize_symlink(char *file, char *target, char *d)
+/*
+ * True if concatenating END as a suffix to a file name means that the
+ * code needs to check that the file name is that of a searchable
+ * directory, since the canonicalize_filename_mode_stk code won't
+ * check this later anyway when it checks an ordinary file name
+ * component within END.  END must either be empty, or start with a
+ * slash.
+ */
+static bool suffix_requires_dir_check(char const *end)
 {
-	char pathbuf[PATH_MAX + 1];
-	char *p;
+	/* If END does not start with a slash, the suffix is OK. */
+	while (IS_DIR_SEPARATOR(*end)) {
+		/* Two or more slashes act like a single slash. */
+		do {
+			end++;
+		} while (IS_DIR_SEPARATOR(*end));
 
-	if (verbose > 2)
-		warnx("canonicalize_symlink: %s", file);
+		switch (*end++) {
+			default:
+				/* An ordinary file name component is OK. */
+				return false;
+			case '\0':
+				/* Trailing "/" is trouble. */
+				return true;
+			case '.':
+				/* Possibly "." or "..". */
+				break;
+		}
+		/* Trailing "/.", or "/.." even if not trailing, is trouble. */
+		if (!*end || (*end == '.' && (!end[1] || IS_DIR_SEPARATOR(end[1]))))
+			return true;
+	}
+	return false;
+}
 
-	if (target && target[0] == '/') {
-		canonicalize_path(target, d);
+/*
+ * Return true if DIR is a searchable dir, false (setting errno) otherwise.
+ * DIREND points to the NUL byte at the end of the DIR string.
+ * Store garbage into DIREND[0 .. strlen (dir_suffix)].
+ */
+static bool dir_check(const char *dir, char *dirend)
+{
+	strcpy(dirend, dir_suffix);
+
+	/*
+	 * Return true if FILE's existence can be shown, false (setting errno)
+	 * otherwise.  Follow symbolic links.
+	 */
+	struct stat st;
+	return stat(dir, &st) == 0 || errno == EOVERFLOW;
+}
+
+static void process_symlink(const char *name)
+{
+	char rname[PATH_MAX + 1];
+	char link_buffer[PATH_MAX + 1];
+	char extra_buffer[PATH_MAX + 1];
+	int num_links = 0;
+	char *dest;
+	const char *start;
+	const char *end = NULL;
+	bool end_in_extra_buffer = false;
+	bool failed = true;
+
+	dest = rname;
+	*dest++ = '/';
+
+	for (start = name; *start; start = end) {
+		/*
+		 * Skip sequence of multiple file name separators.
+		 */
+		while (IS_DIR_SEPARATOR(*start))
+			start++;
+
+		/*
+		 * Find end of component.
+		 */
+		for (end = start; *end && !IS_DIR_SEPARATOR(*end); ++end);
+
+		/*
+		 * Length of this file name component; it can be zero if a file
+		 * name ends in '/'.
+		 */
+		size_t startlen = (size_t)(end - start);
+
+		if (startlen == 0) {
+			break;
+		} else if (startlen == 1 && start[0] == '.') {
+			/* Nothing */;
+		} else if (startlen == 2 && start[0] == '.' && start[1] == '.') {
+			if (dest > rname + 1) {
+				for (--dest; dest > rname && !IS_DIR_SEPARATOR(dest[-1]); --dest)
+					continue;
+			}
+		} else {
+			if (!IS_DIR_SEPARATOR(dest[-1]))
+				*dest++ = '/';
+
+			dest = mempcpy(dest, start, startlen);
+			*dest = '\0';
+
+			char *buf = link_buffer;
+			ssize_t n;
+
+			errno = 0;
+			n = readlink(rname, buf, sizeof(link_buffer) - 1);
+
+			if (0 <= n) {
+				if (++num_links > MAXSYMLINKS) {
+					errno = ELOOP;
+					goto error;
+				}
+
+				buf[n] = '\0';
+
+				if (verbose > 1)
+					warnx("symlink '%s' points to '%s'", rname, buf);
+
+				add_list(rname, -1);
+
+				char *extra_buf = extra_buffer;
+				size_t end_idx = 0;
+				size_t len = strlen(end);
+
+				if (end_in_extra_buffer)
+					end_idx = (size_t)(end - extra_buf);
+
+				if (sizeof(extra_buffer) <= len + (size_t) n) {
+					errno = ENAMETOOLONG;
+					err(EXIT_FAILURE, "bad path '%s'", name);
+				}
+
+				if (end_in_extra_buffer)
+					end = extra_buf + end_idx;
+
+				/* Careful here, end may be a pointer into extra_buf... */
+				memmove(&extra_buf[n], end, len + 1);
+				name = end = memcpy(extra_buf, buf, (size_t) n);
+				end_in_extra_buffer = true;
+
+				if (IS_ABSOLUTE_FILE_NAME(buf)) {
+					dest = rname;
+					*dest++ = '/'; /* It's an absolute symlink */
+				} else {
+					if (dest > rname + 1) {
+						for (--dest; dest > rname && !IS_DIR_SEPARATOR(dest[-1]); --dest)
+							continue;
+					}
+				}
+			} else if (!(suffix_requires_dir_check(end)
+			             ? dir_check(rname, dest)
+			             : errno == EINVAL)) {
+				goto error;
+			}
+		}
+	}
+	if (dest > rname + 1 && IS_DIR_SEPARATOR(dest[-1]))
+		dest--;
+	failed = false;
+
+error:
+	*dest++ = '\0';
+
+	if (failed) {
+		warn("unable to process component of path: %s", rname);
 		return;
 	}
 
-	strncpy(pathbuf, file, sizeof(pathbuf) - 1);
-	if ((p = strrchr(pathbuf, '/'))) {
-		p++;
-		*p = 0;
-	}
-	strncat(pathbuf, target, sizeof(pathbuf) - 1 - strlen(pathbuf));
+	errno = 0;
 
-	canonicalize_path(pathbuf, d);
+	if (verbose > 0)
+		warnx("symlink '%s' points to '%s'", name, rname);
+
+	add_list(rname, dest - rname);
 }
 
 enum ftype {
@@ -472,28 +628,17 @@ static void process(struct file *p)
 	}
 
 	if (S_IFLNK == (p->stat.st_mode & S_IFMT)) {
-		static char symlink[PATH_MAX + 1];
-
+		char symlink[PATH_MAX + 1];
 		ssize_t linklen = readlink(p->src, symlink, sizeof(symlink));
+
 		if (linklen >= 0) {
 			symlink[linklen] = 0;
 			p->symlink = xstrdup(symlink);
-			symlink[0] = 0;
-
-			canonicalize_symlink(p->src, p->symlink, symlink);
-			if (*symlink) {
-				if (verbose > 1)
-					warnx("symlink '%s' points to '%s'", p->src, symlink);
-
-				add_list(symlink, -1);
-				return;
-			}
-
-			warnx("unable to resolve symlink '%s' -> '%s'", p->src, p->symlink);
-			return;
+		} else {
+			warn("readlink: %s", p->src);
 		}
 
-		warn("readlink: %s", p->src);
+		process_symlink(p->src);
 		return;
 	}
 

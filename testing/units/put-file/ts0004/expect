@@ -1,3 +1,5 @@
-./bin 0777 l 7 usr/bin
-./usr/bin/foo 0644 f 12 
+./bin 0777 l 4 sbin
+./sbin 0777 l 7 usr/bin
+./usr/bin/bar 0777 l 11 ../sbin/foo
+./usr/sbin/foo 0644 f 12 
 rc=0

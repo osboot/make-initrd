@@ -9,7 +9,7 @@ cwd="${0%/*}"
 rm -rf -- "$cwd/to"
 mkdir -p -- "$cwd/to"
 
-tools/put-file -r "$cwd/from" "$cwd/to" "$cwd/from/bin/bar"
+tools/put-file -r "$cwd/from" "$cwd/to" "$cwd/from/bin/foo"
 
 cd "$cwd/to"
 print_info . | sort -u -d
