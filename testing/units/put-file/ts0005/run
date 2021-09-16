@@ -1,0 +1,34 @@
+#!/bin/bash -efu
+
+set -o pipefail
+
+cwd="${0%/*}"
+
+. "$cwd"/../sh-functions
+
+rm -rf -- "$cwd/from"
+mkdir -p -- "$cwd/from"
+
+cd "$cwd/from"
+mkdir foo
+printf '#!/bin/sh\necho Hello, world' > ./foo/hello
+mkdir -p a/b/c
+ln -s ./a/b/c bar
+mkdir baz
+ln -s ../bar/../../../foo/hello ./baz/hello
+
+print_info_any . | sort -u -d -o "$cwd"/want
+cd - >/dev/null
+
+rm -rf -- "$cwd/to"
+mkdir -p -- "$cwd/to"
+
+tools/put-file -r "$cwd/from" "$cwd/to" "$cwd/from/baz/hello"
+
+cd "$cwd/to"
+print_info_any . | sort -u -d -o "$cwd"/actual
+cd - >/dev/null
+
+diff -u "$cwd"/want "$cwd"/actual
+
+rm -rf -- "$cwd/from" "$cwd/to" "$cwd"/want "$cwd"/actual
