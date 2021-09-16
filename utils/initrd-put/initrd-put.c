@@ -130,10 +130,16 @@ static inline void fill_stat(struct file *p, struct stat *sb)
 	memcpy(&p->stat, sb, sizeof(p->stat));
 }
 
+static bool is_path_added(const char *path)
+{
+	struct file v = { 0 };
+	v.src = (char *) path;
+	return tfind(&v, &files, compare) != NULL;
+}
+
 static void enqueue_directory(char *path)
 {
 	FTS *t = NULL;
-	struct file v = { 0 };
 	char *argv[2] = { path, NULL };
 
 	if (verbose)
@@ -153,9 +159,7 @@ static void enqueue_directory(char *path)
 				continue;
 		}
 
-		v.src = p->fts_path;
-
-		if (tfind(&v, &files, compare))
+		if (is_path_added(p->fts_path))
 			continue;
 
 		struct file *f = enqueue_item(p->fts_path, -1);
@@ -494,6 +498,9 @@ static int enqueue_shared_libraries(const char *filename)
 		if (verbose > 1)
 			warnx("shared object '%s' depends on '%s'", filename, p);
 
+		if (is_path_added(p))
+			continue;
+
 		enqueue_item(p, -1);
 	}
 
@@ -537,7 +544,8 @@ static int enqueue_regular_file(const char *filename)
 		if (verbose > 1)
 			warnx("shell script '%s' uses the '%s' interpreter", filename, p);
 
-		enqueue_item(p, -1);
+		if (!is_path_added(p))
+			enqueue_item(p, -1);
 
 		ret = 0;
 		goto end;
@@ -560,6 +568,9 @@ end:
 
 static void enqueue_path(struct file *p)
 {
+	if (!is_path_added(p->src))
+		return;
+
 	if (!p->stat.st_ino) {
 		struct stat sb;
 
