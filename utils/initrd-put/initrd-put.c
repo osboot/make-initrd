@@ -36,6 +36,15 @@ struct file {
 	bool installed;
 };
 
+enum ftype {
+	FTYPE_ERROR = 0,
+	FTYPE_IGNORE,
+	FTYPE_DATA,
+	FTYPE_TEXT_SCRIPT,
+	FTYPE_ELF_STATIC,
+	FTYPE_ELF_DYNAMIC,
+};
+
 static const char *progname = NULL;
 
 static char *destdir = NULL;
@@ -51,7 +60,37 @@ static struct file *inqueue = NULL;
 static size_t installed = 0;
 static size_t queue_nr = 0;
 
-static char *xstrdup(const char *s)
+static void show_version(void) __attribute__((__noreturn__));
+static void show_help(int rc) __attribute__((__noreturn__));
+
+static char *xstrdup(const char *s) __attribute__((__nonnull__ (1)));
+static char *xstrndup(const char *s, size_t n) __attribute__((__nonnull__ (1)));
+
+static void free_file(void *ptr) __attribute__((__nonnull__ (1)));
+static struct file *enqueue_item(const char *str, ssize_t len) __attribute__((__nonnull__ (1)));
+static void dequeue_item(struct file *ptr);
+static void enqueue_parent_directory(char *path);
+
+static int compare(const void *a, const void *b) __attribute__((__nonnull__ (1, 2)));
+static void fill_stat(struct file *p, struct stat *sb) __attribute__((__nonnull__ (1, 2)));
+static bool is_path_added(const char *path) __attribute__((__nonnull__ (1)));
+static void enqueue_directory(char *path) __attribute__((__nonnull__ (1)));
+static int mksock(const char *path) __attribute__((__nonnull__ (1)));
+
+static bool suffix_requires_dir_check(char const *end) __attribute__((__nonnull__ (1)));
+static bool dir_check(const char *dir, char *dirend) __attribute__((__nonnull__ (1, 2)));
+static void enqueue_canonicalized_path(const char *name, bool add_recursively);
+
+static enum ftype elf_file(const char *filename, int fd) __attribute__((__nonnull__ (1)));
+static int enqueue_shared_libraries(const char *filename) __attribute__((__nonnull__ (1)));
+static int enqueue_regular_file(const char *filename) __attribute__((__nonnull__ (1)));
+static void enqueue_path(struct file *p) __attribute__((__nonnull__ (1)));
+static void print_file(struct file *p) __attribute__((__nonnull__ (1)));
+static void install_file(struct file *p) __attribute__((__nonnull__ (1)));
+static void apply_permissions(struct file *p) __attribute__((__nonnull__ (1)));
+static void walk_action(const void *nodep, VISIT which, void *closure) __attribute__((__nonnull__ (1, 3)));
+
+char *xstrdup(const char *s)
 {
 	char *x = strdup(s);
 	if (!x)
@@ -59,7 +98,7 @@ static char *xstrdup(const char *s)
 	return x;
 }
 
-static char *xstrndup(const char *s, size_t n)
+char *xstrndup(const char *s, size_t n)
 {
 	char *x = strndup(s, n);
 	if (!x)
@@ -67,7 +106,7 @@ static char *xstrndup(const char *s, size_t n)
 	return x;
 }
 
-static struct file *enqueue_item(const char *str, ssize_t len)
+struct file *enqueue_item(const char *str, ssize_t len)
 {
 	struct file *new;
 
@@ -95,7 +134,7 @@ static struct file *enqueue_item(const char *str, ssize_t len)
 	return new;
 }
 
-static void dequeue_item(struct file *ptr)
+void dequeue_item(struct file *ptr)
 {
 	if (!ptr)
 		return;
@@ -108,7 +147,7 @@ static void dequeue_item(struct file *ptr)
 	queue_nr--;
 }
 
-static void enqueue_parent_directory(char *path)
+void enqueue_parent_directory(char *path)
 {
 	if (!path || (prefix && !strcmp(path, prefix)))
 		return;
@@ -120,24 +159,24 @@ static void enqueue_parent_directory(char *path)
 	enqueue_item(path, p - path);
 }
 
-static int compare(const void *a, const void *b)
+int compare(const void *a, const void *b)
 {
 	return strcmp(((struct file *)a)->src, ((struct file *)b)->src);
 }
 
-static inline void fill_stat(struct file *p, struct stat *sb)
+void fill_stat(struct file *p, struct stat *sb)
 {
 	memcpy(&p->stat, sb, sizeof(p->stat));
 }
 
-static bool is_path_added(const char *path)
+bool is_path_added(const char *path)
 {
 	struct file v = { 0 };
 	v.src = (char *) path;
 	return tfind(&v, &files, compare) != NULL;
 }
 
-static void enqueue_directory(char *path)
+void enqueue_directory(char *path)
 {
 	FTS *t = NULL;
 	char *argv[2] = { path, NULL };
@@ -169,7 +208,7 @@ static void enqueue_directory(char *path)
 	fts_close(t);
 }
 
-static int mksock(const char *path)
+int mksock(const char *path)
 {
 	struct sockaddr_un sun = { 0 };
 	int ret = -1;
@@ -206,7 +245,7 @@ static char const dir_suffix[] = "/./";
  * component within END.  END must either be empty, or start with a
  * slash.
  */
-static bool suffix_requires_dir_check(char const *end)
+bool suffix_requires_dir_check(char const *end)
 {
 	/* If END does not start with a slash, the suffix is OK. */
 	while (IS_DIR_SEPARATOR(*end)) {
@@ -238,7 +277,7 @@ static bool suffix_requires_dir_check(char const *end)
  * DIREND points to the NUL byte at the end of the DIR string.
  * Store garbage into DIREND[0 .. strlen (dir_suffix)].
  */
-static bool dir_check(const char *dir, char *dirend)
+bool dir_check(const char *dir, char *dirend)
 {
 	strcpy(dirend, dir_suffix);
 
@@ -250,7 +289,7 @@ static bool dir_check(const char *dir, char *dirend)
 	return stat(dir, &st) == 0 || errno == EOVERFLOW;
 }
 
-static void enqueue_canonicalized_path(const char *name, bool add_recursively)
+void enqueue_canonicalized_path(const char *name, bool add_recursively)
 {
 	char rname[PATH_MAX + 1];
 	char link_buffer[PATH_MAX + 1];
@@ -393,16 +432,7 @@ error:
 	f->recursive = add_recursively;
 }
 
-enum ftype {
-	FTYPE_ERROR = 0,
-	FTYPE_IGNORE,
-	FTYPE_DATA,
-	FTYPE_TEXT_SCRIPT,
-	FTYPE_ELF_STATIC,
-	FTYPE_ELF_DYNAMIC,
-};
-
-static enum ftype elf_file(const char *filename, int fd)
+enum ftype elf_file(const char *filename, int fd)
 {
 	int is_dynamic;
 	Elf *e;
@@ -453,7 +483,7 @@ err:
 	return rc;
 }
 
-static int enqueue_shared_libraries(const char *filename)
+int enqueue_shared_libraries(const char *filename)
 {
 	FILE *pfd;
 	char *line = NULL;
@@ -510,7 +540,7 @@ static int enqueue_shared_libraries(const char *filename)
 	return 0;
 }
 
-static int enqueue_regular_file(const char *filename)
+int enqueue_regular_file(const char *filename)
 {
 	static char buf[LINE_MAX];
 	int fd, ret = -1;
@@ -566,7 +596,7 @@ end:
 	return ret;
 }
 
-static void enqueue_path(struct file *p)
+void enqueue_path(struct file *p)
 {
 	if (!is_path_added(p->src))
 		return;
@@ -612,7 +642,7 @@ static void enqueue_path(struct file *p)
 
 static FILE *logout;
 
-static void print_file(struct file *p)
+void print_file(struct file *p)
 {
 	char type;
 
@@ -650,7 +680,7 @@ static void print_file(struct file *p)
 	        (p->symlink ? p->symlink : ""));
 }
 
-static void free_file(void *ptr)
+void free_file(void *ptr)
 {
 	struct file *p = ptr;
 	free(p->src);
@@ -662,7 +692,7 @@ static char install_path[PATH_MAX + 1];
 static int use_copy_file_range = 1;
 static int use_sendfile = 1;
 
-static void install_file(struct file *p)
+void install_file(struct file *p)
 {
 	const char *ftype;
 	const char *op = "install";
@@ -886,7 +916,7 @@ fallback_readwrite:
 	goto finish;
 }
 
-static void apply_permissions(struct file *p)
+void apply_permissions(struct file *p)
 {
 	strncpy(install_path + destdir_len, p->dst, sizeof(install_path) - destdir_len - 1);
 
@@ -905,7 +935,7 @@ static void apply_permissions(struct file *p)
 	}
 }
 
-static void walk_action(const void *nodep, VISIT which, void *closure)
+void walk_action(const void *nodep, VISIT which, void *closure)
 {
 	struct file *p;
 	void (*file_handler)(struct file *p) = closure;
@@ -953,7 +983,7 @@ static inline void tdestroy(
 {}
 #endif
 
-static void show_help(int rc)
+void show_help(int rc)
 {
 	fprintf(stdout,
 	        "Usage: %1$s [<options>] <destdir> directory [directory ...]\n"
@@ -981,7 +1011,7 @@ static void show_help(int rc)
 	exit(rc);
 }
 
-static void show_version(void)
+void show_version(void)
 {
 	fprintf(stdout,
 	        "%1$s version " PACKAGE_VERSION "\n"
