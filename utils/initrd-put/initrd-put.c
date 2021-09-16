@@ -67,7 +67,7 @@ static char *xstrndup(const char *s, size_t n)
 	return x;
 }
 
-static struct file *add_list(const char *str, ssize_t len)
+static struct file *enqueue_item(const char *str, ssize_t len)
 {
 	struct file *new;
 
@@ -95,7 +95,7 @@ static struct file *add_list(const char *str, ssize_t len)
 	return new;
 }
 
-static void del_list(struct file *ptr)
+static void dequeue_item(struct file *ptr)
 {
 	if (!ptr)
 		return;
@@ -108,7 +108,7 @@ static void del_list(struct file *ptr)
 	queue_nr--;
 }
 
-static void add_parent_directory(char *path)
+static void enqueue_parent_directory(char *path)
 {
 	if (!path || (prefix && !strcmp(path, prefix)))
 		return;
@@ -117,7 +117,7 @@ static void add_parent_directory(char *path)
 	if (!p || p == path)
 		return;
 
-	add_list(path, p - path);
+	enqueue_item(path, p - path);
 }
 
 static int compare(const void *a, const void *b)
@@ -130,7 +130,7 @@ static inline void fill_stat(struct file *p, struct stat *sb)
 	memcpy(&p->stat, sb, sizeof(p->stat));
 }
 
-static void process_directory(char *path)
+static void enqueue_directory(char *path)
 {
 	FTS *t = NULL;
 	struct file v = { 0 };
@@ -158,7 +158,7 @@ static void process_directory(char *path)
 		if (tfind(&v, &files, compare))
 			continue;
 
-		struct file *f = add_list(p->fts_path, -1);
+		struct file *f = enqueue_item(p->fts_path, -1);
 		fill_stat(f, p->fts_statp);
 	}
 
@@ -246,7 +246,7 @@ static bool dir_check(const char *dir, char *dirend)
 	return stat(dir, &st) == 0 || errno == EOVERFLOW;
 }
 
-static void add_canonicalized_path(const char *name, bool add_recursively)
+static void enqueue_canonicalized_path(const char *name, bool add_recursively)
 {
 	char rname[PATH_MAX + 1];
 	char link_buffer[PATH_MAX + 1];
@@ -260,12 +260,12 @@ static void add_canonicalized_path(const char *name, bool add_recursively)
 
 	if (name == NULL) {
 		errno = EINVAL;
-		err(EXIT_FAILURE, "add_canonicalized_path: parameter is a null pointer");
+		err(EXIT_FAILURE, "enqueue_canonicalized_path: parameter is a null pointer");
 	}
 
 	if (name[0] == '\0') {
 		errno = ENOENT;
-		err(EXIT_FAILURE, "add_canonicalized_path: parameter points to an empty string");
+		err(EXIT_FAILURE, "enqueue_canonicalized_path: parameter points to an empty string");
 	}
 
 	if (!IS_ABSOLUTE_FILE_NAME(name)) {
@@ -328,7 +328,7 @@ static void add_canonicalized_path(const char *name, bool add_recursively)
 				if (verbose > 1)
 					warnx("symlink '%s' points to '%s'", rname, buf);
 
-				add_list(rname, -1);
+				enqueue_item(rname, -1);
 
 				char *extra_buf = extra_buffer;
 				size_t end_idx = 0;
@@ -385,7 +385,7 @@ error:
 
 	struct file *f;
 
-	f = add_list(rname, dest - rname);
+	f = enqueue_item(rname, dest - rname);
 	f->recursive = add_recursively;
 }
 
@@ -449,7 +449,7 @@ err:
 	return rc;
 }
 
-static int shared_object_dependencies(const char *filename)
+static int enqueue_shared_libraries(const char *filename)
 {
 	FILE *pfd;
 	char *line = NULL;
@@ -494,7 +494,7 @@ static int shared_object_dependencies(const char *filename)
 		if (verbose > 1)
 			warnx("shared object '%s' depends on '%s'", filename, p);
 
-		add_list(p, -1);
+		enqueue_item(p, -1);
 	}
 
 	free(line);
@@ -503,7 +503,7 @@ static int shared_object_dependencies(const char *filename)
 	return 0;
 }
 
-static int process_regular_file(const char *filename)
+static int enqueue_regular_file(const char *filename)
 {
 	static char buf[LINE_MAX];
 	int fd, ret = -1;
@@ -537,7 +537,7 @@ static int process_regular_file(const char *filename)
 		if (verbose > 1)
 			warnx("shell script '%s' uses the '%s' interpreter", filename, p);
 
-		add_list(p, -1);
+		enqueue_item(p, -1);
 
 		ret = 0;
 		goto end;
@@ -548,7 +548,7 @@ static int process_regular_file(const char *filename)
 	    buf[2] == ELFMAG[2] &&
 	    buf[3] == ELFMAG[3] &&
 	    elf_file(filename, fd) == FTYPE_ELF_DYNAMIC) {
-		ret = shared_object_dependencies(filename);
+		ret = enqueue_shared_libraries(filename);
 		goto end;
 	}
 
@@ -558,7 +558,7 @@ end:
 	return ret;
 }
 
-static void process(struct file *p)
+static void enqueue_path(struct file *p)
 {
 	if (!p->stat.st_ino) {
 		struct stat sb;
@@ -569,11 +569,11 @@ static void process(struct file *p)
 		fill_stat(p, &sb);
 	}
 
-	add_parent_directory(p->src);
+	enqueue_parent_directory(p->src);
 
 	if (S_IFDIR == (p->stat.st_mode & S_IFMT)) {
 		if (p->recursive)
-			process_directory(p->src);
+			enqueue_directory(p->src);
 		return;
 	}
 
@@ -588,12 +588,12 @@ static void process(struct file *p)
 			warn("readlink: %s", p->src);
 		}
 
-		add_canonicalized_path(p->src, false);
+		enqueue_canonicalized_path(p->src, false);
 		return;
 	}
 
 	if (S_IFREG == (p->stat.st_mode & S_IFMT)) {
-		if (process_regular_file(p->src) < 0)
+		if (enqueue_regular_file(p->src) < 0)
 			warnx("failed to read regular file: %s", p->src);
 		return;
 	}
@@ -1049,7 +1049,7 @@ int main(int argc, char **argv)
 		errx(EXIT_FAILURE, "ELF library initialization failed: %s", elf_errmsg(-1));
 
 	for (int i = optind; i < argc; i++) {
-		add_canonicalized_path(argv[i], true);
+		enqueue_canonicalized_path(argv[i], true);
 	}
 
 	strncpy(install_path, destdir, sizeof(install_path) - 1);
@@ -1085,7 +1085,7 @@ int main(int argc, char **argv)
 				} else if (!S_ISDIR(st.st_mode)) {
 					if (verbose > 1)
 						warnx("'%s' is already in the destdir", queue->src);
-					del_list(queue);
+					dequeue_item(queue);
 					free_file(queue);
 					queue = next;
 					continue;
@@ -1097,12 +1097,12 @@ int main(int argc, char **argv)
 				err(EX_OSERR, "tsearch");
 
 			if ((*(struct file **)ptr) == queue) {
-				process(*(struct file **) ptr);
-				del_list(queue);
+				enqueue_path(*(struct file **) ptr);
+				dequeue_item(queue);
 			} else {
 				if (verbose > 1)
 					warnx("'%s' has already been processed so skip it", queue->src);
-				del_list(queue);
+				dequeue_item(queue);
 				free_file(queue);
 			}
 
