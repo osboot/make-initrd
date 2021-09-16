@@ -632,10 +632,10 @@ static void print_file(struct file *p)
 			break;
 	}
 
-	fprintf(logout, "%c\t%s\t%s%s%s\t%s\n",
+	fprintf(logout, "%c\t%s\t%s%s\t%s\n",
 	        type,
 	        p->src,
-	        destdir, (p->dst[0] == '/' ? "" : "/"), p->dst,
+	        destdir, p->dst,
 	        (p->symlink ? p->symlink : ""));
 }
 
