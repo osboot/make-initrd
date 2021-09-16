@@ -32,8 +32,8 @@ struct file {
 	char *src;
 	char *dst;
 	char *symlink;
-	unsigned recursive:1;
-	unsigned installed:1;
+	bool recursive;
+	bool installed;
 };
 
 static const char *progname = NULL;
@@ -193,75 +193,6 @@ static char const dir_suffix[] = "/./";
 
 #define IS_DIR_SEPARATOR(c) ((c) == '/')
 #define IS_ABSOLUTE_FILE_NAME(f) IS_DIR_SEPARATOR((f)[0])
-#define IS_NUL_OR_DIR_SEPARATOR(c) ((c) == '\0' || (c) == '/')
-#define SKIP_DIR_SEPARATOR(s_) while (IS_DIR_SEPARATOR(*(s_))) (s_)++
-
-static void canonicalize_path(const char *s, char *d)
-{
-	if (*s == '\0') {
-		*d = '\0';
-		return;
-	}
-
-	const char *const orig_d = d;
-
-	if (IS_DIR_SEPARATOR (*s)) {
-		*d++ = *s++;
-		SKIP_DIR_SEPARATOR(s);
-	}
-
-	const char *const droot = d;
-
-	while (*s) {
-		/* At this point, we're always at the beginning of a path segment.  */
-		if (s[0] == '.' && IS_NUL_OR_DIR_SEPARATOR(s[1])) {
-			s++;
-			SKIP_DIR_SEPARATOR(s);
-		}
-
-		else if (s[0] == '.' && s[1] == '.' && IS_NUL_OR_DIR_SEPARATOR(s[2])) {
-			char *pre = d - 1; /* includes slash */
-			while (droot < pre && IS_DIR_SEPARATOR(*pre))
-				pre--;
-			if (droot <= pre && ! IS_DIR_SEPARATOR(*pre)) {
-				while (droot < pre && ! IS_DIR_SEPARATOR(*pre))
-					pre--;
-				/* If droot < pre, then pre points to the slash.  */
-				if (droot < pre)
-					pre++;
-				if (pre < droot || (pre + 3 == d && pre[0] == '.' && pre[1] == '.')) {
-					/* Append ".." segment.  */
-					*d++ = *s++;
-					*d++ = *s++;
-				} else {
-					d = pre;
-					s += 2;
-					SKIP_DIR_SEPARATOR(s);
-				}
-			} else {
-				/* Append ".." segment.  */
-				*d++ = *s++;
-				*d++ = *s++;
-			}
-		} else {
-			while (*s && ! IS_DIR_SEPARATOR(*s))
-				*d++ = *s++;
-		}
-
-		if (IS_DIR_SEPARATOR(*s)) {
-			*d++ = *s++;
-			SKIP_DIR_SEPARATOR(s);
-		}
-	}
-
-	while (droot < d && IS_DIR_SEPARATOR(d[-1]))
-		--d;
-
-	if (d == orig_d)
-		*d++ = '.';
-
-	*d = '\0';
-}
 
 /*
  * True if concatenating END as a suffix to a file name means that the
@@ -315,7 +246,7 @@ static bool dir_check(const char *dir, char *dirend)
 	return stat(dir, &st) == 0 || errno == EOVERFLOW;
 }
 
-static void process_symlink(const char *name)
+static void add_canonicalized_path(const char *name, bool add_recursively)
 {
 	char rname[PATH_MAX + 1];
 	char link_buffer[PATH_MAX + 1];
@@ -329,12 +260,12 @@ static void process_symlink(const char *name)
 
 	if (name == NULL) {
 		errno = EINVAL;
-		err(EXIT_FAILURE, "process_symlink: parameter is a null pointer");
+		err(EXIT_FAILURE, "add_canonicalized_path: parameter is a null pointer");
 	}
 
 	if (name[0] == '\0') {
 		errno = ENOENT;
-		err(EXIT_FAILURE, "process_symlink: parameter points to an empty string");
+		err(EXIT_FAILURE, "add_canonicalized_path: parameter points to an empty string");
 	}
 
 	if (!IS_ABSOLUTE_FILE_NAME(name)) {
@@ -452,7 +383,10 @@ error:
 	if (verbose > 0)
 		warnx("symlink '%s' points to '%s'", name, rname);
 
-	add_list(rname, dest - rname);
+	struct file *f;
+
+	f = add_list(rname, dest - rname);
+	f->recursive = add_recursively;
 }
 
 enum ftype {
@@ -654,7 +588,7 @@ static void process(struct file *p)
 			warn("readlink: %s", p->src);
 		}
 
-		process_symlink(p->src);
+		add_canonicalized_path(p->src, false);
 		return;
 	}
 
@@ -891,7 +825,7 @@ finish:
 end:
 	if (verbose)
 		warnx("%s (%s): %s", op, ftype, install_path);
-	p->installed = 1;
+	p->installed = true;
 	installed++;
 	return;
 
@@ -1115,13 +1049,7 @@ int main(int argc, char **argv)
 		errx(EXIT_FAILURE, "ELF library initialization failed: %s", elf_errmsg(-1));
 
 	for (int i = optind; i < argc; i++) {
-		char pathbuf[PATH_MAX + 1];
-		struct file *f;
-
-		canonicalize_path(argv[i], pathbuf);
-
-		f = add_list(pathbuf, -1);
-		f->recursive = 1;
+		add_canonicalized_path(argv[i], true);
 	}
 
 	strncpy(install_path, destdir, sizeof(install_path) - 1);
