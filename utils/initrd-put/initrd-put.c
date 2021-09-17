@@ -1080,8 +1080,11 @@ int main(int argc, char **argv)
 	if (optind == argc)
 		errx(EX_USAGE, "more arguments required");
 
-	destdir = argv[optind++];
+	if ((destdir = realpath(argv[optind], NULL)) == NULL)
+		errx(EX_USAGE, "bad destination directory: %s", argv[optind]);
+
 	destdir_len = strlen(destdir);
+	optind++;
 
 	if (optind == argc)
 		errx(EX_USAGE, "more arguments required");
@@ -1190,5 +1193,7 @@ int main(int argc, char **argv)
 	}
 
 	tdestroy(files, free_file);
+	free(destdir);
+
 	return EXIT_SUCCESS;
 }
