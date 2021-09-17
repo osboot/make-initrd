@@ -36,15 +36,6 @@ struct file {
 	bool installed;
 };
 
-enum ftype {
-	FTYPE_ERROR = 0,
-	FTYPE_IGNORE,
-	FTYPE_DATA,
-	FTYPE_TEXT_SCRIPT,
-	FTYPE_ELF_STATIC,
-	FTYPE_ELF_DYNAMIC,
-};
-
 static const char *progname = NULL;
 
 static char *destdir = NULL;
@@ -81,7 +72,7 @@ static bool suffix_requires_dir_check(char const *end) __attribute__((__nonnull_
 static bool dir_check(const char *dir, char *dirend) __attribute__((__nonnull__ (1, 2)));
 static void enqueue_canonicalized_path(const char *name, bool add_recursively);
 
-static enum ftype elf_file(const char *filename, int fd) __attribute__((__nonnull__ (1)));
+static bool is_dynamic_elf_file(const char *filename, int fd) __attribute__((__nonnull__ (1)));
 static int enqueue_shared_libraries(const char *filename) __attribute__((__nonnull__ (1)));
 static int enqueue_regular_file(const char *filename) __attribute__((__nonnull__ (1)));
 static void enqueue_path(struct file *p) __attribute__((__nonnull__ (1)));
@@ -432,13 +423,12 @@ error:
 	f->recursive = add_recursively;
 }
 
-enum ftype elf_file(const char *filename, int fd)
+bool is_dynamic_elf_file(const char *filename, int fd)
 {
-	int is_dynamic;
+	bool is_dynamic = false;
 	Elf *e;
 	Elf_Scn *scn;
 	size_t shstrndx;
-	int rc = FTYPE_ERROR;
 
 	if ((e = elf_begin(fd, ELF_C_READ, NULL)) == NULL) {
 		warnx("%s: elf_begin: %s", filename, elf_errmsg(-1));
@@ -460,8 +450,6 @@ enum ftype elf_file(const char *filename, int fd)
 		goto end;
 	}
 
-	is_dynamic = 0;
-
 	for (scn = NULL; (scn = elf_nextscn(e, scn)) != NULL;) {
 		GElf_Shdr  shdr;
 
@@ -471,16 +459,14 @@ enum ftype elf_file(const char *filename, int fd)
 		}
 
 		if (shdr.sh_type == SHT_DYNAMIC) {
-			is_dynamic = 1;
+			is_dynamic = true;
 			break;
 		}
 	}
-
-	rc = (is_dynamic ? FTYPE_ELF_DYNAMIC : FTYPE_ELF_STATIC);
 end:
 	elf_end(e);
 err:
-	return rc;
+	return is_dynamic;
 }
 
 int enqueue_shared_libraries(const char *filename)
@@ -585,7 +571,7 @@ int enqueue_regular_file(const char *filename)
 	    buf[1] == ELFMAG[1] &&
 	    buf[2] == ELFMAG[2] &&
 	    buf[3] == ELFMAG[3] &&
-	    elf_file(filename, fd) == FTYPE_ELF_DYNAMIC) {
+	    is_dynamic_elf_file(filename, fd)) {
 		ret = enqueue_shared_libraries(filename);
 		goto end;
 	}
