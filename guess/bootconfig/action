@@ -1,0 +1,20 @@
+#!/bin/bash -efu
+
+. guess-functions
+
+[ -f "$KERNEL_CONFIG" ] && grep -qs "^CONFIG_BOOT_CONFIG=y" "$KERNEL_CONFIG" ||
+	exit 0
+
+if [ -z "${BOOT_CONFIG-}" ]; then
+	[ -s "/proc/bootconfig" ] ||
+		exit 0
+
+	BOOT_CONFIG=/proc/bootconfig
+
+	guess_variable BOOT_CONFIG "$BOOT_CONFIG"
+fi
+
+[ -s "$BOOT_CONFIG" ] ||
+	exit 0
+
+guess_feature "bootconfig"

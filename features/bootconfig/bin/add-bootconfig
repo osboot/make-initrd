@@ -1,0 +1,15 @@
+#!/bin/bash -efu
+
+. sh-functions
+
+[ -s "${BOOT_CONFIG-}" ] ||
+	exit 0
+
+bootconfig="${BOOT_CONFIG_PROG-}"
+
+if [ -z "$bootconfig" ] && ! bootconfig="$(type -P bootconfig)"; then
+	message "Utility not found: bootconfig"
+	exit 0
+fi
+
+$bootconfig -a "$BOOT_CONFIG" "$WORKDIR/initrd.img"
