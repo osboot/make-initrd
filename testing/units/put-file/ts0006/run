@@ -1,0 +1,44 @@
+#!/bin/bash -efu
+
+set -o pipefail
+
+cwd="${0%/*}"
+
+. "$cwd"/../sh-functions
+
+if [ -d "$cwd/from" ]; then
+	chmod -R +w "$cwd/from"
+	rm -rf -- "$cwd/from"
+fi
+mkdir -p -- "$cwd/from"
+
+cd "$cwd/from"
+mkdir -p -- usr/share/foo
+touch usr/share/foo/bar
+
+chmod 400 usr/share/foo/bar
+chmod 500 usr/share/foo
+chmod 500 usr/share
+chmod 500 usr
+
+print_info_any . | sort -u -d -o "$cwd"/want
+cd - >/dev/null
+
+if [ -d "$cwd/to" ]; then
+	chmod -R +w "$cwd/to"
+	rm -rf -- "$cwd/to"
+fi
+mkdir -p -- "$cwd/to"
+
+tools/put-file -r "$cwd/from" "$cwd/to" "$cwd/from/usr/share/foo/bar"
+
+cd "$cwd/to"
+print_info_any . | sort -u -d -o "$cwd"/actual
+cd - >/dev/null
+
+diff -u "$cwd"/want "$cwd"/actual
+
+chmod -R +w "$cwd/from"
+chmod -R +w "$cwd/to"
+
+rm -rf -- "$cwd/from" "$cwd/to" "$cwd"/want "$cwd"/actual
