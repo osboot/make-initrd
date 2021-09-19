@@ -7,6 +7,7 @@ enum flags {
 	SHOW_COMPRESSION = (1 << 1),
 	SHOW_NAME_ONLY   = (1 << 2),
 	SHOW_NO_MTIME    = (1 << 3),
+	SHOW_BRIEF       = (1 << 4),
 };
 
 int preformat(struct cpio_header *header);

@@ -21,8 +21,9 @@
 
 int opts = 0;
 
-static const char cmdopts_s[]        = "nCVh";
+static const char cmdopts_s[]        = "bnCVh";
 static const struct option cmdopts[] = {
+	{ "brief", no_argument, 0, 'b' },
 	{ "name", no_argument, 0, 'n' },
 	{ "no-mtime", no_argument, 0, 3 },
 	{ "compression", no_argument, 0, 'C' },
@@ -42,6 +43,7 @@ print_help(const char *progname)
 	       "\n"
 	       "Options:\n"
 	       "   --no-mtime          Hide modification time;\n"
+	       "   -b, --brief         Show only brief information about archive parts;\n"
 	       "   -n, --name          Show only filenames;\n"
 	       "   -C, --compression   Show compression method for each archive;\n"
 	       "   -V, --version       Show version of program and exit;\n"
@@ -57,7 +59,7 @@ print_version(const char *progname)
 	printf("%s version " PACKAGE_VERSION "\n"
 	       "Written by Alexey Gladkov <gladkov.alexey@gmail.com>\n"
 	       "\n"
-	       "Copyright (C) 2016  Alexey Gladkov <gladkov.alexey@gmail.com>\n"
+	       "Copyright (C) 2016-2021  Alexey Gladkov <gladkov.alexey@gmail.com>\n"
 	       "This is free software; see the source for copying conditions.  There is NO\n"
 	       "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
 	       "\n",
@@ -75,6 +77,9 @@ main(int argc, char **argv)
 		switch (c) {
 			case 3:
 				opts ^= SHOW_NO_MTIME;
+				break;
+			case 'b':
+				opts ^= SHOW_BRIEF;
 				break;
 			case 'n':
 				opts ^= SHOW_NAME_ONLY;
@@ -131,15 +136,23 @@ main(int argc, char **argv)
 	int bytes;
 	int max_compress_name = 3;
 	char *fmt             = NULL;
+	struct cpio *part     = NULL;
 
 	l = res.cpios;
 	while (l) {
+		part = (struct cpio *) l->data;
+
+		if ((opts & SHOW_BRIEF) || part->type != CPIO_ARCHIVE) {
+			l = l->next;
+			n_cpio++;
+			continue;
+		}
 		if (opts & SHOW_COMPRESSION) {
-			bytes = snprintf(NULL, 0, "%s", ((struct cpio *) l->data)->compress);
+			bytes = snprintf(NULL, 0, "%s", part->compress);
 			if (bytes > max_compress_name)
 				max_compress_name = bytes;
 		}
-		h = ((struct cpio *) l->data)->headers;
+		h = part->headers;
 		while (h) {
 			preformat(h->data);
 			h = h->next;
@@ -160,10 +173,40 @@ main(int argc, char **argv)
 	c = 1;
 	l = res.cpios;
 	while (l) {
-		h = ((struct cpio *) l->data)->headers;
+		part = (struct cpio *) l->data;
+
+		if (opts & SHOW_BRIEF) {
+			fprintf(stdout, "%d\t", c);
+
+			switch (part->type) {
+				case CPIO_ARCHIVE:
+					if (strcmp("raw", part->compress))
+						fprintf(stdout, "%s compressed ", part->compress);
+					fprintf(stdout, "cpio archive");
+					break;
+				case CPIO_BOOTCONFIG:
+					fprintf(stdout, "bootconfig");
+					break;
+				case CPIO_UNKNOWN:
+					fprintf(stdout, "unknown");
+					break;
+			}
+
+			fprintf(stdout, ", size %ld bytes\n", part->size);
+
+			l = l->next;
+			c++;
+			continue;
+		}
+		if (part->type != CPIO_ARCHIVE) {
+			l = l->next;
+			n_cpio++;
+			continue;
+		}
+		h = part->headers;
 		while (h) {
 			(opts & SHOW_COMPRESSION)
-			? fprintf(stdout, fmt, c, ((struct cpio *) l->data)->compress)
+			? fprintf(stdout, fmt, c, part->compress)
 			: fprintf(stdout, fmt, c);
 			(opts & SHOW_NAME_ONLY)
 			? fprintf(stdout, "%s\n", ((struct cpio_header *) h->data)->name)

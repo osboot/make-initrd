@@ -151,6 +151,11 @@ main(int argc, char **argv)
 	c      = 1;
 	l      = res.cpios;
 	while (l) {
+		if (((struct cpio *) l->data)->type != CPIO_ARCHIVE) {
+			l = l->next;
+			c++;
+			continue;
+		}
 		if (!n_archive || c == n_archive) {
 			h = ((struct cpio *) l->data)->headers;
 			while (h) {

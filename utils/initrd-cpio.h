@@ -3,7 +3,14 @@
 
 #include "initrd-common.h"
 
+enum cpio_type {
+	CPIO_UNKNOWN = 0,
+	CPIO_ARCHIVE,
+	CPIO_BOOTCONFIG,
+};
+
 struct cpio {
+	enum cpio_type type;
 	const char *compress;
 
 	unsigned char *raw;
