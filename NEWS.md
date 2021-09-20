@@ -1,3 +1,14 @@
+Version 2.24.0
+
+- New fearure:
+  + bootconfig adds Extra Boot Config support.
+- Utilities:
+  + initrd-put: Fixed copying of complex symbolic links of symbolic links.
+  + initrd-ls: Add Extra Boot Config support.
+- Misc:
+  + Reset mtime only for regular files.
+  + Add more unit tests.
+
 Version 2.23.0
 
 - Runtime:
