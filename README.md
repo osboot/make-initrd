@@ -25,6 +25,7 @@ Optional:
 
 - [busybox](https://busybox.net/)
 - [libshell](https://github.com/legionus/libshell)
+- [abduco](https://github.com/legionus/abduco.git)
 - [zlib](https://zlib.net)
 - [bzip2](https://www.sourceware.org/bzip2/)
 - [xz](http://tukaani.org/xz/)

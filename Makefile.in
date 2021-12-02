@@ -135,13 +135,16 @@ CPPFLAGS += @CPPFLAGS@ @DEFS@ -I$(CURDIR) -I$(CURDIR)/utils
 
 UDEVD		= @UDEVD@
 UDEVADM		= @UDEVADM@
+ABDUCO		= @ABDUCO@
 HELP2MAN	= @HELP2MAN@
 USE_BUSYBOX	= @USE_BUSYBOX@
 USE_LIBSHELL	= @USE_LIBSHELL@
+USE_ABDUCO	= @USE_ABDUCO@
 
 SED = @SED@ \
 	-e 's|@UDEVD[@]|$(UDEVD)|g' \
 	-e 's|@UDEVADM[@]|$(UDEVADM)|g' \
+	-e 's|@ABDUCO[@]|$(ABDUCO)|g' \
 	-e 's|@PACKAGE_NAME[@]|$(PACKAGE_NAME)|g' \
 	-e 's|@PACKAGE_VERSION[@]|$(PACKAGE_VERSION)|g' \
 	-e 's|@bootdir[@]|$(bootdir)|g' \
@@ -341,6 +344,23 @@ build-progs: $(dest_data_bindir)/busybox
 
 RUNTIME_BIN_NAMES += busybox
 endif
+
+ifeq ($(USE_ABDUCO),yes)
+ABDUCO := $(OBJDIR)/external/abduco/abduco
+
+$(ABDUCO):
+	$(Q)mkdir -p -- "$(OBJDIR)/external/abduco"
+	$(MAKE) -C "$(external_srcdir)/abduco/upstream" abduco
+	$(Q)mv -f -- "$(external_srcdir)/abduco/upstream/abduco" "$@"
+endif
+
+$(dest_data_bindir)/abduco: $(ABDUCO)
+	$(Q)mkdir -p -- $(dir $@)
+	$(call quiet_cmd,COPY,$@,cp) -a -- $< $@
+
+build-progs: $(dest_data_bindir)/abduco
+
+RUNTIME_BIN_NAMES += abduco
 
 ifeq ($(USE_LIBSHELL),yes)
 LIBSHELL_NAMES = $(notdir $(wildcard $(external_srcdir)/libshell/upstream/shell-*))

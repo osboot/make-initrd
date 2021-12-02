@@ -196,6 +196,33 @@ if ! test -x "$with_udevadm"; then
 fi
 AC_SUBST([UDEVADM], [$with_udevadm])
 
+AC_PATH_PROGS([abduco_prog], [abduco], [],
+	[/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:${sbindir}:${bindir}])
+AC_SUBST([ABDUCO], [$abduco_prog])
+
+AC_ARG_WITH([abduco],
+	[AS_HELP_STRING([--with-abduco],
+			[Use builtin abduco (default: auto)])],
+	[],
+	[: m4_divert_text([DEFAULTS], [with_abduco=auto])])
+AC_MSG_CHECKING([if builtin abduco is required])
+if test "$with_abduco" != "no"; then
+	if test "$with_abduco" = "auto"; then
+		with_abduco=no
+		if ! test -x "$abduco_prog"; then
+			with_abduco=yes
+		fi
+		if ! "$abduco_prog" --help 2>&1 | grep -qs -e '-L '; then
+			with_abduco=yes
+		fi
+	fi
+	if test "$with_abduco" = "yes" && ! test -f "$srcdir/external/abduco/upstream/Makefile"; then
+		AC_MSG_FAILURE([submodule 'abduco' is out of sync])
+	fi
+fi
+AC_MSG_RESULT([$with_abduco])
+AC_SUBST([USE_ABDUCO], [$with_abduco])
+
 AC_ARG_WITH([help2man],
 	[AS_HELP_STRING([--with-help2man=FILE],
 			[Path to help2man utility (default: auto)])],

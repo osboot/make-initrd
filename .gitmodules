@@ -4,3 +4,7 @@
 [submodule "external/libshell/upstream"]
 	path = external/libshell/upstream
 	url = https://github.com/legionus/libshell.git
+[submodule "external/abduco/upstream"]
+	path = external/abduco/upstream
+	url = https://github.com/legionus/abduco.git
+	branch = next
