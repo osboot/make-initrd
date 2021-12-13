@@ -28,6 +28,7 @@ done
 
 if [ -n "${RDSHELL-}" ]; then
 	console_open "Emergency shell" withlock
+	switch_session shell
 	exit
 fi
 
@@ -45,3 +46,4 @@ done
 [ "${PANIC-}" != "0" ] || reboot -f
 
 console_open "The waiting time expired!" withlock
+switch_session shell

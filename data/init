@@ -21,29 +21,8 @@ trap : INT TSTP QUIT HUP
 x=/etc/rc.d/rc.sysinit
 [ ! -x "$x" ] || setsid "$x" ||:
 
-level=3
-rc=
+. initrd-sh-functions
 
-while :; do
-	[ -z "$rc" ] || {
-		read -r level < /.initrd/telinit
-	} 2>/dev/null ||:
+create_foreground_session services /etc/rc.d/rc.runlevel ||:
 
-	case "$level" in
-		[0-6])
-			[ "$rc" != "$level" ] ||
-				continue
-
-			rc="$level"
-
-			{
-				:> "/.initrd/killall/$BASHPID"
-				setsid /etc/rc.d/rc "$rc" ||:
-				rm -f -- "/.initrd/killall/$BASHPID"
-			} &
-			;;
-		9)
-			exec /etc/rc.d/rc.sysexec "$@"
-			;;
-	esac
-done
+exec /etc/rc.d/rc.sysexec "$@"

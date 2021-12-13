@@ -14,30 +14,25 @@
 . /.initrd/initenv
 . /etc/init.d/template
 
-export RDSHELL_FOREVER=1
+. initrd-sh-functions
 
-NAME=rdshell
-ARGS="--lockfile $LOCKFILE --pidfile /var/run/$NAME.pid --name $NAME --displayname shell"
+export RDSHELL_FOREVER=1
 
 start()
 {
-	start_daemon $ARGS --background "$NAME"
-	RETVAL=$?
-	[ "$RETVAL" != 0 ] ||
-		/lib/initrd/rootdelay &
-	return $RETVAL
+	action_shell "Starting shell" create_background_session shell rdshell
+	/lib/initrd/rootdelay &
 }
 
-stop() {
-	stop_daemon $ARGS -- "$NAME"
-	RETVAL=$?
+stop()
+{
+	action_shell "Stopping shell" destroy_session shell
 	{
 		local pid=
 		read -r pid < /var/run/rootdelay.pid
 		[ -z "$pid" ] ||
 			kill "$pid"
 	} >/dev/null 2>&1
-	return $RETVAL
 }
 
 switch "${1-}"

@@ -133,4 +133,52 @@ has_feature()
 	done
 }
 
+cons_socket=/.initrd/console
+
+has_session()
+{
+	tmux -S "$cons_socket" has-session -t "$1" 2>/dev/null
+}
+
+create_session()
+{
+	local name="$1"; shift
+	tmux -S "$cons_socket" new-session -s "$name" "$@"
+}
+
+destroy_session()
+{
+	tmux -S "$cons_socket" kill-session -t "$1" 2>/dev/null
+}
+
+switch_session()
+{
+	while ! has_session "$1"; do
+		sleep 0.3
+	done
+
+	tmux -S "$cons_socket" list-clients |
+		cut -d: -f1 |
+		xargs -r -I@ tmux -S "$cons_socket" switch-client -c @ -t "$1" ||:
+}
+
+wait_session()
+{
+	while has_session "$1"; do
+		sleep 0.3
+	done
+}
+
+create_foreground_session()
+{
+	local name="$1"; shift
+	create_session "$name" -A "$@"
+}
+
+create_background_session()
+{
+	local name="$1"; shift
+	create_session "$name" -d "$@"
+}
+
 fi

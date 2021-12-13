@@ -21,6 +21,17 @@ rcd="/etc/rc.d/rc$runlevel.d"
 [ -d "$rcd" ] ||
 	exit 0
 
+. shell-signal
+
+pidfile="/.initrd/killall/$BASHPID"
+exit_handler()
+{
+	[ ! -f "$pidfile" ] || rm -f -- "$pidfile"
+}
+
+:> "$pidfile"
+set_cleanup_handler exit_handler
+
 msg "INIT: Entering runlevel: $runlevel"
 
 export INITLOG_FILE='/var/log/boot.log'

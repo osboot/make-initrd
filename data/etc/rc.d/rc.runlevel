@@ -1,0 +1,38 @@
+#!/bin/bash
+
+. /.initrd/initenv
+. /etc/init.d/functions
+
+. initrd-sh-functions
+. shell-signal
+
+pidfile="/.initrd/killall/$BASHPID"
+exit_handler()
+{
+	[ ! -f "$pidfile" ] || rm -f -- "$pidfile"
+}
+
+:> "$pidfile"
+set_cleanup_handler exit_handler
+
+level=3
+rc=
+
+while :; do
+	[ -z "$rc" ] || {
+		read -r level < /.initrd/telinit
+	} 2>/dev/null ||:
+
+	case "$level" in
+		[0-6])
+			[ "$rc" != "$level" ] ||
+				continue
+
+			rc="$level"
+			setsid /etc/rc.d/rc "$rc" &
+			;;
+		9)
+			break
+			;;
+	esac
+done

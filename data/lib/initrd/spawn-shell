@@ -1,6 +1,9 @@
 #!/bin/bash -efu
 
+. initrd-sh-functions
 . rdshell-sh-functions
 
-console_inactive &&
+if console_inactive; then
 	console_open "Emergency shell" withlock ||:
+	switch_session shell
+fi

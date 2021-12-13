@@ -158,6 +158,7 @@ FILES+=(
 for n in \
 	/lib/udev/{edd_id,vol_id,path_id,usb_id,firmware} \
 	$(find-terminfo linux) \
+	$(locale -a -v | sed -n -r -e 's,^locale:[[:space:]]+C(\..*)?[[:space:]]+directory:[[:space:]]+,,p') \
 	/var/resolv \
 	"$KERNEL_MODULES_DIR"/modules.{builtin,order,builtin.modinfo} \
 	/etc/modprobe.conf;
@@ -170,7 +171,7 @@ append_progs \
 	blkid cat chmod chroot cp depmod dmesg findmnt grep kill killall5 ln \
 	logger ls lsmod mkdir mknod mktemp modprobe mount mountpoint mv \
 	readlink rm rmdir setsid sh sleep start-stop-daemon switch_root \
-	touch umount which ${PUT_FEATURE_PROGS-} ${PUT_PROGS-}
+	touch umount which tmux ${PUT_FEATURE_PROGS-} ${PUT_PROGS-}
 
 [ -z "${PUT_FEATURE_LIBS-}" ] ||
         append_libs required ${PUT_FEATURE_LIBS-}

@@ -35,8 +35,7 @@ recv_command()
 	} < "$rdshell_fifo" ||:
 }
 
-exec </dev/console >/dev/console 2>&1
-
+. initrd-sh-functions
 . rdshell-sh-functions
 
 [ -e "$rdshell_fifo" ] ||
@@ -67,7 +66,7 @@ while [ -n "$retry" ]; do
 	[ ${#msg} = 0 ] ||
 		printf '%s: %s\n' "${0##*/}" "$msg"
 
-	shcmd='/bin/sh -l'
+	shcmd='/bin/bash -l'
 	case "${RDSHELL_MODE-}" in
 		shell)
 			;;
@@ -90,7 +89,7 @@ while [ -n "$retry" ]; do
 		done
 	)
 
-	setsid -c $shcmd
+	$shcmd
 
 	[ "${#withlock}" = 0 ] ||
 		console_unlock
