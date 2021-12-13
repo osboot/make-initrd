@@ -21,29 +21,65 @@ trap : INT TSTP QUIT HUP
 x=/etc/rc.d/rc.sysinit
 [ ! -x "$x" ] || setsid "$x" ||:
 
-level=3
-rc=
+. /bin/initrd-sh-functions
+
+export ABDUCO_SOCKET_DIR=/.initrd
+mkdir -p -- "$ABDUCO_SOCKET_DIR/abduco"
+ln -s -- "$ABDUCO_SOCKET_DIR/abduco" "$ABDUCO_SOCKET_DIR/console-session"
+
+mkfifo "$console_session"
+
+{
+	abduco -n bootlog /etc/rc.d/rc.runlevel
+	switch_session bootlog
+} &
+
+stack=
+clean_stack()
+{
+	local s new=
+	for s in $stack; do
+		! abduco -d "$s" || new="$new $s"
+	done
+	stack="$new"
+}
+
+session=
 
 while :; do
-	[ -z "$rc" ] || {
-		read -r level < /.initrd/telinit
-	} 2>/dev/null ||:
+	if [ -z "$session" ]; then
+		switch_to=
+		read -r switch_to < "$console_session" ||:
 
-	case "$level" in
-		[0-6])
-			[ "$rc" != "$level" ] ||
-				continue
+		session="$switch_to"
 
-			rc="$level"
+		clean_stack
+		stack="$stack $session"
+	fi
 
-			{
-				:> "/.initrd/killall/$BASHPID"
-				setsid /etc/rc.d/rc "$rc" ||:
-				rm -f -- "/.initrd/killall/$BASHPID"
-			} &
-			;;
-		9)
-			exec /etc/rc.d/rc.sysexec "$@"
-			;;
-	esac
+	[ -n "$session" ] ||
+		break
+
+	clear ||:
+
+	rc=0
+	runas console-session abduco -q -a "$session" || rc=$?
+
+	if [ "$rc" -gt 128 ]; then
+		# The abduco terminated by signal $(($rc - 128))
+		#
+		# We are detaching from the current $session and needing to
+		# switch to another session. We expect to read the name of the
+		# new session from the session file.
+		session=
+	else
+		# The current session has ended (successful or not is
+		# not important).
+		clean_stack
+		stack="${stack% $session}"
+
+		session="${stack##* }"
+	fi
 done
+
+exec /etc/rc.d/rc.sysexec "$@"

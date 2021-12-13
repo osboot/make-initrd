@@ -133,4 +133,23 @@ has_feature()
 	done
 }
 
+console_session=/.initrd/session
+
+switch_session()
+{
+	while ! abduco -d "$1"; do
+		sleep 0.1
+	done
+
+	killall console-session 2>/dev/null ||:
+	echo "$1" > "$console_session"
+}
+
+wait_session()
+{
+	while abduco -d "$1"; do
+		sleep 0.1
+	done
+}
+
 fi

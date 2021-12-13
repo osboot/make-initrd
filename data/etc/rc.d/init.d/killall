@@ -77,15 +77,20 @@ killpids()
 	return $rc
 }
 
-[ -n "${IGNORE_OMITPIDS-}" ] ||
-for pid in /.initrd/killall/[0-9]*; do
-	[ -f "$pid" ] || break
-	pid=${pid##*/}
-	omitpid="$omitpid -o $pid"
+if [ -z "${IGNORE_OMITPIDS-}" ]; then
+	for pid in /.initrd/killall/[0-9]*; do
+		[ -f "$pid" ] || break
+		pid=${pid##*/}
+		omitpid="$omitpid -o $pid"
 
-	exe="$(sed -n -e 's/Name:[[:space:]]*\([^[:space:]]\+\)/\1/p' "/proc/$pid/status" 2>/dev/null)" ||:
-	omitpid_msg="${omitpid_msg:+$omitpid_msg }$pid${exe:+[$exe]}"
-done
+		exe="$(sed -n -e 's/Name:[[:space:]]*\([^[:space:]]\+\)/\1/p' "/proc/$pid/status" 2>/dev/null)" ||:
+		omitpid_msg="${omitpid_msg:+$omitpid_msg }$pid${exe:+[$exe]}"
+	done
+
+	for pid in $(pidof abduco); do
+		omitpid="$omitpid -o $pid"
+	done
+fi
 
 [ -z "${DEBUG-}" ] || processes ||:
 

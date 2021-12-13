@@ -9,7 +9,32 @@
 # Fix console loglevel
 dmesg -n "${LOGLEVEL:-1}"
 
+mkdir -p -- /proc
 mount -n -t proc -o nodev,noexec,nosuid proc /proc
+
+mkdir -p -- /dev
+if ! mount -t devtmpfs -o mode=755,size=5m udevfs /dev 2>/dev/null; then
+	mount -t tmpfs -o mode=755,size=5m udevfs /dev ||:
+fi
+
+mkdir -p -- /dev/pts
+mount -t devpts -o nosuid,noexec devpts /dev/pts
+
+makenod() { [ -e /dev/$1 ] || mknod /dev/$1 $2 $3 $4; }
+makenod ram     b 1 1
+makenod null    c 1 3
+makenod zero    c 1 5
+makenod full    c 1 7
+makenod random  c 1 8
+makenod kmsg    c 1 11
+makenod systty  c 4 0
+makenod tty0    c 4 0
+makenod tty1    c 4 1
+makenod tty     c 5 0
+makenod console c 5 1
+makenod ptmx    c 5 2
+
+hostname localhost
 
 quiet=n
 __set_quiet()
