@@ -13,6 +13,7 @@ name="$1"; shift
 		plymouth-set-default-theme 2>/dev/null ||:)"
 
 themedir="$DATADIR/plymouth/themes/$name"
+logodir="$DATADIR/design/current/icons"
 
 [ -f "$themedir/$name.plymouth" ] ||
 	exit 0
@@ -21,7 +22,7 @@ themedir="$DATADIR/plymouth/themes/$name"
 
 newline="
 "
-dirs="$newline$themedir$newline"
+dirs="$newline$themedir$newline$logodir$newline"
 
 get_files()
 {
@@ -84,5 +85,6 @@ get_imagedir()
 }
 
 get_files "$themedir"
+get_files "$logodir"
 get_imagedir
 get_module
