@@ -88,7 +88,7 @@ for step in "$@"; do
 				RUN \
 				 dnf -y install kernel$KERNEL_FLAVOR ${MAKE_INITRD_PACKAGES[*]} \
 				 systemd grub2-pc mdadm lvm2 cryptsetup \
-				 btrfs-progs e2fsprogs xfsprogs dosfstools reiserfs-utils \
+				 btrfs-progs e2fsprogs xfsprogs dosfstools \
 				 pwgen
 				RUN \
 				 kver="\$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' -quit)"; \
@@ -183,7 +183,7 @@ for step in "$@"; do
 			EOF1
 
 			dnf -y install kernel$KERNEL_FLAVOR ${MAKE_INITRD_PACKAGES[*]} \
-			 e2fsprogs btrfs-progs xfsprogs dosfstools reiserfs-utils \
+			 e2fsprogs btrfs-progs xfsprogs dosfstools \
 			 cryptsetup lvm2 mdadm util-linux rsync wget unzip \
 			 tar cpio pwgen
 
