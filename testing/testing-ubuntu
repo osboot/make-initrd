@@ -8,7 +8,7 @@ topdir="${topdir%/*/*}"
 readonly VENDOR=ubuntu
 readonly ARCH=x86_64
 readonly IMAGE=ubuntu:hirsute
-readonly KERNEL_FLAVOR=-5.11.0-17-generic
+readonly KERNEL_FLAVOR=-generic
 readonly TIMEOUT=${TIMEOUT:-5m}
 readonly VENDOR_CMDLINE="quiet init=/bin/systemd"
 
