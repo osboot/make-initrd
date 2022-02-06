@@ -79,6 +79,11 @@ exit_handler()
 	exit $1
 }
 
+qemu_args()
+{
+	printf -- 'qemu_args+=("%s")\n' "$@"
+}
+
 prepare_testsuite()
 {
 	mkdir -p -- \
@@ -100,17 +105,15 @@ prepare_testsuite()
 	fi
 
 	if [ -c /dev/kvm ]; then
-		echo -enable-kvm -cpu host
-	else
-		echo -cpu max
+		qemu_args -enable-kvm -cpu host
 	fi > "$workdir/qemu-cpu"
 
-	cat > "$workdir/qemu-stdout" <<-EOF
-	 -nographic
-	 -serial chardev:stdio
-	 -chardev stdio,mux=on,id=stdio,signal=off
-	 -mon chardev=stdio,mode=readline
-	EOF
+	qemu_args \
+			-nographic \
+			-serial chardev:stdio \
+			-chardev stdio,mux=on,id=stdio,signal=off \
+			-mon chardev=stdio,mode=readline \
+		> "$workdir/qemu-stdout"
 }
 
 trap 'exit_handler $?' EXIT HUP INT QUIT TERM

@@ -259,18 +259,21 @@ for step in "$@"; do
 			gh_group_start "checking the ability to boot"
 
 			cat_exec "$top_workdir/qemu.sh" <<-EOF
-			#!/bin/bash -x
-			exec qemu-system-$ARCH -m 1G -no-reboot \
-				-nic user,model=e1000 \
-				\$(cat "$top_workdir/qemu-cpu") \
-				\$(cat "$top_workdir/qemu-stdout") \
-				-kernel "$top_workdir/sshfsroot-vmlinuz" \
-				-initrd "$top_workdir/sshfsroot-initrd.img" \
-				-append "$BOOT_CMDLINE"
+			#!/bin/bash
+			qemu_args=()
+			qemu_args+=( -m 1G -no-reboot )
+			qemu_args+=( -nic user,model=e1000 )
+			qemu_args+=( -kernel "$top_workdir/sshfsroot-vmlinuz" )
+			qemu_args+=( -initrd "$top_workdir/sshfsroot-initrd.img" )
+			qemu_args+=( -append "$BOOT_CMDLINE" )
+			. "$top_workdir/qemu-cpu"
+			. "$top_workdir/qemu-stdout"
+			set -x
+			exec qemu-system-$ARCH "\${qemu_args[@]}"
 			EOF
 
 			cat_exec "$top_workdir/run.sh" <<-EOF
-			#!/bin/bash
+			#!/bin/bash -x
 			exec timeout --foreground --signal=TERM --kill-after=5s $TIMEOUT \
 				${BOOT_PROG:+"$topdir/testing/$BOOT_PROG"} \
 				"$top_workdir/qemu.sh"

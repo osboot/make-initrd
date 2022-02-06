@@ -71,7 +71,7 @@ for step in "$@"; do
 				--with-runtimedir=/lib/initrd1
 			make
 			EOF
-			podman run --rm -ti \
+			run podman run --rm -ti \
 				--volume="$topdir:$builddir" \
 				"$IMAGE" "$builddir/$workdir/run.sh"
 
@@ -160,10 +160,10 @@ for step in "$@"; do
 
 			rm -f -- "$top_workdir/sysimage.tar"
 
-			cat > "$top_workdir/qemu-sysimage" <<-EOF
-			 -blockdev driver=file,node-name=sysimage,filename=$top_workdir/sysimage.img
-			 -device virtio-blk,drive=sysimage
-			EOF
+			qemu_args \
+			 -blockdev "driver=file,node-name=sysimage,filename=$top_workdir/sysimage.img" \
+			 -device "virtio-blk,drive=sysimage" \
+			> "$top_workdir/qemu-sysimage"
 
 			gh_group_end
 			;;
@@ -171,7 +171,7 @@ for step in "$@"; do
 			gh_group_start "creating kickstart image"
 
 			cat_exec "$top_workdir/run.sh" <<-EOF
-			#!/bin/bash -efu
+			#!/bin/bash -efux
 
 			cat > /etc/initrd.mk <<EOF1
 			 AUTODETECT =
@@ -221,27 +221,28 @@ for step in "$@"; do
 				[ -f "$fn" ] ||
 					qemu-img create -q -f qcow2 "$fn" 2G
 
-				printf '%s\n' \
-				 "-blockdev driver=qcow2,node-name=disk$i,file.driver=file,file.node-name=file$i,file.filename=$fn" \
-				 "-device virtio-blk,drive=disk$i,id=virtio$i"
+				qemu_args \
+				 -blockdev "driver=qcow2,node-name=disk$i,file.driver=file,file.node-name=file$i,file.filename=$fn" \
+				 -device "virtio-blk,drive=disk$i,id=virtio$i"
 			done > "$top_workdir/qemu-disks"
 
 			cat_exec "$top_workdir/qemu.sh" <<-EOF
 			#!/bin/bash
-			exec qemu-system-$ARCH \
-				-m 1G \
-				-no-reboot \
-				-kernel "$top_workdir/boot-ks-vmlinuz" \
-				-initrd "$top_workdir/boot-ks-initrd.img" \
-				-append 'console=ttyS0,115200n8 quiet rdlog=console ksfile=ks.cfg' \
-				\$(cat "$top_workdir/qemu-cpu") \
-				\$(cat "$top_workdir/qemu-stdout") \
-				\$(cat "$top_workdir/qemu-sysimage") \
-				\$(cat "$top_workdir/qemu-disks")
+			qemu_args=()
+			qemu_args+=( -m 1G -no-reboot )
+			qemu_args+=( -kernel "$top_workdir/boot-ks-vmlinuz" )
+			qemu_args+=( -initrd "$top_workdir/boot-ks-initrd.img" )
+			qemu_args+=( -append 'console=ttyS0,115200n8 quiet rdlog=console ksfile=ks.cfg' )
+			. "$top_workdir/qemu-cpu"
+			. "$top_workdir/qemu-stdout"
+			. "$top_workdir/qemu-sysimage"
+			. "$top_workdir/qemu-disks"
+			set -x
+			exec qemu-system-$ARCH "\${qemu_args[@]}"
 			EOF
 
 			cat_exec "$top_workdir/run.sh" <<-EOF
-			#!/bin/bash
+			#!/bin/bash -x
 			exec timeout --foreground --signal=TERM --kill-after=5s $TIMEOUT \
 				"$top_workdir/qemu.sh"
 			EOF
@@ -257,21 +258,24 @@ for step in "$@"; do
 
 			for (( i=1; i <= BOOT_DISKS; i++ )); do
 				fn="$top_workdir/disk-$i.qcow2"
-				printf '%s\n' \
-				 "-blockdev driver=qcow2,node-name=disk$i,file.driver=file,file.node-name=file$i,file.filename=$fn" \
-				 "-device virtio-blk,drive=disk$i,id=virtio$i"
+				qemu_args \
+				 -blockdev "driver=qcow2,node-name=disk$i,file.driver=file,file.node-name=file$i,file.filename=$fn" \
+				 -device "virtio-blk,drive=disk$i,id=virtio$i"
 			done > "$top_workdir/qemu-disks"
 
 			cat_exec "$top_workdir/qemu.sh" <<-EOF
 			#!/bin/bash
-			exec qemu-system-$ARCH -m 1G -no-reboot \
-				\$(cat "$top_workdir/qemu-cpu") \
-				\$(cat "$top_workdir/qemu-stdout") \
-				\$(cat "$top_workdir/qemu-disks")
+			qemu_args=()
+			qemu_args+=( -m 1G -no-reboot )
+			. "$top_workdir/qemu-cpu"
+			. "$top_workdir/qemu-stdout"
+			. "$top_workdir/qemu-disks"
+			set -x
+			exec qemu-system-$ARCH "\${qemu_args[@]}"
 			EOF
 
 			cat_exec "$top_workdir/run.sh" <<-EOF
-			#!/bin/bash
+			#!/bin/bash -x
 			exec timeout --foreground --signal=TERM --kill-after=5s $TIMEOUT \
 				${BOOT_PROG:+"$topdir/testing/$BOOT_PROG"} \
 				"$top_workdir/qemu.sh"
