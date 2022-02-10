@@ -131,27 +131,7 @@ for step in "$@"; do
 				gh_group_end
 			fi
 
-			gh_group_start "adding make-initrd binaries"
-
-			run podman run --rm -ti \
-				--mount="type=image,src=localhost/mi-$VENDOR:sysimage,dst=/image" \
-				--mount="type=tmpfs,destination=/image$builddir" \
-				--mount="type=bind,src=$topdir/.build/dest,dst=/image$builddir/.build/dest" \
-				--mount="type=bind,src=$topdir/data,dst=/image$builddir/data" \
-				--mount="type=bind,src=$topdir/features,dst=/image$builddir/features" \
-				--mount="type=bind,src=$topdir/guess,dst=/image$builddir/guess" \
-				--mount="type=bind,src=$topdir/kmodule.deps.d,dst=/image$builddir/kmodule.deps.d" \
-				--mount="type=bind,src=$topdir/tools,dst=/image$builddir/tools" \
-				--volume="$topdir:/host" \
-				"$IMAGE" tar -C /image -cf /host/$workdir/sysimage.tar .
-
-			convert_sysimage_ext3 \
-				"$top_workdir/sysimage.tar" \
-				"$top_workdir/sysimage.img"
-
-			rm -f -- "$top_workdir/sysimage.tar"
-
-			gh_group_end
+			. "$topdir/testing/sh-pack-sysimage.sh"
 			;;
 		build-kickstart)
 			gh_group_start "creating kickstart image"

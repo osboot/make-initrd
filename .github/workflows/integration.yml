@@ -53,21 +53,7 @@ jobs:
         if: steps.last-status.outputs.status != 'passed'
         run: |
           sudo apt-get -qq -y update
-          sudo apt-get -qq -y install git e2fsprogs genext2fs expect qemu-kvm
-
-      - name: "Checkout genext2fs"
-        if: steps.last-status.outputs.status != 'passed'
-        uses: actions/checkout@v2
-        with:
-          repository: bestouff/genext2fs
-
-      - name: "Build genext2fs"
-        if: steps.last-status.outputs.status != 'passed'
-        run: |
-          ./autogen.sh
-          ./configure
-          make
-          sudo cp -vaf ./genext2fs /usr/bin/genext2fs
+          sudo apt-get -qq -y install git expect qemu-kvm
 
       - name: "Checkout Repository"
         if: steps.last-status.outputs.status != 'passed'

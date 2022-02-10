@@ -116,33 +116,4 @@ prepare_testsuite()
 		> "$workdir/qemu-stdout"
 }
 
-convert_sysimage_ext3()
-{
-	local sysimage_tar="$1"; shift
-	local sysimage_img="$1"; shift
-
-	sz_block=4096
-	n_blocks=$(( $(stat -c %s "$sysimage_tar") / $sz_block ))
-	n_inodes=$(tar -tf "$sysimage_tar" | wc -l)
-
-	blocks=$(( $n_blocks + ( ( $n_blocks * 30 ) / 100 ) ))
-
-	(
-		flock -e 0
-
-		run genext2fs -z -N $n_inodes -B $sz_block -b $blocks \
-			-L SYSIMAGE -a "$sysimage_tar" \
-			"$sysimage_img"
-
-		run /sbin/tune2fs \
-			-O dir_index,has_journal,uninit_bg \
-			"$sysimage_img"
-	) < "$0"
-
-	qemu_args \
-	 -blockdev "driver=file,node-name=sysimage,filename=$sysimage_img" \
-	 -device "virtio-blk,drive=sysimage" \
-	> "$top_workdir/qemu-sysimage"
-}
-
 trap 'exit_handler $?' EXIT HUP INT QUIT TERM

@@ -7,10 +7,10 @@ for (( i=1; i <= KICKSTART_DISKS; i++ )); do
 
 	fn="$top_workdir/disk-$i.qcow2"
 	[ -f "$fn" ] ||
-		qemu-img create -q -f qcow2 "$fn" 3G
+		qemu-img create -q -f qcow2 -o preallocation=falloc,lazy_refcounts=on "$fn" 3G
 
 	qemu_args \
-	 -blockdev "driver=qcow2,node-name=disk$i,file.driver=file,file.node-name=file$i,file.filename=$fn" \
+	 -blockdev "driver=qcow2,node-name=disk$i,file.locking=off,file.driver=file,file.node-name=file$i,file.filename=$fn,cache.direct=on,cache.no-flush=on,discard=unmap,detect-zeroes=unmap" \
 	 -device "virtio-blk,drive=disk$i,id=virtio$i"
 done > "$top_workdir/qemu-disks"
 
