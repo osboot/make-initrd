@@ -88,7 +88,7 @@ liveimg()
 		dir://*)
 			verbose "syncing ${archive#dir://} directory"
 			rsync -abX ${verbose:+--info=progress2 --no-i-r} "${archive#dir://}/" "$ks_rootdir/" ||
-				ret 1
+				ret=1
 			;;
 		*)
 			message "unsupported archive format: $archive"
