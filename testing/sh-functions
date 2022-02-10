@@ -125,7 +125,7 @@ convert_sysimage_ext3()
 	n_blocks=$(( $(stat -c %s "$sysimage_tar") / $sz_block ))
 	n_inodes=$(tar -tf "$sysimage_tar" | wc -l)
 
-	blocks=$(( $n_blocks + ( ( $n_blocks * 15 ) / 100 ) ))
+	blocks=$(( $n_blocks + ( ( $n_blocks * 30 ) / 100 ) ))
 
 	(
 		flock -e 0

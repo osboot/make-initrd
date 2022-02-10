@@ -7,7 +7,7 @@ for (( i=1; i <= KICKSTART_DISKS; i++ )); do
 
 	fn="$top_workdir/disk-$i.qcow2"
 	[ -f "$fn" ] ||
-		qemu-img create -q -f qcow2 "$fn" 2G
+		qemu-img create -q -f qcow2 "$fn" 3G
 
 	qemu_args \
 	 -blockdev "driver=qcow2,node-name=disk$i,file.driver=file,file.node-name=file$i,file.filename=$fn" \
