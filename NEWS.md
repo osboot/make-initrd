@@ -1,3 +1,10 @@
+Version 2.25.0
+
+- New fearure:
+  + sbc adds modules required for bootloading on single-board computers.
+- Misc:
+  + Tests improvements.
+
 Version 2.24.0
 
 - New fearure:
