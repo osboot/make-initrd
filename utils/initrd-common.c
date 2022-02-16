@@ -58,6 +58,9 @@ list_shift(struct list_tail **head)
 
 	if (p)
 		p->next = NULL;
+
+	if (p == l)
+		*head = NULL;
 }
 
 void
