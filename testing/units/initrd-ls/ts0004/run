@@ -1,0 +1,8 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+.build/dest/usr/sbin/initrd-ls -b "$cwd/data.cpio.gz"
+echo
+.build/dest/usr/sbin/initrd-ls --no-mtime "$cwd/data.cpio.gz"
+echo

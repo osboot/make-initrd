@@ -1,0 +1,10 @@
+1	cpio archive, size 1188 bytes
+2	gzip compressed cpio archive, size 1024 bytes
+3	cpio archive, size 512 bytes
+
+2 drwxr-xr-x 2 0 0 0 ./ddd
+2 -rw-r--r-- 1 0 0 2 ./aaa
+2 -rw-r--r-- 1 0 0 3 ./bbb
+2 -rw-r--r-- 1 0 0 4 ./ccc
+
+rc=0

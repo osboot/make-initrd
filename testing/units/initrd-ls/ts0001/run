@@ -1,0 +1,5 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+.build/dest/usr/sbin/initrd-ls -b "$cwd/empty.cpio"

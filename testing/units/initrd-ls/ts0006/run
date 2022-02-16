@@ -1,0 +1,15 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+for n in \
+	'data1.cpio: ASCII cpio archive (pre-SVR4 or odc)' \
+	'data2.cpio: ASCII cpio archive (SVR4 with CRC)' \
+	'data3.cpio: ASCII cpio archive (SVR4 with no CRC)';
+do
+	echo "$n"
+	ret=0
+	.build/dest/usr/sbin/initrd-ls -b "$cwd/${n%:*}" || ret=$?
+	echo ret=$ret
+	echo
+done

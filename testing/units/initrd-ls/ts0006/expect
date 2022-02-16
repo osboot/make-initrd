@@ -1,0 +1,13 @@
+data1.cpio: ASCII cpio archive (pre-SVR4 or odc)
+initrd-ls: incorrect cpio method used: use -H newc option
+ret=1
+
+data2.cpio: ASCII cpio archive (SVR4 with CRC)
+initrd-ls: no cpio magic
+ret=1
+
+data3.cpio: ASCII cpio archive (SVR4 with no CRC)
+1	cpio archive, size 1024 bytes
+ret=0
+
+rc=0
