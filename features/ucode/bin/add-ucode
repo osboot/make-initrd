@@ -87,13 +87,13 @@ prep_intel_ucode()
 					$iucode_scan_system \
 					--write-earlyfw="$workdir"/ucode.cpio \
 					"$fw_path"/intel-ucode
+			[ -f "$workdir"/ucode.cpio ] ||
+				continue
 			mkdir "$workdir"/ucode &&
 				cpio -D "$workdir"/ucode --quiet -id < "$workdir"/ucode.cpio
 			return
 		fi
 	done
-
-	return 1
 }
 
 case "$cpu_vendor" in
@@ -105,6 +105,9 @@ case "$cpu_vendor" in
 		;;
 esac
 rc=$?
+
+[ "$rc" -eq 0 ] ||
+	exit $rc
 
 if [ -d "$workdir/ucode" ]; then
 	cd "$workdir/ucode"
@@ -121,5 +124,3 @@ if [ -d "$workdir/ucode" ]; then
 
 	rm -rf -- "$workdir/ucode"
 fi
-
-exit $rc
