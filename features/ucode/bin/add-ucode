@@ -34,20 +34,25 @@ if [ -z "$cpu_vendor" ]; then
 	fi
 fi
 
-prep_early_firmware()
+prep_amd_ucode()
 {
-	local fw_path fw_file='' fw="$1"
-	shift
+	local fw_path fw_file='' fw
 
-	for fw_path in ${FIRMWARE_DIRS:-/lib/firmware}; do
-		if [ -f "$fw_path/$fw" ]; then
-			fw_file="$fw_path/$fw"
-			break
-		fi
+	set -- \
+		"amd-ucode/microcode_amd_fam$(printf %x "$cpu_family")h.bin" \
+		"amd-ucode/microcode_amd.bin"
+
+	for fw in "$@"; do
+		for fw_path in ${FIRMWARE_DIRS:-/lib/firmware}; do
+			if [ -f "$fw_path/$fw" ]; then
+				fw_file="$fw_path/$fw"
+				break 2
+			fi
+		done
 	done
 
 	if [ -z "$fw_file" ]; then
-		message "firmware file not found for \`$fw'. Microcode update unavailable."
+		message "firmware file not found for cpu model \`$cpu_vendor' and family \`$cpu_family'. Microcode update unavailable."
 		return 0
 	fi
 
@@ -55,20 +60,6 @@ prep_early_firmware()
 		return
 	mkdir -p -- "$workdir"/ucode/kernel/x86/microcode
 	cp ${VERBOSE:+-v} -- "$fw_file" "$workdir"/ucode/kernel/x86/microcode/"$cpu_vendor".bin
-}
-
-prep_amd_ucode()
-{
-	local family=0 ucode_file=
-
-	[ -z "$cpu_family" ] || family="$(printf '%x' "$cpu_family")"
-	[ "$family" -ge 15 ] && \
-		ucode_file=amd-ucode/microcode_amd_fam"$family"h.bin || \
-		ucode_file=amd-ucode/microcode_amd.bin
-
-	prep_early_firmware "$ucode_file" && return 0
-
-	return 1
 }
 
 prep_intel_ucode()
