@@ -3,6 +3,8 @@
 . initrd-sh-functions
 . rdshell-sh-functions
 
+. shell-error
+
 PID="$$"
 
 exit_handler()
@@ -31,10 +33,22 @@ if [ -n "${RDSHELL-}" ]; then
 	exit
 fi
 
-delay=${ROOTDELAY:-180}
+ROOTDELAY=${ROOTDELAY:-180}
+delay=$ROOTDELAY
 while [ "$delay" -gt 0 ] && [ ! -x "$rootmnt/$INIT" ]; do
-	rootdelay_paused ||
+	if ! rootdelay_paused; then
+		if [ -z "${QUIET-}" ] && [ $delay -lt $ROOTDELAY ] && [ $(( $delay % 15 )) -eq 0 ]; then
+			while ! console_lock; do
+				sleep 0.2
+			done
+
+			PROG=initramfs \
+			message "Waiting for root ..." >/dev/console 2>&1 ||:
+
+			console_unlock
+		fi
 		delay=$(($delay - 1))
+	fi
 	sleep 1
 done
 
