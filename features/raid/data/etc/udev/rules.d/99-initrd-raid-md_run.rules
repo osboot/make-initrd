@@ -1,1 +1,0 @@
-SUBSYSTEM=="block", ACTION!="remove", RUN+="/lib/uevent/filters/md_run"

@@ -1,8 +1,0 @@
-#!/bin/bash
-
-. /.initrd/initenv
-. uevent-sh-functions
-
-event="$(make_event)"
-environ -q > "$event"
-release_event md_run "$event"
