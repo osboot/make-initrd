@@ -1,6 +1,6 @@
 .PHONY: bootconfig
 
-bootconfig: $(call if_feature,compress)
+bootconfig: $(call if-feature,compress)
 	@$(MSG) "Adding bootconfig ..."
 	@$(FEATURESDIR)/bootconfig/bin/add-bootconfig
 

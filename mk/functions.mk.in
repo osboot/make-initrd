@@ -78,21 +78,41 @@ endef
 
 # $(call if-success,<command>,<then>,<else>)
 # Return <then> if <command> exits with 0, <else> otherwise.
-if-success = $(if $(1),$(shell { $(1); } >/dev/null 2>&1 && echo "$(2)" || echo "$(3)"))
+define if-success
+$(if $(1),$(shell { $(1); } >/dev/null 2>&1 && echo "$(2)" || echo "$(3)"))
+endef
 
 # $(call success,<command>)
 # Return y if <command> exits with 0, n otherwise
-success = $(if $(1),$(call if-success,$(1),y,n))
+define success
+$(if $(1),$(call if-success,$(1),y,n))
+endef
 
 # $(call failure,<command>)
 # Return n if <command> exits with 0, y otherwise
-failure = $(if $(1),$(call if-success,$(1),n,y))
+define failure
+$(if $(1),$(call if-success,$(1),n,y))
+endef
 
-if_kernel_version_greater_or_equal = $(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "ge" "$(KERNEL)" "$(1)",PROJECT,))
-if_kernel_version_greater          = $(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "gt" "$(KERNEL)" "$(1)",PROJECT,))
-if_kernel_version_less_or_equal    = $(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "le" "$(KERNEL)" "$(1)",PROJECT,))
-if_kernel_version_less             = $(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "lt" "$(KERNEL)" "$(1)",PROJECT,))
-if_kernel_version_equal            = $(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "eq" "$(KERNEL)" "$(1)",PROJECT,))
+define if_kernel_version_greater_or_equal
+$(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "ge" "$(KERNEL)" "$(1)",PROJECT,))
+endef
+
+define if_kernel_version_greater
+$(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "gt" "$(KERNEL)" "$(1)",PROJECT,))
+endef
+
+define if_kernel_version_less_or_equal
+$(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "le" "$(KERNEL)" "$(1)",PROJECT,))
+endef
+
+define if_kernel_version_less
+$(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "lt" "$(KERNEL)" "$(1)",PROJECT,))
+endef
+
+define if_kernel_version_equal
+$(if $(1),$(call if-success,$(TOOLSDIR)/kernel-compare "eq" "$(KERNEL)" "$(1)",PROJECT,))
+endef
 
 USED_FEATURES =
 
@@ -103,31 +123,41 @@ $(if $(2),$(eval USED_FEATURES += $(1)))
 $(if $(2),$(eval include $(2)))
 endef
 
-get_disabled_features = \
-	$(foreach exl,$(DISABLE_FEATURES),$(abspath $(exl:%=$(FEATURESDIR)/%/rules.mk)))
+define get-disabled-features
+$(foreach exl,$(DISABLE_FEATURES),$(abspath $(exl:%=$(FEATURESDIR)/%/rules.mk)))
+endef
 
-require = \
-	$(foreach n,$(1), \
-		$(foreach inc,$(filter-out \
-			$(MAKEFILE_LIST) $(call get_disabled_features), \
-			$(abspath $(n:%=$(FEATURESDIR)/%/rules.mk))), \
-			$(call include-feature,$(n),$(inc))))
+define require
+$(foreach n,$(1), \
+	$(foreach inc,$(filter-out \
+		$(MAKEFILE_LIST) $(call get-disabled-features), \
+		$(abspath $(n:%=$(FEATURESDIR)/%/rules.mk))), \
+		$(call include-feature,$(n),$(inc))))
+endef
 
 # $(call if-active-feature,<name> [<name1> ...])
-if-active-feature = $(if $(1),$(filter $(1),$(get-all-active-features)))
+define if-active-feature
+$(if $(1),$(filter $(1),$(get-all-active-features)))
+endef
 
 # $(call if-recently-activated-feature,<name> [<name1> ...])
-if-recently-activated-feature = $(if $(1),$(filter $(1),$(RECENTLY_ACTIVATED_FEATURES)))
+define if-recently-activated-feature
+$(if $(1),$(filter $(1),$(RECENTLY_ACTIVATED_FEATURES)))
+endef
 
 # $(call if-module-guessable,<name> [<name1> ...])
-if-module-guessable = $(if $(1),$(filter $(1),\
-					$(if $(findstring all,$(AUTODETECT)), \
-						$(notdir $(call filter-dirs,$(wildcard $(DETECTDIR)/*))), \
-						$(AUTODETECT))))
+define if-module-guessable
+$(if $(1),$(filter $(1),\
+	$(if $(findstring all,$(AUTODETECT)), \
+		$(notdir $(call filter-dirs,$(wildcard $(DETECTDIR)/*))), \
+		$(AUTODETECT))))
+endef
 
-# $(call if_feature,<name> [<name1> ...])
+# $(call if-feature,<name> [<name1> ...])
 # Return a list of features without obsolete and disabled features.
-if_feature = $(if $(1),$(filter-out $(DISABLE_FEATURES) $(ALL_DISABLE_FEATURES),$(1)))
+define if-feature
+$(if $(1),$(filter-out $(DISABLE_FEATURES) $(ALL_DISABLE_FEATURES),$(1)))
+endef
 
 define filter-dirs
 $(realpath $(filter %/,$(addsuffix /,$(1))))
@@ -144,14 +174,14 @@ endef
 # The list is expanded recursively.
 define expand-features
 $(if $(1),\
-	$(foreach n,$(call if_feature,$(2)),\
-		$(n) $(call if_feature,$(call expand-features,$(1),$($(1)-$(n))))))
+	$(foreach n,$(call if-feature,$(2)),\
+		$(n) $(call if-feature,$(call expand-features,$(1),$($(1)-$(n))))))
 endef
 
 # $(call expand-disabled-features,<feature-list>)
 # Return a list of features that disable the specified features.
 define expand-disabled-features
-$(foreach n,$(call if_feature,$(1)),$(FEATURE-DISABLES-$(n)))
+$(foreach n,$(call if-feature,$(1)),$(FEATURE-DISABLES-$(n)))
 endef
 
 # $(call include-features-once,<feature-list>)

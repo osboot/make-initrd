@@ -1,6 +1,6 @@
 .PHONY: ucode
 
-ucode: $(call if_feature,compress)
+ucode: $(call if-feature,compress)
 	@$(MSG) "Adding CPU microcode ..."
 	@$(FEATURESDIR)/ucode/bin/add-ucode
 	@if [ -s "$(WORKDIR)/ucode.cpio" ]; then \
