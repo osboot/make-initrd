@@ -46,7 +46,7 @@ endef
 define wildcard-features
 $(if $(1),\
 	$(filter-out \
-		$(foreach exl,$(DEPRECATED_FEATURES) $(get-all-disable-features),\
+		$(foreach exl,$(get-all-disable-features),\
 			$(realpath $(exl:%=$(FEATURESDIR)/%/$(1)))), \
 		$(realpath $(wildcard $(FEATURESDIR)/*/$(1)))))
 endef
@@ -70,7 +70,7 @@ endef
 
 define get-all-active-features
 $(sort $(filter-out \
-        $(call expand-list,FEATURE-REQUIRED,$(DEPRECATED_FEATURES) $(get-all-disable-features)),\
+        $(call expand-list,FEATURE-REQUIRED,$(get-all-disable-features)),\
         $(get-all-features)))
 endef
 
@@ -103,19 +103,13 @@ $(if $(2),$(eval USED_FEATURES += $(1)))
 $(if $(2),$(eval include $(2)))
 endef
 
-# deprecated function
 get_disabled_features = \
 	$(foreach exl,$(DISABLE_FEATURES),$(abspath $(exl:%=$(FEATURESDIR)/%/rules.mk)))
 
-# deprecated function
-get_deprecated_features = \
-	$(foreach depr,$(DEPRECATED_FEATURES),$(abspath $(depr:%=$(FEATURESDIR)/%/rules.mk)))
-
-# deprecated function
 require = \
 	$(foreach n,$(1), \
 		$(foreach inc,$(filter-out \
-			$(MAKEFILE_LIST) $(call get_disabled_features) $(call get_deprecated_features), \
+			$(MAKEFILE_LIST) $(call get_disabled_features), \
 			$(abspath $(n:%=$(FEATURESDIR)/%/rules.mk))), \
 			$(call include-feature,$(n),$(inc))))
 
@@ -133,7 +127,7 @@ if-module-guessable = $(if $(1),$(filter $(1),\
 
 # $(call if_feature,<name> [<name1> ...])
 # Return a list of features without obsolete and disabled features.
-if_feature = $(if $(1),$(filter-out $(DEPRECATED_FEATURES) $(DISABLE_FEATURES) $(ALL_DISABLE_FEATURES),$(1)))
+if_feature = $(if $(1),$(filter-out $(DISABLE_FEATURES) $(ALL_DISABLE_FEATURES),$(1)))
 
 define filter-dirs
 $(realpath $(filter %/,$(addsuffix /,$(1))))
