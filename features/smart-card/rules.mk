@@ -1,5 +1,5 @@
 put_pkcs11_name:
-	@$(MSG) "Put file with PKCS#11 name ..."
+	@$(VMSG) "Put file with PKCS#11 name ..."
 	$Qmkdir -p "$(WORKDIR)/img/.initrd/pkcs11"
 	$Qecho $(SMART_CARD_PKCS11_MODULE) > "$(ROOTDIR)/.initrd/pkcs11/pkcs11.module"
 

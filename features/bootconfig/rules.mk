@@ -1,7 +1,7 @@
 .PHONY: bootconfig
 
 bootconfig: $(call if-feature,compress)
-	@$(MSG) "Adding bootconfig ..."
+	@$(VMSG) "Adding bootconfig ..."
 	@$(FEATURESDIR)/bootconfig/bin/add-bootconfig
 
 install: bootconfig

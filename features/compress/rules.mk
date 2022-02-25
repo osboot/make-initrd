@@ -1,7 +1,7 @@
 .PHONY: compress
 
 compress: pack
-	@$(MSG) "Compressing image ..."
+	@$(VMSG) "Compressing image ..."
 	@$(COMPRESS_IMAGE)
 
 install: compress

@@ -85,7 +85,7 @@ guess: pre-guess
 	$V printf '============================================================\n\n' >&2
 	@$(TOOLSDIR)/guess-config > $(GUESSDIR)/guessed.mk
 	$V printf '============================================================\n\n' >&2
-	@$(MSG) "Guessing config ..."
+	@$(VMSG) "Guessing config ..."
 	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk guess PASSED_GUESS_MODULES+="$(GUESS_MODULES)"
 
 else # !GUESS_MODULES
@@ -99,7 +99,7 @@ $(info WARNING: Unknown features are specified in the config: $(unknown_features
 endif
 
 guess: depmod-host
-	@$(MSG) "Guessing is complete"
+	@$(VMSG) "Guessing is complete"
 
 endif # GUESS_MODULES
 endif # MAKECMDGOALS = guess guess-config guess-modules
@@ -113,14 +113,14 @@ IGNORE_DEPMOD := 1
 .PHONY: create pack install genimage
 
 create: depmod-host
-	@$(MSG) "Creating initrd image ..."
+	@$(VMSG) "Creating initrd image ..."
 	@mkdir -m 755 -p $(verbose) -- $(ROOTDIR)
 	@$(TOOLSDIR)/create-initrd
 
 pack: create
-	@$(MSG) "Sorting sysvinit services ..."
+	@$(VMSG) "Sorting sysvinit services ..."
 	@$(TOOLSDIR)/sort-services --rcdir="$(ROOTDIR)/etc/rc.d" "$(ROOTDIR)/etc/rc.d/init.d"
-	@$(MSG) "Packing image to archive ..."
+	@$(VMSG) "Packing image to archive ..."
 	@$(TOOLSDIR)/pack-image
 
 install: pack
@@ -138,7 +138,7 @@ install: pack
 	    echo "" >&2; \
 	    exit 1; \
 	else \
-	    $(MSG) "Installing image ..."; \
+	    $(VMSG) "Installing image ..."; \
 	    $(MSG) "Unpacked size: `du -sh "$(WORKDIR)" |cut -f1 ||:`"; \
 	    $(MSG) "Image size: `du -sh "$(WORKDIR)/initrd.img" |cut -f1 ||:`"; \
 	    chmod 600 -- "$(WORKDIR)/initrd.img"; \

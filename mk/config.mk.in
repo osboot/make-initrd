@@ -95,6 +95,7 @@ endif
 
 MSG   = echo "$$(msg-timestamp)"
 MSG_N = echo -n "$$(msg-timestamp)"
+VMSG := test -z "$(verbose)" || $(MSG)
 
 include @projectdir@/mk/functions.mk
 
