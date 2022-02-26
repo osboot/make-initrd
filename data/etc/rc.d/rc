@@ -83,7 +83,7 @@ for i in "$rcd"/S*; do
 		while :; do
 			printf 'Start service %s (Y)es/(N)o/(C)ontinue/(S)hell? [Y] ' "$subsys"
 			read -r answer < /dev/console
-			case "$(replace '[A-Z]' '[a-z]' "$answer")" in
+			case "${answer,,}" in
 				c|continue)
 					printf 'STOP=,,\n' >> /.initrd/initenv
 					break

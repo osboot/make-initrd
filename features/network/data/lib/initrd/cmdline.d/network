@@ -5,6 +5,16 @@
 . shell-ip-address
 . network-sh-functions
 
+lower_before_char()
+{
+	local part="${2%%$1*}"
+	if [ "$part" != "$2" ]; then
+		printf '%s%s%s\n' "${part,,}" "$1" "${2#*$1}"
+	else
+		printf '%s\n' "$2"
+	fi
+}
+
 ip_to_var()
 {
 	local i v="$1:"
@@ -166,7 +176,7 @@ configure()
 		eval "ifname_to_var \"\$IFNAME$i\""
 
 		# udev requires MAC addresses to be lower case
-		macaddr="$(replace -s= '[A-Z]' '[a-z]' "$macaddr")"
+		macaddr="$(lower_before_char '=' "$macaddr")"
 
 		printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", NAME="%s"\n' \
 			"$macaddr" "$interface" >> /etc/udev/rules.d/60-persistent-net.rules
@@ -208,7 +218,7 @@ configure()
 		:> "$dir/iplink"
 
 		[ "${#macaddr}" = 0 ] || [ "${#interface}" = 0 ] ||
-			printf "set address %s\n" "$(replace -s= '[A-Z]' '[a-z]' "$macaddr")" >> "$dir/iplink"
+			printf "set address %s\n" "$(lower_before_char '=' "$macaddr")" >> "$dir/iplink"
 
 		[ -z "$mtu" ] ||
 			printf 'set mtu %s\n' "$mtu" >> "$dir/iplink"

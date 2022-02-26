@@ -84,7 +84,16 @@ __set_var()
 {
 	local n="$1" v="$2" flags x
 
-	n="$(replace -s= "[a-z]-." "[A-Z]__" "$n")"
+	if [ -n "$n" ]; then
+		x="${n%%=*}"
+		x="${x^^}"
+		x="${x//[-.]/_}"
+		if [ -z "${n##*=*}" ]; then
+			n="$x=${n#*=}"
+		else
+			n="$x"
+		fi
+	fi
 
 	while [ -z "${__aliases##* $n:*}" ]; do
 		n="${__aliases##* $n:}"
