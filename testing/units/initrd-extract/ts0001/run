@@ -1,0 +1,24 @@
+#!/bin/bash -efu
+
+export LANG=C
+export LC_ALL=C
+
+cwd="${0%/*}"
+
+cat \
+	"$cwd"/empty.cpio \
+	"$cwd"/data.cpio \
+	"$cwd"/empty.cpio \
+	> "$cwd"/data.img
+
+rc=0
+
+.build/dest/usr/sbin/initrd-extract -a2 "$cwd"/data.img > "$cwd"/part2.cpio || rc=$?
+rm -f -- "$cwd"/data.img
+
+[ $rc -eq 0 ]
+
+cmp "$cwd"/part2.cpio "$cwd"/data.cpio || rc=$?
+rm -f -- "$cwd"/part2.cpio
+
+[ $rc -eq 0 ]
