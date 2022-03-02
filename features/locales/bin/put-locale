@@ -1,0 +1,27 @@
+#!/bin/bash -efu
+
+. sh-functions
+
+case "${1-}" in
+	''|'posix'|'POSIX') lang=C  ;;
+	*)          lang="${1%%.*}" ;;
+esac
+
+locales=()
+while read -r s; do
+	# shellcheck disable=SC2206
+	line=($s)
+
+	case "${line[1]}" in
+		"$lang")
+			[ "${#locales[@]}" -gt 0 ] ||
+				locales+=("${line[3]}")
+			;;
+		"$lang.utf8"|"$lang.UTF-8")
+			locales=("${line[3]}")
+			;;
+	esac
+done < <(locale -a -v |grep ^locale:)
+
+printf '%s\n' "${locales[@]}" |
+	xargs -r put-file "$rootdir"

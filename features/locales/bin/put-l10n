@@ -1,0 +1,33 @@
+#!/bin/bash -efu
+
+. sh-functions
+
+lang="$1"; shift
+lang="${lang%%.*}"
+
+langs=("$lang")
+[ -n "${lang##*_*}" ] || langs+=("${lang%%_*}")
+
+for textdomain; do
+	for locale in "${langs[@]}"; do
+		localedir=
+
+		for charset in '.UTF-8' '.utf8' ''; do
+			if [ -d "$DATADIR/locale/$locale$charset" ]; then
+				localedir="$DATADIR/locale/$locale$charset"
+				break
+			fi
+		done
+
+		[ -n "$localedir" ] ||
+			continue
+
+		textdomain="${textdomain%.mo}"
+
+		if [ -e "$localedir/LC_MESSAGES/$textdomain.mo" ]; then
+			printf '%s\n' "$localedir/LC_MESSAGES/$textdomain.mo"
+			continue 2
+		fi
+	done
+done |
+	xargs -r put-file "$rootdir"

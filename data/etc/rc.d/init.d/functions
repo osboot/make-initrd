@@ -18,13 +18,15 @@ ExecIfExecutable()   { [ -x "$1" ] && "$@"; }
 absolute() { { command -v "$@"; } 2>/dev/null; }
 
 SHOW_TIMESTAMP=1
-QUIET=
+QUIET=no
+LANG=C
 
 SourceIfNotEmpty /etc/sysconfig/init
 
-LANG=POSIX
-LANGUAGE=POSIX
-LC_ALL=POSIX
+LANGUAGE="$LANG"
+LC_ALL="$LANG"
+
+export LANG LANGUAGE LC_ALL
 
 TO_COL=
 COLOR_BANNER=

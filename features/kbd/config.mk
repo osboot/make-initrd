@@ -11,3 +11,5 @@ KBD_UTILITIES = kbd_mode setfont loadkeys
 
 KBD_TTYS = '0 1 2 3 4 5 6 12'
 KBD_UNICODE = 1
+
+KBD_TEXTDOMAIN = kbd
