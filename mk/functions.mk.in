@@ -193,4 +193,10 @@ $(if $(1),\
 			$(filter-out $(MAKEFILE_LIST),$(n:%=$(FEATURESDIR)/%/rules.mk))))))
 endef
 
+define set-sysconfig
+$(eval _SYSCONFIG_GROUPS     = $(sort $(_SYSCONFIG_GROUPS) $(1)))
+$(eval _SYSCONFIG_NAMES_$(1) = $(sort $(_SYSCONFIG_NAMES_$(1)) $(2)))
+$(eval SYSCONFIG_$(1)_$(2) = $(3))
+endef
+
 endif # __included-functions-mk

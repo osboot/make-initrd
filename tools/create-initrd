@@ -1,6 +1,7 @@
 #!/bin/bash -efu
 
 . shell-error
+. shell-quote
 
 FEATUREFILES=()
 LOCALFILES=()
@@ -292,9 +293,14 @@ done
 
 ln -s /proc/self/mounts ./etc/mtab
 
-# No shell access inside initramfs by default.
-[ -s ./etc/sysconfig/rdshell ] ||
-	printf 'RDSHELL_MODE=disable\n' >./etc/sysconfig/rdshell
+for filename in ${_SYSCONFIG_GROUPS-}; do
+	eval "vars=\"\${_SYSCONFIG_NAMES_${filename}-}\""
+	for varname in $vars; do
+		eval "value=\"\${SYSCONFIG_${filename}_${varname}-}\""
+		quote_shell_variable value "$value"
+		printf '%s="%s"\n' "$varname" "$value"
+	done >> "./etc/sysconfig/$filename"
+done
 
 for d in lib etc; do
 	if [ -d "/$d/modprobe.d" ]; then

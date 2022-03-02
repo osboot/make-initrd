@@ -3,12 +3,7 @@
 DIR="$WORKDIR/root"
 mkdir -p -- "$DIR/etc"
 
-if mkdir -- "$DIR/etc/sysconfig" 2>/dev/null; then
-	$FEATURESDIR/kbd/bin/get-config > "$DIR/etc/sysconfig/console.$$"
-	mv -f -- "$DIR/etc/sysconfig/console.$$" "$DIR/etc/sysconfig/console"
-fi
-
-. "$DIR/etc/sysconfig/console"
+. ${TEMPDIR:-/tmp}/console.sh
 
 case "${1-}" in
 	files)

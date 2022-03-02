@@ -1,4 +1,19 @@
-KBD_MODULES := $(shell $(FEATURESDIR)/kbd/bin/get-modules)
+KBD_GENERATE_CONFIG_ONCE := $(shell $(FEATURESDIR)/kbd/bin/get-config)
+
+GARBAGE += \
+	$(TEMPDIR)/console.sh \
+	$(TEMPDIR)/console.mk
+
+include $(TEMPDIR)/console.mk
+
+$(call set-sysconfig,console,CONSOLE_BACKSPACE,$(CONSOLE_BACKSPACE))
+$(call set-sysconfig,console,CONSOLE_FONT,$(CONSOLE_FONT))
+$(call set-sysconfig,console,CONSOLE_FONT_UNIMAP,$(CONSOLE_FONT_UNIMAP))
+$(call set-sysconfig,console,CONSOLE_GRP_TOGGLE,$(CONSOLE_GRP_TOGGLE))
+$(call set-sysconfig,console,CONSOLE_KEYMAP,$(CONSOLE_KEYMAP))
+$(call set-sysconfig,console,CONSOLE_TTYS,$(CONSOLE_TTYS))
+$(call set-sysconfig,console,CONSOLE_UNICODE,$(CONSOLE_UNICODE))
+
 KBD_DIRS    := $(shell $(FEATURESDIR)/kbd/bin/get-data dirs)
 KBD_FILES   := $(shell env \
 	"KBD_DATA_DIR=$(KBD_DATA_DIR)" \
@@ -6,8 +21,6 @@ KBD_FILES   := $(shell env \
 	"KBD_UNIMAPS_DIR=$(KBD_UNIMAPS_DIR)" \
 	"KBD_KEYMAPS_DIR=$(KBD_KEYMAPS_DIR)" \
 	$(FEATURESDIR)/kbd/bin/get-data files)
-
-MODULES_ADD += $(KBD_MODULES)
 
 PUT_FEATURE_DIRS  += $(KBD_DATADIR) $(KBD_DIRS)
 PUT_FEATURE_FILES += $(KBD_FILES)

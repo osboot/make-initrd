@@ -15,9 +15,6 @@ case "${1-}" in
 
 		mkdir -p -- "$DIR/etc/sysconfig"
 
-		[ -e "$DIR/etc/sysconfig/rdshell" ] ||
-			echo "RDSHELL_MODE=$RDSHELL" >"$DIR/etc/sysconfig/rdshell"
-
 		hash="${RDSHELL_PASSWORD-}"
 		[ -z "${RDSHELL_COPY_PASSWORD_FROM_USER-}" ] ||
 			hash="$(getent shadow "${RDSHELL_COPY_PASSWORD_FROM_USER-}" |cut -d: -f2)"

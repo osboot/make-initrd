@@ -62,7 +62,13 @@ ${KBD_TTYS:+               CONSOLE_TTYS        $KBD_TTYS}
 ${KBD_UNICODE:+            CONSOLE_UNICODE     $KBD_UNICODE}
 EOF
 
+cd "${TEMPDIR:-/tmp}"
+
+:> console.sh
+:> console.mk
+
 for n in $NAMES; do
 	eval "v=\"\$$n\""
-	printf '%s=\"%s\"\n' "$n" "$v"
+	printf '%s=\"%s\"\n' "$n" "$v" >> console.sh
+	printf '%s = %s\n'   "$n" "$v" >> console.mk
 done
