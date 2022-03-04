@@ -293,10 +293,16 @@ done
 
 ln -s /proc/self/mounts ./etc/mtab
 
-for filename in ${_SYSCONFIG_GROUPS-}; do
-	eval "vars=\"\${_SYSCONFIG_NAMES_${filename}-}\""
+n_file=0
+for filename in ${SYSCONFIG_FILES-}; do
+	n_file=$(($n_file + 1))
+	eval "vars=\"\${SYSCONFIG_NAMES_${n_file}-}\""
+
+	n_var=0
 	for varname in $vars; do
-		eval "value=\"\${SYSCONFIG_${filename}_${varname}-}\""
+		n_var=$(($n_var + 1))
+		eval "value=\"\${SYSCONFIG_${n_file}_${n_var}-}\""
+
 		quote_shell_variable value "$value"
 		printf '%s="%s"\n' "$varname" "$value"
 	done >> "./etc/sysconfig/$filename"
