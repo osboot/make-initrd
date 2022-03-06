@@ -1,0 +1,43 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+cat >"$cwd/Makefile" <<EOF
+include $PWD/.build/dest/usr/share/make-initrd/mk/functions.mk
+EOF
+
+cat >>"$cwd/Makefile" <<'EOF'
+
+TRUE_CMD  := /bin/true
+FALSE_CMD := /bin/false
+
+ifeq ($(call success,$(TRUE_CMD)),y)
+  $(info success: $(TRUE_CMD) == y)
+endif
+
+ifeq ($(call success,$(FALSE_CMD)),n)
+  $(info success: $(FALSE_CMD) == n)
+endif
+
+ifeq ($(call failure,$(FALSE_CMD)),y)
+  $(info failure: $(FALSE_CMD) == y)
+endif
+
+ifeq ($(call failure,$(TRUE_CMD)),n)
+  $(info failure: $(FALSE_CMD) == n)
+endif
+
+ifeq ($(call success,),y)
+ $(error success: <none> == y)
+endif
+
+ifeq ($(call failure,),y)
+ $(error failure: <none> == y)
+endif
+
+all:
+	@:
+EOF
+
+make --no-print-directory -C "$cwd"
+rm -f -- "$cwd/Makefile"

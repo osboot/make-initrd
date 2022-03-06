@@ -1,0 +1,22 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+cat >"$cwd/Makefile" <<EOF
+include $PWD/.build/dest/usr/share/make-initrd/mk/functions.mk
+
+TOPDIR = $PWD
+FEATURESDIR = $cwd
+EOF
+
+cat >>"$cwd/Makefile" <<'EOF'
+
+$(foreach inc,$(sort $(call wildcard-features,config.mk)),$(info FILE(config.mk): $(patsubst $(TOPDIR)/%,%,$(inc))))
+$(foreach inc,$(sort $(call wildcard-features,rules.mk)),$(info FILE(rules.mk): $(patsubst $(TOPDIR)/%,%,$(inc))))
+
+all:
+	@:
+EOF
+
+make --no-print-directory -C "$cwd"
+rm -f -- "$cwd/Makefile"

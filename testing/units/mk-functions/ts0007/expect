@@ -1,0 +1,5 @@
+success: /bin/true == y
+success: /bin/false == n
+failure: /bin/false == y
+failure: /bin/false == n
+rc=0

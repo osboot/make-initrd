@@ -1,0 +1,1 @@
+$(info aaa/rules.mk)

@@ -1,0 +1,20 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+cat >"$cwd/Makefile" <<EOF
+include $PWD/.build/dest/usr/share/make-initrd/mk/functions.mk
+
+FEATURESDIR = $cwd
+EOF
+
+cat >>"$cwd/Makefile" <<'EOF'
+
+$(call include-features-once,aaa aaa aaa)
+
+all:
+	@:
+EOF
+
+make --no-print-directory -C "$cwd"
+rm -f -- "$cwd/Makefile"
