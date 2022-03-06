@@ -1,0 +1,25 @@
+FILE: f1
+AAA="1"
+aaa="4"
+_FILES="7"
+_FILES_="8"
+_NAMES="9"
+_NAMES_="10"
+
+FILE: f2
+Aaa="2"
+aAa="3"
+
+FILE: f3
+a-="5"
+-a="6"
+a=="7"
+
+FILE: f4
+aaa="1 2 3"
+bbb="\"1 2 3\""
+ccc="/tmp/zzz"
+ddd="\$(HOMEDIR)"
+eee="\`ls -la /\`"
+
+rc=0

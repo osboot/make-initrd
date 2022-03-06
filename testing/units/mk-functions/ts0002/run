@@ -1,0 +1,39 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+cat >"$cwd/Makefile" <<EOF
+include $PWD/.build/dest/usr/share/make-initrd/mk/functions.mk
+EOF
+
+cat >>"$cwd/Makefile" <<'EOF'
+.EXPORT_ALL_VARIABLES:
+
+HOMEDIR := /tmp/zzz
+
+$(call set-sysconfig,f1,AAA,1)
+$(call set-sysconfig,f2,Aaa,2)
+$(call set-sysconfig,f2,aAa,3)
+$(call set-sysconfig,f1,aaa,4)
+
+$(call set-sysconfig,f3,a-,5)
+$(call set-sysconfig,f3,-a,6)
+$(call set-sysconfig,f3,a=,7)
+
+$(call set-sysconfig,f1,_FILES,7)
+$(call set-sysconfig,f1,_FILES_,8)
+$(call set-sysconfig,f1,_NAMES,9)
+$(call set-sysconfig,f1,_NAMES_,10)
+
+$(call set-sysconfig,f4,aaa,1 2 3)
+$(call set-sysconfig,f4,bbb,"1 2 3")
+$(call set-sysconfig,f4,ccc,$(HOMEDIR))
+$(call set-sysconfig,f4,ddd,$$(HOMEDIR))
+$(call set-sysconfig,f4,eee,`ls -la /`)
+
+all:
+	@./print-vars
+EOF
+
+make --no-print-directory -C "$cwd"
+rm -f -- "$cwd/Makefile"

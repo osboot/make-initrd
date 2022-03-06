@@ -1,0 +1,22 @@
+#!/bin/bash -efu
+
+. shell-quote
+
+n_file=0
+for filename in ${SYSCONFIG_FILES-}; do
+	printf 'FILE: %s\n' "$filename"
+
+	n_file=$(($n_file + 1))
+	eval "vars=\"\${SYSCONFIG_NAMES_${n_file}-}\""
+
+	n_var=0
+	for varname in $vars; do
+		n_var=$(($n_var + 1))
+		eval "value=\"\${SYSCONFIG_${n_file}_${n_var}-}\""
+
+		quote_shell_variable value "$value"
+		printf '%s="%s"\n' "$varname" "$value"
+	done
+
+	printf '\n'
+done

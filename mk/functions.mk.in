@@ -209,7 +209,7 @@ $(eval n-file := $(call word-position,$(1),$(SYSCONFIG_FILES) $(1)))\
 $(eval n-name := $(call word-position,$(2),$(SYSCONFIG_NAMES_$(n-file)) $(2)))\
 $(if $(filter $(1),$(SYSCONFIG_FILES)),,$(eval SYSCONFIG_FILES += $(1)))\
 $(if $(filter $(2),$(SYSCONFIG_NAMES_$(n-file))),,$(eval SYSCONFIG_NAMES_$(n-file) += $(2)))\
-$(eval SYSCONFIG_$(n-file)_$(n-name) = $(3))\
+$(eval SYSCONFIG_$(n-file)_$(n-name) = $(subst $$,$$$$,$(3)))\
 $(eval undefine n-file)\
 $(eval undefine n-name)
 endef
