@@ -1,0 +1,40 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+cat >"$cwd/Makefile" <<EOF
+include $PWD/.build/dest/usr/share/make-initrd/mk/functions.mk
+EOF
+
+cat >>"$cwd/Makefile" <<'EOF'
+
+LIST :=
+
+$(info LIST = $(LIST))
+$(info aaa = $(call word-position,aaa,$(LIST)))
+$(info ===)
+
+LIST := aaa
+
+$(info LIST = $(LIST))
+$(info aaa = $(call word-position,aaa,$(LIST)))
+$(info ===)
+
+LIST := aaa bbb ccc
+
+$(info LIST = $(LIST))
+$(info aaa = $(call word-position,aaa,$(LIST)))
+$(info bbb = $(call word-position,bbb,$(LIST)))
+$(info ccc = $(call word-position,ccc,$(LIST)))
+$(info ===)
+
+$(info LIST = $(LIST))
+$(info foo = $(call word-position,foo,$(LIST)))
+$(info ===)
+
+all:
+	@:
+EOF
+
+make --no-print-directory -C "$cwd"
+rm -f -- "$cwd/Makefile"

@@ -1,0 +1,15 @@
+LIST = 
+aaa = 
+===
+LIST = aaa
+aaa = 1
+===
+LIST = aaa bbb ccc
+aaa = 1
+bbb = 2
+ccc = 3
+===
+LIST = aaa bbb ccc
+foo = 
+===
+rc=0
