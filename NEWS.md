@@ -1,3 +1,24 @@
+Version 2.26.0
+
+- Runtime:
+  + Show a message if the root is not found for more than 15 seconds.
+- New fearure:
+  + Add locales feature. The feature adds locales and translations of utilities.
+- Feature ucode:
+  + Don't throw an error if no cpu updates are found for intel.
+  + Fix firmware definition for amd cpu.
+- Feature raid:
+  + Remove feature due to deprecation.
+- Feature cleanup:
+  + Allow to delete temporary files of features.
+- Utilities:
+  + initrd-ls, initrd-extract: Fix use-after-free if cpio is empty.
+  + replace: Replace utility with bash builtins.
+- Misc:
+  + By default show only summary about the build of image.
+  + Generate content of sysconfig files.
+  + Add more unit tests.
+
 Version 2.25.0
 
 - New fearure:
