@@ -117,7 +117,7 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 		if (rc < 0)
 			goto exit;
 		if (rc > 0) {
-			is_match = 1;
+			is_match |= RULESET_HAS_PATHS;
 
 			if (verbose > 1)
 				warnx("%s: path matches", kmod_module_get_path(mod));
@@ -139,7 +139,7 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 			if (rc < 0)
 				goto exit;
 			if (rc > 0) {
-				is_match = 1;
+				is_match |= RULESET_HAS_INFO;
 
 				if (verbose > 1)
 					warnx("%s: the module information matches", kmod_module_get_path(mod));
@@ -167,7 +167,7 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 			if (rc < 0)
 				goto exit;
 			if (rc > 0) {
-				is_match = 1;
+				is_match |= RULESET_HAS_SYMBOLS;
 
 				if (verbose > 1)
 					warnx("%s: symbols matches", kmod_module_get_path(mod));
@@ -193,7 +193,7 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 			if (rc < 0)
 				goto exit;
 			if (rc > 0) {
-				is_match = 1;
+				is_match |= RULESET_HAS_SYMBOLS;
 
 				if (verbose > 1)
 					warnx("%s: symbols matches", kmod_module_get_path(mod));
@@ -208,7 +208,7 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 			goto exit;
 		}
 	}
-	if (is_match)
+	if (set->flags == is_match)
 		printf("%s\n", kmod_module_get_path(mod));
 exit:
 	if (mod)
