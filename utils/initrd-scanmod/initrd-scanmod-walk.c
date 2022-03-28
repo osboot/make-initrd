@@ -108,13 +108,23 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 	if (!(modname = kmod_module_get_name(mod)))
 		goto exit;
 
+	if (verbose > 1)
+		warnx("%s: checking module against the ruleset patterns from %s ...", kmod_module_get_path(mod), set->filename);
+
 	if (set->flags & RULESET_HAS_PATHS) {
 		rc = match_filename(kmod_module_get_path(mod), set->paths);
 
 		if (rc < 0)
 			goto exit;
-		if (rc > 0)
+		if (rc > 0) {
 			is_match = 1;
+
+			if (verbose > 1)
+				warnx("%s: path matches", kmod_module_get_path(mod));
+		} else {
+			if (verbose > 1)
+				warnx("%s: path does not match", kmod_module_get_path(mod));
+		}
 	}
 
 	if (set->flags & RULESET_HAS_INFO) {
@@ -128,8 +138,15 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 
 			if (rc < 0)
 				goto exit;
-			if (rc > 0)
+			if (rc > 0) {
 				is_match = 1;
+
+				if (verbose > 1)
+					warnx("%s: the module information matches", kmod_module_get_path(mod));
+			} else {
+				if (verbose > 1)
+					warnx("%s: the module information does not match", kmod_module_get_path(mod));
+			}
 
 		} else if (rc < 0) {
 			errno = -rc;
@@ -149,8 +166,15 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 
 			if (rc < 0)
 				goto exit;
-			if (rc > 0)
+			if (rc > 0) {
 				is_match = 1;
+
+				if (verbose > 1)
+					warnx("%s: symbols matches", kmod_module_get_path(mod));
+			} else {
+				if (verbose > 1)
+					warnx("%s: symbols does not match", kmod_module_get_path(mod));
+			}
 
 		} else if (rc < 0 && rc != -ENOENT) {
 			errno = -rc;
@@ -168,8 +192,15 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 
 			if (rc < 0)
 				goto exit;
-			if (rc > 0)
+			if (rc > 0) {
 				is_match = 1;
+
+				if (verbose > 1)
+					warnx("%s: symbols matches", kmod_module_get_path(mod));
+			} else {
+				if (verbose > 1)
+					warnx("%s: symbols does not match", kmod_module_get_path(mod));
+			}
 
 		} else if (rc < 0 && rc != -ENOENT) {
 			errno = -rc;

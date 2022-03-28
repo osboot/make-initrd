@@ -12,11 +12,14 @@
 #include "initrd-scanmod.h"
 #include "config.h"
 
-const char short_opts[]         = "Vhb:k:";
+int verbose = 0;
+
+const char short_opts[]         = "Vhb:k:v";
 const struct option long_opts[] = {
 	{ "set-version", required_argument, 0, 'k' },
 	{ "base-dir", required_argument, 0, 'b' },
 	{ "help", no_argument, NULL, 'h' },
+	{ "verbose", no_argument, NULL, 'v' },
 	{ "version", no_argument, NULL, 'V' },
 	{ NULL, 0, NULL, 0 }
 };
@@ -30,6 +33,7 @@ usage(const char *progname, int code)
 	        "Options:\n"
 	        " -k, --set-version=VERSION   use VERSION instead of `uname -r`;\n"
 	        " -b, --base-dir=DIR          use DIR as filesystem root for /lib/modules;\n"
+	        " -v, --verbose               print a message for each action;\n"
 	        " -h, --help                  display this help and exit;\n"
 	        " -V, --version               output version information and exit.\n"
 	        "\n"
@@ -68,6 +72,9 @@ main(int argc, char **argv)
 			case 'b':
 				basedir = optarg;
 				break;
+			case 'v':
+				verbose++;
+				break;
 			case 'h':
 				usage(basename(argv[0]), EXIT_SUCCESS);
 				break;
@@ -94,6 +101,9 @@ main(int argc, char **argv)
 	}
 
 	xasprintf(&kerneldir, "%s/lib/modules/%s", basedir, kversion);
+
+	if (verbose)
+		warnx("kernel directory: %s", kerneldir);
 
 	parse_rules(argc - optind, argv + optind);
 	find_modules(kerneldir);

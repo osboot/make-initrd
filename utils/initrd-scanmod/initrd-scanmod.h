@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <regex.h>
 
+extern int verbose;
+
 // findmodule-common.c
 void *xmalloc(size_t size);
 void *xrealloc(void *ptr, size_t nmemb, size_t elem_size);
