@@ -26,43 +26,48 @@ static int
 match_filename(const char *filename, struct rule_pair **filters)
 {
 	int i               = 0;
-	int rc              = 0;
 	struct rule_pair *r = NULL;
 
 	if (!filters)
-		return rc;
+		return 0;
 
 	r = filters[i++];
 
 	while (r) {
-		if (!regexec(r->value, filename, 0, NULL, 0)) {
-			switch (r->type) {
-				case RULE_NOT_MATCH:
-					return -1;
-				case RULE_MATCH:
-					rc = 1;
-			}
+		int is_match = !regexec(r->value, filename, 0, NULL, 0);
+
+		switch (r->type) {
+			case RULE_MATCH:
+				if (!is_match)
+					return 0;
+				break;
+			case RULE_NOT_MATCH:
+				if (is_match)
+					return 0;
+				break;
 		}
+
 		r = filters[i++];
 	}
 
-	return rc;
+	return 1;
 }
 
 static int
 match(struct kmod_list *symlist, struct rule_pair **filters, get_list_key_t *get_key, get_list_val_t *get_val)
 {
 	int i               = 0;
-	int rc              = 0;
 	struct rule_pair *r = NULL;
 	struct kmod_list *l = NULL;
 
-	if (!filters)
-		return rc;
+	if (!filters || !get_val)
+		return 0;
 
 	r = filters[i++];
 
 	while (r) {
+		int is_match = 0;
+
 		kmod_list_foreach(l, symlist) {
 			if (get_key) {
 				const char *key = get_key(l);
@@ -71,25 +76,30 @@ match(struct kmod_list *symlist, struct rule_pair **filters, get_list_key_t *get
 					continue;
 			}
 
-			if (!get_val)
-				continue;
-
 			const char *val = get_val(l);
 
-			if (!val || regexec(r->value, val, 0, NULL, 0))
+			if (!val)
 				continue;
 
-			switch (r->type) {
-				case RULE_NOT_MATCH:
-					return -1;
-				case RULE_MATCH:
-					rc = 1;
-			}
+			if (!regexec(r->value, val, 0, NULL, 0))
+				is_match = 1;
 		}
+
+		switch (r->type) {
+			case RULE_MATCH:
+				if (!is_match)
+					return 0;
+				break;
+			case RULE_NOT_MATCH:
+				if (is_match)
+					return 0;
+				break;
+		}
+
 		r = filters[i++];
 	}
 
-	return rc;
+	return 1;
 }
 
 static int
