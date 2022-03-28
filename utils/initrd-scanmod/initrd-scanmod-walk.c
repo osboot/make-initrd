@@ -182,30 +182,32 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 			goto exit;
 		}
 
-		rc = kmod_module_get_dependency_symbols(mod, &symlist);
+		if (!(is_match & RULESET_HAS_SYMBOLS)) {
+			rc = kmod_module_get_dependency_symbols(mod, &symlist);
 
-		if (rc > 0) {
-			rc = match(symlist, set->symbols, NULL, &kmod_module_dependency_symbol_get_symbol);
-
-			kmod_module_dependency_symbols_free_list(symlist);
-			symlist = NULL;
-
-			if (rc < 0)
-				goto exit;
 			if (rc > 0) {
-				is_match |= RULESET_HAS_SYMBOLS;
+				rc = match(symlist, set->symbols, NULL, &kmod_module_dependency_symbol_get_symbol);
 
-				if (verbose > 1)
-					warnx("%s: symbols matches", kmod_module_get_path(mod));
-			} else {
-				if (verbose > 1)
-					warnx("%s: symbols does not match", kmod_module_get_path(mod));
+				kmod_module_dependency_symbols_free_list(symlist);
+				symlist = NULL;
+
+				if (rc < 0)
+					goto exit;
+				if (rc > 0) {
+					is_match |= RULESET_HAS_SYMBOLS;
+
+					if (verbose > 1)
+						warnx("%s: symbols matches", kmod_module_get_path(mod));
+				} else {
+					if (verbose > 1)
+						warnx("%s: symbols does not match", kmod_module_get_path(mod));
+				}
+
+			} else if (rc < 0 && rc != -ENOENT) {
+				errno = -rc;
+				warn("Could not get dependency symbols from '%s'", modname);
+				goto exit;
 			}
-
-		} else if (rc < 0 && rc != -ENOENT) {
-			errno = -rc;
-			warn("Could not get dependency symbols from '%s'", modname);
-			goto exit;
 		}
 	}
 	if (set->flags == is_match)
