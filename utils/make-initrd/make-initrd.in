@@ -194,6 +194,8 @@ else
 	export IGNORE_PRIV_CHECKS=1
 fi
 
+TMPDIR="$(readlink -ev "${TMPDIR-/tmp}")"
+
 WORKDIR="${INITRD_WORKDIR-}"
 WORKDIR="${WORKDIR:-${TMPDIR-}}"
 WORKDIR="${WORKDIR:-/tmp}"
@@ -217,7 +219,7 @@ fi
 [ -z "$no_depmod" ] ||
 	export IGNORE_DEPMOD=1
 
-export TEMPDIR KERNEL BOOTDIR VERBOSE FEATURE_NAMES
+export TMPDIR TEMPDIR KERNEL BOOTDIR VERBOSE FEATURE_NAMES
 unset MAKELEVEL
 
 read -r make_version <<EOF
