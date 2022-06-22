@@ -100,9 +100,6 @@ freekey() {
 findkey() {
 	local path keydev luksdev prefix s v
 
-	[ -f /etc/luks.keys ] ||
-		return 2
-
 	while IFS='' read -u 3 -r s; do
 		for n in path keydev luksdev; do
 			v=
@@ -201,8 +198,9 @@ handler() {
 	! match_dev_in_array LUKS_DISCARD "$LUKS_ROOT" ||
 		luks_discard=--allow-discards
 
-	local rc=0 keyfile=
-	if [ -n "$LUKS_KEY" ] && [ "$LUKS_KEY" != 0 ]; then
+	local rc=0 keyfile=''
+
+	if [ -f /etc/luks.keys ]; then
 		findkey ||
 			rc="$?"
 		[ "$rc" != 0 ] ||

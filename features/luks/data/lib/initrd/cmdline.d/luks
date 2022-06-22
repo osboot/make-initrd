@@ -1,0 +1,11 @@
+#!/bin/bash -efu
+
+. /.initrd/initenv
+
+[ -z "${NO_LUKS-}" ] ||
+	exit 0
+
+[ -n "$LUKS_KEY" ] && [ "$LUKS_KEY" != 0 ] ||
+	exit 0
+
+touch /etc/luks.keys
