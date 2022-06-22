@@ -16,6 +16,7 @@ jobs:
         test: [
           "btrfs-subvol",
           "luks",
+          "luks+lukskey-noparam",
           "luks+lukskey-plain",
           "luks+lukskey-raw",
           "luks-over-lvm",
@@ -24,8 +25,8 @@ jobs:
           "lvm+luks",
           "partition",
           "raid1",
-          "raid1-degraded",
           "raid1+raid5",
+          "raid1-degraded",
           "raid5",
         ]
       fail-fast: false
