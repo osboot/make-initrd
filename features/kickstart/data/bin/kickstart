@@ -142,10 +142,30 @@ KS_ORDERS=(
 	9200000000:shutdown
 )
 
+get_device_type()
+{
+	local id="$1"; shift
+	local block=
+	local maj type
+
+	while read -r maj type; do
+		if [ -n "$block" ] && [ "$id" = "$maj" ]; then
+			echo "$type"
+			return 0
+		fi
+
+		[ "$maj $type" != 'Block devices:' ] ||
+			block=1
+	done </proc/devices
+	return 1
+}
+
 ks_block_devices()
 {
 	local retval="$1"; shift
 	local f dev
+	local maj min
+	local blocktype
 	local exclude=','
 
 	for f in $(findmnt -lno SOURCE | sed -n -e 's,^/dev/,,p'); do
@@ -161,11 +181,13 @@ ks_block_devices()
 		[ -e "$f" ] ||
 			continue
 
-		dev=
-		read -r dev < "$f/dev"
+		maj=
+		min=
+		IFS=: read -r maj min < "$f/dev"
+		blocktype="$(get_device_type "$maj")"
 
-		case "$dev" in
-			8:*|252:*)
+		case "$blocktype" in
+			sd|virtblk)
 				;;
 			*)
 				continue
