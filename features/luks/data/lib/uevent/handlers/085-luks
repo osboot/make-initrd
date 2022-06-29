@@ -184,6 +184,34 @@ readkey() {
 	esac
 }
 
+cryptsetup_ask_pass() {
+	local rc=0
+
+	{
+		printf 'exec cryptsetup'
+		printf ' %q' "$@"
+	} > /.initrd/cryptsetup-ask-pass
+
+	if plymouth --ping 2>/dev/null; then
+		plymouth ask-for-password \
+			--prompt "Please enter passphrase for $LUKS_ROOT:" \
+			--number-of-tries=3 \
+			--command="bash /.initrd/cryptsetup-ask-pass"
+		rc="$?"
+	else
+		rc=2
+		# WARNING: Wait decrypt forever!
+		while [ "$rc" = 2 ]; do
+			bash /.initrd/cryptsetup-ask-pass
+			rc="$?"
+		done
+	fi
+
+	rm -f -- /.initrd/cryptsetup-ask-pass
+
+	return $rc
+}
+
 handler() {
 	volume="${LUKS_ROOT##*/}-luks"
 
@@ -208,20 +236,8 @@ handler() {
 			rc="$?"
 		freekey
 	else
-		if plymouth --ping 2>/dev/null; then
-			plymouth ask-for-password \
-				--prompt "Please enter passphrase for $LUKS_ROOT:" \
-				--number-of-tries=3 \
-				--command="cryptsetup ${luks_args[*]} luksOpen $LUKS_ROOT $volume"
+		cryptsetup_ask_pass "${luks_args[@]}" luksOpen "$LUKS_ROOT" "$volume" ||
 			rc="$?"
-		else
-			rc=2
-			# WARNING: Wait decrypt forever!
-			while [ "$rc" = 2 ]; do
-				cryptsetup "${luks_args[@]}" luksOpen "$LUKS_ROOT" "$volume"
-				rc="$?"
-			done
-		fi
 	fi
 
 	if [ "$rc" != 0 ]; then
