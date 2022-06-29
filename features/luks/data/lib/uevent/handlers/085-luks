@@ -1,6 +1,9 @@
 #!/bin/bash
 
 . /.initrd/initenv
+
+. shell-var
+
 . uevent-sh-functions
 . initrd-sh-functions
 . rdshell-sh-functions
@@ -227,18 +230,33 @@ handler() {
 	! match_dev_in_array LUKS_DISCARD "$LUKS_ROOT" ||
 		luks_args+=(--allow-discards)
 
-	local rc=0 keyfile='' tries=3
+	local rc=0 keyfile='' pipekey=n headless=n tries=3 luks_type=luks
 
 	if [ -f /etc/luks.keys ]; then
 		findkey ||
 			rc="$?"
-		[ "$rc" != 0 ] ||
-			{ readkey "$keyfile" |cryptsetup "${luks_args[@]}" -d- luksOpen "$LUKS_ROOT" "$volume"; } ||
+		if [ $rc -eq 0 ]; then
+			luks_args+=(-d-)
+			pipekey=y
+		fi
+		headless=y
+	fi
+
+	set -- "${luks_args[@]}" open --type "$luks_type" "$LUKS_ROOT" "$volume"
+
+	if shell_var_is_yes "$headless"; then
+		if [ "$rc" -eq 0 ]; then
+			if shell_var_is_yes "$pipekey"; then
+				{ readkey "$keyfile" | cryptsetup "$@"; }
+			else
+				cryptsetup "$@"
+			fi
 			rc="$?"
+		fi
 		freekey
 	else
-		cryptsetup_ask_pass "${luks_args[@]}" luksOpen "$LUKS_ROOT" "$volume" ||
-			rc="$?"
+		cryptsetup_ask_pass "$@"
+		rc="$?"
 	fi
 
 	if [ "$rc" != 0 ]; then
