@@ -185,7 +185,7 @@ readkey() {
 }
 
 cryptsetup_ask_pass() {
-	local rc=0
+	local rc=0 tries=${tries:-3}
 
 	{
 		printf 'exec cryptsetup'
@@ -195,15 +195,16 @@ cryptsetup_ask_pass() {
 	if plymouth --ping 2>/dev/null; then
 		plymouth ask-for-password \
 			--prompt "Please enter passphrase for $LUKS_ROOT:" \
-			--number-of-tries=3 \
+			--number-of-tries=$tries \
 			--command="bash /.initrd/cryptsetup-ask-pass"
 		rc="$?"
 	else
 		rc=2
 		# WARNING: Wait decrypt forever!
-		while [ "$rc" = 2 ]; do
+		while [ "$rc" = 2 ] && [ "$tries" -ne 0 ]; do
 			bash /.initrd/cryptsetup-ask-pass
 			rc="$?"
+			tries=$(( $tries - 1 ))
 		done
 	fi
 
@@ -226,7 +227,7 @@ handler() {
 	! match_dev_in_array LUKS_DISCARD "$LUKS_ROOT" ||
 		luks_args+=(--allow-discards)
 
-	local rc=0 keyfile=''
+	local rc=0 keyfile='' tries=3
 
 	if [ -f /etc/luks.keys ]; then
 		findkey ||
