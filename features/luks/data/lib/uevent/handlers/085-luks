@@ -185,18 +185,18 @@ readkey() {
 }
 
 handler() {
-	nameluks="${LUKS_ROOT##*/}-luks"
+	volume="${LUKS_ROOT##*/}-luks"
 
-	# skip if $nameluks has already exist
-	! dmsetup info "$nameluks" >/dev/null 2>&1 ||
+	# skip if $volume has already exist
+	! dmsetup info "$volume" >/dev/null 2>&1 ||
 		exit 0
 
 	! match_dev_in_array LUKS_IGNORE "$LUKS_ROOT" ||
 		exit 0
 
-	luks_discard=
+	luks_args=()
 	! match_dev_in_array LUKS_DISCARD "$LUKS_ROOT" ||
-		luks_discard=--allow-discards
+		luks_args+=(--allow-discards)
 
 	local rc=0 keyfile=''
 
@@ -204,7 +204,7 @@ handler() {
 		findkey ||
 			rc="$?"
 		[ "$rc" != 0 ] ||
-			{ readkey "$keyfile" |cryptsetup $luks_discard -d- luksOpen "$LUKS_ROOT" "$nameluks"; } ||
+			{ readkey "$keyfile" |cryptsetup "${luks_args[@]}" -d- luksOpen "$LUKS_ROOT" "$volume"; } ||
 			rc="$?"
 		freekey
 	else
@@ -212,13 +212,13 @@ handler() {
 			plymouth ask-for-password \
 				--prompt "Please enter passphrase for $LUKS_ROOT:" \
 				--number-of-tries=3 \
-				--command="cryptsetup $luks_discard luksOpen $LUKS_ROOT $nameluks"
+				--command="cryptsetup ${luks_args[*]} luksOpen $LUKS_ROOT $volume"
 			rc="$?"
 		else
 			rc=2
 			# WARNING: Wait decrypt forever!
 			while [ "$rc" = 2 ]; do
-				cryptsetup $luks_discard luksOpen "$LUKS_ROOT" "$nameluks"
+				cryptsetup "${luks_args[@]}" luksOpen "$LUKS_ROOT" "$volume"
 				rc="$?"
 			done
 		fi
