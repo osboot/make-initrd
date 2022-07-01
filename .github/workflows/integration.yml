@@ -16,6 +16,7 @@ jobs:
         test: [
           "btrfs-subvol",
           "luks",
+          "luks+crypttab+noparam",
           "luks+lukskey-noparam",
           "luks+lukskey-plain",
           "luks+lukskey-raw",
