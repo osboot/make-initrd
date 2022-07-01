@@ -50,6 +50,11 @@ jobs:
           echo "status=$value"
           echo "::set-output name=status::$value"
 
+      - name: "Prepare KVM"
+        if: steps.last-status.outputs.status != 'passed'
+        run: |
+          test -c /dev/kvm && sudo chmod -v 666 /dev/kvm ||:
+
       - name: "Install packages"
         if: steps.last-status.outputs.status != 'passed'
         run: |
@@ -114,6 +119,11 @@ jobs:
           value="$(cat ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ matrix.nettype }}-${{ github.sha }})"
           echo "status=$value"
           echo "::set-output name=status::$value"
+
+      - name: "Prepare KVM"
+        if: steps.last-status.outputs.status != 'passed'
+        run: |
+          test -c /dev/kvm && sudo chmod -v 666 /dev/kvm ||:
 
       - name: "Install packages"
         if: steps.last-status.outputs.status != 'passed'
