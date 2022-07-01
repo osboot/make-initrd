@@ -1,0 +1,88 @@
+#!/bin/bash -efu
+
+[ -s "$LUKS_CRYPTTAB" ] ||
+	exit 0
+
+. shell-error
+. "$FEATURESDIR"/luks/data/bin/crypttab-sh-functions
+
+DIR="$WORKDIR/root"
+unsupported=()
+
+join_by()
+{
+	local IFS="$1"; shift
+	echo "$*"
+}
+
+crypttab_entry()
+{
+	local o
+
+	if [ -z "${LUKS_ALL_CRYPTTAB-}" ]; then
+		local needed=''
+
+		for o in "${option[@]}"; do
+			if [ "$o" = 'x-initrd.attach' ]; then
+				needed=1
+				break
+			fi
+		done
+
+		[ -n "$needed" ] ||
+			return 0
+	fi
+
+	case "$keyspec" in
+		''|'none'|'-')
+			for o in etc run; do
+				file="/$o/cryptsetup-keys.d/$volume.key"
+				if [ -f "$file" ]; then
+					mkdir -p -- "$DIR/etc/cryptsetup-keys.d"
+					cp -- "$file" "$DIR/etc/cryptsetup-keys.d/$volume.key"
+					break
+				fi
+			done
+			;;
+	esac
+
+	if [ -z "$keydev" ] && [ -f "$keyfile" ]; then
+		mkdir -p -- "$DIR/${keyfile%/*}"
+		cp -- "$keyfile" "$DIR/$keyfile"
+	fi
+
+	for o in "${option[@]}"; do
+		case "$o" in
+			pkcs11-uri=*)
+				unsupported+=('PKCS11')
+				;;
+			fido2-device=*)
+				unsupported+=('FIDO2')
+				;;
+			tpm2-device=*)
+				unsupported+=('TPM2')
+				;;
+			tcrypt-keyfile=*)
+				keyfile="${o#*=}"
+				mkdir -p -- "$DIR/${keyfile%/*}"
+				cp -- "$keyfile" "$DIR/$keyfile"
+				;;
+		esac
+	done
+
+	printf '%s %s %s %s\n' \
+		"$volume" "$encryptdev" "$keyspec" "$stroptions" \
+		>> "$DIR/etc/crypttab"
+
+	return 0
+}
+
+mkdir -p -- "$DIR/etc"
+
+shell_foreach_crypttab "$LUKS_CRYPTTAB" crypttab_entry ||:
+
+if [ "${#unsupported[@]}" -gt 0 ]; then
+	message "luks: $(join_by , "${unsupported[@]}") from crypttab is not supported."
+fi
+
+printf '%s\n' "$DIR"

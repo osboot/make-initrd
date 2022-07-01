@@ -10,3 +10,6 @@ LUKS_MODULES		 = dm-crypt af_packet $(LUKS_CIPHERS) $(LUKS_BLOCKCIPHERS) $(LUKS_
 ifdef $(call if_kernel_version_greater_or_equal,5.4.0)
 LUKS_BLOCKCIPHERS += essiv
 endif
+
+LUKS_ALL_CRYPTTAB = 1
+LUKS_CRYPTTAB = $(wildcard /etc/crypttab)

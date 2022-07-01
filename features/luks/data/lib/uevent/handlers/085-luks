@@ -7,11 +7,12 @@
 . uevent-sh-functions
 . initrd-sh-functions
 . rdshell-sh-functions
+. crypttab-sh-functions
 
 mnt="/mnt/luks-key"
 tab='	'
 pkcs11_luks_key="/tmp/pkcs11-luks.key"
-
+crypttab=/etc/crypttab
 
 match_dev_in_array() {
 	[ "$#" = 2 ] || return 2
@@ -151,7 +152,7 @@ findkey() {
 			return 1
 		fi
 
-		keyfile="$prefix/$path"
+		luks_keyfile="$prefix/$path"
 
 		printf "Found keyfile '%s' for '%s' encrypted partition.\n" "$path" "${LUKS_ROOT#/dev/}"
 		return 0
@@ -162,33 +163,8 @@ findkey() {
 	return 2
 }
 
-readkey() {
-	local keyfile="$1"
-
-	[ -s "$keyfile" ] ||
-		return 0
-	case "${LUKS_KEY_FORMAT:-plain}" in
-		plain)
-			local last
-
-			last="$(printf .; tail -c -1 "$keyfile"; printf .;)"
-			last="${last#.}"
-			last="${last%.}"
-
-			if [ "$last" = $'\n' ]; then
-				head -c -1 < "$keyfile"
-			else
-				cat "$keyfile"
-			fi
-			;;
-		raw)
-			cat "$keyfile"
-			;;
-	esac
-}
-
 cryptsetup_ask_pass() {
-	local rc=0 tries=${tries:-3}
+	local rc=0 tries=${luks_tries:-3}
 
 	{
 		printf 'exec cryptsetup'
@@ -216,47 +192,183 @@ cryptsetup_ask_pass() {
 	return $rc
 }
 
-handler() {
-	volume="${LUKS_ROOT##*/}-luks"
+crypttab_entry() {
+	local o realdev=''
 
-	# skip if $volume has already exist
-	! dmsetup info "$volume" >/dev/null 2>&1 ||
-		exit 0
+	get_dev realdev "$encryptdev" ||
+		return 0
+
+	if [ -n "$volume" ] && [ -z "${volume##*/*}" ]; then
+		printf >&2 "ERROR(luks): volume name must not contain a slash(/): %s\n" "$volume"
+		return 1
+	fi
+
+	if [ -n "$keydev" ]; then
+		mkdir -p -- "$mnt"
+		mount -r "$keydev" "$mnt" ||
+			return
+		keyfile="$mnt/$keyfile"
+	fi
+
+	if [ -n "$keyfile" ] && [ ! -f "$keyfile" ]; then
+		printf >&2 "ERROR(luks): %s: keyfile not found.\n" "$keyfile"
+		return 1
+	fi
+
+	luks_volume="$volume"
+	luks_keyfile="$keyfile"
+
+	for o in "${options[@]}"; do
+		case "$o" in
+			plain|bitlk|tcrypt|luks)	luks_type="$o" ;;
+			tcrypt-hidden|tcrypthidden)	luks_type='tcrypt' ;;
+			tcrypt-system)			luks_type='tcrypt' ;;
+			tcrypt-veracrypt|veracrypt)	luks_type='tcrypt' ;;
+			tcrypt-keyfile=*)		luks_type='tcrypt' ;;
+		esac
+	done
+
+	for o in "${options[@]}"; do
+		case "$o" in
+			cipher=*)
+				in_list "$luks_type" luks tcrypt ||
+					luks_args+=("--cipher" "${o#*=}")
+				;;
+			hash=*)
+				in_list "$luks_type" luks tcrypt ||
+					luks_args+=("--hash" "${o#*=}")
+				;;
+			size=*)
+				in_list "$luks_type" luks tcrypt ||
+					luks_args+=("--size" "${o#*=}")
+				;;
+			keyfile-offset=*)
+				in_list "$luks_type" tcrypt ||
+					luks_args+=("--keyfile-offset" "${o#*=}")
+				;;
+			keyfile-size=*)
+				in_list "$luks_type" tcrypt plain ||
+					luks_args+=("--keyfile-size" "${o#*=}")
+				;;
+			try-empty-password|try-empty-password=*)
+				luks_empty_password=y
+				[ -n "${o##*=*}" ] || shell_var_is_yes "${o#*=}" ||
+					luks_empty_password=n
+				;;
+			headless|headless=*)
+				luks_headless=y
+				[ -n "${o##*=*}" ] || shell_var_is_yes "${o#*=}" ||
+					luks_headless=n
+				;;
+			tries=*)
+				luks_tries="${o#*=}"
+				[ "$luks_tries" != 0 ] || luks_tries=-1
+				;;
+			header=*)			luks_args+=("--header" "${o#*=}") ;;
+			tcrypt-keyfile=*)		luks_args+=("--key-file" "${o#*=}") ;;
+			keyslot=*|key-slot=*)		luks_args+=("--key-slot" "${o#*=}") ;;
+			offset=*)			luks_args+=("--offset" "${o#*=}") ;;
+			skip=*)				luks_args+=("--skip" "${o#*=}") ;;
+			sector-size=*)			luks_args+=("--sector-size" "${o#*=}") ;;
+			allow-discards|discard)		luks_args+=("--allow-discards") ;;
+			read-only|readonly)		luks_args+=("--readonly") ;;
+			same-cpu-crypt)			luks_args+=("--perf-same_cpu_crypt") ;;
+			submit-from-crypt-cpus)		luks_args+=("--perf-submit_from_crypt_cpus") ;;
+			no-read-workqueue)		luks_args+=("--perf-no_read_workqueue") ;;
+			no-write-workqueue)		luks_args+=("--perf-no_write_workqueue") ;;
+			tcrypt-system)			luks_args+=("--tcrypt-system") ;;
+			tcrypt-hidden|tcrypthidden)	luks_args+=("--tcrypt-hidden") ;;
+			tcrypt-veracrypt|veracrypt)	luks_args+=("--veracrypt") ;;
+			verify)				luks_args+=("--verify-passphrase") ;;
+		esac
+	done
+
+	#
+	# from crypttab(5):
+	#
+	# If the field is not present or is "none" or "-", a key file named
+	# after the volume to unlock (i.e. the first column of the line),
+	# suffixed with .key is automatically loaded from the
+	# /etc/cryptsetup-keys.d/ directory, if present.
+	#
+	case "$luks_keyfile" in
+		''|'-'|'none')
+			keyfile="/etc/cryptsetup-keys.d/$luks_volume.key"
+			[ ! -f "$keyfile" ] ||
+				luks_keyfile="$keyfile"
+			;;
+	esac
+
+	return 1
+}
+
+handler() {
+	local luks_volume="${LUKS_ROOT##*/}-luks" luks_args
+	local luks_tries=3 luks_keyfile='' luks_pipekey=n
+	local luks_headless=n luks_type=luks luks_empty_password=n
+
+	luks_args=()
 
 	! match_dev_in_array LUKS_IGNORE "$LUKS_ROOT" ||
 		exit 0
 
-	luks_args=()
 	! match_dev_in_array LUKS_DISCARD "$LUKS_ROOT" ||
 		luks_args+=(--allow-discards)
 
-	local rc=0 keyfile='' pipekey=n headless=n tries=3 luks_type=luks
+	local rc=0
 
+	#
+	# First of all, we check /etc/luks.keys, which is usually created from
+	# /proc/cmdline.
+	#
 	if [ -f /etc/luks.keys ]; then
-		findkey ||
-			rc="$?"
-		if [ $rc -eq 0 ]; then
-			luks_args+=(-d-)
-			pipekey=y
-		fi
-		headless=y
+		findkey
+		[ "${LUKS_KEY_FORMAT:-plain}" != plain ] ||
+			luks_pipekey=y
+		luks_headless=y
+	#
+	# Next, we check the crypttab that can be passed in at initramfs
+	# creation.
+	#
+	elif [ -n "${LUKS_CRYPTTAB-}" ] && [ -s "$crypttab" ]; then
+		shell_foreach_crypttab "$crypttab" crypttab_entry ||:
+	#
+	# Finally, we create the conditions for the password request.
+	#
+	else
+		rc=1
 	fi
 
-	set -- "${luks_args[@]}" open --type "$luks_type" "$LUKS_ROOT" "$volume"
+	# Skip if volume has already exist.
+	! dmsetup info "$luks_volume" >/dev/null 2>&1 ||
+		return 0
 
-	if shell_var_is_yes "$headless"; then
-		if [ "$rc" -eq 0 ]; then
-			if shell_var_is_yes "$pipekey"; then
-				{ readkey "$keyfile" | cryptsetup "$@"; }
-			else
-				cryptsetup "$@"
-			fi
+	set -- "${luks_args[@]}" open --type "$luks_type" "$LUKS_ROOT" "$luks_volume"
+
+	#
+	# It doesn't matter where the key came from (from luks.keys or from
+	# crypttab). If we found it and the command to find it was successful,
+	# then we try to use it.
+	#
+	if [ -n "$luks_keyfile" ]; then
+		if shell_var_is_yes "$luks_pipekey"; then
+			cryptsetup -d- "$@" < "$luks_keyfile"
+		else
+			cryptsetup -d "$luks_keyfile" "$@"
+		fi
+		rc="$?"
+		freekey
+	fi
+
+	if [ "$rc" -ne 0 ] && shell_var_is_no "$luks_headless"; then
+		if shell_var_is_yes "$luks_empty_password"; then
+			cryptsetup -d- "$@" </dev/null
 			rc="$?"
 		fi
-		freekey
-	else
-		cryptsetup_ask_pass "$@"
-		rc="$?"
+		if [ "$rc" -ne 0 ]; then
+			cryptsetup_ask_pass "$@"
+			rc="$?"
+		fi
 	fi
 
 	if [ "$rc" != 0 ]; then

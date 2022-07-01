@@ -31,6 +31,19 @@ if [ -n "$LUKS_DEV" ] && [ "$LUKS_DEV" != 0 ]; then
 			get_dev devluks "$dev" &&
 			break ||:
 	done
+elif [ -n "${LUKS_CRYPTTAB-}" ] && [ -s /etc/crypttab ]; then
+	. crypttab-sh-functions
+
+	crypttab_entry()
+	{
+		[ -n "${encryptdev-}" ] ||
+			return 0
+
+		get_dev devluks "$encryptdev" &&
+			return 1 ||:
+	}
+
+	shell_foreach_crypttab /etc/crypttab crypttab_entry ||:
 else
 	get_dev devluks "$DEVNAME" ||
 		exit 0

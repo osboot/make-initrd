@@ -1,0 +1,150 @@
+#!/bin/bash -efu
+
+. shell-var
+. shell-string
+
+shell_split_by()
+{
+	local l m s quote arg handler count=-1
+
+	l="$1"; shift
+	s="$1"; shift
+	handler="$1"; shift
+
+	if [ "$#" -gt 0 ]; then
+		count="$1"
+		shift
+	fi
+
+	arg=
+	quote=
+
+	m=
+	fill_mask m "$l"
+
+	while [ -n "$l" ]; do
+		c="${l%$m}"
+		l="${l#?}"
+		m="${m#?}"
+
+		case "$c" in
+			'\')
+				if [ -n "$quote" ]; then
+					arg="$arg$c"
+					quote=
+				else
+					quote=1
+				fi
+				;;
+			$s)
+				if [ -z "$quote" ]; then
+					if [ $count -ne 0 ]; then
+						$handler "$arg"
+						arg=
+						count=$(($count - 1))
+					fi
+				else
+					arg="$arg$c"
+				fi
+				;;
+			*)
+				arg="$arg$c"
+				quote=
+				;;
+		esac
+	done
+
+	if [ -n "$arg" ]; then
+		$handler "$arg"
+	fi
+}
+
+shell_foreach_crypttab()
+{
+	local filename handler
+
+	filename="$1"; shift
+	handler="$1"; shift
+
+	local lineno=0 eof=''
+
+	while [ -z "$eof" ]; do
+		lineno=$(($lineno + 1))
+
+		local line=''
+		read -d $'\n' -r line || eof=1
+
+		shell_var_trim line "$line"
+
+		[ -n "${line##\#*}" ] ||
+			continue
+
+		[ -z "${line##*[ 	]*}" ] ||
+			fatal "$filename:$lineno: not enough fields"
+
+		local volume=''
+
+		volume="${line%%[ 	]*}"
+		shell_var_trim line "${line#*[ 	]}"
+
+		local encryptdev=''
+
+		if [ -z "${line##*[ 	]*}" ]; then
+			encryptdev="${line%%[ 	]*}"
+			shell_var_trim line "${line#*[ 	]}"
+		else
+			encryptdev="$line"
+			line=
+		fi
+
+		local keyspec='' keyfile='' keydev=''
+
+		if [ -n "$line" ]; then
+			if [ -z "${line##*[ 	]*}" ]; then
+				keyspec="${line%%[ 	]*}"
+				shell_var_trim line "${line#*[ 	]}"
+			else
+				keyspec="$line"
+				line=
+			fi
+
+			if [ -n "$keyspec" ] && [ -z "${keyspec##*:*}" ]; then
+				apply_keyspec() {
+					if [ -z "$keyfile" ]; then
+						keyfile="$1"
+						return
+					fi
+					keydev="$1"
+				}
+
+				shell_split_by "$keyspec" ":" apply_keyspec 1
+			else
+				keyfile="$keyspec"
+			fi
+		fi
+
+		local stroptions options
+
+		stroptions=''
+		options=()
+
+		if [ -n "$line" ]; then
+			stroptions="$line"
+			add_option() {
+				options+=("$1")
+			}
+			shell_split_by "$stroptions" "," add_option
+		fi
+
+		#echo "volume=$volume"
+		#echo "encryptdev=$encryptdev"
+		#echo "keyfile=$keyfile"
+		#echo "keydev=$keydev"
+		#echo "options=${options[*]}"
+		#echo
+
+		"$handler" ||
+			return
+
+	done < "$filename"
+}
