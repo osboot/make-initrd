@@ -2,6 +2,7 @@
 
 . /.initrd/initenv
 
+. shell-error
 . shell-var
 
 . uevent-sh-functions
@@ -118,7 +119,7 @@ findkey() {
 		done
 
 		if [ -z "$path" ]; then
-			printf "ERROR(luks): path required.\n" >&2
+			message "ERROR: keypath required."
 			return 1
 		fi
 
@@ -143,18 +144,18 @@ findkey() {
 			# assign path variable inside
 			read_pkcs11_key "$pkcs11_id"
 			local rc=$?
-			[ "$rc" == "2" ] && printf "No smart card found\n" >&2 && return $rc
-			[ "$rc" != "0" ] && printf "ERROR(luks): can't read key '%s' from smart card\n" "$pkcs11_id" >&2 && return $rc
+			[ "$rc" == "2" ] && message "No smart card found." && return $rc
+			[ "$rc" != "0" ] && message "ERROR: can't read key '$pkcs11_id' from smart card." && return $rc
 		fi
 
 		if [ ! -f "$prefix/$path" ]; then
-			printf "ERROR(luks): %s: keyfile not found.\n" "$path" >&2
+			message "ERROR: $path: keyfile not found."
 			return 1
 		fi
 
 		luks_keyfile="$prefix/$path"
 
-		printf "Found keyfile '%s' for '%s' encrypted partition.\n" "$path" "${LUKS_ROOT#/dev/}"
+		message "Found keyfile '$path' for '${LUKS_ROOT#/dev/}' encrypted partition."
 		return 0
 
 	done 3< /etc/luks.keys
@@ -199,7 +200,7 @@ crypttab_entry() {
 		return 0
 
 	if [ -n "$volume" ] && [ -z "${volume##*/*}" ]; then
-		printf >&2 "ERROR(luks): volume name must not contain a slash(/): %s\n" "$volume"
+		message "ERROR: volume name must not contain a slash(/): $volume"
 		return 1
 	fi
 
@@ -211,7 +212,7 @@ crypttab_entry() {
 	fi
 
 	if [ -n "$keyfile" ] && [ ! -f "$keyfile" ]; then
-		printf >&2 "ERROR(luks): %s: keyfile not found.\n" "$keyfile"
+		message "ERROR: $keyfile: keyfile not found."
 		return 1
 	fi
 
@@ -322,6 +323,7 @@ handler() {
 	# /proc/cmdline.
 	#
 	if [ -f /etc/luks.keys ]; then
+		message "Trying to find the keyfile in the '/etc/luks.keys'."
 		findkey
 		[ "${LUKS_KEY_FORMAT:-plain}" != plain ] ||
 			luks_pipekey=y
@@ -331,6 +333,7 @@ handler() {
 	# creation.
 	#
 	elif [ -n "${LUKS_CRYPTTAB-}" ] && [ -s "$crypttab" ]; then
+		message "Trying to find the keyfile in the '$crypttab'."
 		shell_foreach_crypttab "$crypttab" crypttab_entry ||:
 	#
 	# Finally, we create the conditions for the password request.
@@ -358,6 +361,8 @@ handler() {
 		fi
 		rc="$?"
 		freekey
+	else
+		message "The keyfile was not found for partition: $LUKS_ROOT"
 	fi
 
 	if [ "$rc" -ne 0 ] && shell_var_is_no "$luks_headless"; then
@@ -366,15 +371,14 @@ handler() {
 			rc="$?"
 		fi
 		if [ "$rc" -ne 0 ]; then
+			message "Trying to ask the user for a password."
 			cryptsetup_ask_pass "$@"
 			rc="$?"
 		fi
 	fi
 
-	if [ "$rc" != 0 ]; then
-		printf 'ERROR(luks): %s: unable to activate LUKS (rc=%s)\n' "$LUKS_ROOT" "$rc" >&2
-		exit 1
-	fi
+	[ "$rc" -eq 0 ] ||
+		fatal "ERROR: $LUKS_ROOT: unable to activate LUKS (rc=$rc)"
 }
 
 while ! console_lock; do
