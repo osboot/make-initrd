@@ -208,16 +208,16 @@ crypttab_entry() {
 		mkdir -p -- "$mnt"
 		mount -r "$keydev" "$mnt" ||
 			return
-		keyfile="$mnt/$keyfile"
-	fi
 
-	if [ -n "$keyfile" ] && [ ! -f "$keyfile" ]; then
-		message "ERROR: $keyfile: keyfile not found."
-		return 1
+		keyfile="$mnt/$keyfile"
+
+		if [ ! -f "$keyfile" ]; then
+			message "error: $keyfile: keyfile not found."
+			return 1
+		fi
 	fi
 
 	luks_volume="$volume"
-	luks_keyfile="$keyfile"
 
 	for o in "${options[@]}"; do
 		case "$o" in
@@ -292,13 +292,18 @@ crypttab_entry() {
 	# suffixed with .key is automatically loaded from the
 	# /etc/cryptsetup-keys.d/ directory, if present.
 	#
-	case "$luks_keyfile" in
+	case "$keyfile" in
 		''|'-'|'none')
-			luks_keyfile=''
-
 			keyfile="/etc/cryptsetup-keys.d/$luks_volume.key"
 			if [ ! -f "$keyfile" ]; then
 				message "luks keyfile was not specified and '$keyfile' was not found."
+			else
+				luks_keyfile="$keyfile"
+			fi
+			;;
+		/*)
+			if [ -f "$keyfile" ]; then
+				message "luks keyfile does not exist: $keyfile"
 			else
 				luks_keyfile="$keyfile"
 			fi
