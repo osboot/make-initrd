@@ -294,9 +294,14 @@ crypttab_entry() {
 	#
 	case "$luks_keyfile" in
 		''|'-'|'none')
+			luks_keyfile=''
+
 			keyfile="/etc/cryptsetup-keys.d/$luks_volume.key"
-			[ ! -f "$keyfile" ] ||
+			if [ ! -f "$keyfile" ]; then
+				message "luks keyfile was not specified and '$keyfile' was not found."
+			else
 				luks_keyfile="$keyfile"
+			fi
 			;;
 	esac
 
