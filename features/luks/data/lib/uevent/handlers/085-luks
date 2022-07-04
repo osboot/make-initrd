@@ -212,7 +212,8 @@ crypttab_entry() {
 		keyfile="$mnt/$keyfile"
 
 		if [ ! -f "$keyfile" ]; then
-			message "error: $keyfile: keyfile not found."
+			message "ERROR: $keyfile: keyfile not found."
+			rc=1
 			return 1
 		fi
 	fi
