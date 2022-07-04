@@ -135,7 +135,7 @@ findkey() {
 		if [ -n "$keydev" ]; then
 			mkdir -p -- "$mnt"
 			mount -r "$keydev" "$mnt" ||
-				return 1
+				exit 2
 			prefix=$mnt
 		fi
 
@@ -207,7 +207,7 @@ crypttab_entry() {
 	if [ -n "$keydev" ]; then
 		mkdir -p -- "$mnt"
 		mount -r "$keydev" "$mnt" ||
-			return
+			exit 2
 
 		keyfile="$mnt/$keyfile"
 
