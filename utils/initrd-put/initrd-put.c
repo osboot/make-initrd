@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <search.h>
+#include <regex.h>
 
 #include <gelf.h>
 
@@ -50,6 +51,9 @@ static void *files = NULL;
 static struct file *inqueue = NULL;
 static size_t installed = 0;
 static size_t queue_nr = 0;
+
+static regex_t *exclude_match = NULL;
+static size_t exclude_match_nr = 0;
 
 static void show_version(void) __attribute__((__noreturn__));
 static void show_help(int rc) __attribute__((__noreturn__));
@@ -100,6 +104,21 @@ char *xstrndup(const char *s, size_t n)
 struct file *enqueue_item(const char *str, ssize_t len)
 {
 	struct file *new;
+
+	if (exclude_match_nr) {
+		char buf[PATH_MAX + 1];
+
+		strncpy(buf, str, (len <= 0 ? PATH_MAX : (size_t) len));
+		buf[(len <= 0 ? PATH_MAX : len) + 1]  = 0;
+
+		for (size_t i = 0; i < exclude_match_nr; i++) {
+			if (!regexec(&exclude_match[i], buf, 0, NULL, 0)) {
+				if (verbose > 1)
+					warnx("exclude path: %s", buf);
+				return NULL;
+			}
+		}
+	}
 
 	new = calloc(1, sizeof(*new));
 	if (!new)
@@ -193,7 +212,8 @@ void enqueue_directory(char *path)
 			continue;
 
 		struct file *f = enqueue_item(p->fts_path, -1);
-		fill_stat(f, p->fts_statp);
+		if (f)
+			fill_stat(f, p->fts_statp);
 	}
 
 	fts_close(t);
@@ -420,7 +440,8 @@ error:
 	struct file *f;
 
 	f = enqueue_item(rname, dest - rname);
-	f->recursive = add_recursively;
+	if (f)
+		f->recursive = add_recursively;
 }
 
 bool is_dynamic_elf_file(const char *filename, int fd)
@@ -983,6 +1004,7 @@ void show_help(int rc)
 	        "\n"
 	        "Options:\n"
 	        "   -n, --dry-run              don't do nothing.\n"
+	        "   -e, --exclude=REGEXP       exclude files matching REGEXP.\n"
 	        "   -f, --force                overwrite destination file if exists.\n"
 	        "   -l, --log=FILE             white log about what was copied.\n"
 	        "   -r, --remove-prefix=PATH   ignore prefix in path.\n"
@@ -1013,8 +1035,9 @@ void show_version(void)
 
 int main(int argc, char **argv)
 {
-	const char *optstring = "fnl:r:vVh";
+	const char *optstring = "efnl:r:vVh";
 	const struct option longopts[] = {
+		{"exclude", required_argument, 0, 'e' },
 		{"remove-prefix", required_argument, 0, 'r' },
 		{"force", no_argument, 0, 'f' },
 		{"dry-run", no_argument, 0, 'n' },
@@ -1034,6 +1057,19 @@ int main(int argc, char **argv)
 
 	while ((c = getopt_long(argc, argv, optstring, longopts, NULL)) != -1) {
 		switch (c) {
+			case 'e':
+				if (strlen(optarg) > 0) {
+					exclude_match = realloc(exclude_match, (exclude_match_nr + 1) * sizeof(regex_t));
+					if (!exclude_match)
+						err(EX_OSERR, "no memory");
+
+					if (regcomp(&exclude_match[exclude_match_nr], optarg, REG_NOSUB | REG_NEWLINE | REG_EXTENDED))
+						errx(EX_USAGE, "bad regexp");
+
+					exclude_match_nr++;
+				}
+
+				break;
 			case 'f':
 				force = 1;
 				break;
@@ -1180,6 +1216,9 @@ int main(int argc, char **argv)
 
 	tdestroy(files, free_file);
 	free(destdir);
+
+	for (size_t i = 0; i < exclude_match_nr; i++)
+		regfree(&exclude_match[i]);
 
 	return EXIT_SUCCESS;
 }
