@@ -389,8 +389,11 @@ handler() {
 		fi
 	fi
 
-	[ "$rc" -eq 0 ] ||
+	if [ "$rc" -eq 0 ]; then
+		message "$luks_volume (upon $LUKS_ROOT) activated successfully."
+	else
 		fatal "ERROR: $LUKS_ROOT: unable to activate LUKS (rc=$rc)"
+	fi
 }
 
 while ! console_lock; do
