@@ -32,17 +32,9 @@ unzstd(unsigned char *in, unsigned long in_size,
 		return DECOMP_FAIL;
 	}
 
-	size_t result = ZSTD_initDStream(dstream);
-
-	if (ZSTD_isError(result)) {
-		warnx("ERROR: %s: %d: ZSTD_initDStream: %s", __FILE__, __LINE__, ZSTD_getErrorName(result));
-		ZSTD_freeDStream(dstream);
-		return DECOMP_FAIL;
-	}
-
-	buff_in  = xmalloc(ZSTD_DStreamInSize());
+	to_read  = ZSTD_DStreamInSize();
+	buff_in  = xmalloc(to_read);
 	buff_out = xmalloc(ZSTD_DStreamOutSize());
-	to_read  = result;
 
 	while (pos < in_size) {
 		size_t bytes_read = to_read;
