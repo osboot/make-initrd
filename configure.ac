@@ -226,6 +226,14 @@ AS_IF([test "x$with_bzip2" != xno],
 	[PKG_CHECK_MODULES(HAVE_BZIP2, bzip2, [HAVE_BZIP2=yes], [HAVE_BZIP2=no])],
 	[HAVE_BZIP2=no])
 
+if test "x$HAVE_BZIP2" = xno; then
+	AC_CHECK_LIB(bz2, BZ2_bzDecompressInit, [
+		HAVE_BZIP2=yes
+		HAVE_BZIP2_LIBS=-lbz2
+		HAVE_BZIP2_CFLAGS=''
+	], [HAVE_BZIP2=no])
+fi
+
 AC_ARG_WITH([lzma],
 	[AS_HELP_STRING([--with-lzma],
 			[support lzma compression @<:@default=yes@:>@])],
