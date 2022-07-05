@@ -334,7 +334,7 @@ handler() {
 	# /proc/cmdline.
 	#
 	if [ -f /etc/luks.keys ]; then
-		message "Trying to find the keyfile in the '/etc/luks.keys'."
+		message "$LUKS_ROOT: trying to find the keyfile in the '/etc/luks.keys'."
 		findkey
 		[ "${LUKS_KEY_FORMAT:-plain}" != plain ] ||
 			luks_pipekey=y
@@ -344,7 +344,7 @@ handler() {
 	# creation.
 	#
 	elif [ -n "${LUKS_CRYPTTAB-}" ] && [ -s "$crypttab" ]; then
-		message "Trying to find the keyfile in the '$crypttab'."
+		message "$LUKS_ROOT: trying to find corresponding entry in the '$crypttab'."
 		shell_foreach_crypttab "$crypttab" crypttab_entry ||:
 	#
 	# Finally, we create the conditions for the password request.
