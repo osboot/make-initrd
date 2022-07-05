@@ -374,6 +374,7 @@ handler() {
 		freekey
 	else
 		message "The keyfile was not found for partition: $LUKS_ROOT"
+		rc=1
 	fi
 
 	if [ "$rc" -ne 0 ] && shell_var_is_no "$luks_headless"; then
