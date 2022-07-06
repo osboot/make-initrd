@@ -8,5 +8,14 @@
 uuid="$(cat "$SYSFS_PATH$1"/dm/uuid)"
 
 if [ -z "${uuid##CRYPT-*}" ]; then
+	#
+	# UUID has format: CRYPT-<device type>-[<uuid>-]<device name>
+	# CRYPT-PLAIN-name
+	# CRYPT-LUKS1-00000000000000000000000000000000-name
+	# CRYPT-TEMP-name
+	#
+	if [[ "$uuid" =~ CRYPT-[^-]+-([0-9A-Fa-f]{32})-.* ]]; then
+		guess_variable "LUKS_MAYBE_UUIDS" "${BASH_REMATCH[1]}"
+	fi
 	guess_feature luks
 fi

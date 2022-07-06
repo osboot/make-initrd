@@ -15,23 +15,52 @@ join_by()
 	echo "$*"
 }
 
+is_known_uuid()
+{
+	[ -n "${LUKS_MAYBE_UUIDS-}" ] ||
+		return 1
+
+	local uuid dev_uuid=''
+
+	case "$encryptdev" in
+		UUID=*)
+			dev_uuid="${encryptdev#UUID=}"
+			dev_uuid="${dev_uuid//-/}"
+			dev_uuid="${dev_uuid,,}"
+			;;
+	esac
+
+	[ -n "$dev_uuid" ] ||
+		return 1
+
+	for uuid in $LUKS_MAYBE_UUIDS; do
+		[ "$dev_uuid" != "$uuid" ] ||
+			return 0
+	done
+
+	return 1
+}
+
 crypttab_entry()
 {
-	local o
+	local o needed=''
+
+	! is_known_uuid ||
+		needed=1
 
 	if [ -z "${LUKS_ALL_CRYPTTAB-}" ]; then
-		local needed=''
-
 		for o in "${option[@]}"; do
 			if [ "$o" = 'x-initrd.attach' ]; then
 				needed=1
 				break
 			fi
 		done
-
-		[ -n "$needed" ] ||
-			return 0
+	else
+		needed=1
 	fi
+
+	[ -n "$needed" ] ||
+		return 0
 
 	case "$keyspec" in
 		''|'none'|'-')
