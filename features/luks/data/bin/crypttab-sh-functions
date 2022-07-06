@@ -36,7 +36,7 @@ shell_split_by()
 					quote=1
 				fi
 				;;
-			$s)
+			"$s")
 				if [ -z "$quote" ]; then
 					if [ $count -ne 0 ]; then
 						$handler "$arg"

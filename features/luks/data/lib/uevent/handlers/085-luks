@@ -73,7 +73,7 @@ read_pkcs11_key() {
 
 	path="$pkcs11_luks_key"
 
-	id="$id"
+	id="${id-}"
 	application_label="$label"
 	module="$(get_pkcs11_module)"
 	type="data"
