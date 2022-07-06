@@ -1,3 +1,22 @@
+Version 2.27.0
+
+- Feature luks:
+  + Add crypttab support.
+  + Try to remember the uuid of the luks device and automatically add it to crypttab.
+- Feature kickstart:
+  + Use /proc/devices to detect sd and virtblk block devices.
+- Feature locales:
+  + Read system-wide locales.
+- Utilities:
+  + initrd-ls: Fix infinite loop when unpacking zstd.
+  + initrd-put: Add option to exclude files by pattern.
+  + initrd-scanmod: module must satisfy all the rules from the ruleset.
+  + mkinitrd-make-initrd: Fixed misprint, make-initrd can be found now.
+  + make-initrd: Enforce absolute path in TMPDIR.
+- Misc:
+  + Сheck bzip2 library as the last chance for detection if there is no
+    bzip2.pc.
+
 Version 2.26.0
 
 - Runtime:
