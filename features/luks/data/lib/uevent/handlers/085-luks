@@ -303,7 +303,7 @@ crypttab_entry() {
 			fi
 			;;
 		/*)
-			if [ -f "$keyfile" ]; then
+			if [ ! -f "$keyfile" ]; then
 				message "luks keyfile does not exist: $keyfile"
 			else
 				luks_keyfile="$keyfile"
