@@ -48,16 +48,12 @@ crypttab_entry()
 	! is_known_uuid ||
 		needed=1
 
-	if [ -z "${LUKS_ALL_CRYPTTAB-}" ]; then
-		for o in "${option[@]}"; do
-			if [ "$o" = 'x-initrd.attach' ]; then
-				needed=1
-				break
-			fi
-		done
-	else
-		needed=1
-	fi
+	for o in "${option[@]}"; do
+		if [ "$o" = 'x-initrd.attach' ]; then
+			needed=1
+			break
+		fi
+	done
 
 	[ -n "$needed" ] ||
 		return 0

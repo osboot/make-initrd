@@ -1,4 +1,10 @@
-LUKS_CRYPTTAB_DATA := $(shell $(FEATURESDIR)/luks/bin/get-data)
+LUKS_CRYPTTAB_DATA =
+
+ifneq "$(LUKS_CRYPTTAB)" ""
+LUKS_CRYPTTAB_DATA := $(shell env \
+		"LUKS_MAYBE_UUIDS=$(LUKS_MAYBE_UUIDS)" \
+		$(FEATURESDIR)/luks/bin/get-data)
+endif
 
 MODULES_LOAD += $(LUKS_MODULES)
 

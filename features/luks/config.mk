@@ -11,5 +11,6 @@ ifdef $(call if_kernel_version_greater_or_equal,5.4.0)
 LUKS_BLOCKCIPHERS += essiv
 endif
 
-LUKS_ALL_CRYPTTAB ?= 1
-LUKS_CRYPTTAB ?= $(wildcard /etc/crypttab)
+ifneq "$(LUKS_CRYPTTAB)" ""
+LUKS_CRYPTTAB = $(wildcard /etc/crypttab)
+endif
