@@ -36,10 +36,17 @@ Feature adds the ability to boot from LUKS partition.
 
 ## Configuration file
 
+These configs cannot be put into the initramfs at the same time. A `/etc/luks.keys`
+will take precedence over `/etc/crypttab`.
+
 ### /etc/crypttab
 
 The `/etc/crypttab` file describes encrypted block devices that are set up during
 system boot.
+
+> **NOTE** You don't need to put this config manually. If `/etc/crypttab` is
+> present in the system and if the `luks` feature is active then the config file
+> will be parsed and copied. The keys specified in crypttab will also be copied.
 
 Empty lines and lines starting with the "#" character are ignored. Each of the
 remaining lines describes one encrypted block device. Fields are delimited by
