@@ -12,4 +12,4 @@ LUKS_BLOCKCIPHERS += essiv
 endif
 
 LUKS_ALL_CRYPTTAB ?= 1
-LUKS_CRYPTTAB = $(wildcard /etc/crypttab)
+LUKS_CRYPTTAB ?= $(wildcard /etc/crypttab)
