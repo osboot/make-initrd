@@ -1,3 +1,9 @@
+Version 2.27.1
+
+- Feature luks:
+  + Fix typo and use keyfile if exists.
+  + Add more documentation.
+
 Version 2.27.0
 
 - Feature luks:
