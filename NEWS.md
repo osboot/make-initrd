@@ -1,3 +1,9 @@
+Version 2.27.2
+
+- Feature luks:
+  + Get rid of LUKS_ALL_CRYPTTAB. The LUKS_ALL_CRYPTTAB variable was needed
+    until the autodetect worked.
+
 Version 2.27.1
 
 - Feature luks:
