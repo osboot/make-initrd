@@ -21,7 +21,14 @@
 
 load_lkrg()
 {
-	modprobe p_lkrg
+	local modname=
+	if modinfo lkrg >/dev/null 2>&1; then
+		modname=lkrg
+	else
+		modname=p_lkrg
+	fi
+
+	modprobe "$modname"
 }
 
 action_shell 'Loading LKRG:' load_lkrg
