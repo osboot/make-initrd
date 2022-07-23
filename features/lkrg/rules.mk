@@ -1,3 +1,3 @@
-MODULES_ADD	+= p_lkrg
+MODULES_TRY_ADD	+= lkrg p_lkrg
 
 PUT_FEATURE_DIRS += $(LKRG_DATADIR)
