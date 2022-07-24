@@ -148,7 +148,7 @@ jobs:
           TIMEOUT: 5m
         run: |
           set -efux
-          sudo ./testing/testing-${{ matrix.name }}-${{ matrix.test }} ${{ matrix.nettype }}
+          ./testing/testing-${{ matrix.name }}-${{ matrix.test }} ${{ matrix.nettype }}
           rm -vrf -- ./testing/cache/${{ matrix.name }}/${{ matrix.test }}-${{ matrix.nettype }}
           echo passed > ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ matrix.nettype }}-${{ github.sha }}
 
