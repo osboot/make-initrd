@@ -1,0 +1,97 @@
+#!/bin/bash -eu
+
+. /.initrd/initenv
+
+. shell-error
+. uevent-sh-functions
+. pipeline-sh-functions
+
+message_time=1
+
+handler_init()
+{
+	[ -n "${PIPELINE-}" ] && ! mountpoint -q "$mntdir" ||
+		return 0
+
+	message "pipeline initialization."
+
+	mkdir -p -- "$mntdir"
+	mount -t tmpfs tmpfs "$mntdir" ||
+		return 1
+
+	mkdir -- \
+		"$mntdir/src" \
+		"$mntdir/dst" ||
+		return 1
+
+	pipe_event "pipeline.step" "" "0"
+}
+
+handler_step()
+{
+	local name callnum exe datadir destdir prevdir
+
+	pipe_name "$pipenum"
+	pipe_callnum "$pipenum"
+
+	exe="$handlerdir/$name"
+
+	if [ ! -x "$exe" ]; then
+		message "step #$pipenum: $name: could not find executable file '$exe'. ignoring..."
+		pipe_event "pipeline.step" "$prevnum" "$(($pipenum+1))"
+		return 0
+	fi
+
+	datadir="$mntdir/src/pipe$pipenum"
+	destdir="$mntdir/dst/pipe$pipenum"
+
+	[ -n "$prevnum" ] &&
+		prevdir="$mntdir/dst/pipe$prevnum" ||
+		prevdir=""
+
+	if [ ! -d "$destdir" ] || ! mountpoint -q "$destdir"; then
+		message "step #$pipenum: $name: executing handler '$exe'."
+
+		if [ ! -d "$datadir" ] && ! mkdir -- "$datadir"; then
+			message "step #$pipenum: $name: unable to create data directory."
+			return 1
+		fi
+
+		if [ ! -d "$destdir" ] && ! mkdir -- "$destdir"; then
+			message "step #$pipenum: $name: unable to create destination directory."
+			return 1
+		fi
+
+		export name callnum datadir destdir prevdir
+
+		rc=0
+		"$exe" || rc=$?
+
+		if [ "$rc" -ne 0 ]; then
+			if [ "$rc" -eq 2 ]; then
+				message "step #$pipenum: $name: triggered pipeline stop."
+				return 0
+			fi
+
+			message "step #$pipenum: $name: handler failed (rc=$rc)."
+			return 1
+		fi
+	else
+		message "step #$pipenum: $name: skip because destination directory is ready."
+	fi
+
+	pipe_event "pipeline.step" "$pipenum" "$(($pipenum+1))"
+}
+
+rc=0
+for s in init step; do
+	for e in "$1/pipeline.$s".*; do
+		[ -e "$e" ] || break
+
+		( . "$e"; handler_$s; ) &&
+			done_event "$e" ||
+			rc=1
+	done
+done
+
+exit $rc

@@ -10,41 +10,22 @@
 # X-LFS-Provided-By:   LFS
 ### END INIT INFO
 
+[ "$1" = start ] || exit 0
+
 . /.initrd/initenv
-. /etc/init.d/template
 
-NAME=pipelined
-PIDFILE="/var/run/$NAME.pid"
-ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --name $NAME --displayname $NAME"
+[ "${ROOT-}" = pipeline ] ||
+	exit 0
 
-prepare() {
-	local dir i n
+dir=/.initrd/pipeline/waitdev
+mkdir -p -- "$dir"
 
-	dir=/.initrd/pipeline/waitdev
-	mkdir -p -- "$dir"
+i=0
+while [ "$i" -lt "${WAITDEV:-0}" ]; do
+	touch "$dir/$i"
+	i=$(($i + 1))
+done
 
-	i=0
-	while [ "$i" -lt "${WAITDEV:-0}" ]; do
-		touch "$dir/$i"
-		i=$(($i + 1))
-	done
-}
+. pipeline-sh-functions
 
-start() {
-	RETVAL=0
-	if [ "${ROOT-}" = pipeline ]; then
-		prepare
-		start_daemon --background $ARGS "$NAME"
-		RETVAL=$?
-	fi
-	return $RETVAL
-}
-
-stop() {
-	stop_daemon $ARGS "$NAME"
-	RETVAL=$?
-	[ ! -f "$PIDFILE" ] || rm -f -- "$PIDFILE"
-	return $RETVAL
-}
-
-switch "${1-}"
+pipe_init
