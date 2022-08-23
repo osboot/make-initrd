@@ -25,6 +25,7 @@ jobs:
           "lvm",
           "lvm+luks",
           "partition",
+          "pipeline",
           "raid1",
           "raid1+raid5",
           "raid1-degraded",
