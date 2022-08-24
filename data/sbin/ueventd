@@ -146,10 +146,10 @@ get_name()
 
 run_scripts()
 {
-	local exe rc
+	local exe
+
 	for exe in "/lib/uevent/each/$1"/*; do
 		[ -x "$exe" ] || continue
-		message "$2: Running $1 scripts ..."
 		"$exe" "$2" ||:
 	done
 }
