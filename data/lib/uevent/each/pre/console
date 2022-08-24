@@ -7,6 +7,16 @@ QUEUE="$1"
 [ "$QUEUE" = udev ] ||
 	exit 0
 
+. shell-error
+
+show_msg=
 while ! console_inactive; do
+	if [ -z "$show_msg" ]; then
+		message "$QUEUE: waiting for console to be unlocked."
+		show_msg=1
+	fi
 	sleep 0.1
 done
+
+[ -z "$show_msg" ] ||
+	message "$QUEUE: console is unlocked."

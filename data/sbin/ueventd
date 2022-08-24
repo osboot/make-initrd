@@ -20,7 +20,7 @@ UEVENT_MODE="${UEVENT_MODE:-server}"
 if [ "$UEVENT_MODE" = 'server' ]; then
 	exec >"$logfile" 2>&1
 
-	message "Starting server ..."
+	message "starting server ..."
 
 	[ -d "$filterdir" ] ||
 		fatal "$filterdir: bad directory"
@@ -69,7 +69,7 @@ if [ "$UEVENT_MODE" = 'queue-processor' ]; then
 			export QUEUE="$name"
 			export INDIR="$event"
 
-			message "$QUEUE: Starting sub-process ..."
+			message "starting sub-process for '$QUEUE' queue ..."
 
 			mkdir -p -- "$ueventdir/$QUEUE"
 
@@ -131,8 +131,6 @@ glob "$queuedir"/* || exit 0
 [ "$evtype" != '0' ] || [ "$2" = "$INDIR.startup" ] ||
 	message "$QUEUE: retrying with failed events ..."
 
-message "$QUEUE: Processing events ..."
-
 for ev in "$queuedir"/*; do
 	message "$QUEUE: event $ev"
 done
@@ -159,8 +157,8 @@ for fn in "$handlerdir/$QUEUE"/*; do
 
 	run_scripts pre "$QUEUE"
 
-	message "$QUEUE: Running queue-specific $name handler ..."
-	"$fn" "$queuedir" || message "$QUEUE: Event handler failed: $name"
+	message "$QUEUE: running queue-specific handler: $fn"
+	"$fn" "$queuedir" || message "$QUEUE: event handler failed: $fn"
 
 	run_scripts post "$QUEUE"
 done
@@ -170,8 +168,8 @@ for fn in "$handlerdir"/*; do
 
 	run_scripts pre "$QUEUE"
 
-	message "$QUEUE: Running $name handler ..."
-	"$fn" || message "$QUEUE: Event handler failed: $name"
+	message "$QUEUE: running handler: $fn"
+	"$fn" || message "$QUEUE: event handler failed: $fn"
 
 	run_scripts post "$QUEUE"
 done
