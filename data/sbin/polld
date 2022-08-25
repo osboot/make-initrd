@@ -28,7 +28,7 @@ set_cleanup_handler exit_handler
 echo "$$" >"$pidfile"
 
 exec >"$logfile" 2>&1
-message "Starting server ..."
+message "starting server ..."
 
 while [ -f "$pidfile" ]; do
 	for fn in "$extendir"/*; do
@@ -36,8 +36,8 @@ while [ -f "$pidfile" ]; do
 		name="${fn##*/}"
 		name="${name#[0-9][0-9][0-9]-}"
 
-		message "Running $name extender ..."
-		"$fn" || message "Extender failed: $name"
+		"$fn" ||
+			message "extender failed: $fn"
 	done
 
 	process-boot-method
