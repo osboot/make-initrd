@@ -1,0 +1,67 @@
+#!/bin/bash -efu
+
+. rdshell-sh-functions
+
+# Waiting for cmdline service
+[ -f /.initrd/initenv ] ||
+	exit 0
+
+. /.initrd/initenv
+
+if [ -n "${RDSHELL-}" ]; then
+	console_open "Emergency shell" withlock
+	exit
+fi
+
+. initrd-sh-functions
+
+! rootdelay_paused ||
+	exit 0
+
+first_iter=
+now="$(date +'%s')"
+timestamp="/.initrd/rootdelay/deadline"
+
+if [ ! -f "$timestamp" ]; then
+	first_iter=1
+	deadline=$(( $now + $ROOTDELAY ))
+
+	mkdir -p -- "${timestamp%/*}"
+	echo $deadline > "$timestamp"
+else
+	read -r deadline < "$timestamp"
+fi
+
+deadline="${deadline:-$now}"
+delay=$(( $deadline - $now ))
+
+if [ "$delay" -le 0 ]; then
+	if ! resume_checked; then
+		set_resume_checked
+		echo $(( $now + $ROOTDELAY )) > "$timestamp"
+		exit 0
+	fi
+
+	# Disallow console access
+	[ "${PANIC-}" != "0" ] || reboot -f
+
+	console_open "The waiting time expired!" withlock
+	exit 0
+fi
+
+if [ -z "${QUIET-}" ] && [ -z "$first_iter" ] && [ $(( $delay % 15 )) -eq 0 ]; then
+	. shell-error
+
+	while ! console_lock; do
+		sleep 0.2
+	done
+
+	resume_checked &&
+		msg="Waiting for root ${ROOT:+($ROOT) }..." ||
+		msg="Waiting for resume device ${RESUME:+($RESUME) }..."
+
+	PROG=initramfs \
+	message "$msg" >/dev/console 2>&1 ||:
+
+	console_unlock
+fi

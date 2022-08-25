@@ -23,20 +23,12 @@ start()
 {
 	start_daemon $ARGS --background "$NAME"
 	RETVAL=$?
-	[ "$RETVAL" != 0 ] ||
-		/lib/initrd/rootdelay &
 	return $RETVAL
 }
 
 stop() {
 	stop_daemon $ARGS -- "$NAME"
 	RETVAL=$?
-	{
-		local pid=
-		read -r pid < /var/run/rootdelay.pid
-		[ -z "$pid" ] ||
-			kill "$pid"
-	} >/dev/null 2>&1
 	return $RETVAL
 }
 
