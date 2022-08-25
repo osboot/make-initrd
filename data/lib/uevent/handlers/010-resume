@@ -2,6 +2,7 @@
 
 . /.initrd/initenv
 . uevent-sh-functions
+. initrd-sh-functions
 
 message_time=1
 
@@ -11,8 +12,14 @@ handler() {
 		return 0
 	fi
 
-	# hardcode path, uswsusp ships an resume binary too
-	/bin/resume "$INIT_RESUME" ${RESUME_OFFSET-}
+	if ! resume_checked; then
+		# hardcode path, uswsusp ships an resume binary too
+		/bin/resume "$INIT_RESUME" ${RESUME_OFFSET-}
+
+		message "resume failed - doing normal boot"
+		set_resume_checked
+	fi
+
 	return 0
 }
 

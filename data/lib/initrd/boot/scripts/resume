@@ -1,0 +1,6 @@
+#!/bin/bash -e
+
+. /.initrd/initenv
+. initrd-sh-functions
+
+resume_checked

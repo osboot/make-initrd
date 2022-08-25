@@ -47,7 +47,13 @@ while [ "$delay" -gt 0 ] && [ ! -x "$rootmnt/$INIT" ]; do
 
 			console_unlock
 		fi
+
 		delay=$(($delay - 1))
+
+		if [ "$delay" -eq 0 ] && ! resume_checked; then
+			set_resume_checked
+			delay=$ROOTDELAY
+		fi
 	fi
 	sleep 1
 done

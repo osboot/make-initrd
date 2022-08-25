@@ -11,6 +11,9 @@ message_time=1
 
 handler()
 {
+	resume_checked ||
+		return 1
+
 	[ -z "${NO_FSCK-}" ] &&
 		[ -z "${FASTBOOT-}" ] &&
 		[ -d "$MOUNTPOINT" ] &&

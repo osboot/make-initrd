@@ -133,4 +133,17 @@ has_feature()
 	done
 }
 
+_resume_checked=/.initrd/resume/checked
+
+set_resume_checked()
+{
+	mkdir -p -- "$_resume_checked"
+}
+
+resume_checked()
+{
+	[ -n "${NORESUME-}" ] || [ -z "${RESUME-}" ] || [ -e "$_resume_checked" ] ||
+		return 1
+}
+
 fi
