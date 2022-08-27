@@ -36,59 +36,29 @@ jobs:
     runs-on: ubuntu-latest
     name: "${{ matrix.name }}, root:${{ matrix.test }}"
     steps:
-      - name: "Prepare cache"
-        run: touch ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ github.sha }}
-
-      - name: "Restore last status"
-        uses: actions/cache@v2
-        with:
-          path: ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ github.sha }}
-          key: ${{ matrix.name }}-${{ matrix.test }}-${{ github.sha }}
-
-      - name: "Read last status"
-        id: last-status
-        run: |
-          value="$(cat ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ github.sha }})"
-          echo "status=$value"
-          echo "::set-output name=status::$value"
-
       - name: "Prepare KVM"
-        if: steps.last-status.outputs.status != 'passed'
         run: |
           test -c /dev/kvm && sudo chmod -v 666 /dev/kvm ||:
 
       - name: "Install packages"
-        if: steps.last-status.outputs.status != 'passed'
         run: |
           sudo apt-get -qq -y update
           sudo apt-get -qq -y install git expect qemu-kvm
 
       - name: "Checkout Repository"
-        if: steps.last-status.outputs.status != 'passed'
         uses: actions/checkout@v2
 
       - name: "Checkout submodules"
-        if: steps.last-status.outputs.status != 'passed'
         run: |
           git submodule set-url external/busybox/upstream https://github.com/mirror/busybox
           git submodule update --init --recursive
 
       - name: "Test"
-        if: steps.last-status.outputs.status != 'passed'
         env:
           TIMEOUT: 30m
         run: |
-          set -efux
-          ./testing/testing-${{ matrix.name }} test-root-${{ matrix.test }}
-          rm -vrf -- ./testing/cache/${{ matrix.name }}/${{ matrix.test }}
-          echo passed > ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ github.sha }}
+          testing/testing-${{ matrix.name }} test-root-${{ matrix.test }}
 
-      - name: "Save the cache"
-        if: steps.last-status.outputs.status != 'passed'
-        uses: actions/cache@v2
-        with:
-          path: ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ github.sha }}
-          key: ${{ matrix.name }}-${{ matrix.test }}-${{ github.sha }}
   network:
     strategy:
       matrix:
@@ -106,56 +76,25 @@ jobs:
     runs-on: ubuntu-latest
     name: "${{ matrix.name }}, root:${{ matrix.test }}, net:${{ matrix.nettype }}"
     steps:
-      - name: "Prepare cache"
-        run: touch ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ matrix.nettype }}-${{ github.sha }}
-
-      - name: "Restore last status"
-        uses: actions/cache@v2
-        with:
-          path: ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ matrix.nettype }}-${{ github.sha }}
-          key: ${{ matrix.name }}-${{ matrix.test }}-${{ matrix.nettype }}-${{ github.sha }}
-
-      - name: "Read last status"
-        id: last-status
-        run: |
-          value="$(cat ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ matrix.nettype }}-${{ github.sha }})"
-          echo "status=$value"
-          echo "::set-output name=status::$value"
-
       - name: "Prepare KVM"
-        if: steps.last-status.outputs.status != 'passed'
         run: |
           test -c /dev/kvm && sudo chmod -v 666 /dev/kvm ||:
 
       - name: "Install packages"
-        if: steps.last-status.outputs.status != 'passed'
         run: |
           sudo apt-get -qq -y update
           sudo apt-get -qq -y install git qemu-kvm
 
       - name: "Checkout Repository"
-        if: steps.last-status.outputs.status != 'passed'
         uses: actions/checkout@v2
 
       - name: "Checkout submodules"
-        if: steps.last-status.outputs.status != 'passed'
         run: |
           git submodule set-url external/busybox/upstream https://github.com/mirror/busybox
           git submodule update --init --recursive
 
       - name: "Test"
-        if: steps.last-status.outputs.status != 'passed'
         env:
           TIMEOUT: 5m
         run: |
-          set -efux
-          ./testing/testing-${{ matrix.name }}-${{ matrix.test }} ${{ matrix.nettype }}
-          rm -vrf -- ./testing/cache/${{ matrix.name }}/${{ matrix.test }}-${{ matrix.nettype }}
-          echo passed > ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ matrix.nettype }}-${{ github.sha }}
-
-      - name: "Save the cache"
-        if: steps.last-status.outputs.status != 'passed'
-        uses: actions/cache@v2
-        with:
-          path: ~/cache.${{ matrix.name }}-${{ matrix.test }}-${{ matrix.nettype }}-${{ github.sha }}
-          key: ${{ matrix.name }}-${{ matrix.test }}-${{ matrix.nettype }}-${{ github.sha }}
+          testing/testing-${{ matrix.name }}-${{ matrix.test }} ${{ matrix.nettype }}
