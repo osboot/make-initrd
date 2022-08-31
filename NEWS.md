@@ -1,3 +1,15 @@
+Version 2.28.0
+
+- Feature lkrg:
+  + Support for LKRG v0.9.3-43-g49a3117.
+- Feature pipeline:
+  + Remove standalone daemon.
+- Runtime:
+  + Make log messages more readable.
+  + Wait until the resume is processed.
+- Misc:
+  + Add more integration tests.
+
 Version 2.27.2
 
 - Feature luks:
