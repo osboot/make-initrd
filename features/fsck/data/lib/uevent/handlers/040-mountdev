@@ -44,7 +44,7 @@ handler()
 		echo "*** Mountpoint: $MOUNTPOINT"
 		echo "***     Device: $MOUNTDEV"
 		echo
-		RDSHELL_NOMESSAGE=1 rdshell
+		rdshell
 	fi
 
 	reboot

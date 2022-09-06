@@ -1,48 +1,8 @@
-#!/bin/bash -efu
+#!/bin/bash -eu
 
-PROG="${0##*/}"
-PID="$$"
-
-if [ -n "${RDSHELL_FOREVER-}" ]; then
-	if [ -z "${__session-}" ]; then
-		export __session=1
-		exec setsid "$0" "$@"
-	fi
-	unset __session
-
-	mkdir -p -- /var/run
-	echo "$PID" > "/var/run/$PROG.pid"
-fi
-
+. shell-error
 . shell-source
-
-exit_handler()
-{
-	trap - EXIT
-	retry=
-	rm -f -- "$rdshell_fifo"
-	kill -15 -$PID >/dev/null 2>&1
-	exit $1
-}
-
-recv_command()
-{
-	[ -z "${RDSHELL_NOMESSAGE-}" ] ||
-		return 0
-	{
-		read -r msg
-		read -r withlock
-	} < "$rdshell_fifo" ||:
-}
-
-exec </dev/console >/dev/console 2>&1
-
 . rdshell-sh-functions
-
-[ -e "$rdshell_fifo" ] ||
-	mkfifo -- "$rdshell_fifo"
-
-trap 'exit_handler $?' EXIT
 
 source_if_exists /.initrd/initenv
 
@@ -52,49 +12,38 @@ source_if_exists /etc/sysconfig/rdshell
 # Disallow console access
 [ "${PANIC-}" != 0 ] || [ "$RDSHELL_MODE" != shell ] || RDSHELL_MODE=disable
 
-retry=1
-while [ -n "$retry" ]; do
-	msg=
-	withlock=
+shcmd='/bin/sh -l'
+case "$RDSHELL_MODE" in
+	shell)
+		;;
+	login)
+		shcmd='sulogin'
+		;;
+	disable)
+		printf 'Shell access is not allowed.\n'
+		exit 0
+		;;
+esac
 
-	recv_command
+exec </dev/console >/dev/console 2>&1
 
-	[ "${#withlock}" = 0 ] ||
-		while [ -n "$retry" ] && ! console_lock; do
-			sleep 0.1
-		done
+console_locked=
+if [ -n "$0" ] && [ -z "${0##*-locked}" ]; then
+	while ! console_lock; do
+		sleep 0.1
+	done
+	console_locked=1
+fi
 
-	[ ${#msg} = 0 ] ||
-		printf '%s: %s\n' "${0##*/}" "$msg"
-
-	shcmd='/bin/sh -l'
-	case "${RDSHELL_MODE-}" in
-		shell)
-			;;
-		login)
-			printf '\n'
-			shcmd='sulogin'
-			;;
-		disable)
-			printf 'Shell access is not allowed.\n'
-			retry=
-			continue
-			;;
-	esac
-
-	(
-		set +f
-		for f in /lib/shell/*; do
-			[ -x "$f" ] || break
-			"$f" ||:
-		done
-	)
-
-	setsid -c $shcmd
-
-	[ "${#withlock}" = 0 ] ||
-		console_unlock
-
-	[ -n "${RDSHELL_FOREVER-}" ] ||
-		retry=
+for f in /lib/shell/*; do
+	[ -x "$f" ] || break
+	"$f" ||:
 done
+
+[ "$#" -eq 0 ] ||
+	printf '%s: %s\n' "${0##*/}" "$1"
+
+setsid -c $shcmd
+
+[ -z "$console_locked" ] ||
+	console_unlock

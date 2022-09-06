@@ -8,15 +8,18 @@
 
 . /.initrd/initenv
 
+disabled="/.initrd/rootdelay/disabled"
+
+[ ! -e "$disabled" ] ||
+	exit 0
+
 if [ -n "${RDSHELL-}" ]; then
-	console_open "Emergency shell" withlock
+	mkdir -p -- "$disabled"
+	console_open "Emergency shell"
 	exit
 fi
 
 . initrd-sh-functions
-
-! rootdelay_paused ||
-	exit 0
 
 first_iter=
 now="$(date +'%s')"
@@ -35,6 +38,11 @@ fi
 deadline="${deadline:-$now}"
 delay=$(( $deadline - $now ))
 
+if rootdelay_paused; then
+	echo $(( $now + $delay )) > "$timestamp"
+	exit 0
+fi
+
 if [ "$delay" -le 0 ]; then
 	if ! resume_checked; then
 		set_resume_checked
@@ -45,7 +53,8 @@ if [ "$delay" -le 0 ]; then
 	# Disallow console access
 	[ "${PANIC-}" != "0" ] || reboot -f
 
-	console_open "The waiting time expired!" withlock
+	mkdir -p -- "$disabled"
+	console_open "The waiting time expired!"
 	exit 0
 fi
 

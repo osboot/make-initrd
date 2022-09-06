@@ -89,8 +89,7 @@ for i in "$rcd"/S*; do
 					break
 					;;
 				s|shell)
-					printf 'This shell remains here for debug purposes. Press Ctrl-D to continue.\n'
-					RDSHELL_NOMESSAGE=1 rdshell
+					rdshell 'This shell remains here for debug purposes. Press Ctrl-D to continue.'
 					;;
 				n|no)
 					continue 2

@@ -3,4 +3,4 @@
 . rdshell-sh-functions
 
 console_inactive &&
-	console_open "Emergency shell" withlock ||:
+	console_open "Emergency shell" ||:

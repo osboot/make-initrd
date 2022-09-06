@@ -4,7 +4,6 @@ if [ -z "${__rdshell_sh_functions-}" ]; then
 __rdshell_sh_functions=1
 
 _console_lock=/.initrd/rdshell.lock
-rdshell_fifo=/.initrd/rdshell
 
 console_lock()
 {
@@ -24,12 +23,7 @@ console_inactive()
 
 console_open()
 {
-	[ -e "$rdshell_fifo" ] ||
-		return 0
-	local a
-	for a; do
-		printf '%s\n' "$a"
-	done > "$rdshell_fifo"
+	rdshell-locked "$@" &
 }
 
 fi

@@ -13,12 +13,6 @@
 
 msg="Network up"
 
-if [ -n "${RDSHELL-}" ]; then
-	echo_msg "$msg:"
-	passed "$msg:"
-	exit 0
-fi
-
 . network-sh-functions
 
 # wait for network modules
