@@ -1,9 +1,14 @@
 #!/bin/bash -efu
 
 . pipeline-sh-functions
+. initrd-sh-functions
 
 [ -n "$prevdir" ] ||
 	fatal "no previous step to use as rootfs"
+
+while ! resume_checked; do
+	sleep 0.5
+done
 
 run mount --move "$prevdir" "$rootmnt"
 echo localdev > /etc/initrd/method
