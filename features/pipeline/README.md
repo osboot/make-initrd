@@ -3,6 +3,13 @@
 The feature calls the pipe elements one by one and passes them the results of
 the previous elements.
 
+This feature is intended for boot scenarios not related to simple disk
+initialization. Normal disk loading can also be done using pipeline (see
+examples).
+
+To activate a pipeline, you must specify it as `root=pipeline` in the boot
+cmdline. The sequence of steps is specified in the `pipeline=...` parameter.
+
 ## Pipe elements
 
 - `getimage` receives and mounts the remote image.
@@ -10,6 +17,9 @@ the previous elements.
 - `overlayfs` combines one or more pipe elements using overlayfs.
 - `waitdev` waits for the local device to appear.
 - `rootfs` uses the result of the previous element as a root.
+- `wait-resume` is waiting for the resume attempt to complete. This step is
+  necessary to avoid race conditions between disk initialization for resume and
+  pipeline.
 
 ## Boot parameters
 
@@ -27,6 +37,15 @@ The parameters can be specified more than once depending on how many times
 a corresponding element is mentioned in the `pipeline`.
 
 ## Example
+
+### Simple boot.
+
+Cmdline: root=pipeline pipeline=waitdev,mountfs,rootfs waitdev=LABEL=MYROOT mountfs=dev
+
+Using these parameters, the pipeline will wait for a device with the `"MYROOT"`
+label, mount it, and boot from it.
+
+### Network boot
 
 Cmdline: root=pipeline pipeline=getimage,mountfs,overlayfs,rootfs getimage=http://ftp.altlinux.org/pub/people/mike/iso/misc/vi-20140918-i586.iso mountfs=rescue
 
