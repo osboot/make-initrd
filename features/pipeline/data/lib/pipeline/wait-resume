@@ -1,0 +1,8 @@
+#!/bin/bash -efu
+
+. pipeline-sh-functions
+. initrd-sh-functions
+
+while ! resume_checked; do
+	sleep 0.5
+done
