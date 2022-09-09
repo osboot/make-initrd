@@ -1,3 +1,11 @@
+Version 2.29.0
+
+- Runtime:
+  +  Remove shell service.
+- Feature pipeline:
+  + Give resume a chance to run.
+  + Add wait-resume step.
+
 Version 2.28.0
 
 - Feature lkrg:
