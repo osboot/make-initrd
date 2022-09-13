@@ -196,6 +196,37 @@ indent-c:
 	@find . \! -path './external/*' -name '*.[ch]' \
 	    -exec astyle -n --quiet --options=.astylerc '{}' '+'
 
+.PHONY: wiki
+wiki:
+	$(Q)[ -d .wiki ] || git clone https://github.com/osboot/make-initrd.wiki.git .wiki
+	$(Q)find Documentation/ \( -name '*.md' -a \! -name 'README.md' -a \! -path '*/presentation/*' \) -exec cp -f -t .wiki -- '{}' '+'
+	$(Q)cp -f -- Documentation/README.md .wiki/Home.md
+	$(Q)cp -f -- features/README.md .wiki/Features.md
+	$(Q)echo >> .wiki/Features.md
+	$(Q)find features/ -mindepth 2 -name README.md -printf '%h\n' |xargs -r basename -a | sort | \
+	    while read -r n; do \
+	      s=$$(grep -m1 -e '^# Feature: ' "features/$$n/README.md") || continue; \
+	      s="$${s#* Feature: }"; \
+	      cp -f --  "features/$$n/README.md" ".wiki/feature-$$n.md"; \
+	      printf '* [%s](%s)\n' "$$s" "feature-$$n"; \
+	    done >> .wiki/Features.md
+	$(Q)echo >> .wiki/GuessConfiguration.md
+	$(Q)find guess/ -mindepth 2 -name README.md -printf '%h\n' |xargs -r basename -a | sort | \
+	    while read -r n; do \
+	      s=$$(grep -m1 -e '^# Guess module: ' "guess/$$n/README.md") || continue; \
+	      s="$${s#* Guess module: }"; \
+	      cp -f --  "guess/$$n/README.md" ".wiki/guess-$$n.md"; \
+	      printf '* [%s](%s)\n' "$$s" "guess-$$n"; \
+	    done >> .wiki/GuessConfiguration.md
+	$(Q)find .wiki -name '*.md' -exec sed -i \
+	    -e 's,(Documentation/,(,g' \
+	    -e 's,(guess/,(guess-,g' \
+	    -e 's,(features/,(feature-,g' \
+	    -e 's,/README\.md),),g' \
+	    -e 's,\.md),),g' \
+	    -e 's,\.md#,#,g' \
+	    '{}' '+'
+
 release:
 	$(Q)git archive -o $(PKGFILE).tar --prefix=$(PREFIX)/ HEAD
 	$(Q)git submodule update --init --checkout --depth=1 --force

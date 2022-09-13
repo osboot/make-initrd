@@ -6,7 +6,9 @@ help this project.
 Here are some important resources:
 
 * [Mailing list](https://lists.altlinux.org/mailman/listinfo/make-initrd).
+* [Wiki](https://github.com/osboot/make-initrd/wiki).
 * Bugs? Use [github](https://github.com/osboot/make-initrd/issues) to report them.
+* How to write [new features](NewFeature.md).
 
 
 **make-initrd** uses the linux kernel model where git is not only source repository,

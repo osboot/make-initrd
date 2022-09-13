@@ -1,10 +1,10 @@
-# How it works ?
+# How initramfs works ?
 
 When we talk about event-driven infrastructure it means that there is no
 hardcoded sequence of steps to mount system root.
 
-The initramfs init starts a few services: udevd, ueventd, polld.
-The interaction between these services looks like this:
+The initramfs init starts a few services: udevd, [ueventd](UeventDetails.md),
+[polld](PollDetails.md). The interaction between these services looks like this:
 
 ```
 .==========.        .----------------.        .------------------.
@@ -38,22 +38,19 @@ Fortunately, our filesystem is located in memory.
 the queue is processed one by one in the order of arrival, but daemon can
 process several queues in parallel. It calls `handlers` for events in the
 queue. A `handler` implements one aspect of boot (lvm, raid, luks, mount
-device, etc).
+device, etc). See [uevent details](UeventDetails.md) for more information.
 
 For example, if we got events about all block devices needed for MD RAID then
 the raid-handler will assemble it. This in turn will spawn a new kernel event
-about the appearance of /dev/md0. Now, mount-handler can check it and if it
+about the appearance of `/dev/md0`. Now, mount-handler can check it and if it
 contains the root filesystem, then handler will mount this block device.
 
 So, we mounted some block devices somewhere. We need something that would make
 a decision that we met all the conditions for real system boot. The `polld` is
 responsible for this. The server periodically runs `extenders` scripts that
 perform checks (console is not active, the system init was found, etc.),
-and if all scripts succeed, the server initiates a system boot.
+and if all scripts succeed, the server initiates a system boot. See [polling
+details](PollDetails.md) for more information.
 
 This scheme is used to mount system root device, resume system, configure
 network. Basically it's used for everything based on kernel events.
-
-## See also
-
-- The details about the [ueventd](UeventDetails.md).

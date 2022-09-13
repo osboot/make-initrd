@@ -1,6 +1,11 @@
 # Feature: buildinfo
 
-Feature saves information about the created initramfs image.
+Feature saves information about the created initramfs image. This information
+contains such information as the features used and the list of packed files.
+
+## Parameters
+
+- **BUILDINFODIR** -- The directory where the buildinfo will be saved.
 
 ## Files
 

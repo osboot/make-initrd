@@ -1,6 +1,6 @@
 # Runtime
 
-If want to know how it works in general please read [this document](HowItWorks.md).
+If want to know how it works in general please read [this document](HowInitramfsWorks.md).
 It describes the basic idea of determining the root.
 
 ## Boot order

@@ -1,4 +1,4 @@
-# Ueventd details
+# Ueventd Details
 
 `ueventd` is a queue daemon. The task of this server is to process events
 from the queue. Each event in its queue is processed one by one in the order
@@ -32,7 +32,7 @@ each event.
 
 Processed events are prefixed with `done.` or deleted.
 
-## uevent API
+## Uevent API
 
 All `filters` and `handlers` should use `/bin/uevent-sh-functions` as
 the interface to events.
@@ -49,4 +49,4 @@ becomes available for processing.
 
 ## See also
 
-- The article about [runtime](BootRuntime.md).
+- The article about [runtime](BootInitramfs.md).

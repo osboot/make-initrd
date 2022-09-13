@@ -39,6 +39,15 @@ a configuration file.
 
 Additionally, some features also have their own configuration settings.
 
+### Example
+
+The simplest configuration file looks like this:
+
+```
+AUTODETECT = all
+```
+
 ## See also
 
 - The list of [features](Features.md).
+- [Guessing the configuration](GuessConfiguration.md).
