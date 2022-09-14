@@ -19,7 +19,6 @@ run podman run --rm -ti \
 	--mount="type=bind,src=$topdir/data,dst=/image$builddir/data" \
 	--mount="type=bind,src=$topdir/features,dst=/image$builddir/features" \
 	--mount="type=bind,src=$topdir/guess,dst=/image$builddir/guess" \
-	--mount="type=bind,src=$topdir/kmodule.deps.d,dst=/image$builddir/kmodule.deps.d" \
 	--mount="type=bind,src=$topdir/tools,dst=/image$builddir/tools" \
 	--volume="$topdir:/host" \
 	"localhost/mi-$VENDOR:sysimage" "/host/$workdir/run.sh"

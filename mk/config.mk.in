@@ -27,7 +27,6 @@ TOOLSDIR	:= @projectdir@/tools
 LOCALBUILDDIR	:= @localbuilddir@
 FEATURESDIR	:= @projectdir@/features
 DETECTDIR	:= @projectdir@/guess
-KMODDEPSDIR	:= @projectdir@/kmodule.deps.d
 BASEDATADIR	:= @projectdir@/data
 RUNTIMEDIR	:= @runtimedir@
 STATEDIR	:= @statedir@

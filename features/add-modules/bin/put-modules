@@ -183,7 +183,7 @@ while [ -s "$tempdir/mods.required" ] || [ -s "$tempdir/mods.optional" ]; do
 	sort -uo "$tempdir/more-modules" "$tempdir/more-modules"
 	cat "$tempdir/more-modules"
 
-	find -L "$kmoddepsdir" -type f -executable \
+	find -L "$KMODDEPSDIR" -type f -executable \
 		-exec '{}' "$tempdir/more-modules" ';' > "$tempdir/mods.required"
 
 done > "$tempdir/modules"

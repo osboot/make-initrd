@@ -142,7 +142,6 @@ for step in "$@"; do
 				--mount="type=bind,src=$topdir/data,dst=/image$builddir/data" \
 				--mount="type=bind,src=$topdir/features,dst=/image$builddir/features" \
 				--mount="type=bind,src=$topdir/guess,dst=/image$builddir/guess" \
-				--mount="type=bind,src=$topdir/kmodule.deps.d,dst=/image$builddir/kmodule.deps.d" \
 				--mount="type=bind,src=$topdir/tools,dst=/image$builddir/tools" \
 				--volume="$topdir:/host" \
 				"$IMAGE" tar -C /image -cf /host/$workdir/sysimage.tar .
