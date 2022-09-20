@@ -15,6 +15,7 @@ will apply stage.
 
 To build a initramfs, you have to install the following software packages:
 
+- [bash](https://www.gnu.org/software/bash/)
 - [coreutils](https://www.gnu.org/software/coreutils/)
 - [gnu make](http://www.gnu.org/software/make/)
 - [kmod](https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git)
