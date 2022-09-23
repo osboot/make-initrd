@@ -1,1 +1,0 @@
-BUILDINFODIR ?= $(STATEDIR)/initrd
