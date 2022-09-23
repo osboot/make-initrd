@@ -179,8 +179,26 @@ fi	# MAKE_INITRD_BUG_REPORT
 [ "${MOUNTPOINTS-}" == "/" ] ||
 	echo "Warning: Using MOUNTPOINTS variable for guess module is deprecated. Use GUESS_MOUNTPOINTS instead" 1>&2
 
+MORE_MOUNTPOINTS="/"
+
+if mountpoint -q /usr; then
+	for d in /bin /sbin /lib /lib64; do
+		if [ "$(realpath "$d")" = "/usr$d" ]; then
+			MORE_MOUNTPOINTS+=" /usr"
+			break
+		fi
+	done
+fi
+
+#
+# Search for options:
+#   comment="x-initrd-mount"
+#   x-initrd-mount
+#
+MORE_MOUNTPOINTS+=" $(findmnt -s -O x-initrd-mount -no TARGET 2>/dev/null ||:)"
+
 pass=' '
-for dir in ${MOUNTPOINTS-} ${GUESS_MOUNTPOINTS-}; do
+for dir in ${MOUNTPOINTS-} ${GUESS_MOUNTPOINTS-} $MORE_MOUNTPOINTS; do
 	[ -n "${pass##* $dir *}" ] ||
 		continue
 
