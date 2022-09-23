@@ -12,9 +12,17 @@ case "${1-}" in
 		mkdir -p -- "$DIR"/etc
 
 		for d in ${MOUNTPOINTS-}; do
-			out="$(findmnt -n -o UUID,TARGET,FSTYPE,OPTIONS --target "$d")" ||
+			out="$(findmnt -n -o TARGET,FSTYPE,OPTIONS --target "$d")" ||
 				continue
-			printf 'UUID=%s 0 0\n' "$out"
+
+			src="$(findmnt -n -o UUID --target "$d")"
+			prefix='UUID='
+
+			[ -n "$src" ] || { src="$(findmnt -n -o LABEL  --target "$d")"; prefix='LABEL='; }
+			[ -n "$src" ] || { src="$(findmnt -n -o SOURCE --target "$d")"; prefix=''; }
+			[ -n "$src" ] || continue
+
+			printf '%s%s %s 0 0\n' "$prefix" "$src" "$out"
 		done >"$DIR"/etc/fstab
 
 		sort -uo "$DIR"/etc/fstab "$DIR"/etc/fstab
