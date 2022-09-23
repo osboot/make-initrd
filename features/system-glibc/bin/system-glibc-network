@@ -14,7 +14,9 @@ case "${1-}" in
 		echo ''                                          >"$DIR"/etc/resolv.conf
 
 		for n in protocols rpc services; do
-			grep -E -v '^[[:space:]]*(#.*)?$' "/etc/$n" > "$DIR/etc/$n" ||:
+			:> "$DIR/etc/$n"
+			[ ! -e "/etc/$n" ] ||
+				grep -E -v '^[[:space:]]*(#.*)?$' "/etc/$n" > "$DIR/etc/$n" ||:
 		done
 
 		cat >"$DIR"/etc/host.conf <<-EOF
