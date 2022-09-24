@@ -667,7 +667,9 @@ part()
 				makefs "$partdev" "$@"
 			;;
 		btrfs.*|pv.*|raid.*)
-			printf '%s\n' "$partdev" >> "$ks_datadir/$mntpoint"
+			[ -d "$ks_datadir/partid" ] ||
+				mkdir -- "$ks_datadir/partid"
+			printf '%s\n' "$partdev" >> "$ks_datadir/partid/$mntpoint"
 			;;
 	esac
 }
@@ -716,7 +718,7 @@ volgroup()
 			'')
 				;;
 			pv.*)
-				for arg in $(set +f; printf '%s\n' "$ks_datadir/"$1); do
+				for arg in $(set +f; printf '%s\n' "$ks_datadir/partid/"$1); do
 					read -r arg < "$arg"
 					set -- "$@" "/dev/$arg"
 				done
@@ -925,7 +927,7 @@ raid()
 			'')
 				;;
 			raid.*)
-				read -r arg < "$ks_datadir/$1"
+				read -r arg < "$ks_datadir/partid/$1"
 				set -- "$@" "/dev/$arg"
 				;;
 			*)
@@ -1052,7 +1054,7 @@ btrfs()
 			'')
 				;;
 			btrfs.*)
-				for arg in $(set +f; printf '%s\n' "$ks_datadir"/$1); do
+				for arg in $(set +f; printf '%s\n' "$ks_datadir"/partid/$1); do
 					read -r arg < "$arg"
 					set -- "$@" "/dev/$arg"
 				done
