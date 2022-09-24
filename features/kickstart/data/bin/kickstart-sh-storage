@@ -377,7 +377,25 @@ crypto()
 
 	verbose "creating LUKS encrypted volume on /dev/$dev"
 
-	set -- cryptsetup \
+	if [ -n "$luks_passfile" ] && [ ! -f "$luks_passfile" ]; then
+		message "passfile does not exist: $luks_passfile"
+		return 1
+	fi
+
+	local crypt_name="${name:-${dev}_crypt}"
+	local passfile="$ks_datadir/crypto/$crypt_name/pass"
+
+	mkdir -p -- "$ks_datadir/crypto/$crypt_name"
+
+	if [ -n "$luks_passphrase" ]; then
+		printf '%s' "$luks_passphrase" > "$passfile"
+	elif [ -n "$luks_passfile" ]; then
+		cp -f -- $luks_passfile "$passfile"
+	else
+		passfile=
+	fi
+
+	cryptsetup \
 		--batch-mode \
 		--type luks \
 		${luks_cipher:+--cipher="$luks_cipher"} \
@@ -386,43 +404,17 @@ crypto()
 		${luks_pbkdf_memory:+--pbkdf-memory="$luks_pbkdf_memory"} \
 		${luks_pbkdf_time:+--iter-time="$luks_pbkdf_time"} \
 		${luks_pbkdf_iterations:+--pbkdf-force-iterations="$luks_pbkdf_iterations"} \
-		luksFormat "/dev/$dev" \
-
-	if [ -n "$luks_passfile" ] && [ ! -f "$luks_passfile" ]; then
-		message "passfile does not exist: $luks_passfile"
-		return 1
-	fi
-
-	if [ -n "$luks_passphrase" ]; then
-		printf '%s' "$luks_passphrase" |
-			"$@" -d- ||
+		${passfile:+-d "$passfile"} \
+		luksFormat "/dev/$dev" ||
 			ret=1
-	elif [ -n "$luks_passfile" ]; then
-		"$@" -d- < "$luks_passfile" ||
-			ret=1
-	else
-		"$@" ||
-			ret=1
-	fi
 
 	if [ "$ret" = 1 ]; then
 		message "unable to format luks device: /dev/$partdev"
 		return 1
 	fi
 
-	set -- cryptsetup luksOpen "/dev/$dev" "${name:-${dev}_crypt}"
-
-	if [ -n "$luks_passphrase" ]; then
-		printf '%s' "$luks_passphrase" |
-			"$@" -d- ||
-			ret=1
-	elif [ -n "$luks_passfile" ]; then
-		"$@" -d- < "$luks_passfile" ||
-			ret=1
-	else
-		"$@" ||
-			ret=1
-	fi
+	cryptsetup ${passfile:+-d "$passfile"} open --type luks "/dev/$dev" "$crypt_name" ||
+		ret=1
 
 	if [ "$ret" = 1 ]; then
 		message "unable to open luks device: /dev/$partdev"
