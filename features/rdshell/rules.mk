@@ -5,10 +5,7 @@ endif
 ifneq "$(RDSHELL_PASSWORD)$(RDSHELL_COPY_PASSWORD_FROM_USER)" ''
 RDSHELL = login
 
-RHSHELL_DIRS := $(shell env \
-	"RDSHELL_PASSWORD=$(RDSHELL_PASSWORD)" \
-	"RDSHELL_COPY_PASSWORD_FROM_USER=$(RDSHELL_COPY_PASSWORD_FROM_USER)" \
-	$(FEATURESDIR)/rdshell/bin/add-login dirs)
+RHSHELL_DIRS := $(shell $(shell_export_vars) $(FEATURESDIR)/rdshell/bin/add-login dirs)
 
 PUT_FEATURE_DIRS += $(RHSHELL_DIRS)
 endif
