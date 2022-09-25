@@ -107,9 +107,9 @@ if [ -d "$workdir/ucode" ]; then
 
 	# shellcheck disable=SC2185
 	find -O2 . -mindepth 1 \
-		   \( -type f -a -printf 'file %p %p %#m 0 0\n'  \) \
-		-o \( -type l -a -printf 'slink %p %l %#m 0 0\n' \) \
-		-o \( -type d -a -printf 'dir %p %#m 0 0\n'      \) |
+		   \( -type f -a -printf 'file %P %P %#m 0 0\n'  \) \
+		-o \( -type l -a -printf 'slink %P %l %#m 0 0\n' \) \
+		-o \( -type d -a -printf 'dir %P %#m 0 0\n'      \) |
 		sort |
 		gen_init_cpio -t 0 - > "$workdir"/ucode.cpio
 
