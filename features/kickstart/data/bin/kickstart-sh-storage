@@ -40,6 +40,12 @@ ks_devname_list()
 	done
 }
 
+ks_cat_exec()
+{
+	cat >"$1"
+	chmod +x "$1"
+}
+
 ignoredisk()
 {
 	local PROG TEMP dev
@@ -316,12 +322,10 @@ ks_set_crypto_args()
 
 crypto()
 {
-	local PROG TEMP
+	local PROG TEMP dev
 	local luks_passphrase='' luks_cipher='' luks_pbkdf='' luks_pbkdf_memory=''
 	local luks_pbkdf_time='' luks_pbkdf_iterations='' luks_passfile=''
 	local name=''
-
-	local ret=0
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "name:,$getopt_crypto" -- "$PROG" "$@"` ||
@@ -385,46 +389,46 @@ crypto()
 	local crypt_name="${name:-${dev}_crypt}"
 	local passfile="$ks_datadir/crypto/$crypt_name/pass"
 
-	mkdir -p -- "$ks_datadir/crypto/$crypt_name"
+	mkdir -p -- "${passfile%/*}"
 
 	if [ -n "$luks_passphrase" ]; then
 		printf '%s' "$luks_passphrase" > "$passfile"
 	elif [ -n "$luks_passfile" ]; then
 		cp -f -- $luks_passfile "$passfile"
 	else
-		passfile=
+		message "unable to create luks without password or passfile"
+		return 1
 	fi
 
 	cryptsetup \
 		--batch-mode \
 		--type luks \
+		--key-file "$passfile" \
 		${luks_cipher:+--cipher="$luks_cipher"} \
 		${luks_passphrase:+ --force-password} \
 		${luks_pbkdf:+--pbkdf="$luks_pbkdf"} \
 		${luks_pbkdf_memory:+--pbkdf-memory="$luks_pbkdf_memory"} \
 		${luks_pbkdf_time:+--iter-time="$luks_pbkdf_time"} \
 		${luks_pbkdf_iterations:+--pbkdf-force-iterations="$luks_pbkdf_iterations"} \
-		${passfile:+-d "$passfile"} \
-		luksFormat "/dev/$dev" ||
-			ret=1
+		luksFormat "/dev/$dev" || {
+			message "unable to format luks device: /dev/$dev"
+			return 1
+		}
 
-	if [ "$ret" = 1 ]; then
-		message "unable to format luks device: /dev/$partdev"
-		return 1
-	fi
+	cryptsetup \
+		--key-file "$passfile" \
+		open --type luks "/dev/$dev" "$crypt_name" || {
+			message "unable to open luks device: /dev/$dev"
+			return 1
+		}
 
-	cryptsetup ${passfile:+-d "$passfile"} open --type luks "/dev/$dev" "$crypt_name" ||
-		ret=1
-
-	if [ "$ret" = 1 ]; then
-		message "unable to open luks device: /dev/$partdev"
-		return 1
-	fi
+	message "luks device ready: /dev/$dev"
+	return 0
 }
 
 part()
 {
-	local PROG TEMP shift_args=0 sfdisk_args
+	local PROG TEMP shift_args=0 sfdisk_args exe
 	local mntpoint='' dev='' partdev='' parttype='' fsoptions='' size='' grow='' useexisting='' resize=''
 	local asprimary=''
 	local encrypted='' makefs_args='' crypto_args=''
@@ -488,7 +492,7 @@ part()
 
 	if [ -n "$encrypted" ]; then
 		quote_shell_args crypto_args "$crypto_args"
-		eval "ONLYARGS=1 crypto $crypto_args"
+		eval "ONLYARGS=1 crypto $crypto_args || return"
 	fi
 
 	mntpoint="${1:-none}"
@@ -555,6 +559,9 @@ part()
 				set -- "size=$sectors"
 		fi
 
+		[ ! -d "$ks_datadir/part/$dev/stop" ] ||
+			find "$ks_datadir/part/$dev/stop" -type f -executable -exec '{}' ';'
+
 		set -- ${1:+"$@" ,} "type=$parttype"
 
 		local prev_parttable curr_parttable sz i
@@ -611,6 +618,9 @@ part()
 	fi
 
 	if [ -n "$resize" ]; then
+		[ ! -d "$ks_datadir/part/$dev/stop" ] ||
+			find "$ks_datadir/part/$dev/stop" -type f -executable -exec '{}' ';'
+
 		# https://karelzak.blogspot.com/2015/05/resize-by-sfdisk.html
 
 		if [ -n "$grow" ]; then
@@ -637,8 +647,34 @@ part()
 
 	if [ -n "$encrypted" ]; then
 		eval "set -- $crypto_args"
-		crypto --name="${partdev}_crypt" "$@" "/dev/$partdev"
-		partdev="mapper/${partdev}_crypt"
+
+		local crypt_name="${partdev}_crypt"
+
+		crypto --name="$crypt_name" "$@" "/dev/$partdev" ||
+			return
+
+		mkdir -p -- \
+			"$ks_datadir/part/$dev/start" \
+			"$ks_datadir/part/$dev/stop"
+
+		ks_cat_exec "$ks_datadir/part/$dev/start/$partdev" <<-EOF
+		#!/bin/sh -efu
+		[ ! -b "/dev/mapper/$crypt_name" ] ||
+			exit 0
+		cryptsetup --key-file "$ks_datadir/crypto/$crypt_name/pass" open --type luks "/dev/$partdev" "$crypt_name"
+		EOF
+
+		ks_cat_exec "$ks_datadir/part/$dev/stop/$partdev" <<-EOF
+		#!/bin/sh -efu
+		[ -b "/dev/mapper/$crypt_name" ] ||
+			exit 0
+		cryptsetup close "$crypt_name"
+		EOF
+
+		partdev="mapper/$crypt_name"
+	else
+		[ ! -d "$ks_datadir/part/$dev/start" ] ||
+			find "$ks_datadir/part/$dev/start" -type f -executable -exec '{}' ';'
 	fi
 
 	quote_shell_args makefs_args "$makefs_args"
@@ -797,7 +833,7 @@ logvol()
 
 	if [ -n "$encrypted" ]; then
 		quote_shell_args crypto_args "$crypto_args"
-		eval "ONLYARGS=1 crypto $crypto_args"
+		eval "ONLYARGS=1 crypto $crypto_args || return"
 	fi
 
 	mntpoint="${1:-none}"
@@ -842,7 +878,8 @@ logvol()
 
 	if [ -n "$encrypted" ]; then
 		eval "set -- $crypto_args"
-		crypto --name="${name}_crypt" "$@" "/dev/$partdev"
+		crypto --name="${name}_crypt" "$@" "/dev/$partdev" ||
+			return
 		partdev="mapper/${name}_crypt"
 	fi
 
@@ -905,7 +942,7 @@ raid()
 
 	if [ -n "$encrypted" ]; then
 		quote_shell_args crypto_args "$crypto_args"
-		eval "ONLYARGS=1 crypto $crypto_args"
+		eval "ONLYARGS=1 crypto $crypto_args || return"
 	fi
 
 	local mntpoint i num
@@ -967,7 +1004,8 @@ raid()
 
 	if [ -n "$encrypted" ]; then
 		eval "set -- $crypto_args"
-		crypto --name="${device}_crypt" "$@" "$dev"
+		crypto --name="${device}_crypt" "$@" "$dev" ||
+			return
 		dev="mapper/${device}_crypt"
 	fi
 
