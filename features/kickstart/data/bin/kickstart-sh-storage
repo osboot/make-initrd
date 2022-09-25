@@ -52,6 +52,9 @@ ignoredisk()
 	local drives='' onlyuse=''
 	local ret=0
 
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
+
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l 'drives:,only-use:' -- "$PROG" "$@"` ||
 		return 1
@@ -101,6 +104,9 @@ clearpart()
 {
 	local PROG TEMP dev skipped
 	local all='' disks='' list='' initlabel=''
+
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l 'all,drives:,list:,none,initlabel,disklabel:' -- "$PROG" "$@"` ||
@@ -264,6 +270,9 @@ makefs()
 	local dev=''
 	local fstype='ext4' label=''
 
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
+
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "$getopt_makefs" -- "$PROG" "$@"` ||
 		return 1
@@ -326,6 +335,9 @@ crypto()
 	local luks_passphrase='' luks_cipher='' luks_pbkdf='' luks_pbkdf_memory=''
 	local luks_pbkdf_time='' luks_pbkdf_iterations='' luks_passfile=''
 	local name=''
+
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "name:,$getopt_crypto" -- "$PROG" "$@"` ||
@@ -435,6 +447,9 @@ part()
 	local disks="$BLOCK_DEVICES"
 
 	local ret=0
+
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "asprimary,ondisk:,ondrive:,onpart:,usepart:,fsoptions:,size:,grow,resize,encrypted,$getopt_makefs,$getopt_crypto,$getopt_useexisting" -- "$PROG" "$@"` ||
@@ -709,6 +724,9 @@ volgroup()
 	local PROG TEMP shift_args
 	local useexisting='' pesize=''
 
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
+
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "pesize:,$getopt_useexisting" -- "$PROG" "$@"` ||
 		return 1
@@ -782,6 +800,9 @@ logvol()
 	local useexisting='' fsoptions='' size='' resize='' grow='' chunksize=''
 	local encrypted='' makefs_args='' crypto_args=''
 	local ret=0
+
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "vgname:,name:,fsoptions:,chunksize:,percent:,size:,resize,grow,encrypted,$getopt_crypto,$getopt_makefs,$getopt_useexisting" -- "$PROG" "$@"` ||
@@ -903,6 +924,9 @@ raid()
 	local PROG TEMP shift_args dev=''
 	local device='' level='' chunksize='' useexisting='' fsoptions=''
 	local encrypted='' makefs_args='' crypto_args=''
+
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "device:,level:,chunksize:,encrypted,$getopt_crypto,$getopt_makefs,$getopt_useexisting" -- "$PROG" "$@"` ||
@@ -1029,6 +1053,9 @@ btrfs()
 	local PROG TEMP shift_args dev
 	local subvol='' data='' metadata='' label='' name='' fsoptions='' useexisting=''
 	local mntpoint i num
+
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "subvol,name:,label:,data:,metadata:,fsoptions:,$getopt_useexisting" -- "$PROG" "$@"` ||
