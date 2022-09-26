@@ -5,6 +5,9 @@ liveimg()
 	local PROG TEMP ret=0 archive='' isdir=''
 	local url='' proxy='' noverifyssl='' checksum=''
 
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
+
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l 'url:,proxy:,checksum:,noverifyssl' -- "$PROG" "$@"` ||
 		return 1
