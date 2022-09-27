@@ -1,3 +1,19 @@
+Version 2.30.0
+
+- Feature kickstart:
+  + Close luks partition if we need to change partition table.
+  + Add information about what command is being executed.
+- Feature rootfs:
+  + Create fstab more carefully.
+- Feature ucode:
+  + Change path in the archive.
+- Feature multipath:
+  + Add more rules and utils for FC multipath.
+- Drop buildinfo feature.
+- Misc:
+  + Detect separate /usr partition (merged-usr).
+  + Generate wiki from Documentation.
+
 Version 2.29.0
 
 - Runtime:
