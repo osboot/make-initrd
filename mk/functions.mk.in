@@ -214,13 +214,13 @@ $(eval undefine n-file)\
 $(eval undefine n-name)
 endef
 
-# $(shell_export_vars)
+# $(shell-export-vars)
 # The function generates shell-code which exports all make variables that can be
 # used in the shell.
 #
-# Example: $(shell $(shell_export_vars) /usr/bin/some-helper)
+# Example: $(shell $(shell-export-vars) /usr/bin/some-helper)
 #
-define shell_export_vars
+define shell-export-vars
 $(if $(1),$(foreach v,$(shell echo '$(.VARIABLES)' | tr ' ' '\n' | grep '^[A-Z][A-Za-z0-9_]*$$'),export $(v)='$(subst ','\'',$($(v)))';))
 endef
 

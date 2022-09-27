@@ -1,4 +1,4 @@
-ROOTFS_DIRS := $(shell $(shell_export_vars) $(FEATURESDIR)/rootfs/bin/create-fstab dirs)
+ROOTFS_DIRS := $(shell $(shell-export-vars) $(FEATURESDIR)/rootfs/bin/create-fstab dirs)
 PUT_FEATURE_DIR += $(ROOTFS_DIRS)
 
 $(call set-sysconfig,init,QUIET,$(RUNTIME_QUIET))

@@ -1,4 +1,4 @@
-KICKSTART_DIRS := $(shell $(shell_export_vars) $(FEATURESDIR)/kickstart/bin/get-ks-configs)
+KICKSTART_DIRS := $(shell $(shell-export-vars) $(FEATURESDIR)/kickstart/bin/get-ks-configs)
 
 MODULES_ADD += $(LUKS_MODULES) drivers/md/raid
 

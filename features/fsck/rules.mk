@@ -1,4 +1,4 @@
-FSCK_RUNTIME_FILES := $(shell $(shell_export_vars) $(FEATURESDIR)/fsck/bin/find-files)
+FSCK_RUNTIME_FILES := $(shell $(shell-export-vars) $(FEATURESDIR)/fsck/bin/find-files)
 
 PUT_FEATURE_DIRS  += $(FSCK_DATADIR)
 PUT_FEATURE_FILES += $(FSCK_FILES) $(FSCK_RUNTIME_FILES)
