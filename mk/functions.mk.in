@@ -221,7 +221,7 @@ endef
 # Example: $(shell $(shell_export_vars) /usr/bin/some-helper)
 #
 define shell_export_vars
-$(if $(1),$(foreach v,$(shell echo '$(.VARIABLES)' | tr ' ' '\n' | grep -xe '[A-Z][A-Za-z0-9_]*' ),export $(v)="$(subst $$,\$$,$(subst `,\`,$(subst ",\",$(subst \,\\,$($(v))))))";))
+$(if $(1),$(foreach v,$(shell echo '$(.VARIABLES)' | tr ' ' '\n' | grep '^[A-Z][A-Za-z0-9_]*$$'),export $(v)='$(subst ','\'',$($(v)))';))
 endef
 
 endif # __included-functions-mk
