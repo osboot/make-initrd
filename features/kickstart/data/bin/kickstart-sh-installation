@@ -80,6 +80,14 @@ liveimg()
 			tar -C "$ks_rootdir" -xf "$archive" ||
 				ret=1
 			;;
+		*.tar.zst)
+			zstd -d < "$archive" | tar -C "$ks_rootdir" -xf - ||
+				ret=1
+			;;
+		*.tar.lz4)
+			lz4 -d < "$archive"| tar -C "$ks_rootdir" -xf - ||
+				ret=1
+			;;
 		*.zip)
 			unzip -d "$ks_rootdir" "$arhive" ||
 				ret=1
