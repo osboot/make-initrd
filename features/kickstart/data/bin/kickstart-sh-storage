@@ -687,10 +687,10 @@ part()
 		EOF
 
 		partdev="mapper/$crypt_name"
-	else
-		[ ! -d "$ks_datadir/part/$dev/start" ] ||
-			find "$ks_datadir/part/$dev/start" -type f -executable -exec '{}' ';'
 	fi
+
+	[ ! -d "$ks_datadir/part/$dev/start" ] ||
+		find "$ks_datadir/part/$dev/start" -type f -executable -exec '{}' ';'
 
 	quote_shell_args makefs_args "$makefs_args"
 	eval "set -- $makefs_args"
