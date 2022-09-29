@@ -307,15 +307,13 @@ makefs()
 	wipefs -qfa "/dev/$dev" ||
 		return 1
 
-	if [ "$fstype" = swap ]; then
-		verbose "creating swap${label:+ (LABEL=$label)} on /dev/$dev"
-		mkswap -f ${label:+-L "$label"} "/dev/$dev" >/dev/null
-		return
-	fi
-
 	verbose "creating $fstype filesystem${label:+ (LABEL=$label)} on /dev/$dev"
 
-	"mkfs.$fstype" -q ${label:+-L "$label"} "/dev/$dev"
+	case "$fstype" in
+		swap) mkswap -f ${label:+-L "$label"} "/dev/$dev" >/dev/null ;;
+		fat|vfat) mkfs."$fstype" ${label:+-n "$label"} "/dev/$dev" >/dev/null ;;
+		*) "mkfs.$fstype" -q ${label:+-L "$label"} "/dev/$dev" ;;
+	esac
 }
 
 getopt_crypto='cipher:,passphrase:,passfile:,pbkdf:,pbkdf-memory:,pbkdf-time:,pbkdf-iterations:'

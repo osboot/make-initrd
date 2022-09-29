@@ -8,7 +8,9 @@ KICKSTART_PROGS_PATTERNS = \
 			   */mkfs.ext* \
 			   */mkfs.xfs \
 			   */mkfs.fat \
-			   */mkfs.reiserfs
+			   */mkfs.reiserfs \
+			   */mkfs.vfat \
+			   #
 
 KICKSTART_DATADIR = $(FEATURESDIR)/kickstart/data
 
