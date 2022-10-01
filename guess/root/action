@@ -182,12 +182,7 @@ fi	# MAKE_INITRD_BUG_REPORT
 MORE_MOUNTPOINTS="/"
 
 if mountpoint -q /usr; then
-	for d in /bin /sbin /lib /lib64; do
-		if [ "$(realpath "$d")" = "/usr$d" ]; then
-			MORE_MOUNTPOINTS+=" /usr"
-			break
-		fi
-	done
+	MORE_MOUNTPOINTS+=" /usr"
 fi
 
 #
