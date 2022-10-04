@@ -553,8 +553,9 @@ part()
 			elif [ -z "${size##*[!0-9]*}" ]; then
 				local from='iec'
 				[ -n "${size%%*i}" ] || from='iec-i'
-				sectors="$size"
-				needbytes=$(numfmt --from=$from --grouping "$size")
+				size=$(LANG=C numfmt --from=$from --grouping "$size")
+				sectors="$(( $size / 512 ))"
+				needbytes="$size"
 			else
 				# sectors
 				sectors="$size"
