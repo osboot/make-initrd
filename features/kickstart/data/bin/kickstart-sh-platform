@@ -1,0 +1,71 @@
+#!/bin/bash
+
+if [ -z "${__kickstart_sh_platform-}" ]; then
+__kickstart_sh_platform=1
+
+uname_m="$(uname -m)"
+
+is_efi()
+{
+	[ -e /sys/firmware/efi ]
+}
+
+is_aarch64()
+{
+	[ "${uname_m,,}" == "aarch64" ]
+}
+
+is_x86()
+{
+	case "${uname_m,,}" in
+		x86_64|ia32e|i*86|athlon*|amd*)
+			return 0
+			;;
+	esac
+	return 1
+}
+
+is_gpt_table()
+{
+	[ "$DISKLABEL" = "gpt" ]
+}
+
+reqpart()
+{
+	local PROG TEMP need_boot=''
+
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
+
+	PROG="${FUNCNAME[0]}"
+	TEMP=`getopt -n "$PROG" -l 'add-boot' -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--add-boot)
+				need_boot=1
+				;;
+			--) shift; break
+				;;
+		esac
+		shift
+	done
+
+	if is_efi; then
+		if is_x86 || is_aarch64; then
+			part /boot/efi --fstype=vfat --label=EFI
+		fi
+	elif is_gpt_table && is_x86; then
+		part biosboot
+	fi
+
+	[ -z "$need_boot" ] ||
+		part /boot --size=500Mi --fstype=ext4 --label=BOOT
+
+	PROG="kickstart"
+	message "command finished: ${FUNCNAME[0]}"
+}
+
+fi

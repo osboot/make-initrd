@@ -524,6 +524,10 @@ part()
 		raid.*)    parttype="raid"  ;;
 		pv.*)      parttype="lvm"   ;;
 		swap)      parttype="swap"  ;;
+		biosboot)
+			parttype="ef02"
+			size="${size:-1Mi}"
+			;;
 		/boot/efi)
 			parttype="uefi"
 			size="${size:-200Mi}"

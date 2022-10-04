@@ -13,6 +13,7 @@
 . "$0-sh-storage"
 . "$0-sh-installation"
 . "$0-sh-postinstall"
+. "$0-sh-platform"
 
 verbose="${DEBUG:+-v}"
 
@@ -90,24 +91,24 @@ KS_ORDERS=(
 	2000000000:lang
 	2000000000:url
 	2100000000:ks_step_pre
-	3000000000:reqpart
-	3000000000:zerombr
-	3100000000:autopart
-	3100000000:btrfs
+	3000000000:ignoredisk
 	3100000000:clearpart
-	3100000000:crypto
-	3100000000:fcoe
-	3100000000:ignoredisk
-	3100000000:iscsi
-	3100000000:iscsiname
-	3100000000:logvol
-	3100000000:makefs
-	3100000000:part
-	3100000000:partition
-	3100000000:raid
-	3100000000:volgroup
-	3100000000:zfcp
-	3100000000:zipl
+	3200000000:autopart
+	3200000000:reqpart
+	3300000000:btrfs
+	3300000000:crypto
+	3300000000:fcoe
+	3300000000:iscsi
+	3300000000:iscsiname
+	3300000000:logvol
+	3300000000:makefs
+	3300000000:part
+	3300000000:partition
+	3300000000:raid
+	3300000000:volgroup
+	3300000000:zerombr
+	3300000000:zfcp
+	3300000000:zipl
 	4000000000:ks_step_mount
 	5000000000:ks_step_pre_install
 	5100000000:liveimg
