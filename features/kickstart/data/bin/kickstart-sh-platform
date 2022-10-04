@@ -55,7 +55,7 @@ reqpart()
 
 	if is_efi; then
 		if is_x86 || is_aarch64; then
-			part /boot/efi --fstype=vfat --label=EFI
+			part /boot/efi --fstype=efi --label=EFI
 		fi
 	elif is_gpt_table && is_x86; then
 		part biosboot

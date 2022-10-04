@@ -463,7 +463,7 @@ crypto()
 part()
 {
 	local PROG TEMP shift_args=0 sfdisk_args exe
-	local mntpoint='' dev='' partdev='' parttype='' fsoptions='' size='' grow='' useexisting='' resize=''
+	local mntpoint='' dev='' partdev='' parttype='' fstype='' fsoptions='' size='' grow='' useexisting='' resize=''
 	local asprimary=''
 	local encrypted='' makefs_args='' crypto_args=''
 	local disks="$BLOCK_DEVICES"
@@ -496,6 +496,8 @@ part()
 					return 1
 				fi
 				disks=''
+				;;
+			--fstype) shift; fstype="$1"
 				;;
 			--fsoptions) shift; fsoptions="$1"
 				;;
@@ -540,12 +542,10 @@ part()
 		pv.*)      parttype="lvm"   ;;
 		swap)      parttype="swap"  ;;
 		biosboot)
-			parttype="ef02"
-			size="${size:-1Mi}"
+			fstype="biosboot"
 			;;
 		/boot/efi)
-			parttype="uefi"
-			size="${size:-200Mi}"
+			fstype="efi"
 			;;
 		/home)
 			[ "$DISKLABEL" = 'gpt' ] &&
@@ -561,6 +561,23 @@ part()
 		message "partition for \`$mntpoint' mountpoint already exists. Ignore."
 		return
 	fi
+
+	case "$fstype" in
+		'')
+			;;
+		efi)
+			parttype="uefi"
+			size="${size:-200Mi}"
+			ks_set_makefs_args --fstype "vfat"
+			;;
+		biosboot)
+			parttype="ef02"
+			size="${size:-1Mi}"
+			;;
+		*)
+			ks_set_makefs_args --fstype "$fstype"
+			;;
+	esac
 
 	for dev in $disks; do
 		if [ -n "$size" ] && [ -n "${size%\%}" ]; then
@@ -964,7 +981,7 @@ logvol()
 raid()
 {
 	local PROG TEMP shift_args dev=''
-	local device='' level='' chunksize='' useexisting='' fsoptions=''
+	local device='' level='' chunksize='' useexisting='' fstype='' fsoptions=''
 	local encrypted='' makefs_args='' crypto_args=''
 
 	PROG="kickstart"
@@ -984,6 +1001,8 @@ raid()
 			--level) shift
 				level="${1,,}"
 				level="${level#raid}"
+				;;
+			--fstype) shift; fstype="$1"
 				;;
 			--fsoptions) shift; fsoptions="$1"
 				;;
@@ -1019,6 +1038,21 @@ raid()
 		message "partition for \`$mntpoint' mountpoint already exists. Ignore."
 		return
 	fi
+
+	case "$fstype" in
+		'')
+			;;
+		efi)
+			size="${size:-200Mi}"
+			ks_set_makefs_args --fstype "vfat"
+			;;
+		biosboot)
+			size="${size:-1Mi}"
+			;;
+		*)
+			ks_set_makefs_args --fstype "$fstype"
+			;;
+	esac
 
 	num="$#"
 
