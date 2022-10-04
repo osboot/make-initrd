@@ -230,6 +230,34 @@ ks_get_dev_sector_size()
 	sector_size="${value:-512}"
 }
 
+# ----------------+-----------------------------+------------------------------+
+# Amount of RAM   | Recommended swap space      | Recommended swap space       |
+# in the system   |                             | if allowing for hibernation  |
+# ----------------+-----------------------------+------------------------------+
+# less than 2 GB  | 2 times the amount of RAM   | 3 times the amount of RAM    |
+# 2 GB - 8 GB     | Equal to the amount of RAM  | 2 times the amount of RAM    |
+# 8 GB - 64 GB    | 0.5 times the amount of RAM | 1.5 times the amount of RAM  |
+# more than 64 GB | workload dependent          | 1.5 times the amount of RAM  |
+# ----------------+-----------------------------+------------------------------+
+ks_guess_swap_size()
+{
+	local memtotal
+
+	memtotal="$(sed -ne 's|^MemTotal:[[:space:]]*\([0-9]\+\) kB$|\1|p' /proc/meminfo)"
+	memtotal="$(numfmt --from=iec ${memtotal}K)"
+
+	if [ "$memtotal" -lt "$(numfmt --from=iec 2G)" ]; then
+		echo $(( $memtotal * 3 ))
+		return
+	fi
+	if [ "$memtotal" -lt "$(numfmt --from=iec 8G)" ]; then
+		echo $(( $memtotal * 2 ))
+		return
+	fi
+
+	echo $(( $memtotal + ( $memtotal / 2 ) ))
+}
+
 ks_mountpoint_name()
 {
 	local fname
@@ -464,7 +492,7 @@ part()
 {
 	local PROG TEMP shift_args=0 sfdisk_args exe
 	local mntpoint='' dev='' partdev='' parttype='' fstype='' fsoptions='' size='' grow='' useexisting='' resize=''
-	local asprimary=''
+	local asprimary='' hibernation=''
 	local encrypted='' makefs_args='' crypto_args=''
 	local disks="$BLOCK_DEVICES"
 
@@ -474,7 +502,7 @@ part()
 	message "command: ${FUNCNAME[0]} $*"
 
 	PROG="${FUNCNAME[0]}"
-	TEMP=`getopt -n "$PROG" -l "asprimary,ondisk:,ondrive:,onpart:,usepart:,fsoptions:,size:,grow,resize,encrypted,$getopt_makefs,$getopt_crypto,$getopt_useexisting" -- "$PROG" "$@"` ||
+	TEMP=`getopt -n "$PROG" -l "asprimary,ondisk:,ondrive:,onpart:,usepart:,fsoptions:,size:,grow,resize,encrypted,hibernation,$getopt_makefs,$getopt_crypto,$getopt_useexisting" -- "$PROG" "$@"` ||
 		return 1
 	eval set -- "$TEMP"
 
@@ -515,6 +543,9 @@ part()
 			--encrypted)
 				encrypted=1
 				;;
+			--hibernation)
+				hibernation=1
+				;;
 			*)
 				shift_args=0
 				ks_set_useexisting "$@"
@@ -540,7 +571,9 @@ part()
 	case "$mntpoint" in
 		raid.*)    parttype="raid"  ;;
 		pv.*)      parttype="lvm"   ;;
-		swap)      parttype="swap"  ;;
+		swap)
+			fstype="swap"
+			;;
 		biosboot)
 			fstype="biosboot"
 			;;
@@ -574,6 +607,20 @@ part()
 			parttype="ef02"
 			size="${size:-1Mi}"
 			;;
+		swap)
+			parttype="swap"
+			if [ -z "$size" ] && [ -n "$hibernation" ]; then
+				size="$(ks_guess_swap_size)"
+
+				if [ "$size" -eq 0 ]; then
+					message "no need to create a \`$fstype' partition. Ignore."
+					return
+				fi
+
+				size="${size}B"
+			fi
+			ks_set_makefs_args --fstype "swap"
+			;;
 		*)
 			ks_set_makefs_args --fstype "$fstype"
 			;;
@@ -605,9 +652,12 @@ part()
 				fi
 				needbytes=$(( $sectors * $sector_size ))
 			elif [ -z "${size##*[!0-9]*}" ]; then
-				local from='iec'
-				[ -n "${size%%*i}" ] || from='iec-i'
-				size=$(LANG=C numfmt --from=$from --grouping "$size")
+				case "$size" in
+					*[Bb]) size="${size%[Bb]}" ;;
+					*i)    size=$(LANG=C numfmt --from=iec-i "$size") ;;
+					*)     size=$(LANG=C numfmt --from=iec   "$size") ;;
+				esac
+
 				sectors="$(( $size / $sector_size ))"
 				needbytes="$size"
 			else
@@ -849,8 +899,8 @@ volgroup()
 logvol()
 {
 	local PROG TEMP shift_args
-	local vgname='' name=''
-	local useexisting='' fsoptions='' size='' resize='' grow='' chunksize=''
+	local vgname='' name='' hibernation=''
+	local useexisting='' fstype='' fsoptions='' size='' resize='' grow='' chunksize=''
 	local encrypted='' makefs_args='' crypto_args=''
 	local ret=0
 
@@ -858,7 +908,7 @@ logvol()
 	message "command: ${FUNCNAME[0]} $*"
 
 	PROG="${FUNCNAME[0]}"
-	TEMP=`getopt -n "$PROG" -l "vgname:,name:,fsoptions:,chunksize:,percent:,size:,resize,grow,encrypted,$getopt_crypto,$getopt_makefs,$getopt_useexisting" -- "$PROG" "$@"` ||
+	TEMP=`getopt -n "$PROG" -l "vgname:,name:,fsoptions:,chunksize:,percent:,size:,resize,grow,encrypted,hibernation,$getopt_crypto,$getopt_makefs,$getopt_useexisting" -- "$PROG" "$@"` ||
 		return 1
 	eval set -- "$TEMP"
 
@@ -869,6 +919,8 @@ logvol()
 			--vgname) shift; vgname="$1"
 				;;
 			--name) shift; name="$1"
+				;;
+			--fstype) shift; fstype="$1"
 				;;
 			--fsoptions) shift; fsoptions="$1"
 				;;
@@ -890,6 +942,9 @@ logvol()
 				;;
 			--encrypted)
 				encrypted=1
+				;;
+			--hibernation)
+				hibernation=1
 				;;
 			*)
 				shift_args=0
@@ -916,6 +971,22 @@ logvol()
 		message "partition for \`$mntpoint' mountpoint already exists. Ignore."
 		return
 	fi
+
+	case "$fstype" in
+		swap)
+			if [ -z "$size" ] && [ -n "$hibernation" ]; then
+				size="$(ks_guess_swap_size)"
+
+				if [ "$size" -eq 0 ]; then
+					message "no need to create a \`$fstype' volume. Ignore."
+					return
+				fi
+
+				size="${size}B"
+			fi
+			ks_set_makefs_args --fstype "swap"
+			;;
+	esac
 
 	set --
 
@@ -982,13 +1053,13 @@ raid()
 {
 	local PROG TEMP shift_args dev=''
 	local device='' level='' chunksize='' useexisting='' fstype='' fsoptions=''
-	local encrypted='' makefs_args='' crypto_args=''
+	local encrypted='' hibernation='' makefs_args='' crypto_args=''
 
 	PROG="kickstart"
 	message "command: ${FUNCNAME[0]} $*"
 
 	PROG="${FUNCNAME[0]}"
-	TEMP=`getopt -n "$PROG" -l "device:,level:,chunksize:,encrypted,$getopt_crypto,$getopt_makefs,$getopt_useexisting" -- "$PROG" "$@"` ||
+	TEMP=`getopt -n "$PROG" -l "device:,level:,chunksize:,encrypted,hibernation,$getopt_crypto,$getopt_makefs,$getopt_useexisting" -- "$PROG" "$@"` ||
 		return 1
 	eval set -- "$TEMP"
 
@@ -1010,6 +1081,9 @@ raid()
 				;;
 			--encrypted)
 				encrypted=1
+				;;
+			--hibernation)
+				hibernation=1
 				;;
 			*)
 				shift_args=0
@@ -1048,6 +1122,19 @@ raid()
 			;;
 		biosboot)
 			size="${size:-1Mi}"
+			;;
+		swap)
+			if [ -z "$size" ] && [ -n "$hibernation" ]; then
+				size="$(ks_guess_swap_size)"
+
+				if [ "$size" -eq 0 ]; then
+					message "no need to create a \`$fstype' partition. Ignore."
+					return
+				fi
+
+				size="${size}B"
+			fi
+			ks_set_makefs_args --fstype "swap"
 			;;
 		*)
 			ks_set_makefs_args --fstype "$fstype"
