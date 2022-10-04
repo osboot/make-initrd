@@ -221,6 +221,15 @@ ks_get_dev_size()
 		)"
 }
 
+ks_get_dev_sector_size()
+{
+	local value
+	value="$(sfdisk "/dev/$1" --list |
+		sed -n -e 's|^Sector size.*: \([0-9]\+\) bytes .*|\1|p' |
+		head -1)"
+	sector_size="${value:-512}"
+}
+
 ks_fstab()
 {
 	local fname dev mpoint fstype fsopts
@@ -529,7 +538,9 @@ part()
 
 	for dev in $disks; do
 		if [ -n "$size" ] && [ -n "${size%\%}" ]; then
-			local totalsize_bytes=0 totalsize_sectors=0 needbytes=0 sectors=''
+			local totalsize_bytes=0 totalsize_sectors=0 needbytes=0 sectors='' sector_size=0
+
+			ks_get_dev_sector_size "$dev"
 
 			if [ -z "${size##*%}" ]; then
 				local totalfree_percent freesize_sectors
@@ -549,17 +560,17 @@ part()
 				else
 					sectors="$(( $totalsize_sectors * ${size%\%} / 100 ))"
 				fi
-				needbytes=$(( $sectors * 512 ))
+				needbytes=$(( $sectors * $sector_size ))
 			elif [ -z "${size##*[!0-9]*}" ]; then
 				local from='iec'
 				[ -n "${size%%*i}" ] || from='iec-i'
 				size=$(LANG=C numfmt --from=$from --grouping "$size")
-				sectors="$(( $size / 512 ))"
+				sectors="$(( $size / $sector_size ))"
 				needbytes="$size"
 			else
 				# sectors
 				sectors="$size"
-				needbytes=$(( $size * 512 ))
+				needbytes=$(( $sectors * $sector_size ))
 			fi
 
 			ks_get_dev_size "$dev" --list-free
