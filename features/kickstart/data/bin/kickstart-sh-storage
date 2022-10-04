@@ -230,6 +230,23 @@ ks_get_dev_sector_size()
 	sector_size="${value:-512}"
 }
 
+ks_mountpoint_name()
+{
+	local fname
+
+	fname="$(echo "$1" | sha256sum)"
+	fname="${fname% *}"
+
+	echo "$fname"
+}
+
+ks_is_mountpoint_exists()
+{
+	local fname
+	fname="$(ks_mountpoint_name "$1")"
+	[ -f "$ks_datadir/fstab.d/$fname" ]
+}
+
 ks_fstab()
 {
 	local fname dev mpoint fstype fsopts
@@ -239,9 +256,7 @@ ks_fstab()
 	fsopts="$1"; shift
 
 	fstype="$(blkid -o value -s TYPE "/dev/$dev")"
-
-	fname="$(echo $mpoint | sha256sum)"
-	fname="${fname% *}"
+	fname="$(ks_mountpoint_name "$mpoint")"
 
 	printf '/dev/%s %s %s %s 0 0\n' \
 		"$dev" "$ks_rootdir$mpoint" "$fstype" "${fsopts:-defaults}" \
@@ -537,8 +552,15 @@ part()
 				parttype="home" ||
 				parttype="linux"
 			;;
-		*)         parttype="linux" ;;
+		*)
+			parttype="linux"
+			;;
 	esac
+
+	if [ -z "${mntpoint##/*}" ] && ks_is_mountpoint_exists "$mntpoint"; then
+		message "partition for \`$mntpoint' mountpoint already exists. Ignore."
+		return
+	fi
 
 	for dev in $disks; do
 		if [ -n "$size" ] && [ -n "${size%\%}" ]; then
@@ -872,6 +894,12 @@ logvol()
 	fi
 
 	mntpoint="${1:-none}"
+
+	if [ -z "${mntpoint##/*}" ] && ks_is_mountpoint_exists "$mntpoint"; then
+		message "partition for \`$mntpoint' mountpoint already exists. Ignore."
+		return
+	fi
+
 	set --
 
 	if [ -n "$grow" ]; then
@@ -986,6 +1014,12 @@ raid()
 	local mntpoint i num
 
 	mntpoint="$1"; shift
+
+	if [ -n "$mntpoint" ] && [ -z "${mntpoint##/*}" ] && ks_is_mountpoint_exists "$mntpoint"; then
+		message "partition for \`$mntpoint' mountpoint already exists. Ignore."
+		return
+	fi
+
 	num="$#"
 
 	for (( i=0; $i < $num; i++ )); do
@@ -1109,6 +1143,12 @@ btrfs()
 	done
 
 	mntpoint="$1"; shift
+
+	if [ -n "$mntpoint" ] && [ -z "${mntpoint##/*}" ] && ks_is_mountpoint_exists "$mntpoint"; then
+		message "partition for \`$mntpoint' mountpoint already exists. Ignore."
+		return
+	fi
+
 	num="$#"
 
 	if [ "$num" = 0 ]; then
