@@ -24,6 +24,19 @@ file:
   can be in any order.
 * Lines starting with a pound sign (`#`) are treated as comments and are ignored.
 
+### Recommended System Swap Space
+
+The table below provides the recommended size of a swap partition depending on
+the amount of RAM in your system.
+
+|Amount of RAM   | Recommended swap space      | Recommended swap space       |
+|in the system   |                             | if allowing for hibernation  |
+|----------------|-----------------------------|------------------------------|
+|less than 2 GB  | 2 times the amount of RAM   | 3 times the amount of RAM    |
+|2 GB - 8 GB     | Equal to the amount of RAM  | 2 times the amount of RAM    |
+|8 GB - 64 GB    | 0.5 times the amount of RAM | 1.5 times the amount of RAM  |
+|more than 64 GB | workload dependent          | 1.5 times the amount of RAM  |
+
 ### Kickstart commands
 
 The following commands can be placed in a kickstart file.
@@ -31,6 +44,7 @@ The following commands can be placed in a kickstart file.
 * Storage and Partitioning
   - [ignoredisk](#ignoredisk)
   - [clearpart](#clearpart)
+  - [reqpart](#reqpart)
   - [makefs](#makefs)
   - [crypto](#crypto)
   - [part or partition](#part-or-partition)
@@ -86,6 +100,20 @@ Options:
   supported for the platform will be accepted. eg. dos and gpt.
 
 
+#### reqpart
+```
+reqpart [--add-boot]
+```
+Automatically create partitions required by your hardware platform. These
+include a `/boot/efi` for x86_64 and Aarch64 systems with UEFI firmware,
+`biosboot` for x86_64 systems with BIOS firmware and GPT.
+
+Options:
+
+* `--add-boot` - Create a separate /boot partition in addition to the
+  platform-specific partition created by the base command.
+
+
 #### makefs
 ```
 makefs <device> [--fstype=FSTYPE] [--label=LABEL]
@@ -134,7 +162,7 @@ Options:
 ```
 part [--ondisk=DISK] [--onpart=ONPART] [--asprimary]
    [--fstype=FSTYPE] [--label=LABEL]
-   [--useexisting] [--noformat]
+   [--useexisting] [--noformat] [--hibernation]
    [--encrypted] [--passphrase=PASSPHRASE] [--passfile=FILE] [--cipher=CIPHER]
    [--pbkdf=PBKDF] [--pbkdf-memory=MEMORY] [--pbkdf-time=TIME] [--pbkdf-iterations=ITERATIONS]
    <mntpoint>
@@ -185,6 +213,12 @@ Options:
 
 * `--fstype=FSTYPE`, `--label=LABEL` - See options for the [makefs](#makefs) command.
 
+* `--hibernation` - This option can be used to automatically determine the size
+  of the swap partition big enough for hibernation if no size is specified with
+  the `--size=` option. If this option is specified and `--size` is not defined,
+  then the size will be determined according to the recommendations.
+  See [Recommended System Swap Space](#recommended-system-swap-space).
+
 
 #### volgroup
 ```
@@ -206,7 +240,7 @@ Options:
 logvol --vgname=VGNAME --name=NAME [--chunksize=SIZE] [--percent=PERCENT]
    [--size=SIZE] [--grow] [--resize] [--fsoptions=FSOPTS]
    [--fstype=FSTYPE] [--label=LABEL]
-   [--useexisting] [--noformat]
+   [--useexisting] [--noformat] [--hibernation]
    [--encrypted] [--passphrase=PASSPHRASE] [--passfile=FILE] [--cipher=CIPHER]
    [--pbkdf=PBKDF] [--pbkdf-memory=MEMORY] [--pbkdf-time=TIME] [--pbkdf-iterations=ITERATIONS]
    <mntpoint>
@@ -243,12 +277,18 @@ Options:
 
 * `--fstype=FSTYPE`, `--label=LABEL` - See options for the [makefs](#makefs) command.
 
+* `--hibernation` - This option can be used to automatically determine the size
+  of the swap partition big enough for hibernation if no size is specified with
+  the `--size=` option. If this option is specified and `--size` is not defined,
+  then the size will be determined according to the recommendations.
+  See [Recommended System Swap Space](#recommended-system-swap-space).
+
 
 #### raid
 ```
 raid --device=DEVICE [--level=LEVEL] [--chunksize=SIZE] [--fsoptions=FSOPTS]
    [--fstype=FSTYPE] [--label=LABEL]
-   [--useexisting] [--noformat]
+   [--useexisting] [--noformat] [--hibernation]
    [--encrypted] [--passphrase=PASSPHRASE] [--passfile=FILE] [--cipher=CIPHER]
    [--pbkdf=PBKDF] [--pbkdf-memory=MEMORY] [--pbkdf-time=TIME] [--pbkdf-iterations=ITERATIONS]
    <mntpoint> <partitions...>
@@ -282,6 +322,12 @@ Options:
   See options for the [crypto](#crypto) command.
 
 * `--fstype=FSTYPE`, `--label=LABEL` - See options for the [makefs](#makefs) command.
+
+* `--hibernation` - This option can be used to automatically determine the size
+  of the swap partition big enough for hibernation if no size is specified with
+  the `--size=` option. If this option is specified and `--size` is not defined,
+  then the size will be determined according to the recommendations.
+  See [Recommended System Swap Space](#recommended-system-swap-space).
 
 
 #### btrfs
@@ -335,7 +381,7 @@ liveimg --url=<url> [--proxy=<proxyurl>] [--noverifyssl] [--checksum=<sha256>]
 ```
 Install a disk image instead of packages. The URL may also point to a tarfile of
 the root filesystem. The file must end in .tar, .tbz, .tgz, .txz, .tar.bz2,
-.tar.gz, .tar.xz, .zip, .cpio.
+.tar.gz, .tar.xz, .tar.zst, .tar.lz4, .zip, .cpio.
 
 Option:
 
