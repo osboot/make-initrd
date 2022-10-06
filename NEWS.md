@@ -1,3 +1,24 @@
+Version 2.31.0
+
+- Runtime:
+  + Check more carefully for the presence of the INIT= inside new root partition.
+- Feature kickstart:
+  + Start all luks after partitioning.
+  + Add simple reqpart that automatically creates partitions required by your
+    hardware platform.
+  + Add part --fstype=efi to create EFI partition with custom mountpoint.
+  + Add --hibernation option to part/logvol/raid commands.  This option can be
+    used to automatically determine the size of the swap partition big enough
+    for hibernation.
+  + Add support for fat/vfat filesystem.
+  + Add support for zstd/lz4-compressed tarballs in liveimg.
+- Feature qemu:
+  + Try to add e1000e module.
+- Feature network:
+  + Fix permissions of /etc/resolv.conf
+- Misc:
+  + Relax check of /usr. This will allow to migrate the filesystem to /usr.
+
 Version 2.30.0
 
 - Feature kickstart:
