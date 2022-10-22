@@ -40,6 +40,6 @@ while [ -f "$pidfile" ]; do
 			message "extender failed: $fn"
 	done
 
-	process-boot-method
+	process-boot-method ||:
 	sleep 1
 done

@@ -5,5 +5,20 @@
 
 PROG="poll: $PROG"
 
-chrooted "$rootmnt" test -e "$INIT" ||
-	fatal "Unable to mount root"
+! chrooted "$rootmnt" test -e "$INIT" ||
+	exit 0
+
+msglock="/.initrd/polld/$PROG/message-shown"
+deadline='/.initrd/rootdelay/deadline'
+
+[ ! -f "$deadline" ] ||
+	echo 0 > "$deadline" ||:
+
+[ ! -d "$msglock" ] ||
+	exit 1
+
+mkdir -p -- "$msglock" ||:
+
+fatal "it looks like all mountpoints are ready, but \`$INIT' not found" \
+      "in the new root directory ($rootmnt)." \
+      "There is no point in waiting any longer."
