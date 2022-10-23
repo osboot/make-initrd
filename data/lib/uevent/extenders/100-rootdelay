@@ -24,6 +24,7 @@ fi
 first_iter=
 now="$(date +'%s')"
 timestamp="/.initrd/rootdelay/deadline"
+consmsg="/.initrd/rootdelay/message"
 
 if [ ! -f "$timestamp" ]; then
 	first_iter=1
@@ -53,8 +54,12 @@ if [ "$delay" -le 0 ]; then
 	# Disallow console access
 	[ "${PANIC-}" != "0" ] || reboot -f
 
+	msg=
+	[ ! -f "$consmsg" ] ||
+		msg="$(cat "$consmsg")"
+
 	mkdir -p -- "$disabled"
-	console_open "The waiting time expired!"
+	console_open "${msg:-The waiting time expired!}"
 	exit 0
 fi
 

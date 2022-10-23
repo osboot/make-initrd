@@ -10,6 +10,7 @@ PROG="poll: $PROG"
 
 msglock="/.initrd/polld/$PROG/message-shown"
 deadline='/.initrd/rootdelay/deadline'
+consmsg="/.initrd/rootdelay/message"
 
 [ ! -f "$deadline" ] ||
 	echo 0 > "$deadline" ||:
@@ -18,6 +19,9 @@ deadline='/.initrd/rootdelay/deadline'
 	exit 1
 
 mkdir -p -- "$msglock" ||:
+
+printf > "$consmsg" '%s\n' \
+	"The init program \`$INIT' not found in the root directory."
 
 fatal "it looks like all mountpoints are ready, but \`$INIT' not found" \
       "in the new root directory ($rootmnt)." \
