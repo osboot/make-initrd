@@ -1,3 +1,12 @@
+Version 2.32.0
+
+- Runtime:
+  + Reduce rootdelay period if all mountpoints are done, but init program is
+    missing.
+  + Show proper message if INIT not found.
+- Feature luks:
+  + Do not overwrite LUKS_CRYPTTAB.
+
 Version 2.31.0
 
 - Runtime:
