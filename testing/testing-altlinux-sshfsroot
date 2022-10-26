@@ -33,7 +33,7 @@ KICKSTART_DISKS=0
 BOOT_DISKS=0
 BOOT_PROG=
 
-BOOT_CMDLINE=""
+BOOT_CMDLINE="panic=0"
 BOOT_CMDLINE="$BOOT_CMDLINE console=ttyS0,115200n8 fastboot panic=3 rdlog=console rw"
 BOOT_CMDLINE="$BOOT_CMDLINE $BOOT_CMDLINE_NETWORK"
 BOOT_CMDLINE="$BOOT_CMDLINE root=/dev/sshfs sshfsroot=sftp@10.0.2.2:/data/incoming sshfsopts=port=2222"
