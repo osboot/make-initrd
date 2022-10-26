@@ -1,4 +1,4 @@
-# make-initrd [![Integration Tests](https://github.com/osboot/make-initrd/actions/workflows/integration.yml/badge.svg)](https://github.com/osboot/make-initrd/actions/workflows/integration.yml)
+# make-initrd [![Integration Tests](https://github.com/osboot/make-initrd/actions/workflows/integration.yml/badge.svg?branch=master)](https://github.com/osboot/make-initrd/actions/workflows/integration.yml)
 
 make-initrd is a new, uevent-driven initramfs infrastructure based around udev.
 
@@ -39,11 +39,9 @@ To build a initramfs, you have to install the following software packages:
 - [elfutils](https://sourceware.org/elfutils/) is optional but highly desirable
   for proper operation. This library is used to calculate the dependencies of
   binary utilities that are copied into the initramfs image.
-- Compression libraries are required for the initramfs image parsing utilities.
-  - [zlib](https://zlib.net)
-  - [bzip2](https://www.sourceware.org/bzip2/)
-  - [xz](http://tukaani.org/xz/)
-  - [zstd](https://facebook.github.io/zstd/)
+- Compression libraries are required for the initramfs image parsing utilities:
+  [zlib](https://zlib.net), [bzip2](https://www.sourceware.org/bzip2/),
+  [xz](http://tukaani.org/xz/), [zstd](https://facebook.github.io/zstd/).
 - [help2man](https://www.gnu.org/software/help2man/) is used to generate man-pages.
 
 ## Build
