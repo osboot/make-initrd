@@ -1,8 +1,8 @@
-PLYMOUTH_LIBDIR := $(shell $(shell-export-vars) $(FEATURESDIR)/plymouth/bin/get-libdir)
+PLYMOUTH_LIBDIR := $(shell $(call shell-export-vars) $(FEATURESDIR)/plymouth/bin/get-libdir)
 
-PLYMOUTH_PACK_MODULES := $(shell $(shell-export-vars) $(FEATURESDIR)/plymouth/bin/get-modules)
+PLYMOUTH_PACK_MODULES := $(shell $(call shell-export-vars) $(FEATURESDIR)/plymouth/bin/get-modules)
 PLYMOUTH_PACK_FONT    := $(or $(PLYMOUTH_FONT),$(shell fc-match -f '%{file}\n' 'DejaVuSans' ||:))
-PLYMOUTH_PACK_THEME   := $(shell $(shell-export-vars) $(FEATURESDIR)/plymouth/bin/get-theme-files "$(PLYMOUTH_THEME)")
+PLYMOUTH_PACK_THEME   := $(shell $(call shell-export-vars) $(FEATURESDIR)/plymouth/bin/get-theme-files "$(PLYMOUTH_THEME)")
 
 PLYMOUTH_PACK_FILES ?= \
 	$(wildcard $(SYSCONFDIR)/plymouth/plymouthd.conf) \

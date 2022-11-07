@@ -1,4 +1,4 @@
-SSHFS_DIRS := $(shell $(shell-export-vars) $(FEATURESDIR)/sshfsroot/bin/get-dirs)
+SSHFS_DIRS := $(shell $(call shell-export-vars) $(FEATURESDIR)/sshfsroot/bin/get-dirs)
 
 MODULES_PRELOAD	+= $(SSHFS_PRELOAD)
 
