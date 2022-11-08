@@ -1,3 +1,8 @@
+Version 2.32.1
+
+- mk: do not expand functions out of '$(call ...)' context.
+- testing: Add cmdline parameter to do not panic.
+
 Version 2.32.0
 
 - Runtime:
