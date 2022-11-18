@@ -209,7 +209,7 @@ for dir in ${MOUNTPOINTS-} ${GUESS_MOUNTPOINTS-} $MORE_MOUNTPOINTS; do
 		# kernel >= 2.6.27
 		[ -z "${majmin##0:*}" ] ||
 			guess_device "/dev/block/$majmin"
-		guess_fstype "$device" "$fstype"
+		guess_fstype "$device" "$fstype" "$dir"
 	done
 
 	guess_feature rootfs
