@@ -1,0 +1,151 @@
+#!/bin/bash
+
+if [ -z "${__kickstart_sh_storage_zfs-}" ]; then
+__kickstart_sh_storage_zfs=1
+
+. kickstart-sh-storage
+
+# zpool --property autotrim=on rpool zfs.0*
+# zfs / rpool/root
+
+zpool()
+{
+	local PROG TEMP arg
+	local properties fsoptions name vdevs
+
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
+
+	PROG="${FUNCNAME[0]}"
+	TEMP=`getopt -n "$PROG" -l "feature:,property:,fsoption:" -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	properties=()
+	fsoptions=()
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			--property|--feature)
+				shift
+				properties+=("-o" "$1")
+				;;
+			--fsoption)
+				shift
+				fsoptions+=("-O" "$1")
+				;;
+		esac
+		shift
+	done
+
+	name="$1"; shift
+
+	if [ "$#" -eq 0 ]; then
+		message "partition required"
+		return 1
+	fi
+
+	vdevs=()
+	while [ "$#" -gt 0 ]; do
+		arg=
+		case "$1" in
+			'')
+				;;
+			disk|file|mirror|raidz|raidz1|raidz2|raidz3|spare|log|dedup|special|cache)
+				vdevs+=("$1")
+				;;
+			zfs.*)
+				for arg in $(set +f; printf '%s\n' "$ks_datadir"/partid/$1); do
+					read -r arg < "$arg"
+					vdevs+=("/dev/$arg")
+				done
+				;;
+			*)
+				for arg in $(set +f; printf '%s\n' $1); do
+					arg="$(ks_devname "$arg")"
+					arg="$(ks_get_dev_id "$arg")"
+					vdevs+=("/dev/$arg")
+				done
+				;;
+		esac
+		shift
+	done
+
+	if [ "${#fsoptions[@]}" -eq 0 ]; then
+		fsoptions+=("-O" "acltype=posixacl")
+		fsoptions+=("-O" "relatime=on")
+		fsoptions+=("-O" "xattr=sa")
+		fsoptions+=("-O" "dnodesize=auto")
+		fsoptions+=("-O" "normalization=formD")
+	fi
+
+	[ -e /sys/module/zfs ] ||
+		modprobe zfs
+
+	command zpool create "${properties[@]}" "${fsoptions[@]}" \
+		-R "$ks_rootdir" \
+		-O mountpoint=none \
+		-O canmount=off \
+		"$name" "${vdevs[@]}"
+}
+
+zfs()
+{
+	local PROG TEMP
+	local mntpoint volname properties sparse='' size=''
+
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
+
+	PROG="${FUNCNAME[0]}"
+	TEMP=`getopt -n "$PROG" -l "property:,size:,sparse" -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	properties=()
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			--property)
+				shift
+				properties+=("-o" "$1")
+				;;
+			--sparse)
+				sparse=-s
+				;;
+			--size) shift; size="$1"
+				;;
+		esac
+		shift
+	done
+
+	mntpoint="$1"; shift
+	volname="$1"; shift
+
+	command zfs create $sparse "${properties[@]}" \
+		-o mountpoint="$mntpoint" \
+		${size:+-V "$size"} \
+		"$volname"
+
+	command zfs umount -f -a
+
+	case "$mntpoint" in
+		/|/*)
+			if [ "$mntpoint" = / ]; then
+				local bootfs
+				bootfs="$(command zpool get -Ho value bootfs |sed -n '/^-$/d;p;q;')"
+				[ -n "$bootfs" ] ||
+					command zpool set bootfs="$volname" "${volname%%/*}"
+			fi
+			ks_fstab "$volname" "$mntpoint" "zfsutil" "zfs"
+			;;
+		none)
+			;;
+	esac
+}
+
+fi #__kickstart_sh_storage_zfs

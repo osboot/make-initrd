@@ -109,6 +109,8 @@ KS_ORDERS=(
 	3300000000:zerombr
 	3300000000:zfcp
 	3300000000:zipl
+	3300000000:zpool
+	3300000000:zfs
 	4000000000:ks_step_mount
 	5000000000:ks_step_pre_install
 	5100000000:liveimg

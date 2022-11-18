@@ -6,6 +6,7 @@ __kickstart_sh_storage=1
 . kickstart-sh-storage-lvm
 . kickstart-sh-storage-raid
 . kickstart-sh-storage-btrfs
+. kickstart-sh-storage-zfs
 
 ks_devname()
 {
@@ -290,7 +291,11 @@ ks_fstab()
 	mpoint="$1"; shift
 	fsopts="$1"; shift
 
-	fstype="$(blkid -o value -s TYPE "$dev")"
+	if [ "$#" -eq 0 ]; then
+		fstype="$(blkid -o value -s TYPE "$dev")"
+	else
+		fstype="$1"; shift
+	fi
 	fname="$(ks_mountpoint_name "$mpoint")"
 
 	printf '%s %s %s %s 0 0\n' \
@@ -495,6 +500,25 @@ crypto()
 	return 0
 }
 
+ks_get_dev_id()
+{
+	local dev target
+
+	for dev in $(set +f; printf '%s\n' /dev/disk/by-id/* |tac); do
+		[ -b "$dev" ] && target="$(readlink -f "$dev")" ||
+			continue
+
+		target="${target#/dev/}"
+
+		if [ "$1" = "$target" ]; then
+			printf '%s\n' "${dev#/dev/}"
+			return 0
+		fi
+	done
+
+	printf '%s\n' "$1"
+}
+
 part()
 {
 	local PROG TEMP shift_args=0 sfdisk_args exe
@@ -578,6 +602,18 @@ part()
 	case "$mntpoint" in
 		raid.*)    parttype="raid"  ;;
 		pv.*)      parttype="lvm"   ;;
+		zfs.boot.*)
+			fstype=''
+			parttype='be'
+			;;
+		zfs.raidz.*|zfs.mirror.*)
+			fstype=''
+			parttype='fd'
+			;;
+		zfs.*)
+			fstype=''
+			parttype='bf'
+			;;
 		swap)
 			fstype="swap"
 			;;
@@ -823,6 +859,16 @@ part()
 			[ -d "$ks_datadir/partid" ] ||
 				mkdir -- "$ks_datadir/partid"
 			printf '%s\n' "$partdev" >> "$ks_datadir/partid/$mntpoint"
+			;;
+		zfs.*)
+			[ -d "$ks_datadir/partid" ] ||
+				mkdir -- "$ks_datadir/partid"
+			# From upstream docs:
+			# Always use the long /dev/disk/by-id/* aliases with
+			# ZFS. Using the /dev/sd* device nodes directly can
+			# cause sporadic import failures, especially on systems
+			# that have more than one storage pool.
+			ks_get_dev_id "$partdev" >> "$ks_datadir/partid/$mntpoint"
 			;;
 	esac
 }

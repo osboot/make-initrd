@@ -1,9 +1,11 @@
 KICKSTART_DIRS := $(shell $(call shell-export-vars) $(FEATURESDIR)/kickstart/bin/get-ks-configs)
 
 FAT_MODULES = nls_cp866 nls_utf8 fs-vfat
+ZFS_MODULES = zfs
 
 MODULES_ADD += $(LUKS_MODULES) drivers/md/raid
 MODULES_TRY_ADD += $(FAT_MODULES)
+MODULES_TRY_ADD += $(ZFS_MODULES)
 
 PUT_FEATURE_FILES += $(KICKSTART_FILES)
 PUT_FEATURE_DIRS += $(KICKSTART_DATADIR) $(KICKSTART_DIRS)

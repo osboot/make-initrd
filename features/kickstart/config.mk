@@ -7,6 +7,8 @@ KICKSTART_PROGS  = sfdisk wipefs blkid findmnt mkswap mount mountpoint chroot \
 KICKSTART_PROGS_PATTERNS = \
 			   */lz4 \
 			   */zstd \
+			   */zpool \
+			   */zfs \
 			   */mkfs.ext* \
 			   */mkfs.xfs \
 			   */mkfs.fat \
