@@ -97,6 +97,42 @@ jobs:
         run: |
           testing/testing-${{ matrix.name }}-efi test-root-${{ matrix.test }}
 
+  zfs:
+    strategy:
+      matrix:
+        name: [
+          "ubuntu",
+        ]
+        test: [
+          "zfs-partition",
+        ]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    name: "${{ matrix.name }}, root:${{ matrix.test }}"
+    steps:
+      - name: "Prepare KVM"
+        run: |
+          test -c /dev/kvm && sudo chmod -v 666 /dev/kvm ||:
+
+      - name: "Install packages"
+        run: |
+          sudo apt-get -qq -y update
+          sudo apt-get -qq -y install git qemu-kvm ovmf
+
+      - name: "Checkout Repository"
+        uses: actions/checkout@v2
+
+      - name: "Checkout submodules"
+        run: |
+          git submodule set-url external/busybox/upstream https://github.com/mirror/busybox
+          git submodule update --init --recursive
+
+      - name: "Test"
+        env:
+          TIMEOUT: 30m
+        run: |
+          testing/testing-${{ matrix.name }}-zfs test-root-${{ matrix.test }}
+
   network:
     strategy:
       matrix:

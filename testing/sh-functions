@@ -96,10 +96,10 @@ prepare_testsuite()
 		sed \
 			-e "s#@CMDLINE@#$BOOT_CMDLINE#g" \
 			\
-			"$topdir/testing/testing-$VENDOR-ks-sysimage.cfg" \
+			"$topdir/testing/testing-$VENDOR${VARIANT:+-$VARIANT}-ks-sysimage.cfg" \
 			"$topdir/testing/$TESTNAME.cfg" \
-			"$topdir/testing/testing-$VENDOR-ks-initrd.cfg" \
-			"$topdir/testing/testing-$VENDOR-ks-done.cfg" \
+			"$topdir/testing/testing-$VENDOR${VARIANT:+-$VARIANT}-ks-initrd.cfg" \
+			"$topdir/testing/testing-$VENDOR${VARIANT:+-$VARIANT}-ks-done.cfg" \
 			\
 			> "$workdir/ks.cfg"
 	fi
