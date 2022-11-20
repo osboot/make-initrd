@@ -1,0 +1,144 @@
+#!/bin/bash
+
+if [ -z "${__kickstart_sh_storage_btrfs-}" ]; then
+__kickstart_sh_storage_btrfs=1
+
+. kickstart-sh-storage
+
+btrfs()
+{
+	local PROG TEMP shift_args dev
+	local subvol='' data='' metadata='' label='' name='' fsoptions='' useexisting=''
+	local mntpoint i num
+
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
+
+	PROG="${FUNCNAME[0]}"
+	TEMP=`getopt -n "$PROG" -l "subvol,name:,label:,data:,metadata:,fsoptions:,$getopt_useexisting" -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			--subvol) subvol=1
+				;;
+			--name) shift; name="$1"
+				;;
+			--label) shift; label="$1"
+				;;
+			--fsoptions) shift; fsoptions="$1"
+				;;
+			--data) shift
+				data="${1,,}"
+				data="${data#raid}"
+				;;
+			--metadata) shift
+				metadata="${1,,}"
+				metadata="${metadata#raid}"
+				;;
+			*)
+				shift_args=0
+				ks_set_useexisting "$@"
+				if [ "$shift_args" != 0 ]; then
+					shift "$shift_args"
+					continue
+				fi
+				;;
+		esac
+		shift
+	done
+
+	mntpoint="$1"; shift
+
+	if [ -n "$mntpoint" ] && [ -z "${mntpoint##/*}" ] && ks_is_mountpoint_exists "$mntpoint"; then
+		message "partition for \`$mntpoint' mountpoint already exists. Ignore."
+		return
+	fi
+
+	num="$#"
+
+	if [ "$num" = 0 ]; then
+		message "partition required"
+		return 1
+	fi
+
+	[ -e /dev/btrfs-control ] ||
+		modprobe btrfs
+
+	for (( i=0; $i < $num; i++ )); do
+		arg=
+		case "$1" in
+			'')
+				;;
+			btrfs.*)
+				for arg in $(set +f; printf '%s\n' "$ks_datadir"/partid/$1); do
+					read -r arg < "$arg"
+					set -- "$@" "/dev/$arg"
+				done
+				;;
+			*)
+				for arg in $(set +f; printf '%s\n' $1); do
+					arg="$(ks_devname "$arg")"
+					set -- "$@" "/dev/$arg"
+				done
+				;;
+		esac
+		shift
+	done
+
+	dev="$(ks_devname "$1")"
+
+	if [ -z "$useexisting" ]; then
+		local ret=0
+
+		if [ -z "$subvol" ]; then
+			wipefs -qfa "$@" ||:
+			mkfs.btrfs -q -f \
+				${data:+--data "raid$data"} \
+				${metadata:+--metadata "raid$metadata"} \
+				${label:+--label "$label"} \
+				"$@" ||
+				ret=1
+		else
+			if [ -z "$name" ]; then
+				message "name of subvolume required."
+				return 1
+			fi
+
+			if [ "$#" != 1 ]; then
+				message "too many arguments. Must be the identifier of the subvolume's parent volume."
+				return 1
+			fi
+
+			mount -n -o rw,X-mount.mkdir \
+				"/dev/$dev" \
+				"$ks_datadir/btrfs.subvol"
+			command btrfs subvolume create \
+				"$ks_datadir/btrfs.subvol/$name" ||
+				ret=1
+			umount -f \
+				"$ks_datadir/btrfs.subvol"
+		fi
+
+		if [ "$ret" != 0 ]; then
+			message "unable to process btrfs volume or subvolume."
+			return 1
+		fi
+	fi
+
+	[ -z "$name" ] ||
+		fsoptions="${fsoptions:+$fsoptions,}subvol=$name"
+
+	case "$mntpoint" in
+		/|/*)
+			ks_fstab "$dev" "$mntpoint" "$fsoptions"
+			;;
+		none)
+			;;
+	esac
+}
+
+fi #__kickstart_sh_storage_btrfs

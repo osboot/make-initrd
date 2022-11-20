@@ -1,0 +1,176 @@
+#!/bin/bash
+
+if [ -z "${__kickstart_sh_storage_raid-}" ]; then
+__kickstart_sh_storage_raid=1
+
+. kickstart-sh-storage
+
+raid()
+{
+	local PROG TEMP shift_args dev=''
+	local device='' level='' chunksize='' useexisting='' fstype='' fsoptions=''
+	local encrypted='' hibernation='' makefs_args='' crypto_args=''
+
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
+
+	PROG="${FUNCNAME[0]}"
+	TEMP=`getopt -n "$PROG" -l "device:,level:,chunksize:,encrypted,hibernation,$getopt_crypto,$getopt_makefs,$getopt_useexisting" -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			--device) shift; device="$1"
+				;;
+			--level) shift
+				level="${1,,}"
+				level="${level#raid}"
+				;;
+			--fstype) shift; fstype="$1"
+				;;
+			--fsoptions) shift; fsoptions="$1"
+				;;
+			--chunksize) shift; chunksize="$1"
+				;;
+			--encrypted)
+				encrypted=1
+				;;
+			--hibernation)
+				hibernation=1
+				;;
+			*)
+				shift_args=0
+				ks_set_useexisting "$@"
+				ks_set_makefs_args "$@"
+				ks_set_crypto_args "$@"
+				if [ "$shift_args" != 0 ]; then
+					shift "$shift_args"
+					continue
+				fi
+				;;
+		esac
+		shift
+	done
+
+	if [ -n "$encrypted" ]; then
+		quote_shell_args crypto_args "$crypto_args"
+		eval "ONLYARGS=1 crypto $crypto_args || return"
+	fi
+
+	local mntpoint i num
+
+	mntpoint="$1"; shift
+
+	if [ -n "$mntpoint" ] && [ -z "${mntpoint##/*}" ] && ks_is_mountpoint_exists "$mntpoint"; then
+		message "partition for \`$mntpoint' mountpoint already exists. Ignore."
+		return
+	fi
+
+	case "$fstype" in
+		'')
+			;;
+		efi)
+			size="${size:-200Mi}"
+			ks_set_makefs_args --fstype "vfat"
+			;;
+		biosboot)
+			size="${size:-1Mi}"
+			;;
+		swap)
+			if [ -z "$size" ] && [ -n "$hibernation" ]; then
+				size="$(ks_guess_swap_size)"
+
+				if [ "$size" -eq 0 ]; then
+					message "no need to create a \`$fstype' partition. Ignore."
+					return
+				fi
+
+				size="${size}B"
+			fi
+			ks_set_makefs_args --fstype "swap"
+			;;
+		*)
+			ks_set_makefs_args --fstype "$fstype"
+			;;
+	esac
+
+	num="$#"
+
+	for (( i=0; $i < $num; i++ )); do
+		arg=
+		case "$1" in
+			'')
+				;;
+			raid.*)
+				read -r arg < "$ks_datadir/partid/$1"
+				set -- "$@" "/dev/$arg"
+				;;
+			*)
+				for arg in $(set +f; printf '%s\n' $1); do
+					arg="$(ks_devname "$arg")"
+					set -- "$@" "/dev/$arg"
+				done
+				;;
+		esac
+		shift
+	done
+
+	if [ -z "$useexisting" ]; then
+		case "$device" in
+			UUID=*|LABEL=*)
+				message "it is not possible to use such a device name to create"
+				return 1
+				;;
+		esac
+
+		for arg; do
+			wipefs -qfa "$arg" ||:
+		done
+
+		dev="/dev/md/$device"
+
+		if mdadm --query --brief "$dev" 2>/dev/null |grep -qs ' [1-9][0-9]* devices'; then
+			mdadm --quiet --stop "$dev"
+		fi
+
+		verbose "creating raid$level array '$device': $*"
+
+		mdadm --create --quiet \
+			--metadata=default \
+			--level="$level" \
+			--raid-devices="$#" \
+			${chunksize:+--chunk="$chunksize"} \
+			"$device" "$@" ||
+			return 1
+
+		#mdadm --wait "$device"
+	fi
+
+	dev="$(ks_devname "$device")"
+
+	if [ -n "$encrypted" ]; then
+		eval "set -- $crypto_args"
+		crypto --name="${device}_crypt" "$@" "$dev" ||
+			return
+		dev="mapper/${device}_crypt"
+	fi
+
+	if [ -z "$useexisting" ]; then
+		quote_shell_args makefs_args "$makefs_args"
+		eval "set -- $makefs_args"
+		makefs "$dev" "$@"
+	fi
+
+	case "$mntpoint" in
+		/|/*)
+			ks_fstab "$dev" "$mntpoint" "$fsoptions"
+			;;
+		none)
+			;;
+	esac
+}
+
+fi #__kickstart_sh_storage_raid

@@ -1,0 +1,235 @@
+#!/bin/bash
+
+if [ -z "${__kickstart_sh_storage_lvm-}" ]; then
+__kickstart_sh_storage_lvm=1
+
+. kickstart-sh-storage
+
+volgroup()
+{
+	local PROG TEMP shift_args
+	local useexisting='' pesize=''
+
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
+
+	PROG="${FUNCNAME[0]}"
+	TEMP=`getopt -n "$PROG" -l "pesize:,$getopt_useexisting" -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			--pesize) shift; pesize="$1"
+				;;
+			*)
+				shift_args=0
+				ks_set_useexisting "$@"
+				if [ "$shift_args" != 0 ]; then
+					shift "$shift_args"
+					continue
+				fi
+				;;
+		esac
+		shift
+	done
+
+	local name="$1"; shift
+	local i arg num="$#"
+
+	if [ -n "$useexisting" ] && [ "$num" != 0 ]; then
+		message "do not specify partitions when using --useexisting option."
+		return 1
+	fi
+
+	for (( i=0; $i < $num; i++ )); do
+		arg=
+		case "$1" in
+			'')
+				;;
+			pv.*)
+				for arg in $(set +f; printf '%s\n' "$ks_datadir/partid/"$1); do
+					read -r arg < "$arg"
+					set -- "$@" "/dev/$arg"
+				done
+				;;
+			*)
+				for arg in $(set +f; printf '%s\n' $1); do
+					arg="$(ks_devname "$arg")"
+					set -- "$@" "/dev/$arg"
+				done
+				;;
+		esac
+		shift
+	done
+
+	if [ -z "$useexisting" ]; then
+		verbose "creating lvm volume group '$name': $*"
+		lvm pvcreate -q "$@" ||
+			return 1
+		lvm vgcreate -q ${pesize:+-s "$pesize"} "$name" "$@" ||
+			return 1
+		return 0
+	fi
+
+	verbose "changing lvm volume group '$name'"
+	vgchange -q ${pesize:+-s "$pesize"} "$name" ||
+		return 1
+}
+
+logvol()
+{
+	local PROG TEMP shift_args
+	local vgname='' name='' hibernation=''
+	local useexisting='' fstype='' fsoptions='' size='' resize='' grow='' chunksize=''
+	local encrypted='' makefs_args='' crypto_args=''
+	local ret=0
+
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
+
+	PROG="${FUNCNAME[0]}"
+	TEMP=`getopt -n "$PROG" -l "vgname:,name:,fsoptions:,chunksize:,percent:,size:,resize,grow,encrypted,hibernation,$getopt_crypto,$getopt_makefs,$getopt_useexisting" -- "$PROG" "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			--vgname) shift; vgname="$1"
+				;;
+			--name) shift; name="$1"
+				;;
+			--fstype) shift; fstype="$1"
+				;;
+			--fsoptions) shift; fsoptions="$1"
+				;;
+			--chunksize) shift; chunksize="$1"
+				;;
+			--percent) shift;
+				size="${1%\%}%"
+				;;
+			--size) shift;
+				# B   -> B
+				# MiB -> Mi
+				# KiB -> Ki
+				size="${1/i[Bb]/i}"
+				[ -z "${size##*[!0-9]*}" ] || size="${size}Mi"
+				;;
+			--resize) resize=1
+				;;
+			--grow) grow=1; size=''
+				;;
+			--encrypted)
+				encrypted=1
+				;;
+			--hibernation)
+				hibernation=1
+				;;
+			*)
+				shift_args=0
+				ks_set_useexisting "$@"
+				ks_set_makefs_args "$@"
+				ks_set_crypto_args "$@"
+				if [ "$shift_args" != 0 ]; then
+					shift "$shift_args"
+					continue
+				fi
+				;;
+		esac
+		shift
+	done
+
+	if [ -n "$encrypted" ]; then
+		quote_shell_args crypto_args "$crypto_args"
+		eval "ONLYARGS=1 crypto $crypto_args || return"
+	fi
+
+	mntpoint="${1:-none}"
+
+	if [ -z "${mntpoint##/*}" ] && ks_is_mountpoint_exists "$mntpoint"; then
+		message "partition for \`$mntpoint' mountpoint already exists. Ignore."
+		return
+	fi
+
+	case "$fstype" in
+		swap)
+			if [ -z "$size" ] && [ -n "$hibernation" ]; then
+				size="$(ks_guess_swap_size)"
+
+				if [ "$size" -eq 0 ]; then
+					message "no need to create a \`$fstype' volume. Ignore."
+					return
+				fi
+
+				size="${size}B"
+			fi
+			ks_set_makefs_args --fstype "swap"
+			;;
+	esac
+
+	set --
+
+	if [ -n "$grow" ]; then
+		set -- "$@" --extents '100%FREE'
+	elif [ -n "$size" ]; then
+		if [ -z "${size##*%}" ]; then
+			set -- "$@" --extents "${size%\%}%FREE"
+		else
+			set -- "$@" --size "$size"
+		fi
+	fi
+
+	[ -z "$chunksize" ] ||
+		set -- "$@" --chunksize "$chunksize"
+
+	[ -n "$name" ] ||
+		name="lvol$(lvs --noheadings -o name |wc -l)"
+
+	partdev="$vgname/$name"
+	ret=0
+
+	if [ -z "$useexisting" ]; then
+		verbose "creating logical volume '$name' in '$vgname' volume group"
+		lvm lvcreate "$@" "$vgname" --activate n --name "$name" &&
+			lvm vgscan &&
+			lvm vgchange -ay --noudevsync &&
+			lvm vgmknodes ||
+			ret=1
+	elif [ -n "$resize" ]; then
+		verbose "increasing logical volume /dev/$partdev"
+		lvm lvextend "$@" "/dev/$partdev" ||
+			ret=1
+	fi
+
+	if [ "$ret" = 1 ]; then
+		message "unable to handle logical volume: /dev/$partdev"
+		return 1
+	fi
+
+	if [ -n "$encrypted" ]; then
+		eval "set -- $crypto_args"
+		crypto --name="${name}_crypt" "$@" "/dev/$partdev" ||
+			return
+		partdev="mapper/${name}_crypt"
+	fi
+
+	if [ -z "$useexisting" ]; then
+		quote_shell_args makefs_args "$makefs_args"
+		eval "set -- $makefs_args"
+		makefs "$partdev" "$@"
+	fi
+
+	case "$mntpoint" in
+		/|/*)
+			ks_fstab "$partdev" "$mntpoint" "$fsoptions"
+			;;
+		none)
+			;;
+	esac
+}
+
+fi #__kickstart_sh_storage_lvm
