@@ -221,7 +221,7 @@ ks_mount()
 
 	mkdir -p -- "$ks_datadir/sysdata/etc"
 
-	findmnt -l -k -n -R -o UUID,TARGET,FSTYPE "$ks_rootdir" |
+	findmnt -l -k -n -R -o SOURCE,TARGET,FSTYPE "$ks_rootdir" |
 	while read -r source target fstype; do
 		freq=0 passno=0
 
@@ -229,12 +229,23 @@ ks_mount()
 			freq=1 passno=1
 		fi
 
+		if [ -z "${source##/dev/*}" ] && [ -e "$source" ]; then
+			local value=
+
+			if   value="$(blkid -o value -s UUID  "$source")" && [ -n "$value" ]; then
+				source="UUID=$value"
+			elif value="$(blkid -o value -s LABEL "$source")" && [ -n "$value" ]; then
+				source="LABEL=$value"
+			fi
+		fi
+
 		options="$(findmnt -n -F "$ks_datadir/fstab" -o OPTIONS "$target")"
+		options="${options:-defaults}"
 
 		target="${target#$ks_rootdir}"
 		target="${target:-/}"
 
-		printf '%s\n' "UUID=$source $target $fstype $options $freq $passno"
+		printf '%s\n' "$source $target $fstype $options $freq $passno"
 
 	done > "$ks_datadir/sysdata/etc/fstab"
 }
