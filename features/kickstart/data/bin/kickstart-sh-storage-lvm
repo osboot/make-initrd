@@ -225,7 +225,7 @@ logvol()
 
 	case "$mntpoint" in
 		/|/*)
-			ks_fstab "$partdev" "$mntpoint" "$fsoptions"
+			ks_fstab "/dev/${partdev#/dev/}" "$mntpoint" "$fsoptions"
 			;;
 		none)
 			;;

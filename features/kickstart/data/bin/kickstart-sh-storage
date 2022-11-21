@@ -286,14 +286,14 @@ ks_fstab()
 {
 	local fname dev mpoint fstype fsopts
 
-	dev="${1#/dev/}"; shift
+	dev="$1"; shift
 	mpoint="$1"; shift
 	fsopts="$1"; shift
 
-	fstype="$(blkid -o value -s TYPE "/dev/$dev")"
+	fstype="$(blkid -o value -s TYPE "$dev")"
 	fname="$(ks_mountpoint_name "$mpoint")"
 
-	printf '/dev/%s %s %s %s 0 0\n' \
+	printf '%s %s %s %s 0 0\n' \
 		"$dev" "$ks_rootdir$mpoint" "$fstype" "${fsopts:-defaults}" \
 		> "$ks_datadir/fstab.d/$fname"
 
@@ -809,11 +809,11 @@ part()
 		/|/*)
 			[ -n "$useexisting" ] ||
 				makefs "$partdev" "$@"
-			ks_fstab "$partdev" "$mntpoint" "$fsoptions"
+			ks_fstab "/dev/${partdev#/dev/}" "$mntpoint" "$fsoptions"
 			;;
 		swap)
 			makefs "$partdev" "$@" --fstype=swap
-			ks_fstab "$partdev" "swap" "$fsoptions"
+			ks_fstab "/dev/${partdev#/dev/}" "swap" "$fsoptions"
 			;;
 		none)
 			[ -n "$useexisting" ] ||

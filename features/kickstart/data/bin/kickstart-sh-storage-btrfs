@@ -134,7 +134,7 @@ btrfs()
 
 	case "$mntpoint" in
 		/|/*)
-			ks_fstab "$dev" "$mntpoint" "$fsoptions"
+			ks_fstab "/dev/${dev#/dev/}" "$mntpoint" "$fsoptions"
 			;;
 		none)
 			;;
