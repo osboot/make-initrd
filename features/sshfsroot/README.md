@@ -13,5 +13,7 @@ SSHFS is very simple to use
 
 ## Boot parameters
 
+To mount root over sshfs, parameter `root=/dev/sshfs` should be specified.
+
 - `sshfsroot=[user@]<server>:<root-dir>` -- mount remote filesystem share from <server>:/<root-dir>
 - `sshfsopts=options` -- options that are passed to sshfs.
