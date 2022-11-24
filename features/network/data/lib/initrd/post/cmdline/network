@@ -1,5 +1,7 @@
 #!/bin/bash -efu
 
+[ "$1" = start ] || exit 0
+
 . /.initrd/initenv
 . /etc/init.d/functions
 . shell-ip-address
