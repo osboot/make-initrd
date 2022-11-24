@@ -45,7 +45,7 @@ convert_dev()
 
 gen_fstab()
 {
-	local i dev path str ndev roflags fstab
+	local i dev path str ndev ro fstab
 	local have_sys='' have_run=''
 
 	fstab=("")
@@ -86,17 +86,10 @@ gen_fstab()
 		convert_dev ndev "$ROOT"
 		ROOTFLAGS="${ROOTFLAGS:-defaults}"
 
-		roflag=rw
-		[ -z "$READONLY" ] || roflag=ro
+		ro=rw
+		[ -z "$READONLY" ] || ro=ro
 
-		ROOTFLAGS="$ROOTFLAGS,$roflag"
-
-		if [ -z "${ndev##SOURCE=*}" ]; then
-			ndev="${ndev#SOURCE=}"
-			ROOTFLAGS="$ROOTFLAGS,x-initrd-mount-source"
-		fi
-
-		fstab[0]="$ndev $rootmnt ${ROOTFSTYPE:-auto} $ROOTFLAGS 1 1"
+		fstab[0]="$ndev $rootmnt ${ROOTFSTYPE:-auto} $ro${ROOTFLAGS:+,$ROOTFLAGS} 1 1"
 	fi
 
 	[ -n "${fstab[0]-}" ] || [ -z "${DEBUG-}" ] ||
