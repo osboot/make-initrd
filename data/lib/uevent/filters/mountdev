@@ -16,13 +16,22 @@ while [ -z "$eof" ]; do
 			continue
 	fi
 
+	fsoptions=()
+	readarray -d, -t fsoptions < <(printf '%s' "$fsopts")
+
 	dev=
-	if [ -n "${fsopts##*,x-initrd-mount-source}" ]; then
-		get_dev dev "$fsdev" ||
-			continue
-	else
-		dev="$fsdev"
-	fi
+	for o in "${fsoptions[@]}"; do
+		if [ "$o" = 'x-initrd-mount-virtual' ]; then
+			# A virtual mountpoint does not have a real device and
+			# fires every time a block device is found. Let's let
+			# the handler decide to process this event or ignore it.
+			dev="$fsdev"
+			break
+		fi
+	done
+
+	[ -n "$dev" ] || get_dev dev "$fsdev" ||
+		continue
 
 	event="$(make_event)"
 
