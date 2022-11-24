@@ -193,6 +193,14 @@ cryptsetup_ask_pass() {
 	return $rc
 }
 
+in_list() {
+	local a n="$1"
+	for a; do
+		[ "$n" != "$a" ] || return 0
+	done
+	return 1
+}
+
 crypttab_entry() {
 	local o realdev=''
 
