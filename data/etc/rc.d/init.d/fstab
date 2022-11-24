@@ -45,8 +45,10 @@ convert_dev()
 
 gen_fstab()
 {
-	local i=1 n dev path str s0 ndev roflags
+	local i dev path str ndev roflags fstab
 	local have_sys='' have_run=''
+
+	fstab=("")
 
 	for conf in /etc/fstab /etc/fstab.d/*.conf; do
 		[ -s "$conf" ] ||
@@ -55,10 +57,12 @@ gen_fstab()
 		while read -r dev path str; do
 			[ -n "${dev##\#*}" ] && [ -z "${path##/*}" ] ||
 				continue
-			n=$i
+
+			i="${#fstab[@]}"
+
 			case "$path" in
 				/)
-					n=0
+					i=0
 					path=
 					;;
 				/proc|/proc/*|/dev|/dev/*|/.initrd|/.initrd/*)
@@ -70,14 +74,11 @@ gen_fstab()
 				/run)
 					have_run=1
 					;;
-				*)
-					i=$(($i+1))
-					;;
 			esac
 
 			convert_dev ndev "$dev"
 
-			eval "local s$n=\"\$ndev \$rootmnt\$path \$str\""
+			fstab[$i]="$ndev $rootmnt$path $str"
 		done < "$conf"
 	done
 
@@ -95,28 +96,16 @@ gen_fstab()
 			ROOTFLAGS="$ROOTFLAGS,x-initrd-mount-source"
 		fi
 
-		s0="$ndev $rootmnt ${ROOTFSTYPE:-auto} $ROOTFLAGS 1 1"
+		fstab[0]="$ndev $rootmnt ${ROOTFSTYPE:-auto} $ROOTFLAGS 1 1"
 	fi
 
-	if [ -z "${s0-}" ]; then
-		[ -z "${DEBUG-}" ] || echo "Root device unspecified." >&2
-	fi
+	[ -n "${fstab[0]-}" ] || [ -z "${DEBUG-}" ] ||
+		echo "Root device unspecified." >&2
 
-	if [ -z "$have_sys" ]; then
-		eval "s$i=\"sysfs /sys sysfs nodev,noexec,nosuid 0 0\""
-		i=$(($i+1))
-	fi
+	[ -n "$have_sys" ] || fstab+=("sysfs /sys sysfs nodev,noexec,nosuid 0 0")
+	[ -n "$have_run" ] || fstab+=("runfs /run tmpfs mode=755 0 0")
 
-	if [ -z "$have_run" ]; then
-		eval "s$i=\"runfs /run tmpfs mode=755 0 0\""
-		i=$(($i+1))
-	fi
-
-	n=0
-	while [ $n -lt $i ]; do
-		eval "printf '%s\n' \"\$s$n\""
-		n=$(($n+1))
-	done > /etc/fstab
+	printf '%s\n' "${fstab[@]}" > /etc/fstab
 }
 
 action_shell 'Creating /etc/fstab:' gen_fstab
