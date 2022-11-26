@@ -10,6 +10,6 @@ nfsmount_SRCS = \
 	datasrc/nfsmount/sunrpc.h \
 	$(NULL)
 
-nfsmount_CFLAGS = -Idatasrc -D_GNU_SOURCE=1
+nfsmount_CFLAGS = -Idatasrc -D_GNU_SOURCE=1 -Wno-conversion -Wno-sign-conversion -Wno-stringop-truncation
 
 PROGS += nfsmount
