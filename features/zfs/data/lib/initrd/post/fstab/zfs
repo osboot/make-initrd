@@ -1,0 +1,58 @@
+#!/bin/bash
+
+[ "$1" = start ] || exit 0
+
+eof=
+while [ -z "$eof" ]; do
+	read -r fsdev fsdir fstype fsopts freq passno ||
+		eof=1
+
+	[ -n "$fsdev" ] ||
+		continue
+
+	fsoptions=()
+	readarray -t fsoptions <<<"${fsopts//,/$'\n'}"
+
+	[ "$fstype" != 'zfs' ] ||
+		fsoptions+=("zfsutil")
+
+	# root=<pool>/<dataset>		(uses this for rpool - first part)
+	# root=ZFS=<pool>/<dataset>	(uses this for rpool - first part, without 'ZFS=')
+	# root=zfs:<pool>/<dataset>	(uses this for rpool - first part, without 'zfs:')
+	# root=zfs:AUTO			(tries to detect both pool and rootfs)
+	case "$fsdev" in
+		[Zz][Ff][Ss][:=][Aa][Uu][Tt][Oo])
+			# We need an fstab record for this mountpoint. We will
+			# try to detect it later when udev starts up. We don't
+			# strip the prefix to distinguish autodetect from rpool.
+			fspool="zfs:auto"
+			fstype="zfs"
+			fsoptions+=("zfsutil")
+			;;
+		[Zz][Ff][Ss][:=]*)
+			fspool="${fsdev#[Zz][Ff][Ss][:=]}"
+			fstype="zfs"
+			fsoptions+=("zfsutil")
+			;;
+		*)
+			fspool="$fsdev"
+			;;
+	esac
+
+	fsopts=
+	for (( i=0; i < ${#fsoptions[@]}; i++ )); do
+		[ -n "${fsoptions[$i]}" ] ||
+			continue
+		for (( j=0; j < $i; j++ )); do
+			[ "${fsoptions[$i]}" != "${fsoptions[$j]}" ] ||
+				continue 2
+		done
+		fsopts="${fsopts:+$fsopts,}${fsoptions[$i]}"
+	done
+
+	printf '%s %s %s %s %s %s\n' \
+		"$fspool" "$fsdir" "$fstype" "$fsopts" "$freq" "$passno"
+
+done < /etc/fstab > /etc/fstab."$$"
+
+mv /etc/fstab."$$" /etc/fstab

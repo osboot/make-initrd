@@ -1,0 +1,37 @@
+#!/bin/bash -eu
+
+. guess-functions
+
+devname="$1"; shift
+fstype="$1"; shift
+mnt="${1-}"
+
+zfs_needed=
+zfs_mounts=()
+
+#[ -z "$mnt" ] ||
+#	readarray -t zfs_mounts < <(findmnt -l -k -n -R -o FSTYPE,SOURCE "$mnt")
+
+[ "$fstype" != 'zfs' ] ||
+	zfs_mounts+=("zfs $devname")
+
+for s in "${zfs_mounts[@]}"; do
+	set -- $s
+
+	fstype="$1"; shift
+	source="$1"; shift
+
+	[ "$fstype" = 'zfs' ] ||
+		continue
+
+	zpool list -o name -v -H -P "${source%%/*}" |
+		sed -n -e 's#^[[:space:]]\(/dev/[^[:space:]]\+\).*#\1#p' |
+	while read -r dev; do
+		guess_device "$dev"
+	done
+
+	zfs_needed=1
+done
+
+[ -z "$zfs_needed" ] ||
+	guess_feature 'zfs'

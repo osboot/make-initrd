@@ -1,0 +1,2 @@
+register_parameter string SPL_HOSTID
+register_parameter bool ZFS_FORCE

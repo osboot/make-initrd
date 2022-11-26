@@ -1,0 +1,102 @@
+#!/bin/bash -efu
+
+# Waiting for cmdline service
+[ -f /.initrd/initenv ] ||
+	exit 0
+
+. /.initrd/initenv
+
+. shell-error
+. initrd-sh-functions
+. rdshell-sh-functions
+. uevent-sh-functions
+
+message_time=1
+
+dataset_bootfs()
+{
+	! dataset="$(zpool get -Ho value bootfs | grep -m1 -vFx -)" ||
+		return 0
+
+	zpool import -a -N ${ZFS_FORCE:+-f}
+
+	! dataset="$(zpool get -Ho value bootfs | grep -m1 -vFx -)" ||
+		return 0
+
+	message "no bootfs attribute found in importable pools."
+	zpool export -a
+
+	return 1
+}
+
+dataset_mountpoint()
+{
+	local volumes
+
+	volumes=()
+	readarray -t volumes < <(zfs list -Ho name)
+
+	for dataset in "${volumes[@]}"; do
+		[ -z "$dataset" ] ||
+			[ "$(zfs get -Ho value mountpoint "$dataset")" != / ] ||
+			return 0
+	done
+
+	message "root mountpoint not found in importable pools."
+	return 1
+}
+
+mount_zfs()
+{
+	local mnt rootdev dataset pool
+
+	mnt="$1"; shift
+
+	[ ! -d "/.initrd/fs/zfs/mountpoints/$mnt" ] &&
+		[ -d "$mnt" ] && ! mountpoint -q "$mnt" ||
+		return 0
+
+	dataset="$(findmnt -sno SOURCE "$mnt")"
+
+	if [ "$mnt" = "$rootmnt" ] && [ "$dataset" = 'zfs:auto' ]; then
+		dataset_bootfs || dataset_mountpoint ||
+			return 1
+		message "using \`$dataset' as root."
+	fi
+
+	pool="${dataset%%/*}"
+
+	if ! zpool get -Ho value name "$pool" >/dev/null 2>&1; then
+		message "importing pool \`$pool' ..."
+
+		if ! zpool import -N ${ZFS_FORCE:+-f} "$pool"; then
+			message "unable to import pool \`$pool'."
+			return 1
+		fi
+	fi
+
+	mkdir -p "/.initrd/fs/zfs/mountpoints/$mnt" ||:
+
+	event="$(make_event)"
+
+	cat > "$event" <<-EOF
+		MOUNTDEV="$dataset"
+		MOUNTPOINT="$mnt"
+	EOF
+
+	release_event mountdev "$event"
+}
+
+resume_checked ||
+	exit 0
+
+while ! console_lock; do
+	sleep 0.5
+done
+
+findmnt -sno TARGET -t zfs | sort -d -k1,1 |
+while read -r mnt; do
+	mount_zfs "$mnt" </dev/null ||:
+done
+
+console_unlock

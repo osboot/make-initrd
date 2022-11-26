@@ -1,0 +1,7 @@
+#!/bin/bash
+
+[ "$1" = start ] || exit 0
+
+if [ -n "${SPL_HOSTID-}" ]; then
+	zgenhostid -f "$SPL_HOSTID"
+fi

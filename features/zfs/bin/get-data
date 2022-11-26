@@ -1,0 +1,22 @@
+#!/bin/bash -efu
+
+DIR="$WORKDIR/root"
+mkdir -p -- "$DIR/etc/zfs"
+
+zfs_files=()
+
+if [ ! -f /etc/hostid ]; then
+	if HOSTID="$(hostid 2>/dev/null)" && [ "$HOSTID" != "00000000" ]; then
+		zgenhostid -o "$DIR/etc/hostid" "$HOSTID"
+	fi
+else
+	cp -- /etc/hostid "$DIR"/etc/
+fi
+
+[ ! -f /etc/zfs/vdev_id.conf ] || zfs_files+=(/etc/zfs/vdev_id.conf)
+[ ! -f /etc/zfs/zpool.cache  ] || zfs_files+=(/etc/zfs/zpool.cache)
+
+[ "${#zfs_files[@]}" -eq 0 ] ||
+	cp -- "${zfs_files[@]}" "$DIR"/etc/zfs/
+
+printf '%s\n' "$DIR"
