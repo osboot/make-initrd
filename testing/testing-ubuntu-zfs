@@ -11,7 +11,7 @@ readonly ARCH=x86_64
 readonly IMAGE=ubuntu:latest
 readonly KERNEL_FLAVOR=-generic
 readonly TIMEOUT=${TIMEOUT:-5m}
-readonly VENDOR_CMDLINE="quiet init=/bin/systemd"
+readonly VENDOR_CMDLINE="rd-debug-udev=1 quiet init=/bin/systemd"
 
 readonly MAKE_INITRD_PACKAGES=(
 	"make"

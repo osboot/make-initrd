@@ -1,0 +1,2 @@
+SUBSYSTEM=="block", RUN+="/lib/uevent/filters/debug"
+SUBSYSTEM=="net", RUN+="/lib/uevent/filters/debug"

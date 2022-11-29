@@ -1,0 +1,24 @@
+#!/bin/bash -efu
+
+udev_event="$(environ -q -u '_,SHLVL,SUBSYSTEM,ACTION,DEVPATH')"
+readonly udev_event
+
+. /.initrd/initenv
+
+[ "${RDLOG-}" = 'console' ] && [ -n "${RD_DEBUG_UDEV-}" ] ||
+	exit 0
+
+msg=
+msg+="${SUBSYSTEM:+SUBSYSTEM=\"$SUBSYSTEM\" }"
+msg+="${ACTION:+ACTION=\"$ACTION\" }"
+msg+="${DEVPATH:+DEVPATH=\"$DEVPATH\" }"
+msg+="$(printf '%s\n' "$udev_event" | sort | tr '\n' ' ')"
+
+exec >/dev/console 2>&1
+
+. shell-error
+
+PROG='udevd: event'
+message_time=1
+
+message "$msg"
