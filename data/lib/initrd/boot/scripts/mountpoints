@@ -4,6 +4,7 @@
 . /.initrd/initenv
 
 PROG="poll: $PROG"
+message_time=1
 
 while [ -z "${eof-}" ]; do
 	read -r fsdev fsdir _ ||

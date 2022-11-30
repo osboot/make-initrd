@@ -4,6 +4,7 @@
 . /.initrd/initenv
 
 PROG="poll: $PROG"
+message_time=1
 
 ! chrooted "$rootmnt" test -e "$INIT" ||
 	exit 0
