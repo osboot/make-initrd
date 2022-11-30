@@ -1,8 +1,10 @@
-$(call feature-requires,add-modules qemu mdadm lvm luks devmapper btrfs compress cleanup)
+$(call feature-requires,add-modules add-udev-rules qemu mdadm lvm luks devmapper btrfs compress cleanup)
 $(call feature-disables,plymouth ucode)
 
 GUESTFS_DATADIR = \
 	$(FEATURESDIR)/guestfs/data
+
+GUESTFS_UDEV_RULES := $(wildcard $(FEATURESDIR)/guestfs/rules.d/*.rules)
 
 GUESTFS_FILE_DATABASE = \
 	$(wildcard /usr/share/file/*) \

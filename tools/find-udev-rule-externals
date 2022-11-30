@@ -85,7 +85,7 @@ parse_command()
 
 parse_rule()
 {
-	local a IFS=','
+	local a w IFS=','
 
 	set -- $1
 
@@ -114,6 +114,15 @@ parse_rule()
 
 		a="${a#*\"}"
 		a="${a%\"*}"
+
+		# Skip initramfs-only wrappers for real command.
+		# shellcheck disable=SC2043
+		for w in /bin/udev-run; do
+			if [ -n "$a" ] && [ -z "${a##$w *}" ]; then
+				a="${a#$w }"
+				break
+			fi
+		done
 
 		verbose "$rule{$hint} = $a"
 		parse_command "$hint" "$a"

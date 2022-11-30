@@ -1,6 +1,6 @@
-$(call feature-requires,depmod-image)
+$(call feature-requires,depmod-image add-udev-rules)
 
-BTRFS_DATADIR = $(FEATURESDIR)/btrfs/data
+BTRFS_UDEV_RULES := $(wildcard $(FEATURESDIR)/btrfs/rules.d/*.rules)
 BTRFS_PROGS   = btrfs
 BTRFS_PRELOAD = btrfs
 BTRFS_MODULES = crc32c
