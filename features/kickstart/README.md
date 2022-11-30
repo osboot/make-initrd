@@ -179,6 +179,9 @@ the following forms:
 * `raid.<id>` The partition will be used for software RAID. Refer to the raid command.
 
 * `pv.<id>` The partition will be used for LVM. Refer to the logvol command.
+* `zfs.<id>`, `zfs.boot.<id>`, `zfs.mirror.<id>`, `zfs.raidz.<id>` The partition
+  will be used for ZFS filesystem. `boot`, `mirror`, `raidz` reflect the type of
+  partition being created.
 
 Options:
 
@@ -374,6 +377,81 @@ btrfs /     --subvol --name=root LABEL=fs
 btrfs /home --subvol --name=home LABEL=fs
 ```
 
+#### zpool
+```
+zpool [--feature=VALUE ...] [--property=VALUE ...] [--fsoption=FSOPT ...] <pool>
+    (<partitions...>|<vdev...>)
+```
+
+Creates a new storage pool containing the virtual devices specified on the
+command line. The pool names `mirror`, `raidz`, `draid`, `spare` and `log` are
+reserved. Using the same device in two pools will result in pool corruption.
+
+`<pool>` the name of zfs pool.
+`<partitions...>` lists the `zfs.<id>` identifiers to add to the ZFS pool or
+real partitons.
+
+Example:
+```bash
+# Creating a RAID-Z Storage Pool
+zpool tank1 raidz sda sdb sdc sdd sde sdf
+
+# Creating a Mirrored Storage Pool
+zpool tank2 mirror sda sdb mirror sdc sdd
+```
+
+Options:
+
+* `--feature=VALUE` Sets the given pool feature. See the `zpool-features(7)`
+  section for a list of valid features that can be set. Value can be either
+  disabled or enabled.
+* `--property=VALUE` Sets the given pool properties. See `zpoolprops(7)` for a
+  list of valid properties that can be set.
+* `--fsoption=FSOPT` Sets the given file system properties in the root file
+  system of the pool. See zfsprops(7) for a list of valid properties that can
+  be set.
+
+Example:
+```bash
+part zfs.11 --size=30%
+part zfs.21 --size=70%
+
+part zfs.12 --size=30%
+part zfs.22 --size=70%
+
+zpool rpool mirror zfs.1*
+zpool dpool mirror zfs.2*
+```
+
+#### zfs
+```
+zfs [--property=VALUE ...] [--size=VALUE] [--sparse] (<mntpoint>|none) <pool>/<volume>
+```
+
+Creates a new ZFS file system.
+
+`<mntpoint>` Location where the file system is mounted.
+
+Options:
+
+* `--property=VALUE` Sets the specified property.
+* `--size=VALUE` Creates a volume of the given size.
+* `--sparse` Creates a sparse volume with no reservation.
+
+Example:
+```bash
+part zfs.11 --size=30%
+part zfs.21 --size=70%
+
+part zfs.12 --size=30%
+part zfs.22 --size=70%
+
+zpool rpool mirror zfs.1*
+zpool dpool mirror zfs.2*
+
+zfs /    rpool/ROOT
+zfs /usr dpool/DATA
+```
 
 #### liveimg
 ```
