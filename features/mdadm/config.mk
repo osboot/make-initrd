@@ -6,7 +6,7 @@ MDAMD_RULES_OLD = \
 	*-md-raid.rules
 
 MDAMD_RULES = \
-	*-md-raid-arrays.rules
+	$(wildcard $(FEATURESDIR)/mdadm/rules.d/*.rules)
 
 MDADM_CONF ?= $(SYSCONFDIR)/mdadm.conf
 
