@@ -131,7 +131,7 @@ jobs:
         env:
           TIMEOUT: 30m
         run: |
-          testing/testing-${{ matrix.name }}-zfs test-root-${{ matrix.test }}
+          testing/testing-${{ matrix.name }} test-root-${{ matrix.test }}
 
   network:
     strategy:

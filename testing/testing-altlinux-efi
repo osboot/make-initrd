@@ -28,7 +28,7 @@ TESTNAME="$1"; shift
 KICKSTART_DISKS=0
 BOOT_DISKS=0
 BOOT_PROG=
-BOOT_CMDLINE="root=LABEL=ROOT panic=0 $VENDOR_CMDLINE"
+BOOT_CMDLINE="$VENDOR_CMDLINE panic=0"
 
 eval $(sed -n -e 's/^# param //p' "$topdir/testing/$TESTNAME.cfg")
 
