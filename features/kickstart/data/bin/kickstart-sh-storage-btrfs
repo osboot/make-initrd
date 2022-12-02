@@ -5,6 +5,7 @@ __kickstart_sh_storage_btrfs=1
 
 . kickstart-sh-storage
 
+ks_requires_btrfs=("modprobe" "mount" "umount" "btrfs")
 btrfs()
 {
 	local PROG TEMP shift_args dev
@@ -13,6 +14,9 @@ btrfs()
 
 	PROG="kickstart"
 	message "command: ${FUNCNAME[0]} $*"
+
+	ks_check_requires "${FUNCNAME[0]}" ||
+		return 1
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "subvol,name:,label:,data:,metadata:,fsoptions:,$getopt_useexisting" -- "$PROG" "$@"` ||

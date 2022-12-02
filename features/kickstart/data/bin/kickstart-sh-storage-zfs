@@ -8,6 +8,7 @@ __kickstart_sh_storage_zfs=1
 # zpool --property autotrim=on rpool zfs.0*
 # zfs / rpool/root
 
+ks_requires_zpool=("zpool")
 zpool()
 {
 	local PROG TEMP arg
@@ -15,6 +16,9 @@ zpool()
 
 	PROG="kickstart"
 	message "command: ${FUNCNAME[0]} $*"
+
+	ks_check_requires "${FUNCNAME[0]}" ||
+		return 1
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "feature:,property:,fsoption:" -- "$PROG" "$@"` ||
@@ -91,6 +95,7 @@ zpool()
 		"$name" "${vdevs[@]}"
 }
 
+ks_requires_zpool=("zfs")
 zfs()
 {
 	local PROG TEMP
@@ -98,6 +103,9 @@ zfs()
 
 	PROG="kickstart"
 	message "command: ${FUNCNAME[0]} $*"
+
+	ks_check_requires "${FUNCNAME[0]}" ||
+		return 1
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "property:,size:,sparse" -- "$PROG" "$@"` ||

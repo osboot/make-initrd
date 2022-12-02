@@ -108,6 +108,7 @@ ignoredisk()
 	BLOCK_DEVICES="$*"
 }
 
+ks_requires_clearpart=("findmnt" "wipefs" "sfdisk" "umount")
 clearpart()
 {
 	local PROG TEMP dev skipped
@@ -115,6 +116,9 @@ clearpart()
 
 	PROG="kickstart"
 	message "command: ${FUNCNAME[0]} $*"
+
+	ks_check_requires "${FUNCNAME[0]}" ||
+		return 1
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l 'all,drives:,list:,none,initlabel,disklabel:' -- "$PROG" "$@"` ||
@@ -247,9 +251,13 @@ ks_get_dev_sector_size()
 # 8 GB - 64 GB    | 0.5 times the amount of RAM | 1.5 times the amount of RAM  |
 # more than 64 GB | workload dependent          | 1.5 times the amount of RAM  |
 # ----------------+-----------------------------+------------------------------+
+ks_requires_ks_guess_swap_size=("numfmt")
 ks_guess_swap_size()
 {
 	local memtotal
+
+	ks_check_requires "${FUNCNAME[0]}" ||
+		return 1
 
 	memtotal="$(sed -ne 's|^MemTotal:[[:space:]]*\([0-9]\+\) kB$|\1|p' /proc/meminfo)"
 	memtotal="$(numfmt --from=iec ${memtotal}K)"
@@ -283,9 +291,13 @@ ks_is_mountpoint_exists()
 	[ -f "$ks_datadir/fstab.d/$fname" ]
 }
 
+ks_requires_ks_fstab=("blkid" "sha256sum")
 ks_fstab()
 {
 	local fname dev mpoint fstype fsopts
+
+	ks_check_requires "${FUNCNAME[0]}" ||
+		return 1
 
 	dev="$1"; shift
 	mpoint="$1"; shift
@@ -328,6 +340,7 @@ ks_set_makefs_args()
 	esac
 }
 
+ks_requires_makefs=("wipefs" "mkswap")
 makefs()
 {
 	local PROG TEMP
@@ -336,6 +349,9 @@ makefs()
 
 	PROG="kickstart"
 	message "command: ${FUNCNAME[0]} $*"
+
+	ks_check_requires "${FUNCNAME[0]}" ||
+		return 1
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "$getopt_makefs" -- "$PROG" "$@"` ||
@@ -391,6 +407,7 @@ ks_set_crypto_args()
 	esac
 }
 
+ks_requires_crypto=("cryptsetup")
 crypto()
 {
 	local PROG TEMP dev
@@ -400,6 +417,9 @@ crypto()
 
 	PROG="kickstart"
 	message "command: ${FUNCNAME[0]} $*"
+
+	ks_check_requires "${FUNCNAME[0]}" ||
+		return 1
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "name:,$getopt_crypto" -- "$PROG" "$@"` ||
@@ -519,6 +539,7 @@ ks_get_dev_id()
 	printf '%s\n' "$1"
 }
 
+ks_requires_part=("numfmt" "sfdisk")
 part()
 {
 	local PROG TEMP shift_args=0 sfdisk_args exe
@@ -531,6 +552,9 @@ part()
 
 	PROG="kickstart"
 	message "command: ${FUNCNAME[0]} $*"
+
+	ks_check_requires "${FUNCNAME[0]}" ||
+		return 1
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l "asprimary,ondisk:,ondrive:,onpart:,usepart:,fsoptions:,size:,grow,resize,encrypted,hibernation,$getopt_makefs,$getopt_crypto,$getopt_useexisting" -- "$PROG" "$@"` ||
@@ -873,6 +897,7 @@ part()
 	esac
 }
 
+ks_requires_partition=("${ks_requires_part[@]}")
 partition() { part "$@"; }
 
 fi #__kickstart_sh_storage

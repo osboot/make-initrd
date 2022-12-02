@@ -1,5 +1,6 @@
 #!/bin/bash
 
+ks_requires_ks_reboot=("eject" "reboot" "halt")
 ks_reboot()
 {
 	local PROG TEMP cmd
@@ -7,6 +8,9 @@ ks_reboot()
 
 	PROG="kickstart"
 	message "command: ${FUNCNAME[0]} $*"
+
+	ks_check_requires "${FUNCNAME[0]}" ||
+		return 1
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l 'eject,kexec' -- "$PROG" "$@"` ||

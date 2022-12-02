@@ -350,6 +350,27 @@ ks_not_implemented()
 	fatal "command $1 not implemented"
 }
 
+ks_check_requires()
+{
+	local kwd args typeof missing
+
+	typeof="$(declare -p "ks_requires_$1" 2>/dev/null)" && [ -z "${typeof##declare -a *}" ] ||
+		return 0
+
+	declare -n "args=ks_requires_$1"
+	missing=()
+
+	for kwd in "${args[@]}"; do
+		type -P "$kwd" &>/dev/null || missing+=("$kwd")
+	done
+
+	[ "${#missing[@]}" -gt 0 ] ||
+		return 0
+
+	message "command \`$1' requires utilities that are missing: ${missing[*]}"
+	return 1
+}
+
 ks_prepare_parser()
 {
 	local fn order
@@ -441,6 +462,9 @@ ks_parse()
 				message "lineno=$lineno: unknown command: $1"
 				continue
 			fi
+
+			ks_check_requires "$1" ||
+				exit 1
 
 			eval "cmdbase=\$ks_order_$1"
 		fi
