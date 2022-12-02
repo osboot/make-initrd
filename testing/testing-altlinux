@@ -10,25 +10,31 @@ readonly ARCH=x86_64
 readonly IMAGE=alt:sisyphus
 readonly KERNEL_FLAVOR=-std-def
 readonly TIMEOUT=${TIMEOUT:-5m}
-readonly VENDOR_CMDLINE="rd-debug-udev=1 quiet"
 
-readonly MAKE_INITRD_PACKAGES=(
-	"make"
-	"udev"
-	"libelf"
-	"libkmod"
-	"zlib"
-	"bzlib"
-	"libzstd"
-	"liblzma"
-)
+MAKE_INITRD_PACKAGES="make udev libelf libkmod zlib bzlib libzstd liblzma"
+
+MAKE_INITRD_PACKAGES_DEVEL="$MAKE_INITRD_PACKAGES"
+MAKE_INITRD_PACKAGES_DEVEL+=" gcc make automake autoconf"
+MAKE_INITRD_PACKAGES_DEVEL+=" libkmod-devel zlib-devel bzlib-devel liblzma-devel"
+MAKE_INITRD_PACKAGES_DEVEL+=" libzstd-devel libelf-devel libtirpc-devel libcrypt-devel"
+
+KERNEL_PACKAGES="kernel-image$KERNEL_FLAVOR"
+
+SYSIMAGE_PACKAGES="$MAKE_INITRD_PACKAGES $KERNEL_PACKAGES"
+SYSIMAGE_PACKAGES+=" sysvinit startup mingetty grub mdadm lvm2 cryptsetup pwgen"
+SYSIMAGE_PACKAGES+=" btrfs-progs e2fsprogs xfsprogs dosfstools reiserfsprogs"
+
+KICKSTART_PACKAGES=""
+KICKSTART_PACKAGES+=" sysvinit util-linux rsync wget cryptsetup lvm2 mdadm pwgen"
+KICKSTART_PACKAGES+=" e2fsprogs btrfs-progs xfsprogs dosfstools reiserfsprogs"
+KICKSTART_PACKAGES+=" sfdisk unzip tar cpio eject lz4"
 
 TESTNAME="$1"; shift
 
 KICKSTART_DISKS=0
 BOOT_DISKS=0
 BOOT_PROG=
-BOOT_CMDLINE="$VENDOR_CMDLINE panic=0"
+BOOT_CMDLINE=""
 
 eval $(sed -n -e 's/^# param //p' "$topdir/testing/$TESTNAME.cfg")
 
@@ -54,11 +60,7 @@ for step in "$@"; do
 			#!/bin/bash -efux
 
 			apt-get -y -qq update
-			apt-get -y -qq install \
-			 gcc make automake autoconf \
-			 ${MAKE_INITRD_PACKAGES[*]} \
-			 libkmod-devel zlib-devel bzlib-devel liblzma-devel \
-			 libzstd-devel libelf-devel libtirpc-devel libcrypt-devel
+			apt-get -y -qq install $MAKE_INITRD_PACKAGES_DEVEL
 
 			cd "$builddir"
 
@@ -88,18 +90,10 @@ for step in "$@"; do
 				 printf > /etc/initrd.mk '%s\n' \
 				 'AUTODETECT =' \
 				 'FEATURES += compress cleanup'
-				RUN \
-				 rpm -ql filesystem | xargs -r mkdir -p
-				RUN \
-				 apt-get -y -qq update
-				RUN \
-				 apt-get -y -qq install kernel-image$KERNEL_FLAVOR \
-				 ${MAKE_INITRD_PACKAGES[*]} \
-				 sysvinit startup mingetty grub mdadm lvm2 cryptsetup \
-				 btrfs-progs e2fsprogs xfsprogs dosfstools reiserfsprogs \
-				 pwgen
-				RUN \
-				 apt-get -y -qq clean
+				RUN rpm -ql filesystem | xargs -r mkdir -p
+				RUN apt-get -y -qq update
+				RUN apt-get -y -qq install $SYSIMAGE_PACKAGES
+				RUN apt-get -y -qq clean
 				RUN \
 				 find /lib/modules \( \
 				  -path '*/kernel/sound/*' -o \
@@ -156,14 +150,8 @@ for step in "$@"; do
 			EOF1
 
 			apt-get -y -qq update
-
-			apt-get -y -qq install \
-			 e2fsprogs btrfs-progs xfsprogs dosfstools reiserfsprogs \
-			 cryptsetup lvm2 mdadm sfdisk util-linux rsync wget unzip \
-			 tar cpio eject sysvinit pwgen
-
-			apt-get -y -qq install \
-			 kernel-image$KERNEL_FLAVOR
+			apt-get -y -qq install $KICKSTART_PACKAGES
+			apt-get -y -qq install $KERNEL_PACKAGES
 
 			cp -L /boot/vmlinuz    $builddir/$workdir/boot-ks-vmlinuz
 			cp -L /boot/initrd.img $builddir/$workdir/boot-ks-initrd.img

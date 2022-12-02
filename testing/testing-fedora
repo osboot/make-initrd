@@ -10,20 +10,24 @@ readonly ARCH=x86_64
 readonly IMAGE=fedora:latest
 readonly KERNEL_FLAVOR=
 readonly TIMEOUT=${TIMEOUT:-5m}
-readonly VENDOR_CMDLINE="rd-debug-udev=1 quiet"
 
-readonly MAKE_INITRD_PACKAGES=(
-	"make"
-	"findutils"
-	"udev"
-	"elfutils-libelf.$ARCH"
-	"kmod-libs"
-	"zlib"
-	"bzip2-libs"
-	"libzstd"
-	"xz-libs"
-	"libxcrypt-compat"
-)
+MAKE_INITRD_PACKAGES="make findutils udev elfutils-libelf.$ARCH kmod-libs zlib bzip2-libs libzstd xz-libs libxcrypt-compat"
+
+MAKE_INITRD_PACKAGES_DEVEL="$MAKE_INITRD_PACKAGES"
+MAKE_INITRD_PACKAGES_DEVEL+=" gcc make automake autoconf"
+MAKE_INITRD_PACKAGES_DEVEL+=" kmod-devel zlib-devel bzip2-devel xz-devel libxcrypt-devel"
+MAKE_INITRD_PACKAGES_DEVEL+=" libzstd-devel elfutils-libelf-devel.$ARCH libtirpc-devel"
+
+KERNEL_PACKAGES="kernel$KERNEL_FLAVOR"
+
+SYSIMAGE_PACKAGES="$MAKE_INITRD_PACKAGES $KERNEL_PACKAGES"
+SYSIMAGE_PACKAGES+=" systemd grub2-pc mdadm lvm2 cryptsetup"
+SYSIMAGE_PACKAGES+=" btrfs-progs e2fsprogs xfsprogs dosfstools pwgen"
+
+KICKSTART_PACKAGES="$MAKE_INITRD_PACKAGES $KERNEL_PACKAGES"
+KICKSTART_PACKAGES+=" e2fsprogs btrfs-progs xfsprogs dosfstools cryptsetup lvm2"
+KICKSTART_PACKAGES+=" mdadm util-linux rsync wget unzip tar cpio pwgen zstd lz4"
+KICKSTART_PACKAGES+=" unzip"
 
 TESTNAME="$1"; shift
 
@@ -37,7 +41,7 @@ esac
 KICKSTART_DISKS=0
 BOOT_DISKS=0
 BOOT_PROG=
-BOOT_CMDLINE="$VENDOR_CMDLINE panic=0"
+BOOT_CMDLINE=""
 
 eval $(sed -n -e 's/^# param //p' "$topdir/testing/$TESTNAME.cfg")
 
@@ -62,12 +66,7 @@ for step in "$@"; do
 			cat_exec "$top_workdir/run.sh" <<-EOF
 			#!/bin/bash -efux
 
-			dnf -y install \
-			 gcc make automake autoconf \
-			 ${MAKE_INITRD_PACKAGES[*]} \
-			 kmod-devel zlib-devel bzip2-devel xz-devel \
-			 libzstd-devel elfutils-libelf-devel.$ARCH libtirpc-devel \
-			 libxcrypt-devel
+			dnf -y install $MAKE_INITRD_PACKAGES_DEVEL
 
 			cd "$builddir"
 
@@ -93,10 +92,7 @@ for step in "$@"; do
 					-f - <<-EOF
 				FROM $IMAGE
 				RUN \
-				 dnf -y install kernel$KERNEL_FLAVOR ${MAKE_INITRD_PACKAGES[*]} \
-				 systemd grub2-pc mdadm lvm2 cryptsetup \
-				 btrfs-progs e2fsprogs xfsprogs dosfstools \
-				 pwgen
+				 dnf -y install $SYSIMAGE_PACKAGES
 				RUN \
 				 kver="\$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' -quit)"; \
 				 for i in vmlinuz System.map config; do \
@@ -150,10 +146,7 @@ for step in "$@"; do
 			 PUT_PROGS += pwgen
 			EOF1
 
-			dnf -y install kernel$KERNEL_FLAVOR ${MAKE_INITRD_PACKAGES[*]} \
-			 e2fsprogs btrfs-progs xfsprogs dosfstools \
-			 cryptsetup lvm2 mdadm util-linux rsync wget unzip \
-			 tar cpio pwgen
+			dnf -y install $KICKSTART_PACKAGES
 
 			kver="\$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' -quit)"
 
