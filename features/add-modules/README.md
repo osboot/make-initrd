@@ -35,3 +35,29 @@ example `filename` and `not-filename`.
 
 If you specify a regular expression for symbols, keep in mind that it will be
 applied to both provided and required symbols.
+
+Example of `rules.mk`:
+```make
+FILESYSTEM_PATTERN_SET =
+FILESYSTEM_PATTERN_SET += alias:^fs-
+FILESYSTEM_PATTERN_SET += not-filename:.*/kernel/arch/.*
+FILESYSTEM_PATTERN_SET += not-filename:.*/net/.*
+MODULES_PATTERN_SETS += FILESYSTEM_PATTERN_SET
+```
+
+This set is intended to find all modules whose alias starts with `fs-` that are
+not contains `/kernel/arch/` or `/net/` in the path.
+
+The rules can be checked with the `initrd-scanmod` utility. The utility uses a
+slightly different rule format.
+
+Example:
+```bash
+$ cat >/tmp/scanmod.rules <<EOF
+alias ^fs-
+not-filename .*/kernel/arch/.*
+not-filename .*/net/.*
+EOF
+
+$ initrd-scanmod --set-version="$(uname -r)" /tmp/scanmod.rules
+```
