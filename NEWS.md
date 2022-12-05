@@ -1,3 +1,27 @@
+Version 2.33.0
+
+- Runtime:
+  + Use pre/post handlers to extend cmdline service and remove service-specific
+    handlers.
+  + Replace mountsrc service by post-service handler.
+  + Show block/net udev events if rdlog=console.
+  + Add timestamps to polld messages.
+- Feature zfs:
+  + Add OpenZFS feature.
+- Feature kickstart:
+  + Add zfs support.
+  + Add documentattion about zfs commands.
+  + Do not try to get UUID for non-device mounts.
+- Feature sshfsroot:
+  + Add documentattion about root=/dev/sshfs.
+- Features mdadm:
+  + Use own copy of 63-md-raid-arrays.rules to fix regression with fedora boot
+    on raid.
+- Misc:
+  + Sync gen_init_cpio with upstream.
+  + Add documentation about module pattern sets.
+  + Add documentation about 9P as root filesystem.
+
 Version 2.32.1
 
 - mk: do not expand functions out of '$(call ...)' context.
