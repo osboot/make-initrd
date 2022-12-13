@@ -1,11 +1,15 @@
-name: "Integration Tests"
+name: "End-to-End Tests"
 on:
   push:
     branches:
       - master
       - for-master
+    paths-ignore:
+      - '**.md'
 jobs:
-  integration:
+  e2e-local:
+    name: "${{ matrix.name }} ${{ matrix.test }} ${{ matrix.testcase }}"
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         name: [
@@ -14,7 +18,12 @@ jobs:
           "ubuntu",
         ]
         test: [
+          "local",
+        ]
+        testcase: [
           "btrfs-subvol",
+          "efi-partition",
+          "efi-reqpartition",
           "luks",
           "luks+crypttab+noparam",
           "luks+lukskey-noparam",
@@ -31,127 +40,96 @@ jobs:
           "raid1+raid5",
           "raid1-degraded",
           "raid5",
-        ]
-      fail-fast: false
-      #max-parallel: 6
-    runs-on: ubuntu-latest
-    name: "${{ matrix.name }}, root:${{ matrix.test }}"
-    steps:
-      - name: "Prepare KVM"
-        run: |
-          test -c /dev/kvm && sudo chmod -v 666 /dev/kvm ||:
-
-      - name: "Install packages"
-        run: |
-          sudo apt-get -qq -y update
-          sudo apt-get -qq -y install git expect qemu-kvm
-
-      - name: "Checkout Repository"
-        uses: actions/checkout@v2
-
-      - name: "Checkout submodules"
-        run: |
-          git submodule set-url external/busybox/upstream https://github.com/mirror/busybox
-          git submodule update --init --recursive
-
-      - name: "Test"
-        env:
-          TIMEOUT: 30m
-        run: |
-          testing/testing-${{ matrix.name }} test-root-${{ matrix.test }}
-
-  efi:
-    strategy:
-      matrix:
-        name: [
-          "altlinux",
-        ]
-        test: [
-          "efi-partition",
-          "efi-reqpartition",
-        ]
-      fail-fast: false
-    runs-on: ubuntu-latest
-    name: "${{ matrix.name }}, root:${{ matrix.test }}"
-    steps:
-      - name: "Prepare KVM"
-        run: |
-          test -c /dev/kvm && sudo chmod -v 666 /dev/kvm ||:
-
-      - name: "Install packages"
-        run: |
-          sudo apt-get -qq -y update
-          sudo apt-get -qq -y install git qemu-kvm ovmf
-
-      - name: "Checkout Repository"
-        uses: actions/checkout@v2
-
-      - name: "Checkout submodules"
-        run: |
-          git submodule set-url external/busybox/upstream https://github.com/mirror/busybox
-          git submodule update --init --recursive
-
-      - name: "Test"
-        env:
-          TIMEOUT: 30m
-        run: |
-          testing/testing-${{ matrix.name }}-efi test-root-${{ matrix.test }}
-
-  zfs:
-    strategy:
-      matrix:
-        name: [
-          "ubuntu",
-        ]
-        test: [
           "zfs-partition",
         ]
+        exclude:
+          - name: fedora
+            testcase: efi-partition
+          - name: fedora
+            testcase: efi-reqpartition
+          - name: fedora
+            testcase: raid1+raid5
+          - name: fedora
+            testcase: zfs-partition
+
+          - name: ubuntu
+            testcase: efi-partition
+          - name: ubuntu
+            testcase: efi-reqpartition
+
+          - name: altlinux
+            testcase: zfs-partition
+
       fail-fast: false
-    runs-on: ubuntu-latest
-    name: "${{ matrix.name }}, root:${{ matrix.test }}"
+      #max-parallel: 6
     steps:
-      - name: "Prepare KVM"
+      - name: "Prepare Node"
         run: |
+          for m in kvm kvm-amd kvm-intel; do sudo modprobe -v "$m" ||:; done
           test -c /dev/kvm && sudo chmod -v 666 /dev/kvm ||:
 
-      - name: "Install packages"
+      - name: "Install Packages"
         run: |
           sudo apt-get -qq -y update
-          sudo apt-get -qq -y install git qemu-kvm ovmf
+          sudo apt-get -qq -y install git expect qemu-kvm ovmf
 
       - name: "Checkout Repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: "Checkout submodules"
+      - name: "Checkout Submodules"
         run: |
           git submodule set-url external/busybox/upstream https://github.com/mirror/busybox
           git submodule update --init --recursive
 
-      - name: "Test"
-        env:
-          TIMEOUT: 30m
-        run: |
-          testing/testing-${{ matrix.name }} test-root-${{ matrix.test }}
+      - name: "Build Sources"
+        run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} build-git
 
-  network:
+      - name: "Build Sysimage"
+        run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} build-sysimage
+
+      - name: "Build Kickstart"
+        run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} build-kickstart
+
+      - name: "Build Other Tools"
+        run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} build-tools
+
+      - name: "Run Kickstart"
+        env:
+          QEMU_TIMEOUT: 40m
+          QEMU_MEMORY: 1G
+          QEMU_DISK_FORMAT: qcow2
+        run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} run-kickstart
+
+      - name: "Run Services"
+        run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} run-services
+
+      - name: "Boot System"
+        env:
+          QEMU_TIMEOUT: 10m
+          QEMU_MEMORY: 1G
+          QEMU_DISK_FORMAT: qcow2
+        run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} run-boot
+
+  e2e-network:
+    name: "${{ matrix.name }} ${{ matrix.test }} ${{ matrix.testcase }}"
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         name: [
           "altlinux",
         ]
         test: [
-          "sshfsroot",
+          "sshfs",
         ]
-        nettype: [
-          "dhcp",
-          "static1",
+        testcase: [
+          "sshfs-network-dhcp",
+          "sshfs-network-static1",
         ]
       fail-fast: false
-    runs-on: ubuntu-latest
-    name: "${{ matrix.name }}, root:${{ matrix.test }}, net:${{ matrix.nettype }}"
     steps:
-      - name: "Prepare KVM"
+      - name: "Prepare Node"
         run: |
+          for m in kvm kvm-amd kvm-intel; do sudo modprobe -v "$m" ||:; done
           test -c /dev/kvm && sudo chmod -v 666 /dev/kvm ||:
 
       - name: "Install packages"
@@ -160,15 +138,28 @@ jobs:
           sudo apt-get -qq -y install git qemu-kvm
 
       - name: "Checkout Repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: "Checkout submodules"
         run: |
           git submodule set-url external/busybox/upstream https://github.com/mirror/busybox
           git submodule update --init --recursive
 
-      - name: "Test"
+      - name: "Build Sources"
+        run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} build-git
+
+      - name: "Build Sysimage"
+        run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} build-sysimage
+
+      - name: "Build Other Tools"
+        run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} build-tools
+
+      - name: "Run Services"
+        run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} run-services
+
+      - name: "Boot System"
         env:
-          TIMEOUT: 5m
-        run: |
-          testing/testing-${{ matrix.name }}-${{ matrix.test }} ${{ matrix.nettype }}
+          QEMU_TIMEOUT: 10m
+          QEMU_MEMORY: 1G
+          QEMU_DISK_FORMAT: qcow2
+        run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} run-boot

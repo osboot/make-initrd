@@ -9,38 +9,26 @@ readonly VENDOR=altlinux
 readonly ARCH=x86_64
 readonly IMAGE=alt:sisyphus
 readonly KERNEL_FLAVOR=-std-def
-readonly TIMEOUT=${TIMEOUT:-5m}
 
-readonly MAKE_INITRD_PACKAGES=(
-	"make"
-	"udev"
-	"libelf"
-	"libkmod"
-	"zlib"
-	"bzlib"
-	"libzstd"
-	"liblzma"
-)
+. "$topdir/testing/packages-$VENDOR"
 
-NETTYPE="$1"; shift
+MAKE_INITRD_PACKAGES+=" fuse-sshfs"
 
-TESTNAME=sshfsroot
-
-. "$topdir/testing/test-network-$NETTYPE.sh"
+TESTNAME="$1"; shift
 
 KICKSTART_DISKS=0
 BOOT_DISKS=0
-BOOT_PROG=
+BOOT_CMDLINE="console=ttyS0,115200n8 fastboot rw"
 
-BOOT_CMDLINE="panic=0"
-BOOT_CMDLINE="$BOOT_CMDLINE console=ttyS0,115200n8 fastboot panic=3 rdlog=console rd-debug-udev=1 rw"
-BOOT_CMDLINE="$BOOT_CMDLINE $BOOT_CMDLINE_NETWORK"
-BOOT_CMDLINE="$BOOT_CMDLINE root=/dev/sshfs sshfsroot=sftp@10.0.2.2:/data/incoming sshfsopts=port=2222"
+eval $(sed -n -e 's/^# param //p' "$topdir/testing/$TESTNAME.cfg")
+
+BOOT_APPEND="$BOOT_CMDLINE"
 
 readonly builddir=/srv
 
 readonly workdir="testing/cache/$VENDOR/$TESTNAME"
 readonly logdir="testing/logs/$VENDOR/$TESTNAME"
+readonly statusdir="$topdir/testing/status"
 
 readonly top_workdir="$topdir/$workdir"
 readonly top_logdir="$topdir/$logdir"
@@ -52,9 +40,6 @@ if [ ! -d "$top_workdir/.ssh" ]; then
 	ssh-keygen -t rsa -f "$top_workdir/.ssh/id_rsa" -N ''
 fi
 
-[ "$#" -gt 0 ] ||
-	set -- build-git build-sysimage build-initramfs build-sshd run-boot
-
 for step in "$@"; do
 	case "$step" in
 		build-git)
@@ -64,11 +49,7 @@ for step in "$@"; do
 			#!/bin/bash -efux
 
 			apt-get -y -qq update
-			apt-get -y -qq install \
-			 gcc make automake autoconf \
-			 ${MAKE_INITRD_PACKAGES[*]} \
-			 libkmod-devel zlib-devel bzlib-devel liblzma-devel \
-			 libzstd-devel libelf-devel libtirpc-devel libcrypt-devel
+			apt-get -y -qq install $MAKE_INITRD_PACKAGES_DEVEL
 
 			cd "$builddir"
 
@@ -86,6 +67,9 @@ for step in "$@"; do
 			gh_group_end
 			;;
 		build-sysimage)
+			[ -n "${SYSIMAGE_PACKAGES-}" ] ||
+				continue
+
 			if [ -z "$(podman images -an --format='1' -f reference=localhost/mi-$TESTNAME-$VENDOR:sysimage)" ]; then
 				gh_group_start "creating sysimage"
 
@@ -96,7 +80,7 @@ for step in "$@"; do
 				FROM $IMAGE
 				RUN rpm -ql filesystem | xargs -r mkdir -p
 				RUN apt-get -y -qq update
-				RUN apt-get -y -qq install sysvinit startup mingetty
+				RUN apt-get -y -qq install $SYSIMAGE_PACKAGES
 				RUN apt-get -y -qq clean
 				RUN \
 				 find /usr/share/license /usr/share/license-exception -delete; \
@@ -112,7 +96,10 @@ for step in "$@"; do
 				   'echo; echo;' \
 				   'echo "IT WORKS!";' \
 				   'echo; echo;' \
-				   'exec reboot'; \
+				   'echo i > /proc/sysrq-trigger;' \
+				   'echo s > /proc/sysrq-trigger;' \
+				   'echo b > /proc/sysrq-trigger;' \
+				   ; \
 				 chmod 755 /sbin/init.once
 				RUN \
 				 printf > /etc/rc.d/init.d/halt '%s\n' \
@@ -157,7 +144,9 @@ for step in "$@"; do
 
 			rm -f -- "$top_workdir/sysimage.tar"
 			;;
-		build-initramfs)
+		build-kickstart)
+			;;
+		build-tools)
 			gh_group_start "building initramfs"
 
 			cat_exec "$top_workdir/run.sh" <<-EOF
@@ -177,9 +166,8 @@ for step in "$@"; do
 			EOF1
 
 			apt-get -y -qq update
-			apt-get -y -qq install ${MAKE_INITRD_PACKAGES[*]} \
-			 fuse-sshfs \
-			 kernel-image$KERNEL_FLAVOR
+			apt-get -y -qq install $MAKE_INITRD_PACKAGES
+			apt-get -y -qq install $KERNEL_PACKAGES
 
 			cp -L /boot/vmlinuz    $builddir/$workdir/sshfsroot-vmlinuz
 			cp -L /boot/initrd.img $builddir/$workdir/sshfsroot-initrd.img
@@ -190,14 +178,16 @@ for step in "$@"; do
 				"$IMAGE" "$builddir/$workdir/run.sh"
 
 			gh_group_end
-			;;
-		build-sshd)
+
+			[ -n "${SSH_SERVER_PACKAGES-}" ] ||
+				continue
+
 			gh_group_start "building ssh server"
 
 			cat > "$top_workdir/Dockerfile" <<-EOF
 			FROM $IMAGE
 			RUN apt-get -y -qq update
-			RUN apt-get -y -qq install openssh-server syslogd
+			RUN apt-get -y -qq install $SSH_SERVER_PACKAGES
 			RUN apt-get -y -qq clean
 
 			ADD .ssh/id_rsa.pub /etc/openssh/authorized_keys/sftp
@@ -218,7 +208,7 @@ for step in "$@"; do
 			  "syslogd -n &" \
 			  "useradd -m -U -p '' -s /bin/false sftp" \
 			  "ssh-keygen -A" \
-			  "exec /usr/sbin/sshd -D -ddd -e"; \
+			  "exec /usr/sbin/sshd -D -d -e"; \
 			 chmod 755 /endpoint
 
 			ENTRYPOINT /endpoint
@@ -231,7 +221,9 @@ for step in "$@"; do
 
 			gh_group_end
 			;;
-		run-boot)
+		run-kickstart)
+			;;
+		run-services)
 			gh_group_start "running ssh server"
 
 			run podman rm -i -f sshd
@@ -253,52 +245,18 @@ for step in "$@"; do
 				i=$(($i+1))
 			done
 			gh_group_end
+			;;
+
+		run-boot)
+			BOOT_KERNEL="$top_workdir/sshfsroot-vmlinuz"
+			BOOT_INITRD="$top_workdir/sshfsroot-initrd.img"
+			BOOT_LOGS="$top_logdir/sshd.log"
 
 			gh_group_start "checking the ability to boot"
-
-			cat_exec "$top_workdir/qemu.sh" <<-EOF
-			#!/bin/bash
-			qemu_args=()
-			qemu_args+=( -m 1G -no-reboot )
-			qemu_args+=( -nic user,model=e1000 )
-			qemu_args+=( -kernel "$top_workdir/sshfsroot-vmlinuz" )
-			qemu_args+=( -initrd "$top_workdir/sshfsroot-initrd.img" )
-			qemu_args+=( -append "$BOOT_CMDLINE" )
-			. "$top_workdir/qemu-cpu"
-			. "$top_workdir/qemu-stdout"
-			set -x
-			exec qemu-system-$ARCH "\${qemu_args[@]}"
-			EOF
-
-			cat_exec "$top_workdir/run.sh" <<-EOF
-			#!/bin/bash -x
-			exec timeout --foreground --signal=TERM --kill-after=5s $TIMEOUT \
-				${BOOT_PROG:+"$topdir/testing/$BOOT_PROG"} \
-				"$top_workdir/qemu.sh"
-			EOF
-
-			rc=0
-			script "$top_logdir/boot.log" -c "$top_workdir/run.sh" ||
-				rc=$?
-
-			if [ "$rc" != 0 ]; then
-				podman rm -i -f sshd
-				fatal "boot failed 1"
-			fi
-
-			valid_log 'boot check' "$top_logdir/boot.log" ||
-				rc=$?
-
-			if [ "$rc" != 0 ]; then
-				run cat "$top_logdir/sshd.log"
-				podman rm -i -f sshd
-				fatal "boot failed 2"
-			fi
-
+			qemu_setup_cpu
+			qemu_exec
 			gh_group_end
-
-			podman rm -i -f sshd
-		;;
+			;;
 		*)
 			fatal "unknown step: $step"
 			;;

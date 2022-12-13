@@ -9,38 +9,13 @@ readonly VENDOR=fedora
 readonly ARCH=x86_64
 readonly IMAGE=fedora:latest
 readonly KERNEL_FLAVOR=
-readonly TIMEOUT=${TIMEOUT:-5m}
 
-MAKE_INITRD_PACKAGES="make findutils udev elfutils-libelf.$ARCH kmod-libs zlib bzip2-libs libzstd xz-libs libxcrypt-compat"
-
-MAKE_INITRD_PACKAGES_DEVEL="$MAKE_INITRD_PACKAGES"
-MAKE_INITRD_PACKAGES_DEVEL+=" gcc make automake autoconf"
-MAKE_INITRD_PACKAGES_DEVEL+=" kmod-devel zlib-devel bzip2-devel xz-devel libxcrypt-devel"
-MAKE_INITRD_PACKAGES_DEVEL+=" libzstd-devel elfutils-libelf-devel.$ARCH libtirpc-devel"
-
-KERNEL_PACKAGES="kernel$KERNEL_FLAVOR"
-
-SYSIMAGE_PACKAGES="$MAKE_INITRD_PACKAGES $KERNEL_PACKAGES"
-SYSIMAGE_PACKAGES+=" systemd grub2-pc mdadm lvm2 cryptsetup"
-SYSIMAGE_PACKAGES+=" btrfs-progs e2fsprogs xfsprogs dosfstools pwgen"
-
-KICKSTART_PACKAGES="$MAKE_INITRD_PACKAGES $KERNEL_PACKAGES"
-KICKSTART_PACKAGES+=" e2fsprogs btrfs-progs xfsprogs dosfstools cryptsetup lvm2"
-KICKSTART_PACKAGES+=" mdadm util-linux rsync wget unzip tar cpio pwgen zstd lz4"
-KICKSTART_PACKAGES+=" unzip"
+. "$topdir/testing/packages-$VENDOR"
 
 TESTNAME="$1"; shift
 
-case "$TESTNAME" in
-	'test-root-raid1+raid5')
-		# the testcase too slow for github
-		exit 0
-		;;
-esac
-
 KICKSTART_DISKS=0
 BOOT_DISKS=0
-BOOT_PROG=
 BOOT_CMDLINE=""
 
 eval $(sed -n -e 's/^# param //p' "$topdir/testing/$TESTNAME.cfg")
@@ -49,14 +24,12 @@ readonly builddir=/srv
 
 readonly workdir="testing/cache/$VENDOR/$TESTNAME"
 readonly logdir="testing/logs/$VENDOR/$TESTNAME"
+readonly statusdir="$topdir/testing/status"
 
 readonly top_workdir="$topdir/$workdir"
 readonly top_logdir="$topdir/$logdir"
 
 prepare_testsuite
-
-[ "$#" -gt 0 ] ||
-	set -- build-git build-sysimage build-kickstart run-kickstart run-boot
 
 for step in "$@"; do
 	case "$step" in
@@ -83,6 +56,9 @@ for step in "$@"; do
 			gh_group_end
 			;;
 		build-sysimage)
+			[ -n "${SYSIMAGE_PACKAGES-}" ] ||
+				continue
+
 			if [ -z "$(podman images -an --format='1' -f reference=localhost/mi-$VENDOR:sysimage)" ]; then
 				gh_group_start "creating sysimage"
 
@@ -92,7 +68,7 @@ for step in "$@"; do
 					-f - <<-EOF
 				FROM $IMAGE
 				RUN \
-				 dnf -y install $SYSIMAGE_PACKAGES
+				 dnf -y install $SYSIMAGE_PACKAGES $KERNEL_PACKAGES
 				RUN \
 				 kver="\$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' -quit)"; \
 				 for i in vmlinuz System.map config; do \
@@ -100,36 +76,52 @@ for step in "$@"; do
 				 done
 				RUN \
 				 find /lib/modules \( \
-				  -path '*/kernel/sound/*' -o \
-				  -path '*/kernel/drivers/media-core/*' -o \
-				  -path '*/kernel/drivers/power/*' -o \
-				  -path '*/kernel/drivers/video/*' -o \
-				  -path '*/kernel/drivers/leds/*' -o \
-				  -path '*/kernel/drivers/gpio/*' -o \
 				  -path '*/kernel/drivers/bluetooth/*' -o \
-				  -path '*/kernel/drivers/watchdog/*' -o \
-				  -path '*/kernel/drivers/nfc/*' -o \
+				  -path '*/kernel/drivers/gpio/*' -o \
+				  -path '*/kernel/drivers/gpu/*' -o \
 				  -path '*/kernel/drivers/hwmon/*' -o \
 				  -path '*/kernel/drivers/i2c/*' -o \
 				  -path '*/kernel/drivers/iio/*' -o \
-				  -path '*/kernel/drivers/isdn/*' -o \
-				  -path '*/kernel/drivers/usb/*' -o \
-				  -path '*/kernel/drivers/net/wireless/*' -o \
-				  -path '*/kernel/drivers/net/usb/*' -o \
-				  -path '*/kernel/drivers/input/touchscreen/*' -o \
+				  -path '*/kernel/drivers/infiniband/*' -o \
 				  -path '*/kernel/drivers/input/joystick/*' -o \
-				  -path '*/kernel/drivers/input/misc/*' \
+				  -path '*/kernel/drivers/input/misc/*' -o \
+				  -path '*/kernel/drivers/input/touchscreen/*' -o \
+				  -path '*/kernel/drivers/isdn/*' -o \
+				  -path '*/kernel/drivers/leds/*' -o \
+				  -path '*/kernel/drivers/media-core/*' -o \
+				  -path '*/kernel/drivers/net/*' -o \
+				  -path '*/kernel/drivers/net/usb/*' -o \
+				  -path '*/kernel/drivers/nfc/*' -o \
+				  -path '*/kernel/drivers/power/*' -o \
+				  -path '*/kernel/drivers/usb/*' -o \
+				  -path '*/kernel/drivers/video/*' -o \
+				  -path '*/kernel/drivers/watchdog/*' -o \
+				  -path '*/kernel/sound/*' \
 				  \) -delete; \
 				 find /usr/share/locale/ -mindepth 3 -maxdepth 3 -type f -name '*.mo' -delete; \
-				 find /usr/share/doc/ /usr/share/man/ /usr/share/info/ -mindepth 1 -delete;
+				 for d in \
+				  /usr/share/doc/ \
+				  /usr/share/groff/ \
+				  /usr/share/info/ \
+				  /usr/share/licenses/ \
+				  /usr/share/man/ \
+				  /var/cache/dnf/ \
+				  /var/lib/dnf/ \
+				  /var/log/anaconda/ \
+				; do [ ! -d "\$d" ] || find "\$d" -mindepth 1 -delete ||:; done
 				EOF
 
 				gh_group_end
 			fi
 
-			. "$topdir/testing/sh-pack-sysimage.sh"
+			gh_group_start "packing sysimage"
+			pack_sysimage
+			gh_group_end
 			;;
 		build-kickstart)
+			[ -n "${KICKSTART_PACKAGES-}" ] ||
+				continue
+
 			gh_group_start "creating kickstart image"
 
 			cat_exec "$top_workdir/run.sh" <<-EOF
@@ -147,6 +139,7 @@ for step in "$@"; do
 			EOF1
 
 			dnf -y install $KICKSTART_PACKAGES
+			dnf -y install $KERNEL_PACKAGES
 
 			kver="\$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' -quit)"
 
@@ -168,11 +161,35 @@ for step in "$@"; do
 
 			gh_group_end
 			;;
+		build-tools)
+			;;
 		run-kickstart)
-			. "$topdir/testing/sh-run-kickstart.sh"
+			[ -f "$top_workdir/boot-ks-initrd.img" ] ||
+				continue
+
+			gh_group_start "creating qemu kickstart disks"
+
+			BOOT_PROG=
+			BOOT_KERNEL="$top_workdir/boot-ks-vmlinuz"
+			BOOT_INITRD="$top_workdir/boot-ks-initrd.img"
+			BOOT_APPEND='console=ttyS0,115200n8 quiet rdlog=console ksfile=ks.cfg'
+
+			qemu_setup_cpu
+			qemu_setup_kickstart_disks
+			qemu_exec
+
+			gh_group_end
+			;;
+		run-services)
 			;;
 		run-boot)
-			. "$topdir/testing/sh-run-boot.sh"
+			gh_group_start "checking the ability to boot"
+
+			qemu_setup_cpu
+			qemu_setup_boot_disks
+			qemu_exec
+
+			gh_group_end
 			;;
 		*)
 			fatal "unknown step: $step"

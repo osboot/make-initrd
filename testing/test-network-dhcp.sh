@@ -1,1 +1,0 @@
-BOOT_CMDLINE_NETWORK="ip=dhcp"

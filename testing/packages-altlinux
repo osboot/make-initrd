@@ -1,0 +1,25 @@
+#!/bin/bash
+
+MAKE_INITRD_PACKAGES="make udev libelf libkmod zlib bzlib libzstd liblzma"
+
+MAKE_INITRD_PACKAGES_DEVEL="$MAKE_INITRD_PACKAGES"
+MAKE_INITRD_PACKAGES_DEVEL+=" gcc make automake autoconf"
+MAKE_INITRD_PACKAGES_DEVEL+=" libkmod-devel zlib-devel bzlib-devel liblzma-devel"
+MAKE_INITRD_PACKAGES_DEVEL+=" libzstd-devel libelf-devel libtirpc-devel libcrypt-devel"
+
+KERNEL_PACKAGES="kernel-image$KERNEL_FLAVOR"
+
+BOOTLOADER_EFI_PACKAGES="grub-common grub-efi"
+BOOTLOADER_PC_PACKAGES="grub-common grub-pc"
+
+SYSIMAGE_BASE_PACKAGES="$MAKE_INITRD_PACKAGES sysvinit startup mingetty"
+SYSIMAGE_EXTRA_PACKAGES="pwgen mdadm lvm2 cryptsetup btrfs-progs e2fsprogs xfsprogs dosfstools reiserfsprogs"
+
+KICKSTART_PACKAGES="$MAKE_INITRD_PACKAGES"
+KICKSTART_PACKAGES+=" sysvinit util-linux rsync wget cryptsetup lvm2 mdadm pwgen"
+KICKSTART_PACKAGES+=" e2fsprogs btrfs-progs xfsprogs dosfstools reiserfsprogs"
+KICKSTART_PACKAGES+=" sfdisk unzip tar cpio eject lz4"
+
+SSH_SERVER_PACKAGES="openssh-server syslogd"
+
+ZFS_PACKAGES="unknown-package-for-altlinux"

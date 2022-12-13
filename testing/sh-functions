@@ -1,9 +1,5 @@
 #!/bin/bash
 
-workdir="$topdir/testing/cache"
-logdir="$topdir/testing/logs"
-statusdir="$topdir/testing/status"
-
 PROG="${0##*/}"
 TEST=
 message()
@@ -50,38 +46,35 @@ valid_log()
 	fi
 }
 
-test_failed()
-{
-	[ ! -d "$statusdir" ] ||
-		echo FAIL > "$statusdir/$VENDOR-$TESTNAME"
-	printf '\n\n'
-	printf 'FAIL %s\n' "$VENDOR-$TESTNAME"
-	printf '\n\n'
-}
-
-test_passed()
-{
-	[ ! -d "$statusdir" ] ||
-		echo PASS > "$statusdir/$VENDOR-$TESTNAME"
-	printf '\n\n'
-	printf 'PASS %s\n' "$VENDOR-$TESTNAME"
-	printf '\n\n'
-}
-
-exit_handler()
-{
-	trap - EXIT
-	if [ "$1" = 0 ]; then
-		test_passed
-	else
-		test_failed
-	fi
-	exit $1
-}
 
 qemu_args()
 {
 	printf -- 'qemu_args+=("%s")\n' "$@"
+}
+
+
+pack_sysimage()
+{
+	cat_exec "$top_workdir/run.sh" <<-EOF
+	#!/bin/bash -efux
+
+	bytes=\$(du -sb /image |cut -f1)
+	bytes=\$(( \$bytes + ( ( \$bytes * 30 ) / 100 ) ))
+
+	dd count=1 bs=\$bytes if=/dev/zero of=/host/$workdir/sysimage.img
+	/sbin/mke2fs -t ext3 -L SYSIMAGE -d /image /host/$workdir/sysimage.img
+	EOF
+
+	run podman run --rm -ti \
+		--mount="type=image,src=localhost/mi-$VENDOR:sysimage,dst=/image" \
+		--mount="type=tmpfs,destination=/image$builddir" \
+		--mount="type=bind,src=$topdir/.build/dest,dst=/image$builddir/.build/dest" \
+		--mount="type=bind,src=$topdir/data,dst=/image$builddir/data" \
+		--mount="type=bind,src=$topdir/features,dst=/image$builddir/features" \
+		--mount="type=bind,src=$topdir/guess,dst=/image$builddir/guess" \
+		--mount="type=bind,src=$topdir/tools,dst=/image$builddir/tools" \
+		--volume="$topdir:/host" \
+		"localhost/mi-$VENDOR:sysimage" "/host/$workdir/run.sh"
 }
 
 prepare_testsuite()
@@ -104,16 +97,259 @@ prepare_testsuite()
 			> "$workdir/ks.cfg"
 	fi
 
-	if [ -c /dev/kvm ]; then
-		qemu_args -enable-kvm -cpu host
-	fi > "$workdir/qemu-cpu"
+	case "${SYSIMAGE_SIZE:-full}" in
+		mini) SYSIMAGE_PACKAGES="$SYSIMAGE_BASE_PACKAGES" ;;
+		full) SYSIMAGE_PACKAGES="$SYSIMAGE_BASE_PACKAGES $SYSIMAGE_EXTRA_PACKAGES" ;;
+	esac
 
-	qemu_args \
-			-nographic \
-			-serial chardev:stdio \
-			-chardev stdio,mux=on,id=stdio,signal=off \
-			-mon chardev=stdio,mode=readline \
-		> "$workdir/qemu-stdout"
+	if [ "${BOOTLOADER_TYPE-}" = "none" ]; then
+		BOOTLOADER_EFI_PACKAGES=""
+		BOOTLOADER_PC_PACKAGES=""
+	fi
+
+	case "${BOOT_BIOS:-pc}" in
+		efi) SYSIMAGE_PACKAGES+=" $BOOTLOADER_EFI_PACKAGES" ;;
+		pc)  SYSIMAGE_PACKAGES+=" $BOOTLOADER_PC_PACKAGES" ;;
+	esac
 }
 
-trap 'exit_handler $?' EXIT HUP INT QUIT TERM
+qemu_setup_cpu()
+{
+	:> "$workdir/qemu-cpu"
+
+	if [ ! -c /dev/kvm ]; then
+		local ncpu
+
+		ncpu=$(grep -c ^processor /proc/cpuinfo) ||
+				ncpu=1
+
+		qemu_args -smp $(( $ncpu * 2 )) -accel tcg,thread=multi,tb-size=1024 \
+		 >> "$workdir/qemu-cpu"
+	else
+		qemu_args -enable-kvm -cpu host \
+		 >> "$workdir/qemu-cpu"
+	fi
+
+	case "${BOOT_BIOS:-pc}" in
+		efi)
+			[ -f "$top_workdir"/efivars.bin ] ||
+				cp -vTLf /usr/share/OVMF/OVMF_VARS.fd "$top_workdir"/efivars.bin
+
+			qemu_args \
+			 -machine q35 \
+			 -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE.fd \
+			 -drive if=pflash,format=raw,file="$top_workdir/efivars.bin" \
+			 >> "$workdir/qemu-cpu"
+			;;
+		pc)
+			qemu_args \
+			 -machine pc \
+			 >> "$workdir/qemu-cpu"
+			;;
+	esac
+}
+
+create_qemu_wrapper()
+{
+	local fn
+
+	fn="$1"
+
+	cat_exec "$fn-wrapper" <<-EOF
+	#!/bin/bash
+	qemu_args=()
+	qemu_args+=( -m ${QEMU_MEMORY:-1G} -no-reboot )
+	qemu_args+=( ${BOOT_KERNEL:+-kernel \"$BOOT_KERNEL\"} )
+	qemu_args+=( ${BOOT_INITRD:+-initrd \"$BOOT_INITRD\"} )
+	qemu_args+=( ${BOOT_APPEND:+-append \"$BOOT_APPEND\"} )
+	qemu_args+=( -nic user,model=e1000 )
+	qemu_args+=( -nographic -serial chardev:stdio -chardev stdio,mux=on,id=stdio,signal=off )
+	qemu_args+=( -mon chardev=stdio,mode=readline )
+	qemu_args+=( -pidfile "$top_workdir/qemu.pid" )
+	. "$top_workdir/qemu-cpu"
+	. "$top_workdir/qemu-disks"
+	set -x
+	exec qemu-system-$ARCH "\${qemu_args[@]}"
+	EOF
+
+	cat_exec "$fn-runner" <<-EOF
+	#!/bin/bash -x
+	exec timeout --foreground --signal=TERM --kill-after=5s ${QEMU_TIMEOUT:-5m} \
+	 ${BOOT_PROG:+"$topdir/testing/$BOOT_PROG"} "$fn-wrapper"
+	EOF
+}
+
+qemu_create_disk()
+{
+	local i fn fmt size
+
+	i="$1"; shift
+	fn="$1"; shift
+	fmt="${QEMU_DISK_FORMAT:-qcow2}"
+	size="3G"
+
+	[ ! -f "$fn" ] ||
+		return 0
+
+	case "$fmt" in
+		qcow2)
+			qemu-img create -q -f "$fmt" -o preallocation=falloc,lazy_refcounts=on,cluster_size=2M "$fn" "$size"
+			;;
+		raw)
+			qemu-img create -q -f "$fmt" -o preallocation=falloc "$fn" "$size"
+			;;
+	esac
+}
+
+qemu_activate_disks()
+{
+	local i fn fmt
+
+	while read -r i fmt fn; do
+		[ ! -f "$top_workdir/nbd-$i.pid" ] ||
+			continue
+		message "Start NBD Server for \`$fn' ..."
+		qemu-nbd --fork --persistent \
+			--pid-file="$top_workdir/nbd-$i.pid" \
+			--socket="$top_workdir/nbd-$i.sock" \
+			--discard=unmap \
+			--detect-zeroes=unmap \
+			--cache=unsafe \
+			--format="$fmt" "$fn"
+	done < "$workdir/disks.map"
+}
+
+qemu_init_blockdev()
+{
+	:> "$top_workdir/disks.map"
+	:> "$top_workdir/qemu-disks"
+
+	qemu_args \
+	 -device "virtio-scsi-pci,id=scsi" \
+	 >"$workdir/qemu-disks"
+}
+
+qemu_add_disk()
+{
+	local fn fmt i
+
+	i="$1"; shift
+	fn="$1"; shift
+
+	[ "$#" -eq 0 ] &&
+		fmt="${QEMU_DISK_FORMAT:-qcow2}" ||
+		fmt="$1"
+
+	qemu_args \
+	 -object "iothread,id=iothread$i" \
+	 -blockdev "node-name=file$i,driver=file,filename=$fn,aio=native,auto-read-only=on,discard=unmap,cache.direct=on,cache.no-flush=off" \
+	 -blockdev "node-name=drive$i,driver=$fmt,file=file$i" \
+	 -device "virtio-blk-pci,drive=drive$i,iothread=iothread$i,num-queues=1" \
+	 >>"$workdir/qemu-disks"
+}
+
+qemu_setup_boot_disks()
+{
+	qemu_init_blockdev
+
+	for (( i=1; i <= BOOT_DISKS; i++ )); do
+		qemu_add_disk "$i" "$top_workdir/disk-$i.img"
+	done
+
+	qemu_activate_disks
+}
+
+qemu_setup_kickstart_disks()
+{
+	local i fn
+
+	qemu_init_blockdev
+
+	qemu_add_disk "0" "$top_workdir/sysimage.img" "raw"
+
+	for (( i=1; i <= KICKSTART_DISKS; i++ )); do
+		message "creating QEMU disk $i ..."
+
+		fn="$top_workdir/disk-$i.img"
+
+		qemu_create_disk "$i" "$fn"
+		qemu_add_disk "$i" "$fn"
+	done
+
+	qemu_activate_disks
+}
+
+qemu_exec()
+{
+	create_qemu_wrapper "$top_workdir/qemu-bin"
+
+	qemu_watchdog "$top_logdir/qemu.log" &
+
+	local rc=0
+	script -f "$top_logdir/qemu.log" -c "$top_workdir/qemu-bin-runner" ||
+		rc=$?
+
+	valid_log 'check' "$top_logdir/qemu.log" ||
+		rc=$?
+
+	set -- ${BOOT_LOGS-}
+
+	while [ "$#" -gt 0 ]; do
+		[ -f "$1" ] || continue
+		echo "<<<<<< $1 <<<<<<"
+		cat "$1"
+		echo ">>>>>>"
+		shift
+	done
+
+	[ $rc -eq 0 ]
+}
+
+qemu_watchdog()
+{
+	local i pid logfile failure
+
+	logfile="$1"; shift
+	touch "$logfile"
+
+	i=0
+	while [ "$i" -lt 20 ] && [ ! -e "$top_workdir/qemu.pid" ]; do
+		sleep 1
+		i=$(( $i + 1 ))
+	done
+
+	[ "$i" -lt 20 ] ||
+		return 0
+
+	failure=''
+	while [ -e "$top_workdir/qemu.pid" ]; do
+		for err in \
+			"(or press Control-D to continue):" \
+			"/.initrd/uevent/queues/udev.startup: No such file or directory" \
+			"rdshell-locked: The waiting time expired!" \
+			"rdshell-locked: The init program \`/sbin/init' not found in the root directory." \
+		;
+		do
+			if grep -qsF -e "$err" "$logfile"; then
+				failure=1
+				break
+			fi
+		done
+
+		if [ -n "$failure" ]; then
+			pid="$(cat "$top_workdir/qemu.pid")"
+			[ -z "$pid" ] ||
+				kill -9 "$pid" ||:
+			{
+				printf '\n\n'
+				printf '%s\n' \
+					"ERROR!!!" \
+					"The sign of a fatal error was found in the log." \
+					"There is no reason to wait for a timeout."
+				printf '\n\n'
+			} >>"$logfile"
+			break
+		fi
+	done
+}
+
