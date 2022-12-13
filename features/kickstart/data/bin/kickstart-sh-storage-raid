@@ -142,7 +142,9 @@ raid()
 
 		verbose "creating raid$level array '$device': $*"
 
-		mdadm --create --quiet \
+		MDADM_NO_SYSTEMCTL=1 \
+		MDADM_NO_UDEV=1 \
+		mdadm --create --quiet --run \
 			--metadata=default \
 			--level="$level" \
 			--raid-devices="$#" \
