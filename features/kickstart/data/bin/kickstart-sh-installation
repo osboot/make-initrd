@@ -3,7 +3,7 @@
 ks_requires_liveimg=("wget" "rsync" "cpio" "tar" "zstd" "lz4" "unzip" "sha256sum")
 liveimg()
 {
-	local PROG TEMP ret=0 archive='' isdir=''
+	local PROG TEMP ret=0 archive='' isdir='' dev=''
 	local url='' proxy='' noverifyssl='' checksum=''
 
 	PROG="kickstart"
@@ -102,7 +102,13 @@ liveimg()
 			;;
 		dir://*)
 			verbose "syncing ${archive#dir://} directory"
-			rsync -abX ${verbose:+--info=progress2 --no-i-r} "${archive#dir://}/" "$ks_rootdir/" ||
+			set -- -abX
+			if dev="$(cttyhack)" && [ -n "$dev" ] && [ -z "${dev##/dev/ttyS*}" ]; then
+				set -- "$@" --info=stats2 --no-i-r
+			else
+				set -- "$@" ${verbose:+--info=progress2 --no-i-r}
+			fi
+			rsync "$@" "${archive#dir://}/" "$ks_rootdir/" ||
 				ret=1
 			;;
 		*)
