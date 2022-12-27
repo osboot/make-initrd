@@ -4,7 +4,10 @@ $(call feature-disables,plymouth ucode)
 GUESTFS_DATADIR = \
 	$(FEATURESDIR)/guestfs/data
 
-GUESTFS_UDEV_RULES := $(wildcard $(FEATURESDIR)/guestfs/rules.d/*.rules)
+GUESTFS_UDEV_RULES := \
+	$(wildcard $(FEATURESDIR)/guestfs/rules.d/*.rules) \
+	*-md-raid-arrays.rules \
+	*-md-raid-assembly.rules
 
 GUESTFS_FILE_DATABASE = \
 	$(wildcard /usr/share/file/*) \
