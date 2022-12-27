@@ -11,6 +11,11 @@ GUESTFS_FILE_DATABASE = \
 	$(wildcard /usr/share/magic/*) \
 	$(wildcard /etc/magic)
 
+GUESTFS_PROGS = cpio blockdev btrfs-image btrfsck btrfstune \
+	mklost+found mkswap tune2fs base64 chattr cksum lsattr \
+	md5sum sha1sum sha224sum sha256sum sha384sum sha512sum \
+	strings uuidgen zcat zgrep
+
 GUESTFS_PROGS_PATTERNS = \
 	*/guestfsd \
 	*/parted \
