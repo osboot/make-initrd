@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([make-initrd],[2.33.0],[gladkov.alexey@gmail.com])
+AC_INIT([make-initrd],[2.34.0],[gladkov.alexey@gmail.com])
 AC_CONFIG_SRCDIR([datasrc/getarg.c])
 AC_CONFIG_HEADERS([config.h])
 

@@ -1,3 +1,15 @@
+Version 2.34.0
+
+- Feature guestfs:
+  + Add programs used by libguestfs.
+  + Add raid modules and udev rules.
+  + Config guestfs.mk.example: remove features already required by guestfs.
+- Feature kickstart:
+  + Do not show rsync progress on serial console.
+  + Ask mdadm to create device nodes in /dev.
+- Misc:
+  + Update busybox 1.35.0.
+
 Version 2.33.0
 
 - Runtime:
