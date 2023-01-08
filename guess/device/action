@@ -36,10 +36,10 @@ process_devices() {
 	return $rc
 }
 
-pass=' '
+pass=()
 for d in ${DEVICES-}; do
-	[ -n "${pass##* $d *}" ] ||
+	! in_list "$d" "${pass[@]}" ||
 		continue
 	process_devices "$d"
-	pass="$pass$d "
+	pass+=("$d")
 done

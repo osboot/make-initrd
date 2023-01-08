@@ -192,9 +192,9 @@ fi
 #
 MORE_MOUNTPOINTS+=" $(findmnt -s -O x-initrd-mount -no TARGET 2>/dev/null ||:)"
 
-pass=' '
+pass=()
 for dir in ${MOUNTPOINTS-} ${GUESS_MOUNTPOINTS-} $MORE_MOUNTPOINTS; do
-	[ -n "${pass##* $dir *}" ] ||
+	! in_list "$dir" "${pass[@]}" ||
 		continue
 
 	[ -z "${MAKE_INITRD_BUG_REPORT-}" ] &&
@@ -215,7 +215,7 @@ for dir in ${MOUNTPOINTS-} ${GUESS_MOUNTPOINTS-} $MORE_MOUNTPOINTS; do
 	guess_feature rootfs
 	guess_feature add-udev-rules
 
-	pass="$pass$dir "
+	pass+=("$dir")
 done
 
-guess_variable MOUNTPOINTS "${pass}"
+guess_variable MOUNTPOINTS "${pass[*]}"

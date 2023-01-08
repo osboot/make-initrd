@@ -62,4 +62,16 @@ list_libs() {
 	$ldconfig -p | sed -n -e 's,.* => ,,p'
 }
 
+in_list() {
+	local value elememt
+
+	value="$1"
+	shift
+
+	for element in "$@"; do
+		[ "$element" != "$value" ] || return 0
+	done
+	return 1
+}
+
 fi #__included_make_initrd_sh_functions
