@@ -8,7 +8,14 @@ process_fstype() {
 
 	fstype="$(blkid -o value -s TYPE -c /dev/null "$device")" ||
 		return 0
-	guess_fstype "$device" "$fstype"
+
+	case "$fstype" in
+		swap|swsuspend)
+			;;
+		*)
+			guess_fstype "$device" "$fstype"
+			;;
+	esac
 }
 
 process_devices() {
