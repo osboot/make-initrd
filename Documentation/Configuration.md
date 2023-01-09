@@ -10,21 +10,35 @@ a configuration file.
 
 ## Variables
 
+There are few types of settings:
+
+- Settings related to detection of system configuration and required features.
+- Settings related to image generation.
+- Settings related to the behavior of individual features.
+
+### System Detection Settings
+
 - **AUTODETECT** - This variable contains the list of subsystems which add
   appropriate kernel modules and features automatically.
+- **KERNEL** - The variable specifies kernel version for corresponding modules
+  in the image. Default: `$(uname -r)`
+- **DISABLE_GUESS** - The variable lists guess modules that should NOT run.
+- **DEVICES** - The variable lists device files (for example `/dev/sda1`) for
+  which you want to add modules.
+
+More details on how the guessing mechanism works can be found
+[here](GuessConfiguration.md).
+
+### Image Generation Settings
+
 - **FEATURES** - The variable lists the features of the image. This list can be
   specified in any order.
 - **DISABLE_FEATURES** - The variable lists the features that should NOT present
   in the image.
-- **DISABLE_GUESS** - The variable lists guess modules that should NOT run.
-- **KERNEL** - The variable specifies kernel version for corresponding modules
-  in the image. Default: `$(uname -r)`
 - **IMAGE_SUFFIX** - The variable specifies suffix for the image. This parameter
   is useful if multiple initrd images are generated for one kernel version.
 - **IMAGEFILE** - The variable specifies output filename for the image.
   Default: `$(BOOTDIR)/initrd-$(KERNEL)$(IMAGE_SUFFIX).img`
-- **DEVICES** - The variable lists device files (for example `/dev/sda1`) for
-  which you want to add modules.
 - **VERBOSE** - Print a message for each action.
 - **FIRMWARE_DIRS** - The variable defines the list of directories with firmware
   and microcode.
@@ -37,7 +51,9 @@ a configuration file.
   The reason for this is that such a path is used in the initrd image.
 - **PUT_DIRS** - The variable lists directories to be copied into the image.
 
-Additionally, some features also have their own configuration settings.
+### Features Settings
+
+[Read here](Features.md) about the parameters of individual features.
 
 ### Example
 
@@ -46,8 +62,3 @@ The simplest configuration file looks like this:
 ```
 AUTODETECT = all
 ```
-
-## See also
-
-- The list of [features](Features.md).
-- [Guessing the configuration](GuessConfiguration.md).
