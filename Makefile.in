@@ -37,6 +37,7 @@ endif
 
 FEATURESDIR = features
 OBJDIR = $(build_prefix)/obj
+GENDIR = $(build_prefix)/gen
 
 dest_projectdir   := $(build_prefix)/dest$(projectdir)
 dest_sysconfdir   := $(build_prefix)/dest$(sysconfdir)
@@ -88,6 +89,9 @@ HAVE_LIBINIPARSER_CFLAGS := @HAVE_LIBINIPARSER_CFLAGS@
 
 USE_FEATURE_BOOTLOADER = @USE_FEATURE_BOOTLOADER@
 
+YACC := @YACC@
+LEX  := @LEX@
+
 VERBOSE ?= $(V)
 Q = $(if $(VERBOSE),,@)
 NULL :=
@@ -100,6 +104,10 @@ SKIP_FEATURES =
 ifeq ($(USE_FEATURE_BOOTLOADER),no)
 SKIP_FEATURES += bootloader
 endif
+
+all: build
+
+.SUFFIXES:
 
 -include \
 	$(filter-out \
@@ -157,8 +165,6 @@ SED = @SED@ \
 	-e 's|@imagename[@]|$(imagename)|g'
 
 .PHONY: $(PROGS) $(SCRIPTS)
-
-all: build
 
 build-progs: $(PROGS) $(SCRIPTS)
 
