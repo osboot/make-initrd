@@ -3,7 +3,7 @@
 MAKE_INITRD_PACKAGES="make findutils udev elfutils-libelf.$ARCH kmod-libs zlib bzip2-libs libzstd xz-libs libxcrypt-compat"
 
 MAKE_INITRD_PACKAGES_DEVEL="$MAKE_INITRD_PACKAGES"
-MAKE_INITRD_PACKAGES_DEVEL+=" gcc make automake autoconf"
+MAKE_INITRD_PACKAGES_DEVEL+=" gcc make automake autoconf bison flex"
 MAKE_INITRD_PACKAGES_DEVEL+=" kmod-devel zlib-devel bzip2-devel xz-devel libxcrypt-devel"
 MAKE_INITRD_PACKAGES_DEVEL+=" libzstd-devel elfutils-libelf-devel.$ARCH libtirpc-devel"
 

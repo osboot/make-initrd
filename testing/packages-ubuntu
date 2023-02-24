@@ -2,7 +2,7 @@
 
 MAKE_INITRD_PACKAGES="make udev libelf1 libkmod2 zlib1g libbz2-1.0 libzstd1 liblzma5"
 
-MAKE_INITRD_PACKAGES_DEVEL="$MAKE_INITRD_PACKAGES"
+MAKE_INITRD_PACKAGES_DEVEL="$MAKE_INITRD_PACKAGES bison flex"
 MAKE_INITRD_PACKAGES_DEVEL+=" gcc make automake autoconf pkg-config udev help2man"
 MAKE_INITRD_PACKAGES_DEVEL+=" libkmod-dev libz-dev libbz2-dev liblzma-dev"
 MAKE_INITRD_PACKAGES_DEVEL+=" libzstd-dev libelf-dev libtirpc-dev libcrypt-dev"
