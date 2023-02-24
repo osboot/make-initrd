@@ -6,3 +6,4 @@ SUBSYSTEM=="tifm", ENV{TIFM_CARD_TYPE}=="SD", PROGRAM+="kmod load tifm_sd"
 
 # media eject button pressed
 ENV{DISK_EJECT_REQUEST}=="?*", PROGRAM+="xcdrom_id --eject-media $devnode", GOTO="cdrom_end"
+LABEL="cdrom_end"
