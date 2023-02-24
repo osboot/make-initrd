@@ -22,6 +22,9 @@ copy_rule()
 		return
 	fi
 
+	udev-rules -Wall -Werror "$rule" ||
+		return 1
+
 	cp $verbose -aL -- "$rule" "$tempdir/etc/udev/rules.d/$name"
 }
 
@@ -46,10 +49,9 @@ for n in ${PUT_UDEV_RULES-}; do
 		continue
 	fi
 
-	find "${rules_dirs[@]}" \( -name '*.rules' -a -name "$n" \) |
 	while read -r rule; do
 		copy_rule "$rule"
-	done
+	done < <(find "${rules_dirs[@]}" \( -name '*.rules' -a -name "$n" \))
 done
 
 find "$tempdir/etc/udev/rules.d" -name '*.rules' |
