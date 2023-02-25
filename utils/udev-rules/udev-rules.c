@@ -26,6 +26,9 @@ print_help(const char *progname, int rc)
 	       "  -Werror                 Treat all warnings as errors;\n"
 	       "  -Wmissing-label         Warn about GOTO without corresponding LABEL;"
 	       "  -Wunsed-labels          Warn about unused labels;\n"
+	       "  -Wdup-match             Warn about duplicate matches in a rule;"
+	       "  -Wconflict-match        Warn about conflicting matches in a rule\n"
+	       "                          (entry is checked for == and != at the same time);"
 	       "  -x                      Show external file and commands that are used in the rules;\n"
 	       "  -h                      Show this text and exit.\n"
 	       "\n",
@@ -37,6 +40,8 @@ const char *warning_str[_W_TYPE_MAX] = {
 	[W_ERROR]             = "error",
 	[W_MISSING_LABEL]     = "missing-label",
 	[W_UNUSED_LABELS]     = "unsed-labels",
+	[W_DUP_MATCH]         = "dup-match",
+	[W_CONFLICT_MATCH]    = "conflict-match",
 };
 
 int main(int argc, char **argv)

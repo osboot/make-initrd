@@ -22,7 +22,7 @@ copy_rule()
 		return
 	fi
 
-	udev-rules -Wall -Werror "$rule" ||
+	udev-rules -Wall -Wno-dup-match -Werror "$rule" ||
 		return 1
 
 	cp $verbose -aL -- "$rule" "$tempdir/etc/udev/rules.d/$name"

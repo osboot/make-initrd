@@ -121,6 +121,31 @@ static bool in_list(const char *k, ...)
 	return (s != NULL);
 }
 
+static void rule_log_dup_entry(yyscan_t scanner, struct rules_state *state, struct rule_pair *pair, int dups)
+{
+	warnx("%s:%d: %s%s%s%s%s\"%s\" is duplicated %d times in the same match block [-W%s]",
+		state->cur_file->name,
+		yyget_lineno(scanner),
+		key2str(pair->key),
+		( pair->attr ? "{" : "" ), ( pair->attr ? pair->attr->string : "" ), ( pair->attr ? "}" : "" ),
+		op2str(pair->op),
+		pair->value->string,
+		dups,
+		warning_str[W_DUP_MATCH]);
+	warning_update_retcode(state);
+}
+
+static void rule_log_conflict_match(yyscan_t scanner, struct rules_state *state, struct rule_pair *pair)
+{
+	warnx("%s:%d: %s%s%s%s is checked for == and != at the same time [-W%s]",
+		state->cur_file->name,
+		yyget_lineno(scanner),
+		key2str(pair->key),
+		( pair->attr ? "{" : "" ), ( pair->attr ? pair->attr->string : "" ), ( pair->attr ? "}" : "" ),
+		warning_str[W_CONFLICT_MATCH]);
+	warning_update_retcode(state);
+}
+
 static void rule_log_invalid_attr(yyscan_t scanner, struct rules_state *state, rule_key_t key)
 {
 	warnx("%s:%d: invalid attribute for %s.",
@@ -134,6 +159,59 @@ static void rule_log_invalid_op(yyscan_t scanner, struct rules_state *state, rul
 		state->cur_file->name, yyget_lineno(scanner), key2str(key), op2str(op));
 	state->retcode = 1;
 }
+
+static void check_match_conditions(yyscan_t scanner, struct rules_state *state, struct rule_pair *pair)
+{
+	struct rule_pair *p;
+	struct rule *rule = pair->rule;
+	bool is_match = (pair->op < _OP_TYPE_IS_MATCH);
+	int dups_nr = 0;
+	int conflict_nr = 0;
+
+	// For now, ignore changes to variables.
+	if (!is_match)
+		return;
+
+	list_for_each_entry(p, &rule->pairs, list) {
+		if (pair == p)
+			continue;
+
+		if (p->op > _OP_TYPE_IS_MATCH) {
+			if (dups_nr)
+				rule_log_dup_entry(scanner, state, pair, dups_nr + 1);
+			if (conflict_nr)
+				rule_log_conflict_match(scanner, state, pair);
+			dups_nr = 0;
+			conflict_nr = 0;
+		}
+
+		if (pair->key != p->key ||
+		    strcmp(pair->value->string, p->value->string))
+			continue;
+
+		if (pair->attr && p->attr) {
+			if (strcmp(pair->attr->string, p->attr->string))
+				continue;
+		} else if (pair->attr || p->attr) {
+			continue;
+		}
+
+		if (pair->op != p->op) {
+			if (state->warning[W_CONFLICT_MATCH])
+				conflict_nr++;
+		} else {
+			if (state->warning[W_DUP_MATCH])
+				dups_nr++;
+		}
+	}
+
+	if (dups_nr)
+		rule_log_dup_entry(scanner, state, pair, dups_nr + 1);
+
+	if (conflict_nr)
+		rule_log_conflict_match(scanner, state, pair);
+}
+
 
 static void process_token(yyscan_t scanner, struct rules_state *state, struct rule_pair *pair)
 {
@@ -416,8 +494,10 @@ static void process_token(yyscan_t scanner, struct rules_state *state, struct ru
 				yyget_lineno(scanner),
 				key2str(pair->key));
 			warning_update_retcode(state);
-			break;
+			return;
 	}
+
+	check_match_conditions(scanner, state, pair);
 
 	//if (pair->attr)
 	//	printf("(<%s> <%s> <%s> <%s>) ",
