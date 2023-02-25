@@ -56,10 +56,18 @@ struct rule_file {
 	int rules_nr;
 };
 
+struct pos {
+	int line;
+	int column;
+};
+
 struct rule;
 
 struct rule_pair {
 	struct list_head list;
+	struct pos pos_key;
+	struct pos pos_op;
+	struct pos pos_value;
 	rule_key_t key;
 	rule_op_t op;
 	struct string *attr;
@@ -73,13 +81,12 @@ struct rule {
 	int global_order;
 	int line_nr;
 	int has_goto;
-	const struct rule_file *file;
+	struct rule_file *file;
 };
 
 struct rule_goto_label {
 	struct list_head list;
-	const struct rule *rule;
-	const struct string *name;
+	struct rule_pair *pair;
 };
 
 enum {
@@ -109,6 +116,46 @@ struct rules_state {
 
 	int retcode;
 };
+
+static inline int key_column(struct rule_pair *pair)
+{
+	return pair->pos_key.column;
+}
+
+static inline int op_column(struct rule_pair *pair)
+{
+	return pair->pos_op.column;
+}
+
+static inline int value_column(struct rule_pair *pair)
+{
+	return pair->pos_value.column;
+}
+
+static inline int key_line(struct rule_pair *pair)
+{
+	return pair->pos_key.line;
+}
+
+static inline int op_line(struct rule_pair *pair)
+{
+	return pair->pos_op.line;
+}
+
+static inline int value_line(struct rule_pair *pair)
+{
+	return pair->pos_value.line;
+}
+
+static inline struct rule_file *pair_file(struct rule_pair *pair)
+{
+	return pair->rule->file;
+}
+
+static inline char *pair_fname(struct rule_pair *pair)
+{
+	return pair_file(pair)->name;
+}
 
 extern int rules_readfile(char *filename, struct rules_state *state);
 extern int rules_readdir(const char *dir, struct rules_state *state);

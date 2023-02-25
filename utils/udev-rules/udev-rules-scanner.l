@@ -7,20 +7,23 @@
 #define YY_NO_INPUT
 #include "udev-rules.h"
 #include "udev-rules-parser.h"
+
+static void update_loc(yyscan_t scanner, char *text);
+#define YY_USER_ACTION update_loc(yyscanner, yytext);
 %}
 
 %option reentrant noyywrap nounput
 %option bison-bridge
+%option bison-locations
 
 %x STRING
 
 %%
 
 <INITIAL>[ \t]+		{ /* No action and no return */ }
-<INITIAL>#.*\n		{ yyset_lineno(yyget_lineno(yyscanner) + 1, yyscanner); }
-<INITIAL>\\\n		{ yyset_lineno(yyget_lineno(yyscanner) + 1, yyscanner); }
+<INITIAL>#.*\n		{ /* No action and no return */ }
+<INITIAL>\\\n		{ /* No action and no return */ }
 <INITIAL>\n		{
-				yyset_lineno(yyget_lineno(yyscanner) + 1, yyscanner);
 				return EOL;
 			}
 <INITIAL>,+		{ return COMMA; }
@@ -94,3 +97,20 @@
 <INITIAL>.		{ return ERROR; }
 
 %%
+
+void update_loc(yyscan_t scanner, char *text)
+{
+	YYLTYPE *lloc = yyget_lloc(scanner);
+
+	lloc->first_line   = lloc->last_line;
+	lloc->first_column = lloc->last_column;
+
+	for (char *s = text; *s != '\0'; s++) {
+		if (*s == '\n') {
+			lloc->last_line++;
+			lloc->last_column = 1;
+		} else {
+			lloc->last_column++;
+		}
+	}
+}

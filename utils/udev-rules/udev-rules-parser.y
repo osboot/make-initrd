@@ -18,14 +18,15 @@
 #include "udev-rules-parser.h"
 #include "udev-rules-scanner.h"
 
-static int yyerror(yyscan_t scanner, struct rules_state *state, const char *s)
+static int yyerror(YYLTYPE *lloc, yyscan_t scanner __attribute__((unused)),
+                   struct rules_state *state, const char *s)
 {
-	warnx("%s:%d: %s", state->cur_file->name, yyget_lineno(scanner), s);
+	warnx("%s:%d:%d: %s", state->cur_file->name, lloc->first_line, lloc->first_column, s);
 	state->retcode = 1;
 	return 1;
 }
 
-static struct rule *get_rule(yyscan_t scanner, struct rules_state *state)
+static struct rule *get_rule(YYLTYPE *lloc, struct rules_state *state)
 {
 	struct rule *new;
 
@@ -37,7 +38,7 @@ static struct rule *get_rule(yyscan_t scanner, struct rules_state *state)
 
 	new->global_order = state->global_rule_nr;
 	new->file = state->cur_file;
-	new->line_nr = yyget_lineno(scanner);
+	new->line_nr = lloc->first_line;
 
 	INIT_LIST_HEAD(&new->pairs);
 	state->cur_rule = new;
@@ -59,9 +60,9 @@ static struct rule_pair *get_pair(struct rule *rule)
 	return new;
 }
 
-static const char *key2str(int n)
+static const char *key2str(struct rule_pair *pair)
 {
-	switch (n) {
+	switch (pair->key) {
 		case KEY_ACTION: return "ACTION";
 		case KEY_ATTR: return "ATTR";
 		case KEY_ATTRS: return "ATTRS";
@@ -91,19 +92,21 @@ static const char *key2str(int n)
 		case KEY_TAG: return "TAG";
 		case KEY_TAGS: return "TAGS";
 		case KEY_TEST: return "TEST";
+		default: break;
 	}
 	return NULL;
 }
 
-static const char *op2str(int n)
+static const char *op2str(struct rule_pair *pair)
 {
-	switch (n) {
+	switch (pair->op) {
 		case OP_ASSIGN:       return "=";
 		case OP_ASSIGN_FINAL: return ":=";
 		case OP_ADD:          return "+=";
 		case OP_REMOVE:       return "-=";
 		case OP_MATCH:        return "==";
 		case OP_NOMATCH:      return "!=";
+		default: break;
 	}
 	return NULL;
 }
@@ -121,46 +124,44 @@ static bool in_list(const char *k, ...)
 	return (s != NULL);
 }
 
-static void rule_log_dup_entry(yyscan_t scanner, struct rules_state *state, struct rule_pair *pair, int dups)
+static void rule_log_dup_entry(struct rules_state *state, struct rule_pair *pair, int dups)
 {
-	warnx("%s:%d: %s%s%s%s%s\"%s\" is duplicated %d times in the same match block [-W%s]",
-		state->cur_file->name,
-		yyget_lineno(scanner),
-		key2str(pair->key),
+	warnx("%s:%d:%d: %s%s%s%s%s\"%s\" is duplicated %d times in the same match block [-W%s]",
+		pair_fname(pair), key_line(pair), key_column(pair),
+		key2str(pair),
 		( pair->attr ? "{" : "" ), ( pair->attr ? pair->attr->string : "" ), ( pair->attr ? "}" : "" ),
-		op2str(pair->op),
+		op2str(pair),
 		pair->value->string,
 		dups,
 		warning_str[W_DUP_MATCH]);
 	warning_update_retcode(state);
 }
 
-static void rule_log_conflict_match(yyscan_t scanner, struct rules_state *state, struct rule_pair *pair)
+static void rule_log_conflict_match(struct rules_state *state, struct rule_pair *pair)
 {
-	warnx("%s:%d: %s%s%s%s is checked for == and != at the same time [-W%s]",
-		state->cur_file->name,
-		yyget_lineno(scanner),
-		key2str(pair->key),
+	warnx("%s:%d:%d: %s%s%s%s is checked for == and != at the same time [-W%s]",
+		pair_fname(pair), key_line(pair), key_column(pair),
+		key2str(pair),
 		( pair->attr ? "{" : "" ), ( pair->attr ? pair->attr->string : "" ), ( pair->attr ? "}" : "" ),
 		warning_str[W_CONFLICT_MATCH]);
 	warning_update_retcode(state);
 }
 
-static void rule_log_invalid_attr(yyscan_t scanner, struct rules_state *state, rule_key_t key)
+static void rule_log_invalid_attr(struct rules_state *state, struct rule_pair *pair)
 {
-	warnx("%s:%d: invalid attribute for %s.",
-		state->cur_file->name, yyget_lineno(scanner), key2str(key));
+	warnx("%s:%d:%d: invalid attribute for %s.",
+		pair_fname(pair), key_line(pair), key_column(pair), key2str(pair));
 	state->retcode = 1;
 }
 
-static void rule_log_invalid_op(yyscan_t scanner, struct rules_state *state, rule_key_t key, rule_op_t op)
+static void rule_log_invalid_op(struct rules_state *state, struct rule_pair *pair)
 {
-	warnx("%s:%d: %s can not have `%s' operator.",
-		state->cur_file->name, yyget_lineno(scanner), key2str(key), op2str(op));
+	warnx("%s:%d:%d: %s can not have `%s' operator.",
+		pair_fname(pair), op_line(pair), op_column(pair), key2str(pair), op2str(pair));
 	state->retcode = 1;
 }
 
-static void check_match_conditions(yyscan_t scanner, struct rules_state *state, struct rule_pair *pair)
+static void check_match_conditions(struct rules_state *state, struct rule_pair *pair)
 {
 	struct rule_pair *p;
 	struct rule *rule = pair->rule;
@@ -178,9 +179,9 @@ static void check_match_conditions(yyscan_t scanner, struct rules_state *state, 
 
 		if (p->op > _OP_TYPE_IS_MATCH) {
 			if (dups_nr)
-				rule_log_dup_entry(scanner, state, pair, dups_nr + 1);
+				rule_log_dup_entry(state, pair, dups_nr + 1);
 			if (conflict_nr)
-				rule_log_conflict_match(scanner, state, pair);
+				rule_log_conflict_match(state, pair);
 			dups_nr = 0;
 			conflict_nr = 0;
 		}
@@ -206,14 +207,14 @@ static void check_match_conditions(yyscan_t scanner, struct rules_state *state, 
 	}
 
 	if (dups_nr)
-		rule_log_dup_entry(scanner, state, pair, dups_nr + 1);
+		rule_log_dup_entry(state, pair, dups_nr + 1);
 
 	if (conflict_nr)
-		rule_log_conflict_match(scanner, state, pair);
+		rule_log_conflict_match(state, pair);
 }
 
 
-static void process_token(yyscan_t scanner, struct rules_state *state, struct rule_pair *pair)
+static void process_token(struct rules_state *state, struct rule_pair *pair)
 {
 	struct rule_goto_label *label;
 	bool is_match = (pair->op < _OP_TYPE_IS_MATCH);
@@ -221,47 +222,47 @@ static void process_token(yyscan_t scanner, struct rules_state *state, struct ru
 	switch (pair->key) {
 		case KEY_ACTION:
 			if (pair->attr)
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 
 			if (!is_match)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 			break;
 		case KEY_ATTR:
 		case KEY_SYSCTL:
 			if (!pair->attr || isempty(pair->attr->string))
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 
 			if (pair->op == OP_REMOVE)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 
 			if (pair->op == OP_ADD || pair->op == OP_ASSIGN_FINAL) {
-				warnx("%s:%d: %s key takes '==', '!=', or '=' operator.",
-					state->cur_file->name, yyget_lineno(scanner), key2str(pair->key));
+				warnx("%s:%d:%d: %s key takes '==', '!=', or '=' operator.",
+					pair_fname(pair), op_line(pair), op_column(pair),
+					key2str(pair));
 				warning_update_retcode(state);
 				pair->op = OP_ASSIGN;
 			}
 			break;
 		case KEY_ATTRS:
 			if (!pair->attr || isempty(pair->attr->string))
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 
 			if (!is_match)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 			break;
 		case KEY_CONST:
 			if (!pair->attr || isempty(pair->attr->string))
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 
 			if (!in_list(pair->attr->string, "arch", "virt", NULL)) {
-				warnx("%s:%d: unknown attribute \"%s\". This rule will never match.",
-					state->cur_file->name,
-					yyget_lineno(scanner),
+				warnx("%s:%d:%d: unknown attribute \"%s\". This rule will never match.",
+					pair_fname(pair), key_line(pair), key_column(pair),
 					pair->attr->string);
 				warning_update_retcode(state);
 			}
 
 			if (!is_match)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 			break;
 		case KEY_DEVPATH:
 		case KEY_DRIVER:
@@ -270,36 +271,36 @@ static void process_token(yyscan_t scanner, struct rules_state *state, struct ru
 		case KEY_KERNELS:
 		case KEY_SUBSYSTEMS:
 			if (pair->attr)
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 
 			if (!is_match)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 			break;
 		case KEY_SUBSYSTEM:
 			if (pair->attr)
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 
 			if (!is_match)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 
 			if (in_list(pair->value->string, "bus", "class", NULL)) {
-				warnx("%s:%d: \"%s\" must be specified as \"subsystem\"..",
-					state->cur_file->name,
-					yyget_lineno(scanner),
+				warnx("%s:%d:%d: \"%s\" must be specified as \"subsystem\".",
+					pair_fname(pair), value_line(pair), value_column(pair),
 					pair->value->string);
 				warning_update_retcode(state);
 			}
 			break;
 		case KEY_ENV:
 			if (!pair->attr || isempty(pair->attr->string))
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 
 			if (pair->op == OP_REMOVE)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 
 			if (pair->op == OP_ASSIGN_FINAL) {
-				warnx("%s:%d: %s key takes '==', '!=', '=', or '+=' operator.",
-					state->cur_file->name, yyget_lineno(scanner), key2str(pair->key));
+				warnx("%s:%d:%d: %s key takes '==', '!=', '=', or '+=' operator.",
+					pair_fname(pair), key_line(pair), key_column(pair),
+					key2str(pair));
 				warning_update_retcode(state);
 				pair->op = OP_ASSIGN;
 			}
@@ -308,9 +309,8 @@ static void process_token(yyscan_t scanner, struct rules_state *state, struct ru
 				if (in_list(pair->attr->string,
 				            "ACTION", "DEVLINKS", "DEVNAME", "DEVPATH", "DEVTYPE", "DRIVER",
 				            "IFINDEX", "MAJOR", "MINOR", "SEQNUM", "SUBSYSTEM", "TAGS", NULL)) {
-					warnx("%s:%d: invalid ENV attribute. '%s' cannot be set.",
-						state->cur_file->name,
-						yyget_lineno(scanner),
+					warnx("%s:%d:%d: invalid ENV attribute. '%s' cannot be set.",
+						pair_fname(pair), key_line(pair), key_column(pair),
 						pair->attr->string);
 					warning_update_retcode(state);
 				}
@@ -318,33 +318,30 @@ static void process_token(yyscan_t scanner, struct rules_state *state, struct ru
 			break;
 		case KEY_GOTO:
 			if (pair->attr)
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 
 			if (pair->op != OP_ASSIGN)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 
 			if (pair->rule->has_goto) {
-				warnx("%s:%d: Contains multiple GOTO keys.",
-					state->cur_file->name,
-					yyget_lineno(scanner));
+				warnx("%s:%d:%d: Contains multiple GOTO keys.",
+					pair_fname(pair), key_line(pair), key_column(pair));
 				warning_update_retcode(state);
 			}
 
 			pair->rule->has_goto = 1;
 			label = get_goto(state);
-			label->name = pair->value;
-			label->rule = state->cur_rule;
+			label->pair = pair;
 
 			break;
 		case KEY_LABEL:
 			if (pair->attr)
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 			if (pair->op != OP_ASSIGN)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 
 			label = get_label(state);
-			label->name = pair->value;
-			label->rule = state->cur_rule;
+			label->pair = pair;
 
 			break;
 		case KEY_OWNER:
@@ -352,83 +349,80 @@ static void process_token(yyscan_t scanner, struct rules_state *state, struct ru
 		case KEY_MODE:
 		case KEY_OPTIONS:
 			if (pair->attr)
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 
 			if (is_match || pair->op == OP_REMOVE)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 
 			break;
 		case KEY_IMPORT:
 			if (!pair->attr || isempty(pair->attr->string))
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 
 			if (pair->op == OP_REMOVE)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 
 			if (!in_list(pair->attr->string,
 			             "file", "program", "builtin",
 			             "db", "cmdline", "parent", NULL)) {
-				warnx("%s:%d: unknown attribute \"%s\".",
-					state->cur_file->name,
-					yyget_lineno(scanner),
+				warnx("%s:%d:%d: unknown attribute \"%s\".",
+					pair_fname(pair), key_line(pair), key_column(pair),
 					pair->attr->string);
 				warning_update_retcode(state);
 			}
 
 			if (state->show_external &&
 			    in_list(pair->attr->string, "file", "program", "builtin", NULL)) {
-				fprintf(stdout, "%s:%d\timport\t%s\t%s\n",
-					state->cur_file->name,
-					yyget_lineno(scanner),
+				fprintf(stdout, "%s:%d:%d\timport\t%s\t%s\n",
+					pair_fname(pair), key_line(pair), key_column(pair),
 					pair->attr->string,
 					pair->value->string);
 			}
 			break;
 		case KEY_NAME:
 			if (pair->attr)
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 
 			if (pair->op == OP_REMOVE)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 
 			if (pair->op == OP_ADD) {
-				warnx("%s:%d: %s key takes '==', '!=', '=', or ':=' operator.",
-					state->cur_file->name, yyget_lineno(scanner), key2str(pair->key));
+				warnx("%s:%d:%d: %s key takes '==', '!=', '=', or ':=' operator.",
+					pair_fname(pair), key_line(pair), key_column(pair),
+					key2str(pair));
 				warning_update_retcode(state);
 				pair->op = OP_ASSIGN;
 			}
 
 			if (!is_match) {
 				if (!strcmp(pair->value->string, "%k")) {
-					warnx("%s:%d: ignoring NAME=\"%%k\", as it will take no effect.",
-						state->cur_file->name, yyget_lineno(scanner));
+					warnx("%s:%d:%d: ignoring NAME=\"%%k\", as it will take no effect.",
+						pair_fname(pair), key_line(pair), key_column(pair));
 					warning_update_retcode(state);
 				}
 				if (isempty(pair->value->string)) {
-					warnx("%s:%d: ignoring NAME=\"\", as udev will not delete any network interfaces.",
-						state->cur_file->name,
-						yyget_lineno(scanner));
+					warnx("%s:%d:%d: ignoring NAME=\"\", as udev will not delete any network interfaces.",
+						pair_fname(pair), key_line(pair), key_column(pair));
 					warning_update_retcode(state);
 				}
 			}
 			break;
 		case KEY_PROGRAM:
 			if (pair->attr)
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 
 			if (pair->op == OP_REMOVE)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 
 			if (state->show_external)
-				fprintf(stdout, "%s:%d\tprogram\tprogram\t%s\n",
-					state->cur_file->name,
-					yyget_lineno(scanner),
+				fprintf(stdout, "%s:%d:%d\tprogram\tprogram\t%s\n",
+					pair_fname(pair), key_line(pair), key_column(pair),
 					pair->value->string);
 			break;
 		case KEY_RESULT:
 		case KEY_SYMLINK:
 			if (pair->attr)
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 			break;
 		case KEY_RUN:
 			if (!pair->attr) {
@@ -438,77 +432,77 @@ static void process_token(yyscan_t scanner, struct rules_state *state, struct ru
 			}
 
 			if (is_match || pair->op == OP_REMOVE)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 
 			if (!in_list(pair->attr->string, "builtin", "program", NULL)) {
-				warnx("%s:%d: unknown attribute \"%s\".",
-					state->cur_file->name,
-					yyget_lineno(scanner),
+				warnx("%s:%d:%d: unknown attribute \"%s\".",
+					pair_fname(pair), key_line(pair), key_column(pair),
 					pair->attr->string);
 				warning_update_retcode(state);
 			}
 
 			if (state->show_external)
-				fprintf(stdout, "%s:%d\trun\t%s\t%s\n",
-					state->cur_file->name,
-					yyget_lineno(scanner),
+				fprintf(stdout, "%s:%d:%d\trun\t%s\t%s\n",
+					pair_fname(pair), key_line(pair), key_column(pair),
 					pair->attr->string,
 					pair->value->string);
 			break;
 		case KEY_SECLABEL:
 			if (!pair->attr || isempty(pair->attr->string))
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 
 			if (is_match || pair->op == OP_REMOVE)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 
 			if (pair->op == OP_ASSIGN_FINAL) {
-				warnx("%s:%d: %s key takes '=' or '+=' operator.",
-					state->cur_file->name, yyget_lineno(scanner), key2str(pair->key));
+				warnx("%s:%d:%d: %s key takes '=' or '+=' operator.",
+					pair_fname(pair), key_line(pair), key_column(pair),
+					key2str(pair));
 				warning_update_retcode(state);
 				pair->op = OP_ASSIGN;
 			}
 			break;
 		case KEY_TAG:
 			if (pair->attr)
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 
 			if (pair->op == OP_ASSIGN_FINAL) {
-				warnx("%s:%d: %s key takes '==', '!=', '=', or '+=' operator.",
-					state->cur_file->name, yyget_lineno(scanner), key2str(pair->key));
+				warnx("%s:%d:%d: %s key takes '==', '!=', '=', or '+=' operator.",
+					pair_fname(pair), key_line(pair), key_column(pair),
+					key2str(pair));
 				warning_update_retcode(state);
 				pair->op = OP_ASSIGN;
 			}
 			break;
 		case KEY_TAGS:
 			if (pair->attr)
-				rule_log_invalid_attr(scanner, state, pair->key);
+				rule_log_invalid_attr(state, pair);
 			break;
 		case KEY_TEST:
 			if (!is_match)
-				rule_log_invalid_op(scanner, state, pair->key, pair->op);
+				rule_log_invalid_op(state, pair);
 			break;
 		default:
-			warnx("%s:%d: unknown key \"%s\".",
-				state->cur_file->name,
-				yyget_lineno(scanner),
-				key2str(pair->key));
+			warnx("%s:%d:%d: unknown key \"%s\".",
+				pair_fname(pair), key_line(pair), key_column(pair),
+				key2str(pair));
 			warning_update_retcode(state);
 			return;
 	}
 
-	check_match_conditions(scanner, state, pair);
+	check_match_conditions(state, pair);
 
 	//if (pair->attr)
 	//	printf("(<%s> <%s> <%s> <%s>) ",
-	//		key2str(pair->key), pair->attr->string, op2str(pair->op), pair->value->string);
+	//		key2str(pair), pair->attr->string, op2str(pair), pair->value->string);
 	//else
 	//	printf("(<%s> <%s> <%s>) ",
-	//		key2str(pair->key), op2str(pair->op), pair->value->string);
+	//		key2str(pair), op2str(pair), pair->value->string);
 }
 %}
 
 %language "C"
+%locations
 %debug
 %define parse.error verbose
 
@@ -555,7 +549,7 @@ pairs		: pairs COMMA pair
 		;
 pair		: KEY OPERATION VALUE
 		{
-			struct rule *rule = get_rule(scanner, state);
+			struct rule *rule = get_rule(&@1, state);
 			struct rule_pair *pair = get_pair(rule);
 
 			pair->key   = $1;
@@ -563,11 +557,20 @@ pair		: KEY OPERATION VALUE
 			pair->op    = $2;
 			pair->value = $3;
 
-			process_token(scanner, state, pair);
+			pair->pos_key.line     = @1.first_line;
+			pair->pos_key.column   = @1.first_column;
+
+			pair->pos_op.line      = @2.first_line;
+			pair->pos_op.column    = @2.first_column;
+
+			pair->pos_value.line   = @3.first_line;
+			pair->pos_value.column = @3.first_column;
+
+			process_token(state, pair);
 		}
 		| KEY ATTR OPERATION VALUE
 		{
-			struct rule *rule = get_rule(scanner, state);
+			struct rule *rule = get_rule(&@1, state);
 			struct rule_pair *pair = get_pair(rule);
 
 			pair->key   = $1;
@@ -575,7 +578,16 @@ pair		: KEY OPERATION VALUE
 			pair->op    = $3;
 			pair->value = $4;
 
-			process_token(scanner, state, pair);
+			pair->pos_key.line     = @1.first_line;
+			pair->pos_key.column   = @1.first_column;
+
+			pair->pos_op.line      = @3.first_line;
+			pair->pos_op.column    = @3.first_column;
+
+			pair->pos_value.line   = @4.first_line;
+			pair->pos_value.column = @4.first_column;
+
+			process_token(state, pair);
 		}
 		;
 

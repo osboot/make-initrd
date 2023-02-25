@@ -35,6 +35,16 @@ void free_goto_label(struct list_head *head)
 	}
 }
 
+static inline char *rec_str(struct rule_goto_label *rec)
+{
+	return rec->pair->value->string;
+}
+
+static inline int rec_order(struct rule_goto_label *rec)
+{
+	return rec->pair->rule->global_order;
+}
+
 void check_goto_label(struct rules_state *state)
 {
 	struct rule_goto_label *r_goto;
@@ -45,23 +55,22 @@ void check_goto_label(struct rules_state *state)
 		found = false;
 
 		list_for_each_entry(r_label, state->labels, list) {
-			if (strcmp(r_goto->name->string, r_label->name->string))
+			if (strcmp(rec_str(r_goto), rec_str(r_label)))
 				continue;
 
-			if (r_goto->rule->file != r_label->rule->file)
+			if (pair_file(r_goto->pair) != pair_file(r_label->pair))
 				continue;
 
-			if (r_label->rule->global_order > r_goto->rule->global_order) {
+			if (rec_order(r_label) > rec_order(r_goto)) {
 				found = true;
 				break;
 			}
 		}
 
 		if (state->warning[W_MISSING_LABEL] && !found) {
-			warnx("%s:%d: GOTO=\"%s\" has no matching label [-W%s]",
-			      r_goto->rule->file->name,
-			      r_goto->rule->line_nr,
-			      r_goto->name->string,
+			warnx("%s:%d:%d: GOTO=\"%s\" has no matching label [-W%s]",
+			      pair_fname(r_goto->pair), key_line(r_goto->pair), key_column(r_goto->pair),
+			      rec_str(r_goto),
 			      warning_str[W_MISSING_LABEL]);
 			warning_update_retcode(state);
 		}
@@ -74,13 +83,13 @@ void check_goto_label(struct rules_state *state)
 		found = false;
 
 		list_for_each_entry(r_goto, state->gotos, list) {
-			if (r_goto->rule->file != r_label->rule->file)
+			if (pair_file(r_goto->pair) != pair_file(r_label->pair))
 				continue;
 
-			if (strcmp(r_goto->name->string, r_label->name->string))
+			if (strcmp(rec_str(r_goto), rec_str(r_label)))
 				continue;
 
-			if (r_goto->rule->global_order >= r_label->rule->global_order)
+			if (rec_order(r_goto) >= rec_order(r_label))
 				break;
 
 			found = true;
@@ -88,10 +97,9 @@ void check_goto_label(struct rules_state *state)
 		}
 
 		if (!found) {
-			warnx("%s:%d: LABEL=\"%s\" takes no effect [-W%s]",
-			      r_label->rule->file->name,
-			      r_label->rule->line_nr,
-			      r_label->name->string,
+			warnx("%s:%d:%d: LABEL=\"%s\" takes no effect [-W%s]",
+			      pair_fname(r_label->pair), key_line(r_label->pair), key_column(r_label->pair),
+			      rec_str(r_label),
 			      warning_str[W_UNUSED_LABELS]);
 			warning_update_retcode(state);
 		}
