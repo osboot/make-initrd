@@ -175,15 +175,12 @@ static void check_match_conditions(struct rules_state *state, struct rule_pair *
 
 	list_for_each_entry(p, &rule->pairs, list) {
 		if (pair == p)
-			continue;
+			break;
 
 		if (p->op > _OP_TYPE_IS_MATCH) {
-			if (dups_nr)
-				rule_log_dup_entry(state, pair, dups_nr + 1);
-			if (conflict_nr)
-				rule_log_conflict_match(state, pair);
 			dups_nr = 0;
 			conflict_nr = 0;
+			continue;
 		}
 
 		if (pair->key != p->key ||
