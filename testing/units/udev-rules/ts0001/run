@@ -1,0 +1,8 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+rc=0
+.build/dest/usr/sbin/udev-rules -Wall -Werror "$cwd/foo.rules" || rc=$?
+
+exit $rc

@@ -1,0 +1,7 @@
+# comment 0
+DEVPATH=="/module/nvidia", ACTION=="remove", DEVPATH=="/module/nvidia", SUBSYSTEM=="module", \
+	RUN+="/bin/rm -f /dev/nvidiactl /dev/nvidia*"
+
+ENV{DEVTYPE}=="usb_device", RUN="/bin/true 1", ENV{DEVTYPE}=="usb_device", RUN="/bin/true 2"
+
+ENV{DEVTYPE}=="usb_*", ACTION=="add", ENV{DEVTYPE}=="usb_*", RUN+="/bin/true"

@@ -1,0 +1,2 @@
+udev-rules: ./foo.rules:2:46: DEVPATH is checked for == and != at the same time [-Wconflict-match]
+rc=1

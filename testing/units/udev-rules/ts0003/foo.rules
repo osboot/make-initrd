@@ -1,0 +1,3 @@
+# comment 0
+DEVPATH=="/module/nvidia", ACTION=="remove", DEVPATH!="/module/nvidia", SUBSYSTEM=="module", \
+	RUN+="/bin/rm -f /dev/nvidiactl /dev/nvidia*"

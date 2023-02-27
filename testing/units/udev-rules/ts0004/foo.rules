@@ -1,0 +1,9 @@
+# comment 0
+LABEL="here0"
+
+DEVPATH=="/module/nvidia", ACTION=="remove", SUBSYSTEM=="module", \
+	GOTO="here0"
+
+RUN+="/bin/rm -f /dev/nvidiactl /dev/nvidia*"
+
+LABEL="here1"
