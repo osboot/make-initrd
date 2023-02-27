@@ -165,23 +165,19 @@ static void check_match_conditions(struct rules_state *state, struct rule_pair *
 {
 	struct rule_pair *p;
 	struct rule *rule = pair->rule;
-	bool is_match = (pair->op < _OP_TYPE_IS_MATCH);
 	int dups_nr = 0;
 	int conflict_nr = 0;
 
 	// For now, ignore changes to variables.
-	if (!is_match)
+	if (pair->op > _OP_TYPE_IS_MATCH)
 		return;
 
 	list_for_each_entry(p, &rule->pairs, list) {
 		if (pair == p)
 			break;
 
-		if (p->op > _OP_TYPE_IS_MATCH) {
-			dups_nr = 0;
-			conflict_nr = 0;
+		if (pair->match_block != p->match_block)
 			continue;
-		}
 
 		if (pair->key != p->key ||
 		    strcmp(pair->value->string, p->value->string))
@@ -215,6 +211,13 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 {
 	struct rule_goto_label *label;
 	bool is_match = (pair->op < _OP_TYPE_IS_MATCH);
+
+	if (is_match) {
+		struct rule_pair *prev = list_prev_entry(pair, list);
+		if (prev->op > _OP_TYPE_IS_MATCH)
+			state->cur_match_block++;
+	}
+	pair->match_block = state->cur_match_block;
 
 	switch (pair->key) {
 		case KEY_ACTION:
@@ -538,6 +541,7 @@ ruleline	: pairs EOL
 			state->global_rule_nr++;
 			state->cur_file->rules_nr++;
 			state->cur_rule = NULL;
+			state->cur_match_block++;
 			//printf("\n");
 		}
 		;

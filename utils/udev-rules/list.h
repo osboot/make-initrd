@@ -123,6 +123,14 @@ list_del_init(struct list_head *entry)
 #define	list_next_entry(pos, member)		list_entry((pos)->member.next, typeof(*(pos)), member)
 #define	list_entry_is_h(p, h, field)		(&p->field == (h))
 
+/**
+ * list_prev_entry - get the prev element in list
+ * @pos:	the type * to cursor
+ * @member:	the name of the list_head within the struct.
+ */
+#define list_prev_entry(pos, member) \
+	list_entry((pos)->member.prev, typeof(*(pos)), member)
+
 #define	list_for_each(p, head)						\
 	for (p = (head)->next; p != (head); p = p->next)
 

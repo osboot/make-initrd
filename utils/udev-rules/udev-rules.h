@@ -68,6 +68,7 @@ struct rule_pair {
 	struct pos pos_key;
 	struct pos pos_op;
 	struct pos pos_value;
+	int match_block;
 	rule_key_t key;
 	rule_op_t op;
 	struct string *attr;
@@ -108,6 +109,7 @@ struct rules_state {
 	struct list_head *labels;
 
 	int global_rule_nr;
+	int cur_match_block;
 	struct rule_file *cur_file;
 	struct rule *cur_rule;
 
