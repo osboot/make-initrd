@@ -161,6 +161,12 @@ static void rule_log_invalid_op(struct rules_state *state, struct rule_pair *pai
 	state->retcode = 1;
 }
 
+static inline int same_attr(struct rule_pair *a, struct rule_pair *b)
+{
+	return ((!a->attr && !b->attr) ||
+		((a->attr && b->attr) && !strcmp(a->attr->string, b->attr->string)));
+}
+
 static void check_match_conditions(struct rules_state *state, struct rule_pair *pair)
 {
 	struct rule_pair *p;
@@ -179,16 +185,27 @@ static void check_match_conditions(struct rules_state *state, struct rule_pair *
 		if (pair->match_block != p->match_block)
 			continue;
 
-		if (pair->key != p->key ||
-		    strcmp(pair->value->string, p->value->string))
+		if (pair->key != p->key)
 			continue;
 
-		if (pair->attr && p->attr) {
-			if (strcmp(pair->attr->string, p->attr->string))
+		if (strcmp(pair->value->string, p->value->string)) {
+#if 0
+			if (pair->op != OP_MATCH || pair->key == KEY_TEST)
 				continue;
-		} else if (pair->attr || p->attr) {
+
+			if (!strpbrk(p->value->string, "*?[|")) {
+				if (pair->op == p->op && same_attr(pair, p)) {
+					warnx("%s: conditions contradict each other and will never be both true (line %d:%d and %d:%d)",
+						pair_fname(p), key_line(p), key_column(p),
+						key_line(pair), key_column(pair));
+				}
+			}
+#endif
 			continue;
 		}
+
+		if (!same_attr(pair, p))
+			continue;
 
 		if (pair->op != p->op) {
 			if (state->warning[W_CONFLICT_MATCH])
