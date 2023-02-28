@@ -223,6 +223,27 @@ static void check_match_conditions(struct rules_state *state, struct rule_pair *
 		rule_log_conflict_match(state, pair);
 }
 
+static void check_match_only_conditions(struct rules_state *state, struct rule *rule)
+{
+	struct rule_pair *p;
+	int actions = 0;
+
+	if (!state->warning[W_INCOMPLETE_RULES])
+		return;
+
+	list_for_each_entry(p, &rule->pairs, list) {
+		if (p->op > _OP_TYPE_IS_MATCH)
+			actions++;
+	}
+
+	if (!actions) {
+		struct rule_pair *first = list_first_entry(&rule->pairs, struct rule_pair, list);
+		warnx("%s:%d:%d: the rule contains only match conditions without any action [-W%s]",
+			pair_fname(first), key_line(first), key_column(first),
+			warning_str[W_INCOMPLETE_RULES]);
+		warning_update_retcode(state);
+	}
+}
 
 static void process_token(struct rules_state *state, struct rule_pair *pair)
 {
@@ -555,6 +576,8 @@ line		: EOL
 		;
 ruleline	: pairs EOL
 		{
+			check_match_only_conditions(state, state->cur_rule);
+
 			state->global_rule_nr++;
 			state->cur_file->rules_nr++;
 			state->cur_rule = NULL;

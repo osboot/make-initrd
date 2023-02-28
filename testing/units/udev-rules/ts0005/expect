@@ -1,0 +1,2 @@
+udev-rules: ./foo.rules:2:1: the rule contains only match conditions without any action [-Wincomplete-rule]
+rc=1

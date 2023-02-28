@@ -1,0 +1,2 @@
+# comment 0
+DEVPATH=="/module/nvidia", ACTION=="remove", SUBSYSTEM=="module"
