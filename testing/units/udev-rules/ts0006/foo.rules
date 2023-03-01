@@ -1,0 +1,5 @@
+# comment 0
+ACTION=="add", ENV{DEVTYPE}=="disk", ENV{ID_WWN_WITH_EXTENSION}=="?*", ENV{DEVTYPE}=="partition", SYMLINK+="disk/by-id/wwn-$env{ID_WWN_WITH_EXTENSION}"
+ACTION=="add", ENV{DEVTYPE}=="disk", ENV{ID_WWN_WITH_EXTENSION}=="?*", ENV{DEVTYPE}=="disk*", SYMLINK+="disk/by-id/wwn-$env{ID_WWN_WITH_EXTENSION}"
+ACTION=="add", ENV{DEVTYPE}=="disk*", ENV{ID_WWN_WITH_EXTENSION}=="?*", ENV{DEVTYPE}=="disk", SYMLINK+="disk/by-id/wwn-$env{ID_WWN_WITH_EXTENSION}"
+ACTION=="add", ENV{DEVTYPE}=="disk*", ENV{ID_WWN_WITH_EXTENSION}=="?*", ENV{DEVTYPE}=="disk*", SYMLINK+="disk/by-id/wwn-$env{ID_WWN_WITH_EXTENSION}"

@@ -189,18 +189,49 @@ static void check_match_conditions(struct rules_state *state, struct rule_pair *
 			continue;
 
 		if (strcmp(pair->value->string, p->value->string)) {
-#if 0
-			if (pair->op != OP_MATCH || pair->key == KEY_TEST)
+			if (!state->warning[W_CONFLICT_MATCH] || pair->op != OP_MATCH)
 				continue;
 
-			if (!strpbrk(p->value->string, "*?[|")) {
+			/*
+			 * we use allowlist to restrict keys.
+			 */
+			switch (pair->key) {
+				case KEY_ACTION:
+				case KEY_ATTR:
+				case KEY_ATTRS:
+				case KEY_CONST:
+				case KEY_DEVPATH:
+				case KEY_DRIVER:
+				case KEY_DRIVERS:
+				case KEY_ENV:
+				case KEY_KERNEL:
+				case KEY_KERNELS:
+				case KEY_NAME:
+				case KEY_RESULT:
+				case KEY_SUBSYSTEM:
+				case KEY_SUBSYSTEMS:
+				case KEY_SYMLINK:
+				case KEY_SYSCTL:
+				case KEY_TAG:
+				case KEY_TAGS:
+					break;
+				default:
+					continue;
+			}
+
+			if (!strpbrk(p->value->string, "*?[|") &&
+			    !strpbrk(pair->value->string, "*?[|")) {
 				if (pair->op == p->op && same_attr(pair, p)) {
-					warnx("%s: conditions contradict each other and will never be both true (line %d:%d and %d:%d)",
-						pair_fname(p), key_line(p), key_column(p),
-						key_line(pair), key_column(pair));
+					warnx("%s:%d:%d: conditions contradict each other and will"
+						" never be both true (previous one was at line %d, column %d)"
+						" [-W%s]",
+						pair_fname(pair), key_line(pair), key_column(pair),
+						key_line(p), key_column(p),
+						warning_str[W_CONFLICT_MATCH]);
+					warning_update_retcode(state);
 				}
 			}
-#endif
+
 			continue;
 		}
 
