@@ -1,2 +1,4 @@
 udev-rules: ./foo.rules:2:1: the rule contains only match conditions without any action [-Wincomplete-rule]
+udev-rules: For more information:
+udev-rules:   https://github.com/osboot/make-initrd/wiki/udev-rules-Wincomplete-rule
 rc=1

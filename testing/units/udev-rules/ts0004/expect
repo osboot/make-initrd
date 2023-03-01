@@ -1,4 +1,7 @@
 udev-rules: ./foo.rules:5:2: GOTO="here0" has no matching label [-Wmissing-label]
 udev-rules: ./foo.rules:2:1: LABEL="here0" takes no effect [-Wunsed-labels]
 udev-rules: ./foo.rules:9:1: LABEL="here1" takes no effect [-Wunsed-labels]
+udev-rules: For more information:
+udev-rules:   https://github.com/osboot/make-initrd/wiki/udev-rules-Wmissing-label
+udev-rules:   https://github.com/osboot/make-initrd/wiki/udev-rules-Wunsed-labels
 rc=1

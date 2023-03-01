@@ -1,2 +1,4 @@
 udev-rules: ./foo.rules:2:46: DEVPATH is checked for == and != at the same time [-Wconflict-match]
+udev-rules: For more information:
+udev-rules:   https://github.com/osboot/make-initrd/wiki/udev-rules-Wconflict-match
 rc=1

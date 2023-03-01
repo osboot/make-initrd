@@ -115,6 +115,7 @@ struct rules_state {
 	struct rule *cur_rule;
 
 	int warning[_W_TYPE_MAX];
+	int warning_summary[_W_TYPE_MAX];
 	int show_external;
 
 	int retcode;
@@ -168,10 +169,12 @@ extern struct rule_goto_label *get_label(struct rules_state *state);
 extern void free_goto_label(struct list_head *head);
 extern void check_goto_label(struct rules_state *state);
 
-static inline void warning_update_retcode(struct rules_state *state)
+static inline void warning_update_retcode(struct rules_state *state, int warn)
 {
 	if (!state->retcode)
 		state->retcode = state->warning[W_ERROR];
+	if (warn > 0 && warn < _W_TYPE_MAX)
+		state->warning_summary[warn]++;
 }
 
 static inline bool isempty(const char *a)

@@ -1,3 +1,6 @@
 udev-rules: ./foo.rules:2:72: conditions contradict each other and will never be both true (previous one was at line 2, column 16) [-Wconflict-match]
 udev-rules: ./foo.rules:5:73: ENV{DEVTYPE}=="disk*" is duplicated 2 times in the same match block [-Wdup-match]
+udev-rules: For more information:
+udev-rules:   https://github.com/osboot/make-initrd/wiki/udev-rules-Wdup-match
+udev-rules:   https://github.com/osboot/make-initrd/wiki/udev-rules-Wconflict-match
 rc=1

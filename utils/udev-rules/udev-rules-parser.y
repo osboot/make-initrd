@@ -134,7 +134,7 @@ static void rule_log_dup_entry(struct rules_state *state, struct rule_pair *pair
 		pair->value->string,
 		dups,
 		warning_str[W_DUP_MATCH]);
-	warning_update_retcode(state);
+	warning_update_retcode(state, W_DUP_MATCH);
 }
 
 static void rule_log_conflict_match(struct rules_state *state, struct rule_pair *pair)
@@ -144,7 +144,7 @@ static void rule_log_conflict_match(struct rules_state *state, struct rule_pair 
 		key2str(pair),
 		( pair->attr ? "{" : "" ), ( pair->attr ? pair->attr->string : "" ), ( pair->attr ? "}" : "" ),
 		warning_str[W_CONFLICT_MATCH]);
-	warning_update_retcode(state);
+	warning_update_retcode(state, W_CONFLICT_MATCH);
 }
 
 static void rule_log_invalid_attr(struct rules_state *state, struct rule_pair *pair)
@@ -228,7 +228,7 @@ static void check_match_conditions(struct rules_state *state, struct rule_pair *
 						pair_fname(pair), key_line(pair), key_column(pair),
 						key_line(p), key_column(p),
 						warning_str[W_CONFLICT_MATCH]);
-					warning_update_retcode(state);
+					warning_update_retcode(state, W_CONFLICT_MATCH);
 				}
 			}
 
@@ -272,7 +272,7 @@ static void check_match_only_conditions(struct rules_state *state, struct rule *
 		warnx("%s:%d:%d: the rule contains only match conditions without any action [-W%s]",
 			pair_fname(first), key_line(first), key_column(first),
 			warning_str[W_INCOMPLETE_RULES]);
-		warning_update_retcode(state);
+		warning_update_retcode(state, W_INCOMPLETE_RULES);
 	}
 }
 
@@ -308,7 +308,7 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 				warnx("%s:%d:%d: %s key takes '==', '!=', or '=' operator.",
 					pair_fname(pair), op_line(pair), op_column(pair),
 					key2str(pair));
-				warning_update_retcode(state);
+				warning_update_retcode(state, -1);
 				pair->op = OP_ASSIGN;
 			}
 			break;
@@ -327,7 +327,7 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 				warnx("%s:%d:%d: unknown attribute \"%s\". This rule will never match.",
 					pair_fname(pair), key_line(pair), key_column(pair),
 					pair->attr->string);
-				warning_update_retcode(state);
+				warning_update_retcode(state, -1);
 			}
 
 			if (!is_match)
@@ -356,7 +356,7 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 				warnx("%s:%d:%d: \"%s\" must be specified as \"subsystem\".",
 					pair_fname(pair), value_line(pair), value_column(pair),
 					pair->value->string);
-				warning_update_retcode(state);
+				warning_update_retcode(state, -1);
 			}
 			break;
 		case KEY_ENV:
@@ -370,7 +370,7 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 				warnx("%s:%d:%d: %s key takes '==', '!=', '=', or '+=' operator.",
 					pair_fname(pair), key_line(pair), key_column(pair),
 					key2str(pair));
-				warning_update_retcode(state);
+				warning_update_retcode(state, -1);
 				pair->op = OP_ASSIGN;
 			}
 
@@ -381,7 +381,7 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 					warnx("%s:%d:%d: invalid ENV attribute. '%s' cannot be set.",
 						pair_fname(pair), key_line(pair), key_column(pair),
 						pair->attr->string);
-					warning_update_retcode(state);
+					warning_update_retcode(state, -1);
 				}
 		}
 			break;
@@ -395,7 +395,7 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 			if (pair->rule->has_goto) {
 				warnx("%s:%d:%d: Contains multiple GOTO keys.",
 					pair_fname(pair), key_line(pair), key_column(pair));
-				warning_update_retcode(state);
+				warning_update_retcode(state, -1);
 			}
 
 			pair->rule->has_goto = 1;
@@ -437,7 +437,7 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 				warnx("%s:%d:%d: unknown attribute \"%s\".",
 					pair_fname(pair), key_line(pair), key_column(pair),
 					pair->attr->string);
-				warning_update_retcode(state);
+				warning_update_retcode(state, -1);
 			}
 
 			if (state->show_external &&
@@ -459,7 +459,7 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 				warnx("%s:%d:%d: %s key takes '==', '!=', '=', or ':=' operator.",
 					pair_fname(pair), key_line(pair), key_column(pair),
 					key2str(pair));
-				warning_update_retcode(state);
+				warning_update_retcode(state, -1);
 				pair->op = OP_ASSIGN;
 			}
 
@@ -467,12 +467,12 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 				if (!strcmp(pair->value->string, "%k")) {
 					warnx("%s:%d:%d: ignoring NAME=\"%%k\", as it will take no effect.",
 						pair_fname(pair), key_line(pair), key_column(pair));
-					warning_update_retcode(state);
+					warning_update_retcode(state, -1);
 				}
 				if (isempty(pair->value->string)) {
 					warnx("%s:%d:%d: ignoring NAME=\"\", as udev will not delete any network interfaces.",
 						pair_fname(pair), key_line(pair), key_column(pair));
-					warning_update_retcode(state);
+					warning_update_retcode(state, -1);
 				}
 			}
 			break;
@@ -507,7 +507,7 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 				warnx("%s:%d:%d: unknown attribute \"%s\".",
 					pair_fname(pair), key_line(pair), key_column(pair),
 					pair->attr->string);
-				warning_update_retcode(state);
+				warning_update_retcode(state, -1);
 			}
 
 			if (state->show_external)
@@ -527,7 +527,7 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 				warnx("%s:%d:%d: %s key takes '=' or '+=' operator.",
 					pair_fname(pair), key_line(pair), key_column(pair),
 					key2str(pair));
-				warning_update_retcode(state);
+				warning_update_retcode(state, -1);
 				pair->op = OP_ASSIGN;
 			}
 			break;
@@ -539,7 +539,7 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 				warnx("%s:%d:%d: %s key takes '==', '!=', '=', or '+=' operator.",
 					pair_fname(pair), key_line(pair), key_column(pair),
 					key2str(pair));
-				warning_update_retcode(state);
+				warning_update_retcode(state, -1);
 				pair->op = OP_ASSIGN;
 			}
 			break;
@@ -555,7 +555,7 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 			warnx("%s:%d:%d: unknown key \"%s\".",
 				pair_fname(pair), key_line(pair), key_column(pair),
 				key2str(pair));
-			warning_update_retcode(state);
+			warning_update_retcode(state, -1);
 			return;
 	}
 

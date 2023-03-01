@@ -72,7 +72,7 @@ void check_goto_label(struct rules_state *state)
 			      pair_fname(r_goto->pair), key_line(r_goto->pair), key_column(r_goto->pair),
 			      rec_str(r_goto),
 			      warning_str[W_MISSING_LABEL]);
-			warning_update_retcode(state);
+			warning_update_retcode(state, W_MISSING_LABEL);
 		}
 	}
 
@@ -101,7 +101,7 @@ void check_goto_label(struct rules_state *state)
 			      pair_fname(r_label->pair), key_line(r_label->pair), key_column(r_label->pair),
 			      rec_str(r_label),
 			      warning_str[W_UNUSED_LABELS]);
-			warning_update_retcode(state);
+			warning_update_retcode(state, W_UNUSED_LABELS);
 		}
 	}
 }

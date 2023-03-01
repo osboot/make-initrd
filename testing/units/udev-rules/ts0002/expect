@@ -1,3 +1,5 @@
 udev-rules: ./foo.rules:2:46: DEVPATH=="/module/nvidia" is duplicated 2 times in the same match block [-Wdup-match]
 udev-rules: ./foo.rules:7:39: ENV{DEVTYPE}=="usb_*" is duplicated 2 times in the same match block [-Wdup-match]
+udev-rules: For more information:
+udev-rules:   https://github.com/osboot/make-initrd/wiki/udev-rules-Wdup-match
 rc=1

@@ -128,6 +128,18 @@ int main(int argc, char **argv)
 	}
 
 	check_goto_label(&state);
+
+	int warn_header = 0;
+
+	for (i = 0; i < _W_TYPE_MAX; i++) {
+		if (!state.warning_summary[i])
+			continue;
+		if (!warn_header) {
+			warnx("For more information:");
+			warn_header = 1;
+		}
+		warnx("  https://github.com/osboot/make-initrd/wiki/udev-rules-W%s", warning_str[i]);
+	}
 end:
 	free_goto_label(&gotos);
 	free_goto_label(&labels);
