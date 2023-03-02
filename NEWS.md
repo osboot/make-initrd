@@ -1,3 +1,12 @@
+Version 2.35.0
+
+- Guess subsystem:
+  + Do not fail if device filesystem type is swap.
+- Misc:
+  + Add udev rules parser. This is a new parser that allows you to search for
+    syntactic and logical errors. It also allows you to more accurately obtain
+    information from the rules.
+
 Version 2.34.0
 
 - Feature guestfs:
