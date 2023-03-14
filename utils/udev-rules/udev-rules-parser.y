@@ -18,6 +18,50 @@
 #include "udev-rules-parser.h"
 #include "udev-rules-scanner.h"
 
+static const char *const rule_key_names[_KEY_TYPE_MAX] = {
+	[KEY_ACTION]     = "ACTION",
+	[KEY_ATTRS]      = "ATTRS",
+	[KEY_ATTR]       = "ATTR",
+	[KEY_CONST]      = "CONST",
+	[KEY_DEVPATH]    = "DEVPATH",
+	[KEY_DRIVERS]    = "DRIVERS",
+	[KEY_DRIVER]     = "DRIVER",
+	[KEY_ENV]        = "ENV",
+	[KEY_GOTO]       = "GOTO",
+	[KEY_GROUP]      = "GROUP",
+	[KEY_IMPORT]     = "IMPORT",
+	[KEY_KERNELS]    = "KERNELS",
+	[KEY_KERNEL]     = "KERNEL",
+	[KEY_LABEL]      = "LABEL",
+	[KEY_MODE]       = "MODE",
+	[KEY_NAME]       = "NAME",
+	[KEY_OPTIONS]    = "OPTIONS",
+	[KEY_OWNER]      = "OWNER",
+	[KEY_PROGRAM]    = "PROGRAM",
+	[KEY_RESULT]     = "RESULT",
+	[KEY_RUN]        = "RUN",
+	[KEY_SECLABEL]   = "SECLABEL",
+	[KEY_SUBSYSTEMS] = "SUBSYSTEMS",
+	[KEY_SUBSYSTEM]  = "SUBSYSTEM",
+	[KEY_SYMLINK]    = "SYMLINK",
+	[KEY_SYSCTL]     = "SYSCTL",
+	[KEY_TAGS]       = "TAGS",
+	[KEY_TAG]        = "TAG",
+	[KEY_TEST]       = "TEST",
+};
+
+static const char *const rule_op_names[_OP_TYPE_MAX] = {
+	[OP_ASSIGN]       = "=",
+	[OP_ASSIGN_FINAL] = ":=",
+	[OP_ADD]          = "+=",
+	[OP_REMOVE]       = "-=",
+	[OP_MATCH]        = "==",
+	[OP_NOMATCH]      = "!=",
+};
+
+#define key2str(pair) rule_key_names[pair->key]
+#define op2str(pair)  rule_op_names[pair->op]
+
 static int yyerror(YYLTYPE *lloc, yyscan_t scanner __attribute__((unused)),
                    struct rules_state *state, const char *s)
 {
@@ -57,57 +101,6 @@ static struct rule_pair *get_pair(struct rule *rule)
 
 	list_add_tail(&new->list, &rule->pairs);
 	return new;
-}
-
-static const char *key2str(struct rule_pair *pair)
-{
-	switch (pair->key) {
-		case KEY_ACTION: return "ACTION";
-		case KEY_ATTR: return "ATTR";
-		case KEY_ATTRS: return "ATTRS";
-		case KEY_CONST: return "CONST";
-		case KEY_DEVPATH: return "DEVPATH";
-		case KEY_DRIVER: return "DRIVER";
-		case KEY_DRIVERS: return "DRIVERS";
-		case KEY_ENV: return "ENV";
-		case KEY_GOTO: return "GOTO";
-		case KEY_GROUP: return "GROUP";
-		case KEY_IMPORT: return "IMPORT";
-		case KEY_KERNEL: return "KERNEL";
-		case KEY_KERNELS: return "KERNELS";
-		case KEY_LABEL: return "LABEL";
-		case KEY_MODE: return "MODE";
-		case KEY_NAME: return "NAME";
-		case KEY_OPTIONS: return "OPTIONS";
-		case KEY_OWNER: return "OWNER";
-		case KEY_PROGRAM: return "PROGRAM";
-		case KEY_RESULT: return "RESULT";
-		case KEY_RUN: return "RUN";
-		case KEY_SECLABEL: return "SECLABEL";
-		case KEY_SUBSYSTEM: return "SUBSYSTEM";
-		case KEY_SUBSYSTEMS: return "SUBSYSTEMS";
-		case KEY_SYMLINK: return "SYMLINK";
-		case KEY_SYSCTL: return "SYSCTL";
-		case KEY_TAG: return "TAG";
-		case KEY_TAGS: return "TAGS";
-		case KEY_TEST: return "TEST";
-		default: break;
-	}
-	return NULL;
-}
-
-static const char *op2str(struct rule_pair *pair)
-{
-	switch (pair->op) {
-		case OP_ASSIGN:       return "=";
-		case OP_ASSIGN_FINAL: return ":=";
-		case OP_ADD:          return "+=";
-		case OP_REMOVE:       return "-=";
-		case OP_MATCH:        return "==";
-		case OP_NOMATCH:      return "!=";
-		default: break;
-	}
-	return NULL;
 }
 
 static bool in_list(const char *k, ...)
@@ -584,10 +577,6 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 				rule_log_invalid_op(state, pair);
 			break;
 		default:
-			warnx("%s:%d:%d: unknown key \"%s\".",
-				pair_fname(pair), key_line(pair), key_column(pair),
-				key2str(pair));
-			warning_update_retcode(state, -1);
 			return;
 	}
 
