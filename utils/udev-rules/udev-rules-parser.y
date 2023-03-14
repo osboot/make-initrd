@@ -36,7 +36,6 @@ static struct rule *get_rule(YYLTYPE *lloc, struct rules_state *state)
 	if (!(new = calloc(1, sizeof(*new))))
 		err(1, "malloc(rule)");
 
-	new->global_order = state->global_rule_nr;
 	new->file = state->cur_file;
 	new->line_nr = lloc->first_line;
 

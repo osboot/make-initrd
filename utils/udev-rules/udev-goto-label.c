@@ -42,7 +42,7 @@ static inline char *rec_str(struct rule_goto_label *rec)
 
 static inline int rec_order(struct rule_goto_label *rec)
 {
-	return rec->pair->rule->global_order;
+	return rec->pair->rule->line_nr;
 }
 
 void check_goto_label(struct rules_state *state)

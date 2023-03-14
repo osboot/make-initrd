@@ -126,7 +126,6 @@ struct rule_pair {
 struct rule {
 	struct list_head list;
 	struct list_head pairs;
-	int global_order;
 	int line_nr;
 	struct rule_file *file;
 };
