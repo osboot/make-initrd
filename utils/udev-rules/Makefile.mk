@@ -6,6 +6,7 @@ udev_rules_GENDIR = $(GENDIR)/utils/udev-rules
 udev_rules_SRCS = \
 		$(udev_rules_GENDIR)/udev-rules-parser.c \
 		$(udev_rules_GENDIR)/udev-rules-scanner.c \
+		$(udev_rules_SRCDIR)/list_sort.c \
 		$(udev_rules_SRCDIR)/udev-string.c \
 		$(udev_rules_SRCDIR)/udev-goto-label.c \
 		$(udev_rules_SRCDIR)/udev-rules.c

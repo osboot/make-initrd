@@ -124,6 +124,26 @@ static bool in_list(const char *k, ...)
 	return (s != NULL);
 }
 
+static size_t rule_pair_priority(struct rule_pair *pair)
+{
+	unsigned int type = pair->key + (pair->op < _OP_TYPE_IS_MATCH ? PAIR_OP_MATCH : PAIR_OP_ACTION);
+	for (size_t i = 0; i < ARRAY_SIZE(rule_pair_prio); i++) {
+		if (rule_pair_prio[i] == type)
+			return i;
+	}
+	return 0;
+}
+
+static int rule_pair_cmp(void *priv __attribute__((unused)), const struct list_head *a, const struct list_head *b)
+{
+	struct rule_pair *pair_a, *pair_b;
+
+	pair_a = container_of(a, struct rule_pair, list);
+	pair_b = container_of(b, struct rule_pair, list);
+
+	return (rule_pair_priority(pair_a) >= rule_pair_priority(pair_b));
+}
+
 static void rule_log_dup_entry(struct rules_state *state, struct rule_pair *pair, int dups)
 {
 	warnx("%s:%d:%d: %s%s%s%s%s\"%s\" is duplicated %d times in the same match block [-W%s]",
@@ -265,9 +285,8 @@ static void check_match_only_conditions(struct rules_state *state, struct rule *
 	}
 
 	if (!actions) {
-		struct rule_pair *first = list_first_entry(&rule->pairs, struct rule_pair, list);
-		warnx("%s:%d:%d: the rule contains only match conditions without any action [-W%s]",
-			pair_fname(first), key_line(first), key_column(first),
+		warnx("%s:%d:1: the rule contains only match conditions without any action [-W%s]",
+			rule->file->name, rule->line_nr,
 			warning_str[W_INCOMPLETE_RULES]);
 		warning_update_retcode(state, W_INCOMPLETE_RULES);
 	}
@@ -597,6 +616,9 @@ line		: EOL
 		;
 ruleline	: pairs EOL
 		{
+			if (state->cur_rule)
+				list_sort(state, &state->cur_rule->pairs, rule_pair_cmp);
+
 			check_match_only_conditions(state, state->cur_rule);
 
 			state->global_rule_nr++;
