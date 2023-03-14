@@ -1,0 +1,10 @@
+udev-rules: ./foo.rules:3:14: multiple LABEL assignments in a single rule are not supported [-Wmulti-label]
+udev-rules: ./foo.rules:3:27: multiple LABEL assignments in a single rule are not supported [-Wmulti-label]
+udev-rules: ./foo.rules:5:13: multiple GOTO assignments in a single rule are not supported [-Wmulti-goto]
+udev-rules: ./foo.rules:5:25: multiple GOTO assignments in a single rule are not supported [-Wmulti-goto]
+udev-rules: ./foo.rules:3:27: LABEL="baz" takes no effect [-Wunsed-labels]
+udev-rules: For more information:
+udev-rules:   https://github.com/osboot/make-initrd/wiki/udev-rules-Wunsed-labels
+udev-rules:   https://github.com/osboot/make-initrd/wiki/udev-rules-Wmulti-label
+udev-rules:   https://github.com/osboot/make-initrd/wiki/udev-rules-Wmulti-goto
+rc=1

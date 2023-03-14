@@ -1,0 +1,8 @@
+GOTO="foo"
+GOTO="bar"
+LABEL="foo", LABEL="bar", LABEL="baz"
+
+GOTO="aaa", GOTO="bbb", GOTO="ccc"
+LABEL="aaa"
+LABEL="bbb"
+LABEL="ccc"

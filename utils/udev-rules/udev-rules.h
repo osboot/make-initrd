@@ -128,7 +128,6 @@ struct rule {
 	struct list_head pairs;
 	int global_order;
 	int line_nr;
-	int has_goto;
 	struct rule_file *file;
 };
 
@@ -144,6 +143,8 @@ enum {
 	W_DUP_MATCH,
 	W_CONFLICT_MATCH,
 	W_INCOMPLETE_RULES,
+	W_MULTI_LABEL,
+	W_MULTI_GOTO,
 	_W_TYPE_MAX,
 };
 

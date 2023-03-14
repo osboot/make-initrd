@@ -271,6 +271,37 @@ static void check_match_conditions(struct rules_state *state, struct rule_pair *
 		rule_log_conflict_match(state, pair);
 }
 
+static void check_multi_goto_label(struct rules_state *state, struct rule_pair *pair)
+{
+	struct rule_pair *p;
+	struct rule *rule = pair->rule;
+
+	if ((!state->warning[W_MULTI_LABEL] && !state->warning[W_MULTI_GOTO]) ||
+	    (pair->key != KEY_LABEL && pair->key != KEY_GOTO) ||
+	    pair->op < _OP_TYPE_IS_MATCH)
+		return;
+
+	list_for_each_entry(p, &rule->pairs, list) {
+		if (pair == p)
+			break;
+
+		if (state->warning[W_MULTI_LABEL] && p->key == KEY_LABEL) {
+			warnx("%s:%d:%d: multiple LABEL assignments in a single rule are not supported [-W%s]",
+				pair_fname(pair), key_line(pair), key_column(pair),
+				warning_str[W_MULTI_LABEL]);
+			warning_update_retcode(state, W_MULTI_LABEL);
+			break;
+		}
+		if (state->warning[W_MULTI_GOTO] && p->key == KEY_GOTO) {
+			warnx("%s:%d:%d: multiple GOTO assignments in a single rule are not supported [-W%s]",
+				pair_fname(pair), key_line(pair), key_column(pair),
+				warning_str[W_MULTI_GOTO]);
+			warning_update_retcode(state, W_MULTI_GOTO);
+			break;
+		}
+	}
+}
+
 static void check_match_only_conditions(struct rules_state *state, struct rule *rule)
 {
 	struct rule_pair *p;
@@ -401,13 +432,6 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 			if (pair->op != OP_ASSIGN)
 				rule_log_invalid_op(state, pair);
 
-			if (pair->rule->has_goto) {
-				warnx("%s:%d:%d: Contains multiple GOTO keys.",
-					pair_fname(pair), key_line(pair), key_column(pair));
-				warning_update_retcode(state, -1);
-			}
-
-			pair->rule->has_goto = 1;
 			label = get_goto(state);
 			label->pair = pair;
 
@@ -569,6 +593,7 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 	}
 
 	check_match_conditions(state, pair);
+	check_multi_goto_label(state, pair);
 
 	//if (pair->attr)
 	//	printf("(<%s> <%s> <%s> <%s>) ",

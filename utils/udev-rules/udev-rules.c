@@ -30,6 +30,8 @@ print_help(const char *progname, int rc)
 	       "  -Wconflict-match        Warn about conflicting matches in a rule\n"
 	       "                          (entry is checked for == and != at the same time);\n"
 	       "  -Wincomplete-rules      Warn about rule contains only match conditions without any action;\n"
+	       "  -Wmulti-label           Warn about multiple LABEL in same rule;\n"
+	       "  -Wmulti-goto            Warn about multiple GOTO in same rule;\n"
 	       "  -x                      Show external file and commands that are used in the rules;\n"
 	       "  -h                      Show this text and exit.\n"
 	       "\n",
@@ -44,6 +46,8 @@ const char *warning_str[_W_TYPE_MAX] = {
 	[W_DUP_MATCH]         = "dup-match",
 	[W_CONFLICT_MATCH]    = "conflict-match",
 	[W_INCOMPLETE_RULES]  = "incomplete-rule",
+	[W_MULTI_LABEL]       = "multi-label",
+	[W_MULTI_GOTO]        = "multi-goto",
 };
 
 int main(int argc, char **argv)
