@@ -138,7 +138,7 @@ static int rule_pair_cmp(void *priv __attribute__((unused)), const struct list_h
 
 static void rule_log_dup_entry(struct rules_state *state, struct rule_pair *pair, int dups)
 {
-	warnx("%s:%d:%d: %s%s%s%s%s\"%s\" is duplicated %d times in the same match block [-W%s]",
+	warnx("%s:%d:%d: %s%s%s%s%s\"%s\" is duplicated %d times in the same rule [-W%s]",
 		pair_fname(pair), key_line(pair), key_column(pair),
 		key2str(pair),
 		( pair->attr ? "{" : "" ), ( pair->attr ? pair->attr->string : "" ), ( pair->attr ? "}" : "" ),
