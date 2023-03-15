@@ -474,6 +474,9 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 			if (is_match || pair->op == OP_REMOVE)
 				rule_log_invalid_op(state, pair);
 
+			if (pair->op == OP_ADD)
+				pair->op = OP_ASSIGN;
+
 			break;
 		case KEY_IMPORT:
 			if (!pair->attr || isempty(pair->attr->string))
