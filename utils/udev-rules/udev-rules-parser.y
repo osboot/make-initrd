@@ -304,7 +304,8 @@ static void check_match_only_conditions(struct rules_state *state, struct rule *
 
 	list_for_each_entry(p, &rule->pairs, list) {
 		if (p->op > _OP_TYPE_IS_MATCH ||
-		    p->key == KEY_PROGRAM)
+		    p->key == KEY_PROGRAM ||
+		    p->key == KEY_IMPORT)
 			actions++;
 	}
 
@@ -480,6 +481,9 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 
 			if (pair->op == OP_REMOVE)
 				rule_log_invalid_op(state, pair);
+
+			if (!is_match)
+				pair->op = OP_MATCH;
 
 			if (!in_list(pair->attr->string,
 			             "file", "program", "builtin",
