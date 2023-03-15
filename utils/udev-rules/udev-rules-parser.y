@@ -303,7 +303,8 @@ static void check_match_only_conditions(struct rules_state *state, struct rule *
 		return;
 
 	list_for_each_entry(p, &rule->pairs, list) {
-		if (p->op > _OP_TYPE_IS_MATCH)
+		if (p->op > _OP_TYPE_IS_MATCH ||
+		    p->key == KEY_PROGRAM)
 			actions++;
 	}
 
@@ -531,6 +532,9 @@ static void process_token(struct rules_state *state, struct rule_pair *pair)
 
 			if (pair->op == OP_REMOVE)
 				rule_log_invalid_op(state, pair);
+
+			if (!is_match)
+				pair->op = OP_MATCH;
 
 			if (state->show_external)
 				fprintf(stdout, "%s:%d:%d\tprogram\tprogram\t%s\n",
