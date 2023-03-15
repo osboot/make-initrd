@@ -315,6 +315,30 @@ static void check_match_only_conditions(struct rules_state *state, struct rule *
 	}
 }
 
+static void check_program_result(struct rules_state *state, struct rule *rule)
+{
+	struct rule_pair *p;
+	int program_result_pairs = 0;
+	int program = 0;
+
+	list_for_each_entry(p, &rule->pairs, list) {
+		if (p->key == KEY_PROGRAM) {
+			program++;
+		} else if (program && p->key == KEY_RESULT) {
+			program = 0;
+			program_result_pairs++;
+		}
+	}
+
+	if (program_result_pairs > 1) {
+		warnx("%s:%d:1: RESULT contains output from last PROGRAM call, "
+		      "but since udev sorts the pairs in the rule, "
+		      "PROGRAM and RESULT cannot be interleaved",
+			rule->file->name, rule->line_nr);
+		warning_update_retcode(state, -1);
+	}
+}
+
 static void process_token(struct rules_state *state, struct rule_pair *pair)
 {
 	struct rule_goto_label *label;
@@ -629,10 +653,12 @@ line		: EOL
 		;
 ruleline	: pairs EOL
 		{
-			if (state->cur_rule)
-				list_sort(state, &state->cur_rule->pairs, rule_pair_cmp);
+			if (state->cur_rule) {
+				check_match_only_conditions(state, state->cur_rule);
+				check_program_result(state, state->cur_rule);
 
-			check_match_only_conditions(state, state->cur_rule);
+				list_sort(state, &state->cur_rule->pairs, rule_pair_cmp);
+			}
 
 			state->global_rule_nr++;
 			state->cur_file->rules_nr++;

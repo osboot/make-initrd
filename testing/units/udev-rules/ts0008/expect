@@ -1,0 +1,2 @@
+udev-rules: ./foo.rules:5:1: RESULT contains output from last PROGRAM call, but since udev sorts the pairs in the rule, PROGRAM and RESULT cannot be interleaved
+rc=1

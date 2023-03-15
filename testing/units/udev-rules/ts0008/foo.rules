@@ -1,0 +1,5 @@
+PROGRAM="foo", RESULT=="out"
+PROGRAM="foo", RESULT=="out", RESULT=="out*"
+PROGRAM="foo", PROGRAM="bar", RESULT=="out"
+PROGRAM="foo", PROGRAM="bar", RESULT=="out*", RESULT=="output"
+PROGRAM="foo", RESULT=="out*", PROGRAM="bar", RESULT=="out1*"
