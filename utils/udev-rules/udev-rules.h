@@ -6,13 +6,23 @@
 typedef enum {
 	OP_MATCH,        /* == */
 	OP_NOMATCH,      /* != */
-	_OP_TYPE_IS_MATCH,
 	OP_ADD,          /* += */
 	OP_REMOVE,       /* -= */
 	OP_ASSIGN,       /* = */
 	OP_ASSIGN_FINAL, /* := */
 	_OP_TYPE_MAX,
 } rule_op_t;
+
+#define _OP_TYPE_IS_ACTION OP_ADD
+
+static const char *const rule_op_names[_OP_TYPE_MAX] = {
+	[OP_ASSIGN]       = "=",
+	[OP_ASSIGN_FINAL] = ":=",
+	[OP_ADD]          = "+=",
+	[OP_REMOVE]       = "-=",
+	[OP_MATCH]        = "==",
+	[OP_NOMATCH]      = "!=",
+};
 
 typedef enum {
 	KEY_ACTION,
@@ -49,6 +59,41 @@ typedef enum {
 
 #define PAIR_OP_MATCH  0
 #define PAIR_OP_ACTION _KEY_TYPE_MAX
+
+static const char *const rule_key_names[_KEY_TYPE_MAX] = {
+	[KEY_ACTION]     = "ACTION",
+	[KEY_ATTRS]      = "ATTRS",
+	[KEY_ATTR]       = "ATTR",
+	[KEY_CONST]      = "CONST",
+	[KEY_DEVPATH]    = "DEVPATH",
+	[KEY_DRIVERS]    = "DRIVERS",
+	[KEY_DRIVER]     = "DRIVER",
+	[KEY_ENV]        = "ENV",
+	[KEY_GOTO]       = "GOTO",
+	[KEY_GROUP]      = "GROUP",
+	[KEY_IMPORT]     = "IMPORT",
+	[KEY_KERNELS]    = "KERNELS",
+	[KEY_KERNEL]     = "KERNEL",
+	[KEY_LABEL]      = "LABEL",
+	[KEY_MODE]       = "MODE",
+	[KEY_NAME]       = "NAME",
+	[KEY_OPTIONS]    = "OPTIONS",
+	[KEY_OWNER]      = "OWNER",
+	[KEY_PROGRAM]    = "PROGRAM",
+	[KEY_RESULT]     = "RESULT",
+	[KEY_RUN]        = "RUN",
+	[KEY_SECLABEL]   = "SECLABEL",
+	[KEY_SUBSYSTEMS] = "SUBSYSTEMS",
+	[KEY_SUBSYSTEM]  = "SUBSYSTEM",
+	[KEY_SYMLINK]    = "SYMLINK",
+	[KEY_SYSCTL]     = "SYSCTL",
+	[KEY_TAGS]       = "TAGS",
+	[KEY_TAG]        = "TAG",
+	[KEY_TEST]       = "TEST",
+};
+
+#define key2str(pair) rule_key_names[pair->key]
+#define op2str(pair)  rule_op_names[pair->op]
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
@@ -166,6 +211,11 @@ struct rules_state {
 
 	int retcode;
 };
+
+static inline bool is_op_match(struct rule_pair *pair)
+{
+	return (pair->op < _OP_TYPE_IS_ACTION);
+}
 
 static inline int key_column(struct rule_pair *pair)
 {

@@ -18,50 +18,6 @@
 #include "udev-rules-parser.h"
 #include "udev-rules-scanner.h"
 
-static const char *const rule_key_names[_KEY_TYPE_MAX] = {
-	[KEY_ACTION]     = "ACTION",
-	[KEY_ATTRS]      = "ATTRS",
-	[KEY_ATTR]       = "ATTR",
-	[KEY_CONST]      = "CONST",
-	[KEY_DEVPATH]    = "DEVPATH",
-	[KEY_DRIVERS]    = "DRIVERS",
-	[KEY_DRIVER]     = "DRIVER",
-	[KEY_ENV]        = "ENV",
-	[KEY_GOTO]       = "GOTO",
-	[KEY_GROUP]      = "GROUP",
-	[KEY_IMPORT]     = "IMPORT",
-	[KEY_KERNELS]    = "KERNELS",
-	[KEY_KERNEL]     = "KERNEL",
-	[KEY_LABEL]      = "LABEL",
-	[KEY_MODE]       = "MODE",
-	[KEY_NAME]       = "NAME",
-	[KEY_OPTIONS]    = "OPTIONS",
-	[KEY_OWNER]      = "OWNER",
-	[KEY_PROGRAM]    = "PROGRAM",
-	[KEY_RESULT]     = "RESULT",
-	[KEY_RUN]        = "RUN",
-	[KEY_SECLABEL]   = "SECLABEL",
-	[KEY_SUBSYSTEMS] = "SUBSYSTEMS",
-	[KEY_SUBSYSTEM]  = "SUBSYSTEM",
-	[KEY_SYMLINK]    = "SYMLINK",
-	[KEY_SYSCTL]     = "SYSCTL",
-	[KEY_TAGS]       = "TAGS",
-	[KEY_TAG]        = "TAG",
-	[KEY_TEST]       = "TEST",
-};
-
-static const char *const rule_op_names[_OP_TYPE_MAX] = {
-	[OP_ASSIGN]       = "=",
-	[OP_ASSIGN_FINAL] = ":=",
-	[OP_ADD]          = "+=",
-	[OP_REMOVE]       = "-=",
-	[OP_MATCH]        = "==",
-	[OP_NOMATCH]      = "!=",
-};
-
-#define key2str(pair) rule_key_names[pair->key]
-#define op2str(pair)  rule_op_names[pair->op]
-
 static int yyerror(YYLTYPE *lloc, yyscan_t scanner __attribute__((unused)),
                    struct rules_state *state, const char *s)
 {
@@ -118,7 +74,7 @@ static bool in_list(const char *k, ...)
 
 static size_t rule_pair_priority(struct rule_pair *pair)
 {
-	unsigned int type = pair->key + (pair->op < _OP_TYPE_IS_MATCH ? PAIR_OP_MATCH : PAIR_OP_ACTION);
+	unsigned int type = pair->key + (is_op_match(pair) ? PAIR_OP_MATCH : PAIR_OP_ACTION);
 	for (size_t i = 0; i < ARRAY_SIZE(rule_pair_prio); i++) {
 		if (rule_pair_prio[i] == type)
 			return i;
@@ -187,7 +143,7 @@ static void check_match_conditions(struct rules_state *state, struct rule_pair *
 	int conflict_nr = 0;
 
 	// For now, ignore changes to variables.
-	if (pair->op > _OP_TYPE_IS_MATCH)
+	if (!is_op_match(pair))
 		return;
 
 	list_for_each_entry(p, &rule->pairs, list) {
@@ -270,7 +226,7 @@ static void check_multi_goto_label(struct rules_state *state, struct rule_pair *
 
 	if ((!state->warning[W_MULTI_LABEL] && !state->warning[W_MULTI_GOTO]) ||
 	    (pair->key != KEY_LABEL && pair->key != KEY_GOTO) ||
-	    pair->op < _OP_TYPE_IS_MATCH)
+	    is_op_match(pair))
 		return;
 
 	list_for_each_entry(p, &rule->pairs, list) {
@@ -303,7 +259,7 @@ static void check_match_only_conditions(struct rules_state *state, struct rule *
 		return;
 
 	list_for_each_entry(p, &rule->pairs, list) {
-		if (p->op > _OP_TYPE_IS_MATCH ||
+		if (!is_op_match(p) ||
 		    p->key == KEY_PROGRAM ||
 		    p->key == KEY_IMPORT)
 			actions++;
@@ -344,7 +300,7 @@ static void check_program_result(struct rules_state *state, struct rule *rule)
 static void process_token(struct rules_state *state, struct rule_pair *pair)
 {
 	struct rule_goto_label *label;
-	bool is_match = (pair->op < _OP_TYPE_IS_MATCH);
+	bool is_match = is_op_match(pair);
 
 	switch (pair->key) {
 		case KEY_ACTION:
