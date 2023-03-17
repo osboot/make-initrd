@@ -7,8 +7,11 @@
 	fatal "unable to find device name in \`$SYSFS_PATH/dev/block/$1/uevent'"
 
 MD_UUID=
+MD_CONTAINER=
 # shellcheck disable=SC2046
 eval $(mdadm --detail --export "/dev/$DEVNAME")
+
+[ -z "$MD_CONTAINER" ] || eval "$(mdadm --detail --export "$MD_CONTAINER")"
 
 [ -n "$MD_UUID" ] ||
 	fatal "UUID not found for /dev/$DEVNAME"

@@ -8,12 +8,23 @@
 level=
 readline level "$SYSFS_PATH$1"/md/level
 
+imsm_mod_names() {
+	local metadata_ver=
+	readline metadata_ver "$SYSFS_PATH$1"/md/metadata_version
+
+	if [ "${metadata_ver:0:9}" = 'external:' ]; then
+		local container_ver="${metadata_ver:9}"
+		readline container_ver "${SYSFS_PATH}/class/block${container_ver%/*}/md/metadata_version"
+		[ "$container_ver" = 'external:imsm' ] && printf '%s\n' efivarfs
+	fi
+}
+
 depinfo \
 		--set-version="$kernel" \
 		--no-builtin \
 		--no-prefix \
 		--no-firmware \
-		"md-$level" 2>/dev/null |
+		"md-$level" "$(imsm_mod_names "$1")" 2>/dev/null |
 	sort -u |
 while read -r mod; do
 	guess_module "$mod"

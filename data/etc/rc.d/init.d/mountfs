@@ -44,6 +44,7 @@ MountVirtualFs()
 	action_shell "$msg [/dev]:" MountDev
 	action "$msg [/sys]:"  mount /sys
 	action "$msg [/run]:"  mount /run
+	modprobe -n efivarfs && action "$msg [/sys/firmware/efi/efivars]:"  mount /sys/firmware/efi/efivars
 
 	while read -r l t; do
 		[ -e "$l" ] || ln -s "$t" "$l"

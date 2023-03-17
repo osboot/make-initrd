@@ -97,6 +97,7 @@ gen_fstab()
 
 	[ -n "$have_sys" ] || fstab+=("sysfs /sys sysfs nodev,noexec,nosuid 0 0")
 	[ -n "$have_run" ] || fstab+=("runfs /run tmpfs mode=755 0 0")
+	modprobe -n efivarfs && fstab+=("efivarfs /sys/firmware/efi/efivars efivarfs rw,nosuid,nodev,noexec,relatime 0 0")
 
 	printf '%s\n' "${fstab[@]}" > /etc/fstab
 }
