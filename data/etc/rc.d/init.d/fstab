@@ -63,7 +63,7 @@ gen_fstab()
 			case "$path" in
 				/)
 					i=0
-					path=
+					path="$rootmnt"
 					;;
 				/proc|/proc/*|/dev|/dev/*|/.initrd|/.initrd/*)
 					continue
@@ -74,11 +74,14 @@ gen_fstab()
 				/run)
 					have_run=1
 					;;
+				/*)
+					path="$rootmnt$path"
+					;;
 			esac
 
 			convert_dev ndev "$dev"
 
-			fstab[$i]="$ndev $rootmnt$path $str"
+			fstab[$i]="$ndev $path $str"
 		done < "$conf"
 	done
 
