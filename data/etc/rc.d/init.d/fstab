@@ -43,11 +43,21 @@ convert_dev()
 	eval "$retval=\"\$value\""
 }
 
+in_list()
+{
+	local elem="$1"; shift
+	while [ "$#" -gt 0 ]; do
+		[ "$elem" != "$1" ] || return 0
+		shift
+	done
+	return 1
+}
+
 gen_fstab()
 {
-	local i dev path str ndev ro fstab
-	local have_sys='' have_run=''
+	local i dev path str ndev ro fstab userdef_mounts
 
+	userdef_mounts=()
 	fstab=("")
 
 	for conf in /etc/fstab /etc/fstab.d/*.conf; do
@@ -68,11 +78,8 @@ gen_fstab()
 				/proc|/proc/*|/dev|/dev/*|/.initrd|/.initrd/*)
 					continue
 					;;
-				/sys)
-					have_sys=1
-					;;
-				/run)
-					have_run=1
+				/run|/sys)
+					userdef_mounts+=("$path")
 					;;
 				/*)
 					path="$rootmnt$path"
@@ -98,9 +105,14 @@ gen_fstab()
 	[ -n "${fstab[0]-}" ] || [ -z "${DEBUG-}" ] ||
 		echo "Root device unspecified." >&2
 
-	[ -n "$have_sys" ] || fstab+=("sysfs /sys sysfs nodev,noexec,nosuid 0 0")
-	[ -n "$have_run" ] || fstab+=("runfs /run tmpfs mode=755 0 0")
-	modprobe -n efivarfs && fstab+=("efivarfs /sys/firmware/efi/efivars efivarfs rw,nosuid,nodev,noexec,relatime 0 0")
+	in_list /run "${userdef_mounts[@]}" ||
+		fstab+=("runfs /run tmpfs mode=755 0 0")
+
+	in_list /sys "${userdef_mounts[@]}" ||
+		fstab+=("sysfs /sys sysfs nodev,noexec,nosuid 0 0")
+
+	modprobe -n efivarfs &&
+		fstab+=("efivarfs /sys/firmware/efi/efivars efivarfs rw,nosuid,nodev,noexec,relatime 0 0")
 
 	printf '%s\n' "${fstab[@]}" > /etc/fstab
 }
