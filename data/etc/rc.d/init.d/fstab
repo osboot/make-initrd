@@ -105,14 +105,23 @@ gen_fstab()
 	[ -n "${fstab[0]-}" ] || [ -z "${DEBUG-}" ] ||
 		echo "Root device unspecified." >&2
 
+	if grep -qsw devtmpfs /proc/filesystems; then
+		fstab+=("udevfs /dev devtmpfs mode=755,size=5m 0 0")
+	elif grep -qsw tmpfs /proc/filesystems; then
+		fstab+=("udevfs /dev tmpfs mode=755,size=5m 0 0")
+	else
+		echo "devtmpfs and tmpfs are not supported by the kernel." >&2
+	fi
+
 	in_list /run "${userdef_mounts[@]}" ||
 		fstab+=("runfs /run tmpfs mode=755 0 0")
 
 	in_list /sys "${userdef_mounts[@]}" ||
 		fstab+=("sysfs /sys sysfs nodev,noexec,nosuid 0 0")
 
-	modprobe -n efivarfs &&
+	if grep -qsw efivarfs /proc/filesystems; then
 		fstab+=("efivarfs /sys/firmware/efi/efivars efivarfs rw,nosuid,nodev,noexec,relatime 0 0")
+	fi
 
 	printf '%s\n' "${fstab[@]}" > /etc/fstab
 }

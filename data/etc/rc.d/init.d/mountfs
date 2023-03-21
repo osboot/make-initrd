@@ -15,45 +15,38 @@
 . /.initrd/initenv
 . /etc/init.d/template
 
-MountDev()
-{
-	if ! mount -t devtmpfs -o mode=755,size=5m udevfs /dev 2>/dev/null; then
-		mount -t tmpfs -o mode=755,size=5m udevfs /dev ||
-			return 1
-	fi
-
-	makenod() { [ -e /dev/$1 ] || mknod /dev/$1 $2 $3 $4; }
-	makenod ram     b 1 1
-	makenod null    c 1 3
-	makenod zero    c 1 5
-	makenod full    c 1 7
-	makenod random  c 1 8
-	makenod kmsg    c 1 11
-	makenod systty  c 4 0
-	makenod tty0    c 4 0
-	makenod tty1    c 4 1
-	makenod tty     c 5 0
-	makenod console c 5 1
-	makenod ptmx    c 5 2
-}
-
 MountVirtualFs()
 {
-	local msg="Mounting filesystem"
+	for dir in /dev /run /sys /sys/firmware/efi/efivars; do
+		[ ! -d "$dir" ] || ! dir=$(findmnt -nso TARGET "$dir") ||
+			action "Mounting filesystem [$dir]:"  mount "$dir"
+	done
 
-	action_shell "$msg [/dev]:" MountDev
-	action "$msg [/sys]:"  mount /sys
-	action "$msg [/run]:"  mount /run
-	modprobe -n efivarfs && action "$msg [/sys/firmware/efi/efivars]:"  mount /sys/firmware/efi/efivars
+	while read -r n t i j; do
+		[ -e "/dev/$n" ] || mknod "/dev/$n" "$t" "$i" "$j"
+	done <<-EOF
+	ram     b 1 1
+	null    c 1 3
+	zero    c 1 5
+	full    c 1 7
+	random  c 1 8
+	kmsg    c 1 11
+	systty  c 4 0
+	tty0    c 4 0
+	tty1    c 4 1
+	tty     c 5 0
+	console c 5 1
+	ptmx    c 5 2
+	EOF
 
 	while read -r l t; do
-		[ -e "$l" ] || ln -s "$t" "$l"
+		[ -e "/dev/$l" ] || ln -s "$t" "/dev/$l"
 	done <<-EOF
-	/dev/core   /proc/kcore
-	/dev/fd     /proc/self/fd
-	/dev/stdin  /proc/self/fd/0
-	/dev/stdout /proc/self/fd/1
-	/dev/stderr /proc/self/fd/2
+	core   /proc/kcore
+	fd     /proc/self/fd
+	stdin  /proc/self/fd/0
+	stdout /proc/self/fd/1
+	stderr /proc/self/fd/2
 	EOF
 
 	mkdir -p /run/lock/subsys /run/user /run/udev /run/systemd
