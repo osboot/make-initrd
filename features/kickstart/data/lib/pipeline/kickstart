@@ -2,7 +2,7 @@
 
 . pipeline-sh-functions
 
-check_parameter MOUNTFS
+check_parameter KICKSTART
 ks="$(get_parameter KICKSTART)"
 ksfile="$ks"
 
