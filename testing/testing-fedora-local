@@ -31,6 +31,17 @@ readonly top_logdir="$topdir/$logdir"
 
 prepare_testsuite
 
+with_arch()
+{
+	while [ "$#" -gt 0 ]; do
+		case "$1" in
+			lib*|*-devel) printf "%s.%s " "$1" "$ARCH" ;;
+			*)            printf "%s " "$1" ;;
+		esac
+		shift
+	done
+}
+
 for step in "$@"; do
 	case "$step" in
 		build-git)
@@ -39,7 +50,7 @@ for step in "$@"; do
 			cat_exec "$top_workdir/run.sh" <<-EOF
 			#!/bin/bash -efux
 
-			dnf -y install $MAKE_INITRD_PACKAGES_DEVEL
+			dnf -y install $(with_arch $MAKE_INITRD_PACKAGES_DEVEL)
 
 			cd "$builddir"
 			rc=0
@@ -82,7 +93,7 @@ for step in "$@"; do
 					-f - <<-EOF
 				FROM $IMAGE
 				RUN \
-				 dnf -y install $SYSIMAGE_PACKAGES $KERNEL_PACKAGES
+				 dnf -y install $(with_arch $SYSIMAGE_PACKAGES $KERNEL_PACKAGES)
 				RUN \
 				 kver="\$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' -quit)"; \
 				 for i in vmlinuz System.map config; do \
@@ -152,8 +163,8 @@ for step in "$@"; do
 			 PUT_PROGS += pwgen
 			EOF1
 
-			dnf -y install $KICKSTART_PACKAGES
-			dnf -y install $KERNEL_PACKAGES
+			dnf -y install $(with_arch $KICKSTART_PACKAGES)
+			dnf -y install $(with_arch $KERNEL_PACKAGES)
 
 			kver="\$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' -quit)"
 
