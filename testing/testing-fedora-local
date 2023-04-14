@@ -42,12 +42,26 @@ for step in "$@"; do
 			dnf -y install $MAKE_INITRD_PACKAGES_DEVEL
 
 			cd "$builddir"
+			rc=0
 
 			./autogen.sh
 			./configure \
 				--enable-local-build \
-				--with-runtimedir=/lib/initrd1
-			make
+				--with-runtimedir=/lib/initrd1 || rc=\$?
+
+			if [ "\$rc" != 0 ]; then
+				echo '========================================='
+				cat config.log
+				exit 1
+			fi
+
+			make || rc=\$?
+
+			if [ "\$rc" != 0 ]; then
+				echo '========================================='
+				cat config.log
+				exit 1
+			fi
 			EOF
 			run podman run --rm -ti \
 				--volume="$topdir:$builddir" \

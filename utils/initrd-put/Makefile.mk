@@ -8,5 +8,5 @@ initrd_put_CFLAGS = $(HAVE_LIBELF_CFLAGS) \
 PROGS += initrd_put
 
 else
-$(warning Your system does not have libelf, disabling initrd-put)
+$(error Your system does not have libelf, disabling initrd-put)
 endif
