@@ -119,6 +119,10 @@ for step in "$@"; do
 				 find /var/lib/apt/lists/ /var/cache/apt/ -type f -delete;
 				EOF
 
+				run podman image tag \
+					"localhost/mi-$VENDOR:sysimage" \
+					"localhost/mi-$VENDOR:sys"
+
 				gh_group_end
 			fi
 

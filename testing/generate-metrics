@@ -1,0 +1,88 @@
+#!/bin/bash -efu
+
+artifacts="$1"
+shift
+
+set_prefix()
+{
+	prefix=""
+	printf -v prefix "%-${testname_len}s | %${duration_len}d s |" "$1" "$2"
+}
+
+block_begin()
+{
+	printf '### Vendor: %s\n' "$vendor"
+	printf '```\n'
+}
+
+block_end()
+{
+	[ -n "$prev_vendor" ] ||
+		return 0
+
+	printf "%s|%d %$(( ${chart_len} - ${#over_len} - 1 ))d|\n" \
+		"$blank_prefix" "$over_len" "$(( $rest_len + $over_len ))"
+	printf '```\n'
+}
+
+line_len="####################################################################################################################"
+
+find "$artifacts" -name 'artifact-*.txt' -printf '%f\t%p\n' |
+	sort -k1,1 |
+	cut -f2- > "/tmp/artifacts.list"
+
+testname_len=0
+duration_len=0
+duration_max=0
+
+while read -r f; do
+	. "$f"
+	testname="${testname#test-root-}"
+	[ "$testname_len" -gt "${#testname}" ] || testname_len="${#testname}"
+	[ "$duration_len" -gt "${#duration}" ] || duration_len="${#duration}"
+	[ "$duration_max" -gt "${duration}"  ] || duration_max="${duration}"
+done < "/tmp/artifacts.list"
+
+set_prefix "" "0"
+
+prefix_len=${#prefix}
+rest_len=$(( ${#line_len} - ${prefix_len} ))
+over_len=$(( $duration_max - $rest_len ))
+
+[ $over_len -ge 0 ] ||
+	over_len=0
+
+chart_len=$(( $duration_max - $over_len )) ||
+chart_len=$(( $chart_len - 1 ))
+
+blank_prefix="${line_len:0:$(( $prefix_len - 1 ))}"
+blank_prefix="${blank_prefix//[! ]/ }"
+
+prev_vendor=""
+while read -r f; do
+	. "$f"
+
+	testname="${testname#test-root-}"
+	len=$(( $duration - $over_len ))
+
+	if [ "$prev_vendor" != "$vendor" ]; then
+		block_end
+		block_begin
+	fi
+
+	set_prefix "$testname" "$duration"
+	printf '%s' "$prefix"
+
+	for (( i=0; i < chart_len; i++)) {
+		[ $i -lt $len ] &&
+			printf '#' ||
+			printf '-'
+	}
+	printf '|\n'
+
+	prev_vendor="$vendor"
+
+done < "/tmp/artifacts.list"
+
+block_end
+

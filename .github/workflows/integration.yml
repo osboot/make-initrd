@@ -110,6 +110,15 @@ jobs:
           QEMU_DISK_FORMAT: qcow2
         run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} run-boot
 
+      - name: "Archive Metrics"
+        uses: actions/upload-artifact@v3
+        with:
+          name: "metrics-${{ matrix.name }}-${{ matrix.test }}-${{ matrix.testcase }}"
+          path: testing/status/artifact-*.txt
+          if-no-files-found: ignore
+          retention-days: 1
+
+
   e2e-network:
     name: "${{ matrix.name }} ${{ matrix.test }} ${{ matrix.testcase }}"
     runs-on: ubuntu-latest
@@ -163,3 +172,43 @@ jobs:
           QEMU_MEMORY: 1G
           QEMU_DISK_FORMAT: qcow2
         run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} run-boot
+
+      - name: "Archive Metrics"
+        uses: actions/upload-artifact@v3
+        with:
+          name: "metrics-${{ matrix.name }}-${{ matrix.test }}-${{ matrix.testcase }}"
+          path: testing/status/artifact-*.txt
+          if-no-files-found: ignore
+          retention-days: 1
+
+
+  boot-duration:
+    name: "Metrics"
+    needs: [ e2e-local, e2e-network ]
+    runs-on: ubuntu-latest
+    if: success() || failure()
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v3
+
+      - name: "Download Metrics"
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: "Summarize"
+        run: testing/generate-metrics artifacts > "$GITHUB_STEP_SUMMARY"
+
+
+  garbage-collection:
+    name: "Garbage Collection"
+    needs: [ metrics ]
+    runs-on: ubuntu-latest
+    if: success() || cancelled()
+    steps:
+      - name: "Remove Artifacts"
+        uses: geekyeggo/delete-artifact@v2
+        with:
+          name: metrics-*
+          failOnError: false
+

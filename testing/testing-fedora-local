@@ -136,6 +136,10 @@ for step in "$@"; do
 				; do [ ! -d "\$d" ] || find "\$d" -mindepth 1 -delete ||:; done
 				EOF
 
+				run podman image tag \
+					"localhost/mi-$VENDOR:sysimage" \
+					"localhost/mi-$VENDOR:sys"
+
 				gh_group_end
 			fi
 

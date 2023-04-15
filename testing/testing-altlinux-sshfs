@@ -267,8 +267,10 @@ for step in "$@"; do
 			BOOT_LOGS="$top_logdir/sshd.log"
 
 			gh_group_start "checking the ability to boot"
+
 			qemu_setup_cpu
 			qemu_exec
+
 			gh_group_end
 			;;
 		*)
