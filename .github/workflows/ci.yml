@@ -1,4 +1,4 @@
-name: "End-to-End Tests"
+name: "CI"
 on:
   push:
     branches:
@@ -7,8 +7,58 @@ on:
     paths-ignore:
       - '**.md'
 jobs:
+  verify:
+    name: "Verify"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v3
+
+      - name: "Checkout Submodules"
+        run: |
+          git submodule set-url external/busybox/upstream https://github.com/mirror/busybox
+          git submodule update --init --recursive
+
+      - name: "Install Tools"
+        run: |
+         sudo apt-get -y -qq install \
+          gcc make automake autoconf pkg-config udev help2man \
+          libkmod-dev libz-dev libbz2-dev liblzma-dev libzstd-dev libelf-dev libtirpc-dev libcrypt-dev
+         sudo apt-get -y -qq install astyle
+         sudo apt-get -y -qq install shellcheck
+
+      - name: "Configure"
+        run: |
+         ./autogen.sh
+         ./configure
+
+      - name: "Build Sources"
+        run: |
+         make
+
+      - name: "Prepare Gittree"
+        run: |
+         git config --global user.email "ci@example.com"
+         git config --global user.name "GitHubCI commiter"
+         git commit -a -m 'CI: update git tree'
+
+      - name: "Indent-c"
+        run: |
+         make indent-c && git diff --exit-code
+
+      - name: "ShellCheck"
+        run: |
+         make verify
+
+      - name: "Unit Tests"
+        run: |
+         export PATH="$PWD/external/libshell/upstream:$PATH"
+         make check
+
+
   e2e-local:
     name: "${{ matrix.name }} ${{ matrix.test }} ${{ matrix.testcase }}"
+    needs: [ verify ]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -121,6 +171,7 @@ jobs:
 
   e2e-network:
     name: "${{ matrix.name }} ${{ matrix.test }} ${{ matrix.testcase }}"
+    needs: [ verify ]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -182,7 +233,7 @@ jobs:
           retention-days: 1
 
 
-  boot-duration:
+  metrics:
     name: "Metrics"
     needs: [ e2e-local, e2e-network ]
     runs-on: ubuntu-latest
