@@ -1,0 +1,22 @@
+#!/bin/bash -eu
+
+. /.initrd/initenv
+
+[ "${RDLOG-}" != 'console' ] &&
+	logfile=/var/log/polld.log ||
+	logfile=/dev/console
+
+exec >"$logfile" 2>&1
+
+. shell-error
+. uevent-sh-functions
+
+message_time=1
+
+export queuedir="$1"
+export QUEUE="${queuedir##*/}"
+
+for bin in "$extendir"/*; do
+	[ ! -x "$bin" ] || "$bin" ||
+		message "$QUEUE: session=$SESSION: extender failed: $bin"
+done

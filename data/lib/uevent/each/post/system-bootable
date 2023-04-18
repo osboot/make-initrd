@@ -1,4 +1,0 @@
-#!/bin/bash -efu
-
-[ "$1" != udev ] ||
-	process-boot-method
