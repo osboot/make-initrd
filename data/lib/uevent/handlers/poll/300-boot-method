@@ -1,0 +1,29 @@
+#!/bin/bash -eu
+
+. /.initrd/initenv
+
+[ "${RDLOG-}" != 'console' ] &&
+	logfile=/var/log/polld.log ||
+	logfile=/dev/console
+
+exec >"$logfile" 2>&1
+
+method=
+{ read -r method < /etc/initrd/method; } >/dev/null 2>&1 ||:
+
+cd "/lib/initrd/boot/method/$method"
+
+if [ -x ./check ] && ./check; then
+	. shell-error
+	message_time=1
+
+	queuedir="$1"
+	QUEUE="${queuedir##*/}"
+
+	message "$QUEUE: session=$SESSION: $method ready. acting!"
+
+	./action
+fi
+
+# slow down the busy loop of this queue
+sleep 0.2
