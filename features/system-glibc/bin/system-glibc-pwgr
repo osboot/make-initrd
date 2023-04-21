@@ -10,8 +10,16 @@ case "${1-}" in
 
 		mkdir -p -- "$DIR"/etc
 
+		if [ -r /etc/login.defs ]; then
+			printf -v min_uid '%d' "$(sed -ne 's#^[[:space:]]*UID_MIN[[:space:]]\+##p' /etc/login.defs | tail -1)"
+			printf -v min_gid '%d' "$(sed -ne 's#^[[:space:]]*GID_MIN[[:space:]]\+##p' /etc/login.defs | tail -1)"
+		fi
+
+		[ "${min_uid:-0}" -gt 0 ] || min_uid=500
+		[ "${min_gid:-0}" -gt 0 ] || min_gid=500
+
 		while IFS=: read -r name pass gid dummy; do
-			[ -n "$name" ] && [ "$gid" -lt 500 ] ||
+			[ -n "$name" ] && [ "$gid" -lt "$min_gid" ] ||
 				continue
 			printf '%s\n' "$name:x:$gid:$dummy" >> "$DIR"/etc/group
 			printf '%s\n' "$name:x::$dummy" >> "$DIR"/etc/gshadow
@@ -23,7 +31,7 @@ case "${1-}" in
 		done
 
 		while IFS=: read -r name pass uid gid dummy; do
-			[ -n "$name" ] && [ "$uid" -lt 500 ] ||
+			[ -n "$name" ] && [ "$uid" -lt "$min_uid" ] ||
 				continue
 			{
 				[ "$name" = "root" ] &&
