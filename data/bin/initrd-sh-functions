@@ -106,6 +106,7 @@ readline()
 }
 
 _rootdelay_pause=/.initrd/rootdelay/pause
+_rootdelay_timestamp=/.initrd/rootdelay/deadline
 
 rootdelay_pause()
 {
@@ -120,6 +121,13 @@ rootdelay_unpause()
 rootdelay_paused()
 {
 	[ -d "$_rootdelay_pause" ]
+}
+
+rootdelay_reset_timer()
+{
+	local now
+	now="$(date +'%s')"
+	echo $(( $now + $ROOTDELAY )) > "$_rootdelay_timestamp"
 }
 
 initrd_features=/.initrd/features
