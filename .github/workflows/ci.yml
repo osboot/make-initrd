@@ -2,10 +2,11 @@ name: "CI"
 on:
   push:
     branches:
-      - master
-      - for-master
+      - "master"
+      - "for-master"
+      - "patchset/**"
     paths-ignore:
-      - '**.md'
+      - "**.md"
 jobs:
   verify:
     name: "Verify"
