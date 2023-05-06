@@ -85,7 +85,7 @@ int add_queue_dir(int inotifyfd, const char *path, uint32_t mask)
 		if (errno == EEXIST) {
 			return -128;
 		}
-		err("inotify failed to watch: %s: %m", path);
+		rd_err("inotify failed to watch: %s: %m", path);
 	}
 	return ret;
 }
@@ -103,7 +103,7 @@ int watch_path(int inotifyfd, const char *dir, const char *name, uint32_t mask, 
 		return (wfd == -128 ? 0 : wfd);
 
 	if (stat(path, &st) < 0) {
-		err("stat: %s: %m", path);
+		rd_err("stat: %s: %m", path);
 		goto fail;
 	}
 
@@ -127,7 +127,7 @@ int watch_path(int inotifyfd, const char *dir, const char *name, uint32_t mask, 
 
 	watch_list = new;
 
-	info("watch path: %s", path);
+	rd_info("watch path: %s", path);
 	free(path);
 	return 0;
 fail:
@@ -216,7 +216,7 @@ void watch_queues(int inotifyfd)
 {
 	DIR *dir = opendir(filter_dir);
 	if (!dir)
-		fatal("opendir: %s: %m", filter_dir);
+		rd_fatal("opendir: %s: %m", filter_dir);
 
 	struct dirent *ent;
 
@@ -225,7 +225,7 @@ void watch_queues(int inotifyfd)
 			continue;
 
 		if (watch_path(inotifyfd, filter_dir, ent->d_name, EV_QUEUE_MASK, F_QUEUE_DIR) < 0)
-			fatal("unable to start watching: %s/%s", filter_dir, ent->d_name);
+			rd_fatal("unable to start watching: %s/%s", filter_dir, ent->d_name);
 	}
 	closedir(dir);
 }
@@ -238,7 +238,7 @@ int process_signal_events(int signfd)
 
 	size = read_retry(signfd, &fdsi, sizeof(fdsi));
 	if (size != sizeof(fdsi)) {
-		err("unable to read signal info");
+		rd_err("unable to read signal info");
 		return 0;
 	}
 
@@ -248,7 +248,7 @@ int process_signal_events(int signfd)
 
 			if (pid <= 0) {
 				if (pid < 0 && errno != ECHILD) {
-					err("waitpid: %m");
+					rd_err("waitpid: %m");
 					return -1;
 				}
 				break;
@@ -262,7 +262,7 @@ int process_signal_events(int signfd)
 		return 0;
 	}
 
-	info("got signal %d, exit", fdsi.ssi_signo);
+	rd_info("got signal %d, exit", fdsi.ssi_signo);
 	return -1;
 }
 
@@ -279,10 +279,10 @@ void setup_signal_fd(struct fd_handler *el)
 	sigaddset(&mask, SIGCHLD);
 
 	if ((el->fd = signalfd(-1, &mask, SFD_NONBLOCK | SFD_CLOEXEC)) < 0)
-		fatal("signalfd: %m");
+		rd_fatal("signalfd: %m");
 
 	if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0)
-		fatal("sigprocmask: %m");
+		rd_fatal("sigprocmask: %m");
 
 	el->fd_handler = process_signal_events;
 }
@@ -297,7 +297,7 @@ int process_inotify_events(int inotifyfd)
 		if (len < 0) {
 			if (errno == EAGAIN)
 				break;
-			fatal("read: %m");
+			rd_fatal("read: %m");
 		} else if (!len) {
 			break;
 		}
@@ -315,7 +315,7 @@ int process_inotify_events(int inotifyfd)
 				continue;
 
 			if (event->mask & IN_DELETE_SELF) {
-				info("unwatch path: %s", p->q_name);
+				rd_info("unwatch path: %s", p->q_name);
 				unwatch_path(inotifyfd, p->q_ino);
 				continue;
 			}
@@ -328,9 +328,9 @@ int process_inotify_events(int inotifyfd)
 
 			if (p->q_flags & F_PAUSE_DIR) {
 				if (event->mask & IN_CREATE)
-					info("%s: queue paused", event->name);
+					rd_info("%s: queue paused", event->name);
 				else if (event->mask & IN_DELETE)
-					info("%s: queue unpaused", event->name);
+					rd_info("%s: queue unpaused", event->name);
 				apply_pause();
 				continue;
 			}
@@ -345,7 +345,7 @@ int process_inotify_events(int inotifyfd)
 void setup_inotify_fd(struct fd_handler *el)
 {
 	if ((el->fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC)) < 0)
-		fatal("inotify_init1: %m");
+		rd_fatal("inotify_init1: %m");
 
 	el->fd_handler = process_inotify_events;
 }
@@ -363,7 +363,7 @@ int process_pipefd_events(int readfd)
 		if (len < 0) {
 			if (errno == EAGAIN)
 				break;
-			fatal("read(pipe): %m");
+			rd_fatal("read(pipe): %m");
 		} else if (!len) {
 			break;
 		}
@@ -383,7 +383,7 @@ int process_pipefd_events(int readfd)
 void setup_pipe_fd(struct fd_handler *el)
 {
 	if (pipe2(pipefd, O_NONBLOCK | O_CLOEXEC) < 0)
-		fatal("pipe2: %m");
+		rd_fatal("pipe2: %m");
 
 	el->fd = pipefd[PIPE_READ];
 	el->fd_handler = process_pipefd_events;
@@ -395,13 +395,13 @@ int setup_epoll_fd(struct fd_handler list[FD_MAX])
 	struct epoll_event ev = { .events = EPOLLIN };
 
 	if ((epollfd = epoll_create1(EPOLL_CLOEXEC)) < 0)
-		fatal("epoll_create1: %m");
+		rd_fatal("epoll_create1: %m");
 
 	for (int i = 0; i < FD_MAX; i++) {
 		ev.data.fd = list[i].fd;
 
 		if (epoll_ctl(epollfd, EPOLL_CTL_ADD, list[i].fd, &ev) < 0)
-			fatal("epoll_ctl: %m");
+			rd_fatal("epoll_ctl: %m");
 	}
 
 	return epollfd;
@@ -415,14 +415,14 @@ pid_t spawn_worker(int epollfd, struct watch *queue)
 
 	pid = fork();
 	if (pid < 0) {
-		err("fork: %m");
+		rd_err("fork: %m");
 		return 0;
 	} else if (pid > 0) {
 		return pid;
 	}
 
 	if (prctl(PR_SET_PDEATHSIG, SIGKILL) < 0)
-		fatal("prctl(PR_SET_PDEATHSIG): %m");
+		rd_fatal("prctl(PR_SET_PDEATHSIG): %m");
 
 	for (int i = 0; i < FD_MAX; i++) {
 		if (fd_list[i].fd >= 0)
@@ -434,7 +434,7 @@ pid_t spawn_worker(int epollfd, struct watch *queue)
 	sigemptyset(&mask);
 
 	if (sigprocmask(SIG_SETMASK, &mask, NULL) < 0)
-		fatal("sigprocmask: %m");
+		rd_fatal("sigprocmask: %m");
 
 	process_events(queue);
 
@@ -445,7 +445,7 @@ char *get_param_dir(const char *name)
 {
 	char *value = getenv(name);
 	if (!value)
-		fatal("please set `%s' env variable", name);
+		rd_fatal("please set `%s' env variable", name);
 	return value;
 }
 
@@ -463,7 +463,7 @@ int main(int argc, char **argv)
 				exit(0);
 				break;
 			case 'l':
-				loglevel = logging_level(optarg);
+				loglevel = rd_logging_level(optarg);
 				break;
 			default:
 				exit(1);
@@ -472,11 +472,11 @@ int main(int argc, char **argv)
 	}
 
 	if (optind == argc)
-		fatal("specify handler program");
+		rd_fatal("specify handler program");
 
-	logging_init(loglevel);
+	rd_logging_init(loglevel);
 
-	info("starting server ...");
+	rd_info("starting server ...");
 
 	filter_dir = get_param_dir("filterdir");
 	uevent_dir = get_param_dir("ueventdir");
@@ -507,7 +507,7 @@ int main(int argc, char **argv)
 		if (fdcount < 0) {
 			if (errno == EINTR)
 				continue;
-			fatal("epoll_wait: %m");
+			rd_fatal("epoll_wait: %m");
 		}
 
 		for (i = 0; i < fdcount; i++) {
@@ -540,12 +540,12 @@ done:
 	for (i = 0; i < FD_MAX; i++) {
 		if (fd_list[i].fd >= 0) {
 			if (epoll_ctl(epollfd, EPOLL_CTL_DEL, fd_list[i].fd, NULL) < 0)
-				err("epoll_ctl: %m");
+				rd_err("epoll_ctl: %m");
 			close(fd_list[i].fd);
 		}
 	}
 	close(epollfd);
-	logging_close();
+	rd_logging_close();
 
 	return EXIT_SUCCESS;
 }

@@ -12,7 +12,7 @@
 
 int log_priority = LOG_INFO;
 
-int logging_level(const char *name)
+int rd_logging_level(const char *name)
 {
 	if (!strcasecmp(name, "debug"))   return LOG_DEBUG;
 	if (!strcasecmp(name, "info"))    return LOG_INFO;
@@ -21,7 +21,7 @@ int logging_level(const char *name)
 	return log_priority;
 }
 
-void logging_init(int loglevel)
+void rd_logging_init(int loglevel)
 {
 	if (!getenv("UEVENTD_USE_STDERR")) {
 		char *rdlog = getenv("RDLOG");
@@ -32,7 +32,7 @@ void logging_init(int loglevel)
 
 		FILE *cons = fopen(logfile, "w+");
 		if (!cons)
-			fatal("open(%s): %m", logfile);
+			rd_fatal("open(%s): %m", logfile);
 
 		fclose(stderr);
 		stderr = cons;
@@ -41,11 +41,11 @@ void logging_init(int loglevel)
 	log_priority = loglevel;
 }
 
-void logging_close(void)
+void rd_logging_close(void)
 {
 }
 
-void message(int priority, const char *fmt, ...)
+void rd_message(int priority, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);

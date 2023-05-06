@@ -18,7 +18,7 @@ DIR *xopendir(const char *path)
 {
 	DIR *dir = opendir(path);
 	if (!dir)
-		fatal("opendir: %s: %m", path);
+		rd_fatal("opendir: %s: %m", path);
 	return dir;
 }
 
@@ -32,7 +32,7 @@ struct dirent *xreaddir(DIR *d, const char *path)
 	if (!ent) {
 		if (!errno)
 			return NULL;
-		fatal("readdir: %s: %m", path);
+		rd_fatal("readdir: %s: %m", path);
 	}
 	return ent;
 }

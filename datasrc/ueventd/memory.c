@@ -14,8 +14,8 @@ void *xcalloc(size_t nmemb, size_t size)
 {
 	void *r = calloc(nmemb, size);
 	if (!r)
-		fatal("calloc: allocating %lu*%lu bytes: %m",
-		      (unsigned long) nmemb, (unsigned long) size);
+		rd_fatal("calloc: allocating %lu*%lu bytes: %m",
+		         (unsigned long) nmemb, (unsigned long) size);
 	return r;
 }
 
@@ -25,7 +25,7 @@ char *xasprintf(char **ptr, const char *fmt, ...)
 
 	va_start(arg, fmt);
 	if (vasprintf(ptr, fmt, arg) < 0)
-		fatal("vasprintf: %m");
+		rd_fatal("vasprintf: %m");
 	va_end(arg);
 
 	return *ptr;

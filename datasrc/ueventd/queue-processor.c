@@ -24,20 +24,20 @@ void event_handler(struct watch *queue, char *path)
 	pid_t pid = vfork();
 
 	if (pid < 0) {
-		err("fork: %m");
+		rd_err("fork: %m");
 
 	} else if (!pid) {
 		execve(argv[0], argv, environ);
-		fatal("exec: %s: %m", argv[0]);
+		rd_fatal("exec: %s: %m", argv[0]);
 	} else {
 		int status = 0;
 
 		if (waitpid_retry(pid, &status, 0) != pid || !WIFEXITED(status))
-			info("%s: session=%lu: %s failed",
-			     queue->q_name, session, handler_file);
+			rd_info("%s: session=%lu: %s failed",
+			        queue->q_name, session, handler_file);
 		else
-			info("%s: session=%lu: %s finished with return code %d",
-			     queue->q_name, session, handler_file, WEXITSTATUS(status));
+			rd_info("%s: session=%lu: %s finished with return code %d",
+			        queue->q_name, session, handler_file, WEXITSTATUS(status));
 	}
 }
 
@@ -47,27 +47,27 @@ void move_files(char *srcdir, char *dstdir)
 	int srcfd, dstfd;
 
 	if ((srcfd = open(srcdir, O_RDONLY | O_CLOEXEC)) < 0)
-		fatal("open: %s: %m", srcdir);
+		rd_fatal("open: %s: %m", srcdir);
 
 	errno = 0;
 	if ((dstfd = open(dstdir, O_RDONLY | O_CLOEXEC)) < 0) {
 		if (errno == ENOENT) {
 			if (mkdir(dstdir, 0755) < 0)
-				fatal("mkdir: %s: %m", dstdir);
+				rd_fatal("mkdir: %s: %m", dstdir);
 			dstfd = open(dstdir, O_RDONLY | O_CLOEXEC);
 		}
 		if (dstfd < 0)
-			fatal("open: %s: %m", dstdir);
+			rd_fatal("open: %s: %m", dstdir);
 	}
 
 	DIR *d = fdopendir(srcfd);
 	if (!d)
-		fatal("fdopendir: %m");
+		rd_fatal("fdopendir: %m");
 
 	while ((ent = xreaddir(d, srcdir)) != NULL) {
 		if (ent->d_name[0] != '.' && ent->d_type == DT_REG &&
 		    renameat(srcfd, ent->d_name, dstfd, ent->d_name) < 0)
-			fatal("rename `%s/%s' -> `%s/%s': %m", srcdir, ent->d_name, dstdir, ent->d_name);
+			rd_fatal("rename `%s/%s' -> `%s/%s': %m", srcdir, ent->d_name, dstdir, ent->d_name);
 	}
 
 	closedir(d);
@@ -81,14 +81,14 @@ void signal_unhandled_events(struct watch *queue)
 	len = write_loop(queue->q_parentfd,
 	                 (char *) &queue->q_watchfd, sizeof(queue->q_watchfd));
 	if (len < 0)
-		err("write(pipe): %m");
+		rd_err("write(pipe): %m");
 
-	info("%s: session=%lu: retry with the events remaining in the queue", queue->q_name, session);
+	rd_info("%s: session=%lu: retry with the events remaining in the queue", queue->q_name, session);
 }
 
 void process_events(struct watch *queue)
 {
-	info("%s: session=%lu: processing events", queue->q_name, session);
+	rd_info("%s: session=%lu: processing events", queue->q_name, session);
 
 	char *numenv = NULL;
 
