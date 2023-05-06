@@ -55,22 +55,23 @@ extern  int is_dot_dir(struct dirent *ent) __attribute__((nonnull(1)));
 #include <unistd.h>
 #include <syslog.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 extern void rd_logging_init(int log_fd, int level, const char *progname);
 extern void rd_logging_close(void);
-extern int rd_logging_level(const char *lvl)               __attribute__((nonnull(1)));
-extern void rd_message(int priority, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
-
-#define __rd_message(level, format, arg...) rd_message(level, format, ##arg)
+extern int rd_logging_level(const char *lvl)                           __attribute__((nonnull(1)));
+extern void rd_vmessage(const char *fmt, va_list ap)                   __attribute__((format(printf, 1, 0)));
+extern void rd_log_vmessage(int priority, const char *fmt, va_list ap) __attribute__((format(printf, 2, 0)));
+extern void rd_log_message(int priority, const char *fmt, ...)         __attribute__((format(printf, 2, 3)));
 
 #define rd_fatal(format, arg...)                    \
 	do {                                        \
-		rd_message(LOG_CRIT, "%s:%d: " format, __FILE__, __LINE__, ##arg); \
+		rd_log_message(LOG_CRIT, "%s:%d: " format, __FILE__, __LINE__, ##arg); \
 		_exit(EXIT_FAILURE);                \
 	} while (0)
 
-#define rd_err(format, arg...)  __rd_message(LOG_ERR,   format, ##arg)
-#define rd_info(format, arg...) __rd_message(LOG_INFO,  format, ##arg)
-#define rd_dbg(format, arg...)  __rd_message(LOG_DEBUG, format, ##arg)
+#define rd_err(format, arg...)  rd_log_message(LOG_ERR,   format, ##arg)
+#define rd_info(format, arg...) rd_log_message(LOG_INFO,  format, ##arg)
+#define rd_dbg(format, arg...)  rd_log_message(LOG_DEBUG, format, ##arg)
 
 #endif /* __UEVENTD_H__ */
