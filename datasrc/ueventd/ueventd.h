@@ -56,7 +56,7 @@ extern  int is_dot_dir(struct dirent *ent) __attribute__((nonnull(1)));
 #include <syslog.h>
 #include <stdlib.h>
 
-extern void rd_logging_init(int level);
+extern void rd_logging_init(int log_fd, int level);
 extern void rd_logging_close(void);
 extern int rd_logging_level(const char *lvl)               __attribute__((nonnull(1)));
 extern void rd_message(int priority, const char *fmt, ...) __attribute__((format(printf, 2, 3)));

@@ -21,6 +21,8 @@
 
 #include "ueventd.h"
 
+#define default_logfile "/var/log/ueventd.log"
+
 char *uevent_confdb;
 char *filter_dir;
 char *uevent_dir;
@@ -474,7 +476,22 @@ int main(int argc, char **argv)
 	if (optind == argc)
 		rd_fatal("specify handler program");
 
-	rd_logging_init(loglevel);
+	if (!getenv("UEVENTD_USE_STDERR")) {
+		char *rdlog = getenv("RDLOG");
+		const char *logfile = default_logfile;
+
+		if (rdlog && !strcasecmp(rdlog, "console"))
+			logfile = "/dev/console";
+
+		FILE *cons = fopen(logfile, "w+");
+		if (!cons)
+			rd_fatal("open(%s): %m", logfile);
+
+		fclose(stderr);
+		stderr = cons;
+	}
+
+	rd_logging_init(fileno(stderr), loglevel);
 
 	rd_info("starting server ...");
 
