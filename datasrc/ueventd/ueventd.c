@@ -491,7 +491,7 @@ int main(int argc, char **argv)
 		stderr = cons;
 	}
 
-	rd_logging_init(fileno(stderr), loglevel);
+	rd_logging_init(fileno(stderr), loglevel, program_invocation_short_name);
 
 	rd_info("starting server ...");
 
