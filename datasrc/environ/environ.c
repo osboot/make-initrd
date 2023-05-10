@@ -9,6 +9,8 @@
 #include <fnmatch.h>
 #include <fcntl.h>
 
+#include "rd/memory.h"
+
 #ifndef _GNU_SOURCE
 extern char **environ;
 #endif
@@ -183,12 +185,7 @@ unset_environ(char **envp, char *patterns, int invert_match)
 		last++;
 	}
 
-	envname = calloc(envp_sz, sizeof(ssize_t));
-
-	if (!envname) {
-		fprintf(stderr, "ERROR: calloc: %m\n");
-		exit(1);
-	}
+	envname = rd_calloc_or_die(envp_sz, sizeof(ssize_t));
 
 	e = last;
 	i = envp_sz;
@@ -213,12 +210,7 @@ next:
 		i--;
 	}
 
-	env = malloc(sizeof(char) * (max + 1));
-
-	if (!env) {
-		fprintf(stderr, "ERROR: malloc: %m\n");
-		exit(1);
-	}
+	env = rd_malloc_or_die(sizeof(char) * (max + 1));
 
 	pattern = s = patterns;
 	next = NULL;

@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include "rd/memory.h"
 #include "ueventd.h"
 
 static void event_handler(struct watch *queue, char *path) __attribute__((nonnull(1, 2)));
@@ -92,13 +93,13 @@ void process_events(struct watch *queue)
 
 	char *numenv = NULL;
 
-	xasprintf(&numenv, "SESSION=%lu", session);
+	rd_asprintf_or_die(&numenv, "SESSION=%lu", session);
 	putenv(numenv);
 
 	char *srcdir, *dstdir;
 
-	xasprintf(&srcdir, "%s/%s", filter_dir, queue->q_name);
-	xasprintf(&dstdir, "%s/%s", uevent_dir, queue->q_name);
+	rd_asprintf_or_die(&srcdir, "%s/%s", filter_dir, queue->q_name);
+	rd_asprintf_or_die(&dstdir, "%s/%s", uevent_dir, queue->q_name);
 
 	move_files(srcdir, dstdir);
 
