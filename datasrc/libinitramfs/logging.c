@@ -7,7 +7,7 @@
 #include <errno.h>
 #include <time.h>
 
-#include "ueventd.h"
+#include "rd/logging.h"
 
 int log_priority = LOG_INFO;
 int log_fd = STDERR_FILENO;

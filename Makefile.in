@@ -23,6 +23,8 @@ tmpdir      = /tmp
 projectdir  = @projectdir@
 rulesdir    = ${projectdir}/mk
 
+libcdir := $(shell $(CURDIR)/tools/get-libc-dir)
+
 feature_kbd_kbddir := @kbddir@
 external_srcdir = $(CURDIR)/external
 
@@ -49,6 +51,7 @@ dest_rulesdir     := $(build_prefix)/dest$(rulesdir)
 dest_runtimedir   := $(build_prefix)/dest$(runtimedir)
 dest_data_bindir  := $(dest_runtimedir)/bin
 dest_data_sbindir := $(dest_runtimedir)/sbin
+dest_data_libdir  := $(dest_runtimedir)/$(libcdir)
 dest_featuredir   := $(dest_execdir)/$(FEATURESDIR)
 
 HAVE_GZIP        := @HAVE_GZIP@
@@ -98,6 +101,7 @@ NULL :=
 
 PROGS =
 SCRIPTS =
+LIBS =
 
 SKIP_FEATURES =
 
@@ -120,7 +124,7 @@ define VAR_c_CFLAGS =
 $(1)_c_CFLAGS = $(2)
 endef
 
-$(foreach name,$(PROGS),\
+$(foreach name,$(PROGS) $(LIBS),\
 	$(foreach src,$($(subst -,_,$(notdir $(name)))_SRCS),\
 		$(eval $(call VAR_c_CFLAGS,\
 			$(basename $(subst -,_,$(notdir $(src)))),\
@@ -144,6 +148,7 @@ CPPFLAGS += @CPPFLAGS@ @DEFS@ -I$(CURDIR) -I$(CURDIR)/utils
 UDEVD		= @UDEVD@
 UDEVADM		= @UDEVADM@
 HELP2MAN	= @HELP2MAN@
+STRIP		= @STRIP@
 USE_BUSYBOX	= @USE_BUSYBOX@
 USE_LIBSHELL	= @USE_LIBSHELL@
 
@@ -166,14 +171,15 @@ SED = @SED@ \
 
 .PHONY: $(PROGS) $(SCRIPTS)
 
-build-progs: $(PROGS) $(SCRIPTS)
+build-libs: $(LIBS)
+build-progs: build-libs $(PROGS) $(SCRIPTS)
 
 PROJECT_SUBDIRS = data guess tools
 FEATURES_SUBDIRS = $(filter-out $(SKIP_FEATURES),$(notdir $(wildcard $(FEATURESDIR)/*)))
 
 build: $(addprefix $(dest_projectdir)/,$(PROJECT_SUBDIRS))
 build: $(addprefix $(dest_projectdir)/features/,$(FEATURES_SUBDIRS))
-build: build-progs
+build: build-progs build-libs
 
 verify:
 	@if SHELLCHECK="$$(which shellcheck 2>/dev/null)"; then \
@@ -313,7 +319,20 @@ RUNTIME_SBIN_NAMES += $(notdir $(1))
 endif
 endef
 
-define generate_link_target =
+define generate_link_lib_target =
+$(call classify_file,$($(1)_DEST))
+
+DEPS += $(call get_depends,$($(1)_SRCS))
+
+$($(1)_DEST): $(call get_objects,$($(1)_SRCS))
+	$(Q)mkdir -p -- $(dir $($(1)_DEST))
+	$(call quiet_cmd,LD,$($(1)_DEST),$(LINK.o)) $($(1)_LDFLAGS) -o $($(1)_DEST) $$^ $($(1)_LIBS)
+	$(call quiet_cmd,STRIP,$($(1)_DEST),$(STRIP)) -s --remove-section=.note --remove-section=.comment "$($(1)_DEST)"
+
+$(1): $($(1)_DEST)
+endef
+
+define generate_link_bin_target =
 $(call classify_file,$($(1)_DEST))
 
 DEPS += $(call get_depends,$($(1)_SRCS))
@@ -337,7 +356,8 @@ $($(1)_DEST): $($(1)_SRCS)
 $(1): $($(1)_DEST)
 endef
 
-$(foreach name,$(PROGS),  $(eval $(call generate_link_target,$(name))))
+$(foreach name,$(LIBS),   $(eval $(call generate_link_lib_target,$(name))))
+$(foreach name,$(PROGS),  $(eval $(call generate_link_bin_target,$(name))))
 $(foreach name,$(SCRIPTS),$(eval $(call generate_script_target,$(name))))
 
 define generate_symlink_target =
@@ -350,7 +370,7 @@ $(1): $($(2)_DEST)
 build-progs: $(1)
 endef
 
-$(foreach name,$(PROGS),\
+$(foreach name,$(PROGS) $(LIBS),\
 	$(foreach symlink,$($(name)_SYMLINKS),\
 		$(eval $(call generate_symlink_target,$(symlink),$(name)))))
 
