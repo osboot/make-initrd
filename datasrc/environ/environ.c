@@ -8,7 +8,9 @@
 #include <ctype.h>
 #include <fnmatch.h>
 #include <fcntl.h>
+#include <errno.h>
 
+#include "rd/logging.h"
 #include "rd/memory.h"
 
 #ifndef _GNU_SOURCE
@@ -76,25 +78,19 @@ set_environ(const char *fname)
 	int fd = -1;
 	struct stat sb;
 
-	if ((fd = open(fname, O_RDONLY | O_CLOEXEC)) < 0) {
-		fprintf(stderr, "ERROR: open: %s: %m\n", fname);
-		exit(1);
-	}
+	if ((fd = open(fname, O_RDONLY | O_CLOEXEC)) < 0)
+		rd_fatal("open: %s: %m", fname);
 
-	if (fstat(fd, &sb) < 0) {
-		fprintf(stderr, "ERROR: fstat: %s: %m\n", fname);
-		exit(1);
-	}
+	if (fstat(fd, &sb) < 0)
+		rd_fatal("fstat: %s: %m", fname);
 
 	if (!sb.st_size) {
 		close(fd);
 		return;
 	}
 
-	if ((a = map = mmap(NULL, (size_t) sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0)) == MAP_FAILED) {
-		fprintf(stderr, "ERROR: mmap: %s: %m\n", fname);
-		exit(1);
-	}
+	if ((a = map = mmap(NULL, (size_t) sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0)) == MAP_FAILED)
+		rd_fatal("mmap: %s: %m", fname);
 
 	while (a && *a) {
 		char *name, *value;
@@ -110,27 +106,21 @@ set_environ(const char *fname)
 		namesz = valuesz = 0;
 
 		while (a[namesz] != '=') {
-			if (a[namesz] == '\0') {
-				fprintf(stderr, "ERROR: open: %s: expect '=' character for '%s', but found EOF\n", fname, a);
-				exit(1);
-			}
+			if (a[namesz] == '\0')
+				rd_fatal("open: %s: expect '=' character for '%s', but found EOF", fname, a);
 			namesz++;
 		}
 
 		name = strndup(a, namesz);
 		a += namesz + 1;
 
-		if (*a != '"') {
-			fprintf(stderr, "ERROR: open: %s: expect opening quote not found for '%s', but '%c' found\n", fname, name, *a);
-			exit(1);
-		}
+		if (*a != '"')
+			rd_fatal("open: %s: expect opening quote not found for '%s', but '%c' found", fname, name, *a);
 
 		a++;
 
-		if ((valfd = open_memstream(&value, &valuesz)) == NULL) {
-			fprintf(stderr, "ERROR: open_memstream: %m\n");
-			exit(1);
-		}
+		if ((valfd = open_memstream(&value, &valuesz)) == NULL)
+			rd_fatal("open_memstream: %m");
 
 		while (*a != '\0') {
 			if (!is_quote) {
@@ -152,10 +142,8 @@ set_environ(const char *fname)
 
 		fclose(valfd);
 
-		if (*a != '"') {
-			fprintf(stderr, "ERROR: open: %s: expect closing quote not found for '%s', but '%c' found\n", fname, name, *a);
-			exit(1);
-		}
+		if (*a != '"')
+			rd_fatal("open: %s: expect closing quote not found for '%s', but '%c' found", fname, name, *a);
 
 		a++;
 
@@ -278,6 +266,8 @@ main(int argc, char *argv[])
 {
 	int o;
 
+	rd_logging_init(fileno(stderr), LOG_INFO, program_invocation_short_name);
+
 	while ((o = getopt(argc, argv, "cf:hp:qsi:u:")) != -1) {
 		switch (o) {
 			case 'c':
@@ -310,11 +300,12 @@ main(int argc, char *argv[])
 
 	if (optind < argc) {
 		execvp(argv[optind], argv + optind);
-		fprintf(stderr, "ERROR: execvp: %s: %m\n", argv[optind]);
-		return 1;
+		rd_fatal("execvp: %s: %m\n", argv[optind]);
 	}
 
 	show_environ(environ);
+
+	rd_logging_close();
 
 	return 0;
 }
