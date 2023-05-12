@@ -20,7 +20,14 @@ PIDFILE=/var/run/$NAME.pid
 ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --displayname $NAME --name $NAME"
 
 start() {
-	start_daemon --background $ARGS -- "$NAME"
+	export filterdir ueventdir uevent_confdb
+
+	mkdir -p -- \
+		"$filterdir" \
+		"$ueventdir" \
+		"$uevent_confdb/queue/pause"
+
+	start_daemon --background $ARGS -- "$NAME" /sbin/ueventd-queue
 	RETVAL=$?
 	return $RETVAL
 }

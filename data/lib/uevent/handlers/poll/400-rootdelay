@@ -23,31 +23,30 @@ fi
 
 first_iter=
 now="$(date +'%s')"
-timestamp="/.initrd/rootdelay/deadline"
 consmsg="/.initrd/rootdelay/message"
 
-if [ ! -f "$timestamp" ]; then
+if [ ! -f "$_rootdelay_timestamp" ]; then
 	first_iter=1
 	deadline=$(( $now + $ROOTDELAY ))
 
-	mkdir -p -- "${timestamp%/*}"
-	echo $deadline > "$timestamp"
+	mkdir -p -- "${_rootdelay_timestamp%/*}"
+	echo $deadline > "$_rootdelay_timestamp"
 else
-	read -r deadline < "$timestamp"
+	read -r deadline < "$_rootdelay_timestamp"
 fi
 
 deadline="${deadline:-$now}"
 delay=$(( $deadline - $now ))
 
 if rootdelay_paused; then
-	echo $(( $now + $delay )) > "$timestamp"
+	echo $(( $now + $delay )) > "$_rootdelay_timestamp"
 	exit 0
 fi
 
 if [ "$delay" -le 0 ]; then
 	if ! resume_checked; then
 		set_resume_checked
-		echo $(( $now + $ROOTDELAY )) > "$timestamp"
+		echo $(( $now + $ROOTDELAY )) > "$_rootdelay_timestamp"
 		exit 0
 	fi
 

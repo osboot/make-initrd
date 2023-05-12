@@ -22,15 +22,16 @@
 	KSFILE="/etc/ks.conf.d/$KSFILE"
 
 if [ -s "$KSFILE" ]; then
-	cp -f /etc/initrd/method /etc/initrd/method.prev
-	echo none > /etc/initrd/method
+	. uevent-sh-functions
+	. initrd-sh-functions
+
+	mkdir -p -- "$uevent_confdb/queue/pause/poll"
 
 	kickstart -v "$KSFILE"
 
-	. uevent-sh-functions
+	rootdelay_reset_timer
 
+	rmdir -- "$uevent_confdb/queue/pause/poll"
 	rmdir -- "$uevent_confdb/queue/pause/udev"
 	rmdir -- "$uevent_confdb/queue/pause/md-raid-member"
-
-	cp -f /etc/initrd/method.prev /etc/initrd/method
 fi
