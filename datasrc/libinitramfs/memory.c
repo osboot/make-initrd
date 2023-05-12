@@ -8,9 +8,10 @@
 #include <error.h>
 #include <limits.h>
 
-#include "ueventd.h"
+#include "rd/memory.h"
+#include "rd/logging.h"
 
-void *xcalloc(size_t nmemb, size_t size)
+void *rd_calloc_or_die(size_t nmemb, size_t size)
 {
 	void *r = calloc(nmemb, size);
 	if (!r)
@@ -19,7 +20,16 @@ void *xcalloc(size_t nmemb, size_t size)
 	return r;
 }
 
-char *xasprintf(char **ptr, const char *fmt, ...)
+void *rd_malloc_or_die(size_t size)
+{
+	void *r = malloc(size);
+	if (!r)
+		rd_fatal("malloc: allocating %lu bytes: %m",
+		         (unsigned long) size);
+	return r;
+}
+
+char *rd_asprintf_or_die(char **ptr, const char *fmt, ...)
 {
 	va_list arg;
 

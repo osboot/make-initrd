@@ -1,6 +1,5 @@
 AC_PREREQ([2.69])
 AC_INIT([make-initrd],[2.35.0],[gladkov.alexey@gmail.com])
-AC_CONFIG_SRCDIR([datasrc/getarg.c])
 AC_CONFIG_HEADERS([config.h])
 
 AC_PREFIX_DEFAULT([/usr])
@@ -206,6 +205,9 @@ if ! test -x "$with_help2man"; then
 	AC_PATH_PROGS([with_help2man], [help2man])
 fi
 AC_SUBST([HELP2MAN], [$with_help2man])
+
+AC_PATH_PROGS([STRIP], [strip])
+AC_SUBST([STRIP], [$STRIP])
 
 # Checks for libraries.
 AC_ARG_WITH([zlib],

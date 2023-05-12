@@ -19,6 +19,7 @@
 #include <getopt.h>
 #include <errno.h>
 
+#include "rd/memory.h"
 #include "ueventd.h"
 
 #define default_logfile "/var/log/ueventd.log"
@@ -98,7 +99,7 @@ int watch_path(int inotifyfd, const char *dir, const char *name, uint32_t mask, 
 	struct watch *new = NULL;
 	char *path = NULL;
 
-	xasprintf(&path, "%s/%s", dir, name);
+	rd_asprintf_or_die(&path, "%s/%s", dir, name);
 
 	int wfd = add_queue_dir(inotifyfd, path, mask);
 	if (wfd < 0)
@@ -109,7 +110,7 @@ int watch_path(int inotifyfd, const char *dir, const char *name, uint32_t mask, 
 		goto fail;
 	}
 
-	new = xcalloc(1, sizeof(*new) + sizeof(new->q_name[0]) * (strlen(name) + 1));
+	new = rd_calloc_or_die(1, sizeof(*new) + sizeof(new->q_name[0]) * (strlen(name) + 1));
 
 	strcpy(new->q_name, name);
 
@@ -168,7 +169,7 @@ void watch_pauses(int inotifyfd)
 {
 	char *path = NULL;
 
-	xasprintf(&path, "%s/queue/pause", uevent_confdb);
+	rd_asprintf_or_die(&path, "%s/queue/pause", uevent_confdb);
 
 	if (watch_path(inotifyfd, path, ".", EV_PAUSE_MASK, F_PAUSE_DIR) < 0)
 		exit(EXIT_FAILURE);
@@ -182,7 +183,7 @@ void apply_pause(void)
 	DIR *dir;
 	char *path = NULL;
 
-	xasprintf(&path, "%s/queue/pause", uevent_confdb);
+	rd_asprintf_or_die(&path, "%s/queue/pause", uevent_confdb);
 
 	dir = xopendir(path);
 	pause_all = 0;

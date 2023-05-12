@@ -27,10 +27,6 @@ extern char *uevent_dir;
 extern char *handler_file;
 extern uint64_t session;
 
-/* memory.c */
-extern void *xcalloc(size_t nmemb, size_t size)          __attribute__((alloc_size(1, 2)));
-extern char *xasprintf(char **ptr, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
-
 /* queue-processor.c */
 extern void process_events(struct watch *queue) __attribute__((nonnull(1), noreturn));
 
