@@ -3,7 +3,7 @@
 . shell-error
 . /.initrd/initenv
 
-PROG="poll: $PROG"
+PROG="$QUEUE: session=$SESSION: $PROG"
 message_time=1
 
 ! chrooted "$rootmnt" test -e "$INIT" ||

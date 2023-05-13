@@ -166,7 +166,7 @@ start_daemon()
 	[ -z "$ANNOUNCE" ] || msg_starting "$DISPNAME"
 
 	# Actually start the daemon.
-	$INITLOG $INITLOG_ARGS -n "$BASENAME" -c "start-stop-daemon $FLAGS -- $*"
+	$INITLOG $INITLOG_ARGS -n "service: $BASENAME" -c "start-stop-daemon $FLAGS -- $*"
 	STATUS=$?
 
 	if [ $STATUS = 0 ]; then
@@ -477,7 +477,7 @@ echo_passed()
 # Log that something succeeded
 success()
 {
-	$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 1
+	$INITLOG $INITLOG_ARGS -n "service: $0" -s "$1" -e 1
 	[ "${RDLOG-}" != 'console' ] ||
 		return 0
 	echo_success
@@ -489,7 +489,7 @@ success()
 failure()
 {
 	local rc=$?
-	$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 2
+	$INITLOG $INITLOG_ARGS -n "service: $0" -s "$1" -e 2
 	[ "${RDLOG-}" != 'console' ] ||
 		return $rc
 	echo_failure
@@ -501,7 +501,7 @@ failure()
 passed()
 {
 	local rc=$?
-	$INITLOG $INITLOG_ARGS -n $0 -s "$1" -e 1
+	$INITLOG $INITLOG_ARGS -n "service: $0" -s "$1" -e 1
 	[ "${RDLOG-}" != 'console' ] ||
 		return $rc
 	echo_passed

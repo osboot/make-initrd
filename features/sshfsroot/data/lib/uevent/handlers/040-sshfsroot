@@ -6,6 +6,9 @@
 . network-sh-functions
 . rdshell-sh-functions
 
+PROG="${QUEUE:--}: session=${SESSION:-0}: $PROG"
+message_time=1
+
 handler() {
 	! mountpoint -q "$rootmnt" ||
 		return 0

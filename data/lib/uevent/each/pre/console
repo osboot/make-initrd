@@ -9,14 +9,17 @@ QUEUE="$1"
 
 . shell-error
 
+PROG="${QUEUE:--}: session=${SESSION:-0}: $PROG"
+message_time=1
+
 show_msg=
 while ! console_inactive; do
 	if [ -z "$show_msg" ]; then
-		message "$QUEUE: waiting for console to be unlocked."
+		message "waiting for console to be unlocked."
 		show_msg=1
 	fi
 	sleep 0.1
 done
 
 [ -z "$show_msg" ] ||
-	message "$QUEUE: console is unlocked."
+	message "console is unlocked."

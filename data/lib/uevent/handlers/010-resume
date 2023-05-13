@@ -4,6 +4,7 @@
 . uevent-sh-functions
 . initrd-sh-functions
 
+PROG="${QUEUE:--}: session=${SESSION:-0}: $PROG"
 message_time=1
 
 handler() {

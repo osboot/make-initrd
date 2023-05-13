@@ -3,6 +3,9 @@
 . /.initrd/initenv
 . uevent-sh-functions
 
+PROG="${QUEUE:--}: session=${SESSION:-0}: $PROG"
+message_time=1
+
 lvm vgscan >/dev/null
 lvm vgchange -ay --noudevsync >/dev/null ||:
 

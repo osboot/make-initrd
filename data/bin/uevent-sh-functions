@@ -33,8 +33,6 @@ release_event() {
 
 done_event() {
 	rm -f -- "$1"
-
-	local message_time=1 queue="${QUEUE:--}" session="${SESSION:-0}"
 	message "$queue: session=$session: finish event: $1" ||:
 }
 

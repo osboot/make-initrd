@@ -4,6 +4,9 @@
 . uevent-sh-functions
 . network-sh-functions
 
+PROG="${QUEUE:--}: session=${SESSION:-0}: $PROG"
+message_time=1
+
 handler() {
 	# get nfs root from dhcp
 	if [ "$NFSROOT" = 'auto' ]; then

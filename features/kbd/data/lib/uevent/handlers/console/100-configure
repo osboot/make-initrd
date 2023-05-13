@@ -7,7 +7,9 @@
 . initrd-sh-functions
 . state-sh-functions
 
+PROG="${QUEUE:--}: session=${SESSION:-0}: $PROG"
 message_time=1
+
 logfile="/var/log/console-setup.log"
 
 [ "${RDLOG-}" != 'console' ] ||
