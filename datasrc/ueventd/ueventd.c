@@ -97,7 +97,7 @@ int watch_path(int inotifyfd, const char *dir, const char *name, uint32_t mask, 
 {
 	struct stat st;
 	struct watch *new = NULL;
-	char *path = NULL;
+	char *path;
 
 	rd_asprintf_or_die(&path, "%s/%s", dir, name);
 
@@ -167,7 +167,7 @@ int unwatch_path(int inotifyfd, ino_t ino)
 
 void watch_pauses(int inotifyfd)
 {
-	char *path = NULL;
+	char *path;
 
 	rd_asprintf_or_die(&path, "%s/queue/pause", uevent_confdb);
 
@@ -181,7 +181,7 @@ void apply_pause(void)
 {
 	struct watch *p;
 	DIR *dir;
-	char *path = NULL;
+	char *path;
 
 	rd_asprintf_or_die(&path, "%s/queue/pause", uevent_confdb);
 

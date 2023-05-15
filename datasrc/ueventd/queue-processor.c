@@ -91,7 +91,7 @@ void process_events(struct watch *queue)
 {
 	rd_info("%s: session=%lu: processing events", queue->q_name, session);
 
-	char *numenv = NULL;
+	char *numenv;
 
 	rd_asprintf_or_die(&numenv, "SESSION=%lu", session);
 	putenv(numenv);
