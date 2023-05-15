@@ -1,0 +1,40 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+if [ -z "${__included_shell_locks-}" ]; then
+__included_shell_locks=1
+
+_fd_lock()
+{
+	local fd="$1"; shift
+	local fn="$1"; shift
+	eval "exec $fd<\"$fn\""
+	flock "$@" "$fd"
+}
+
+fd_rlock()   { _fd_lock "$1" "$2" -s; }
+fd_lock()    { _fd_lock "$1" "$2" -x; }
+fd_trylock() { _fd_lock "$1" "$2" -n; }
+
+fd_unlock()
+{
+	eval "exec $1<&-"
+}
+
+fd_is_locked()
+{
+	local fd=0
+	while [ -e "/proc/self/fd/$fd" ]; do
+		fd=$(( $fd + 1 ))
+	done
+
+	if fd_trylock "$fd" "$1"; then
+		fd_unlock "$fd"
+		return 1
+	fi
+
+	eval "exec $fd<&-"
+	return 0
+}
+
+fi #__included_shell_locks

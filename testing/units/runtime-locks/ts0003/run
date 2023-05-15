@@ -1,0 +1,38 @@
+#!/bin/bash -eu
+
+cwd="${0%/*}"
+
+. data/bin/shell-locks
+
+show_self_locks()
+{
+	grep -E -o -e "^lock:.* FLOCK .* (READ|WRITE) " "/proc/self/fdinfo"/* 2>/dev/null ||:
+}
+
+fd_lock 91 "$cwd/lock-1"
+
+echo === step 1 ===
+show_self_locks
+
+fd_is_locked "$cwd/lock-1" &&
+	echo lock-1 locked ||
+	echo lock-1 unlocked
+
+fd_unlock 91
+
+echo === step 2 ===
+show_self_locks
+
+fd_is_locked "$cwd/lock-1" &&
+	echo lock-1 locked ||
+	echo lock-1 unlocked
+
+fd_rlock 91 "$cwd/lock-1"
+
+echo === step 3 ===
+show_self_locks
+
+fd_is_locked "$cwd/lock-1" &&
+	echo lock-1 locked ||
+	echo lock-1 unlocked
+

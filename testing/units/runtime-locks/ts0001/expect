@@ -1,0 +1,24 @@
+=== step 1 ===
+/proc/self/fdinfo/91:lock:	1: FLOCK  ADVISORY  WRITE 
+/proc/self/fdinfo/92:lock:	1: FLOCK  ADVISORY  WRITE 
+/proc/self/fdinfo/93:lock:	1: FLOCK  ADVISORY  WRITE 
+=== step 2 ===
+/proc/self/fdinfo/91:lock:	1: FLOCK  ADVISORY  WRITE 
+/proc/self/fdinfo/93:lock:	1: FLOCK  ADVISORY  WRITE 
+=== step 3 ===
+/proc/self/fdinfo/91:lock:	1: FLOCK  ADVISORY  WRITE 
+/proc/self/fdinfo/92:lock:	1: FLOCK  ADVISORY  WRITE 
+/proc/self/fdinfo/93:lock:	1: FLOCK  ADVISORY  WRITE 
+=== step 4 ===
+/proc/self/fdinfo/91:lock:	1: FLOCK  ADVISORY  WRITE 
+/proc/self/fdinfo/92:lock:	1: FLOCK  ADVISORY  WRITE 
+/proc/self/fdinfo/93:lock:	1: FLOCK  ADVISORY  WRITE 
+=== step 5 ===
+=== step 6 ===
+/proc/self/fdinfo/91:lock:	1: FLOCK  ADVISORY  READ 
+/proc/self/fdinfo/92:lock:	1: FLOCK  ADVISORY  READ 
+/proc/self/fdinfo/93:lock:	1: FLOCK  ADVISORY  READ 
+unable to take write lock
+=== step 7 ===
+/proc/self/fdinfo/94:lock:	1: FLOCK  ADVISORY  WRITE 
+rc=0

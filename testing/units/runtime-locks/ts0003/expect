@@ -1,0 +1,9 @@
+=== step 1 ===
+/proc/self/fdinfo/91:lock:	1: FLOCK  ADVISORY  WRITE 
+lock-1 locked
+=== step 2 ===
+lock-1 unlocked
+=== step 3 ===
+/proc/self/fdinfo/91:lock:	1: FLOCK  ADVISORY  READ 
+lock-1 locked
+rc=0
