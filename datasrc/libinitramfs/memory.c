@@ -15,8 +15,7 @@ void *rd_calloc_or_die(size_t nmemb, size_t size)
 {
 	void *r = calloc(nmemb, size);
 	if (!r)
-		rd_fatal("calloc: allocating %lu*%lu bytes: %m",
-		         (unsigned long) nmemb, (unsigned long) size);
+		rd_fatal("calloc: allocating %zu*%zu bytes: %m", nmemb, size);
 	return r;
 }
 
@@ -24,8 +23,7 @@ void *rd_malloc_or_die(size_t size)
 {
 	void *r = malloc(size);
 	if (!r)
-		rd_fatal("malloc: allocating %lu bytes: %m",
-		         (unsigned long) size);
+		rd_fatal("malloc: allocating %zu bytes: %m", size);
 	return r;
 }
 
