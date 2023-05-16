@@ -33,7 +33,7 @@ release_event() {
 
 done_event() {
 	rm -f -- "$1"
-	message "$queue: session=$session: finish event: $1" ||:
+	message "finish event: $1" ||:
 }
 
 fi
