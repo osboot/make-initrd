@@ -15,8 +15,6 @@
 
 . /etc/init.d/functions
 
-. rdshell-sh-functions
-
 . shell-error
 . shell-var
 . shell-cmdline

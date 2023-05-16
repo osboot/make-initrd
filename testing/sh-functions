@@ -360,8 +360,8 @@ qemu_watchdog()
 		for err in \
 			"(or press Control-D to continue):" \
 			"/.initrd/uevent/queues/udev.startup: No such file or directory" \
-			"rdshell-locked: The waiting time expired!" \
-			"rdshell-locked: The init program \`/sbin/init' not found in the root directory." \
+			"rdshell: The waiting time expired!" \
+			"rdshell: The init program \`/sbin/init' not found in the root directory." \
 		;
 		do
 			if grep -qsF -e "$err" "$logfile"; then

@@ -1,6 +1,7 @@
 #!/bin/bash -efu
 
-. rdshell-sh-functions
+. shell-locks
 
-console_inactive &&
-	console_open "Emergency shell" ||:
+if fd_trylock 90 /dev/console; then
+	rdshell "Emergency shell" &
+fi

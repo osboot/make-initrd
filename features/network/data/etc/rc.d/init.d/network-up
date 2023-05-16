@@ -13,10 +13,13 @@
 
 msg="Network up"
 
+. shell-locks
 . network-sh-functions
 
 # wait for network modules
 udevadm settle --timeout=3
+
+fd_rlock 90 /dev/console
 
 ifaces=' '
 while :; do
@@ -46,3 +49,10 @@ while :; do
 
 	sleep 0.1
 done
+
+if [ "${RDLOG-}" = 'console' ]; then
+	msg="all interfaces are up ($ifaces):"
+
+	echo_msg "$msg"
+	success "$msg"
+fi

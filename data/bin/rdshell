@@ -2,7 +2,6 @@
 
 . shell-error
 . shell-source
-. rdshell-sh-functions
 
 source_if_exists /.initrd/initenv
 
@@ -27,14 +26,6 @@ esac
 
 exec </dev/console >/dev/console 2>&1
 
-console_locked=
-if [ -n "$0" ] && [ -z "${0##*-locked}" ]; then
-	while ! console_lock; do
-		sleep 0.1
-	done
-	console_locked=1
-fi
-
 for f in /lib/shell/*; do
 	[ -x "$f" ] || break
 	"$f" ||:
@@ -44,6 +35,3 @@ done
 	printf '%s: %s\n' "${0##*/}" "$1"
 
 setsid -c $shcmd
-
-[ -z "$console_locked" ] ||
-	console_unlock

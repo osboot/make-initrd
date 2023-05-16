@@ -7,8 +7,9 @@
 . /.initrd/initenv
 
 . shell-error
+. shell-locks
+
 . initrd-sh-functions
-. rdshell-sh-functions
 . uevent-sh-functions
 
 message_time=1
@@ -90,13 +91,12 @@ mount_zfs()
 resume_checked ||
 	exit 0
 
-while ! console_lock; do
-	sleep 0.5
-done
+exec 0</dev/console >/dev/console 2>&1
+fd_lock 90 /dev/console
 
 findmnt -sno TARGET -t zfs | sort -d -k1,1 |
 while read -r mnt; do
-	mount_zfs "$mnt" </dev/null ||:
+	mount_zfs "$mnt" </dev/null 90<&- ||:
 done
 
-console_unlock
+fd_unlock 90

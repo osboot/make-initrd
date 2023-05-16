@@ -8,7 +8,7 @@
 #
 
 . /etc/init.d/functions
-. rdshell-sh-functions
+. shell-locks
 
 # Get first argument. Set new runlevel to this argument.
 [ $# -eq 0 ] ||
@@ -21,13 +21,12 @@ rcd="/etc/rc.d/rc$runlevel.d"
 [ -d "$rcd" ] ||
 	exit 0
 
+exec </dev/console 2>&1
+fd_lock 90 /dev/console
+
 msg "INIT: Entering runlevel: $runlevel"
 
 export INITLOG_FILE='/var/log/boot.log'
-
-while ! console_lock; do
-	sleep 0.5
-done
 
 run_scripts() {
 	local s n="$1"
@@ -59,7 +58,7 @@ for i in "$rcd"/K*; do
 	rc="$?"
 
 	run_scripts "post/$subsys" stop "$subsys" "$rc"
-done
+done 90<&-
 
 # Now run the START scripts.
 for i in "$rcd"/S*; do
@@ -111,6 +110,6 @@ for i in "$rcd"/S*; do
 	rc="$?"
 
 	run_scripts "post/$subsys" start "$subsys" "$rc"
-done
+done 90<&-
 
-console_unlock
+fd_unlock 90

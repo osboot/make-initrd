@@ -1,6 +1,5 @@
-#!/bin/bash
+#!/bin/bash -e
 
-. rdshell-sh-functions
+. shell-locks
 
-console_inactive ||
-	exit
+fd_trylock 90 /dev/console
