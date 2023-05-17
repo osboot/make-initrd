@@ -1,5 +1,7 @@
 #!/bin/bash -efu
 
+. shell-locks
+
 STATE="$1"
 
 PROG="${0##*/}"
@@ -9,11 +11,9 @@ V="${CMDNAME##udhcpc}"
 INTERFACE="${interface-}"
 
 lock="/tmp/$CMDNAME.$INTERFACE.lock"
-while ! mkdir -- "$lock" >/dev/null 2>&1; do
-	sleep 0.1
-done
-unlock() { rmdir "$lock"; }
-trap unlock EXIT
+[ -d "$lock" ] || mkdir -p -- "$lock"
+
+fd_lock 90 "$lock"
 
 logfile=$(
 	. /.initrd/initenv
@@ -148,4 +148,4 @@ case "$STATE" in
 	*)
 		exit 0
 		;;
-esac
+esac 90<&-

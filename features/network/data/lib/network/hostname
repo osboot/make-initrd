@@ -1,17 +1,11 @@
 #!/bin/bash -efu
 
 . shell-error
+. shell-locks
 . network-sh-functions
 
 [ "$NET_EV_ACTION" = update ] ||
 	exit 0
-
-lock="/tmp/$PROG.lock"
-while ! mkdir -- "$lock" >/dev/null 2>&1; do
-	sleep 0.1
-done
-unlock() { rmdir "$lock"; }
-trap unlock EXIT
 
 PROG="$PROG: $NET_IF"
 message_time=1
@@ -19,6 +13,8 @@ message_time=1
 get_iface_confdir &&
 	[ -f "$confdir/hostname" ] ||
 	exit 0
+
+fd_lock 90 "$0"
 
 name=
 read -r name < "$confdir/hostname" ||:
