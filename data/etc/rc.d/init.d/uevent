@@ -27,7 +27,7 @@ start() {
 		"$ueventdir" \
 		"$uevent_confdb/queue/pause"
 
-	start_daemon --background $ARGS -- "$NAME" /sbin/ueventd-queue
+	start_daemon --background --make-pidfile $ARGS -- "$NAME" /sbin/ueventd-queue
 	RETVAL=$?
 	return $RETVAL
 }
