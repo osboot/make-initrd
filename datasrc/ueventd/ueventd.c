@@ -47,7 +47,7 @@ struct fd_handler {
 	fdhandler_t fd_handler;
 };
 
-struct fd_handler fd_list[FD_MAX];
+struct fd_handler fd_handler_list[FD_MAX];
 
 enum {
 	PIPE_READ,
@@ -428,8 +428,8 @@ pid_t spawn_worker(int epollfd, struct watch *queue)
 		rd_fatal("prctl(PR_SET_PDEATHSIG): %m");
 
 	for (int i = 0; i < FD_MAX; i++) {
-		if (fd_list[i].fd >= 0)
-			close(fd_list[i].fd);
+		if (fd_handler_list[i].fd >= 0)
+			close(fd_handler_list[i].fd);
 	}
 	close(epollfd);
 
@@ -501,18 +501,18 @@ int main(int argc, char **argv)
 	uevent_confdb = get_param_dir("uevent_confdb");
 	handler_file = argv[optind++];
 
-	setup_inotify_fd(&fd_list[FD_INOTIFY]);
-	setup_signal_fd(&fd_list[FD_SIGNAL]);
-	setup_pipe_fd(&fd_list[FD_PIPE]);
+	setup_inotify_fd(&fd_handler_list[FD_INOTIFY]);
+	setup_signal_fd(&fd_handler_list[FD_SIGNAL]);
+	setup_pipe_fd(&fd_handler_list[FD_PIPE]);
 
-	epollfd = setup_epoll_fd(fd_list);
+	epollfd = setup_epoll_fd(fd_handler_list);
 
-	watch_pauses(fd_list[FD_INOTIFY].fd);
+	watch_pauses(fd_handler_list[FD_INOTIFY].fd);
 
-	if (watch_path(fd_list[FD_INOTIFY].fd, filter_dir, ".", EV_ROOT_MASK, F_ROOT_DIR) < 0)
+	if (watch_path(fd_handler_list[FD_INOTIFY].fd, filter_dir, ".", EV_ROOT_MASK, F_ROOT_DIR) < 0)
 		exit(EXIT_FAILURE);
 
-	watch_queues(fd_list[FD_INOTIFY].fd);
+	watch_queues(fd_handler_list[FD_INOTIFY].fd);
 	apply_pause();
 
 	while (1) {
@@ -550,15 +550,15 @@ done:
 		n = e->next;
 		if (e->q_pid)
 			kill(e->q_pid, SIGKILL);
-		inotify_rm_watch(fd_list[FD_INOTIFY].fd, e->q_watchfd);
+		inotify_rm_watch(fd_handler_list[FD_INOTIFY].fd, e->q_watchfd);
 		free(e);
 	}
 
 	for (i = 0; i < FD_MAX; i++) {
-		if (fd_list[i].fd >= 0) {
-			if (epoll_ctl(epollfd, EPOLL_CTL_DEL, fd_list[i].fd, NULL) < 0)
+		if (fd_handler_list[i].fd >= 0) {
+			if (epoll_ctl(epollfd, EPOLL_CTL_DEL, fd_handler_list[i].fd, NULL) < 0)
 				rd_err("epoll_ctl: %m");
-			close(fd_list[i].fd);
+			close(fd_handler_list[i].fd);
 		}
 	}
 	close(epollfd);
