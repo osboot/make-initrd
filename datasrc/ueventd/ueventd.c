@@ -401,7 +401,7 @@ int setup_epoll_fd(struct fd_handler list[FD_MAX])
 		rd_fatal("epoll_create1: %m");
 
 	for (int i = 0; i < FD_MAX; i++) {
-		ev.data.fd = list[i].fd;
+		ev.data.ptr = &list[i];
 
 		if (epoll_ctl(epollfd, EPOLL_CTL_ADD, list[i].fd, &ev) < 0)
 			rd_fatal("epoll_ctl: %m");
@@ -531,12 +531,11 @@ int main(int argc, char **argv)
 		for (i = 0; i < fdcount; i++) {
 			if (!(ev[i].events & EPOLLIN))
 				continue;
-			for (int k = 0; k < FD_MAX; k++) {
-				if (ev[i].data.fd != fd_list[k].fd)
-					continue;
-				if (fd_list[k].fd_handler(fd_list[k].fd) != 0)
-					goto done;
-			}
+
+			struct fd_handler *fde = ev[i].data.ptr;
+
+			if (fde->fd_handler(fde->fd) != 0)
+				goto done;
 		}
 
 		for (e = watch_list; e; e = e->next) {
