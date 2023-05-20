@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include "rd/logging.h"
 #include "ueventd.h"
 
 int is_dot_dir(struct dirent *ent)

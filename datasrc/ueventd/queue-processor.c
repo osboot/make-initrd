@@ -13,6 +13,7 @@
 #include <errno.h>
 
 #include "rd/memory.h"
+#include "rd/logging.h"
 #include "ueventd.h"
 
 static void event_handler(struct watch *queue, char *path) __attribute__((nonnull(1, 2)));

@@ -20,6 +20,7 @@
 #include <errno.h>
 
 #include "rd/memory.h"
+#include "rd/logging.h"
 #include "ueventd.h"
 
 #define default_logfile "/var/log/ueventd.log"
