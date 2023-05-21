@@ -9,39 +9,41 @@
 PROG="${QUEUE:--}: session=${SESSION:-0}: $PROG"
 message_time=1
 
+is_online()
+{
+	set -- link addr route
+	while [ "$#" -gt 0 ]; do
+		[ -d "$net_statedir/up/$NET_IF/$1" ] || return 1
+		shift
+	done
+}
+
 handler()
 {
-	export NET_IF="$NET_IF"
-	export NET_EV_TYPE="$ev_type"
-	export NET_EV_ACTION="$ev_action"
-
 	message "$NET_IF: process event: network.$ev_type.$ev_action"
 
-	case "$ev_type" in
-		link|addr|route|hostname|resolvconf|config)
-			"/lib/network/$ev_type"
-			;;
-		*)
-			fatal "$NET_IF: unknown event type: $ev_type"
-			;;
-	esac
-
 	case "$ev_action" in
+		 update|remove)
+			case "$ev_type" in
+				link|addr|route|hostname|resolvconf|config)
+					NET_IF="$NET_IF" \
+					NET_EV_TYPE="$ev_type" \
+					NET_EV_ACTION="$ev_action" \
+					"/lib/network/$ev_type"
+					;;
+				*)
+					fatal "$NET_IF: unknown event type: $ev_type"
+					;;
+			esac
+			;;
 		updated) mkdir -p -- "$net_statedir/up/$NET_IF/$ev_type" ;;
 		removed) rm -rf   -- "$net_statedir/up/$NET_IF/$ev_type" ;;
 	esac
 
-	if [ ! -e "/.initrd/online/$NET_IF" ]; then
-		online=1
-		for n in link addr route; do
-			[ -d "$net_statedir/up/$NET_IF/$n" ] || online=
-		done
-
-		if [ -n "$online" ]; then
-			message "$NET_IF: online"
-			echo online > "/sys/class/net/$NET_IF/uevent"
-			touch "/.initrd/online/$NET_IF"
-		fi
+	if [ ! -e "/.initrd/online/$NET_IF" ] && is_online; then
+		message "$NET_IF: online"
+		echo online > "/sys/class/net/$NET_IF/uevent"
+		touch "/.initrd/online/$NET_IF"
 	fi
 }
 
