@@ -56,7 +56,8 @@ enum {
 	PIPE_MAX,
 };
 
-int pipefd[PIPE_MAX];
+static int pipefd[PIPE_MAX];
+static int dirty_queues = 0;
 
 #define EV_PAUSE_MASK (IN_CREATE | IN_DELETE | IN_ONLYDIR)
 #define EV_ROOT_MASK  (IN_CREATE | IN_ONLYDIR)
@@ -121,8 +122,10 @@ int watch_path(int inotifyfd, const char *dir, const char *name, uint32_t mask, 
 	new->next      = watch_list;
 
 	if (flags & F_QUEUE_DIR) {
-		if (!empty_directory(path))
+		if (!empty_directory(path)) {
 			new->q_flags |= F_DIRTY;
+			dirty_queues++;
+		}
 		new->q_parentfd = pipefd[PIPE_WRITE];
 	}
 
@@ -339,8 +342,10 @@ int process_inotify_events(int inotifyfd)
 				continue;
 			}
 
-			if (!(p->q_flags & F_DIRTY))
+			if (!(p->q_flags & F_DIRTY)) {
 				p->q_flags |= F_DIRTY;
+				dirty_queues++;
+			}
 		}
 	}
 	return 0;
@@ -375,8 +380,10 @@ int process_pipefd_events(int readfd)
 		for (p = watch_list; p; p = p->next) {
 			if (!(p->q_flags & F_QUEUE_DIR) || p->q_watchfd != value)
 				continue;
-			if (!(p->q_flags & F_DIRTY))
+			if (!(p->q_flags & F_DIRTY)) {
 				p->q_flags |= F_DIRTY;
+				dirty_queues++;
+			}
 			break;
 		}
 	}
@@ -521,7 +528,7 @@ int main(int argc, char **argv)
 		int fdcount;
 
 		errno = 0;
-		fdcount = epoll_wait(epollfd, ev, EV_MAX, 250);
+		fdcount = epoll_wait(epollfd, ev, EV_MAX, (dirty_queues ? 250 : -1));
 
 		if (fdcount < 0) {
 			if (errno == EINTR)
@@ -542,6 +549,12 @@ int main(int argc, char **argv)
 		for (e = watch_list; e; e = e->next) {
 			if (!(e->q_flags & F_QUEUE_DIR) || !(e->q_flags & F_DIRTY) || (e->q_pid != 0) || (e->q_flags & F_PAUSED))
 				continue;
+
+			if (dirty_queues == 0)
+				rd_fatal("BUG: dirty_queues == 0, but dirty queues are present");
+
+			dirty_queues--;
+
 			e->q_flags &= ~F_DIRTY;
 			e->q_pid = spawn_worker(epollfd, e);
 		}
