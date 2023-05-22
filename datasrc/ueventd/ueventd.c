@@ -104,8 +104,10 @@ int watch_path(int inotifyfd, const char *dir, const char *name, uint32_t mask, 
 	rd_asprintf_or_die(&path, "%s/%s", dir, name);
 
 	int wfd = add_queue_dir(inotifyfd, path, mask);
-	if (wfd < 0)
+	if (wfd < 0) {
+		free(path);
 		return (wfd == -128 ? 0 : wfd);
+	}
 
 	if (stat(path, &st) < 0) {
 		rd_err("stat: %s: %m", path);
