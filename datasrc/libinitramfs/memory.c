@@ -27,14 +27,15 @@ void *rd_malloc_or_die(size_t size)
 	return r;
 }
 
-char *rd_asprintf_or_die(char **ptr, const char *fmt, ...)
+char *rd_asprintf_or_die(const char *fmt, ...)
 {
+	char *ptr;
 	va_list arg;
 
 	va_start(arg, fmt);
-	if (vasprintf(ptr, fmt, arg) < 0)
+	if (vasprintf(&ptr, fmt, arg) < 0)
 		rd_fatal("vasprintf: %m");
 	va_end(arg);
 
-	return *ptr;
+	return ptr;
 }

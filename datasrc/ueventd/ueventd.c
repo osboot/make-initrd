@@ -99,9 +99,8 @@ int watch_path(int inotifyfd, const char *dir, const char *name, uint32_t mask, 
 {
 	struct stat st;
 	struct watch *new = NULL;
-	char *path;
 
-	rd_asprintf_or_die(&path, "%s/%s", dir, name);
+	char *path = rd_asprintf_or_die("%s/%s", dir, name);
 
 	int wfd = add_queue_dir(inotifyfd, path, mask);
 	if (wfd < 0) {
@@ -173,9 +172,7 @@ int unwatch_path(int inotifyfd, ino_t ino)
 
 void watch_pauses(int inotifyfd)
 {
-	char *path;
-
-	rd_asprintf_or_die(&path, "%s/queue/pause", uevent_confdb);
+	char *path = rd_asprintf_or_die("%s/queue/pause", uevent_confdb);
 
 	if (watch_path(inotifyfd, path, ".", EV_PAUSE_MASK, F_PAUSE_DIR) < 0)
 		exit(EXIT_FAILURE);
@@ -187,9 +184,7 @@ void apply_pause(void)
 {
 	struct watch *p;
 	DIR *dir;
-	char *path;
-
-	rd_asprintf_or_die(&path, "%s/queue/pause", uevent_confdb);
+	char *path = rd_asprintf_or_die("%s/queue/pause", uevent_confdb);
 
 	dir = xopendir(path);
 	pause_all = 0;

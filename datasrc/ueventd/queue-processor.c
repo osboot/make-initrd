@@ -92,15 +92,11 @@ void process_events(struct watch *queue)
 {
 	rd_info("%s: session=%lu: processing events", queue->q_name, session);
 
-	char *numenv;
-
-	rd_asprintf_or_die(&numenv, "SESSION=%lu", session);
+	char *numenv = rd_asprintf_or_die("SESSION=%lu", session);
 	putenv(numenv);
 
-	char *srcdir, *dstdir;
-
-	rd_asprintf_or_die(&srcdir, "%s/%s", filter_dir, queue->q_name);
-	rd_asprintf_or_die(&dstdir, "%s/%s", uevent_dir, queue->q_name);
+	char *srcdir = rd_asprintf_or_die("%s/%s", filter_dir, queue->q_name);
+	char *dstdir = rd_asprintf_or_die("%s/%s", uevent_dir, queue->q_name);
 
 	move_files(srcdir, dstdir);
 
