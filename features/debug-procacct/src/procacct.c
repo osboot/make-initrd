@@ -27,6 +27,9 @@
 #include <linux/taskstats.h>
 #include <linux/kdev_t.h>
 
+#include <bpf/bpf.h>
+#include <bpf/libbpf.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -45,6 +48,8 @@
 
 #include "rd/logging.h"
 #include "rd/memory.h"
+
+#include "procacct.h"
 
 /* Maximum size of response requested or message sent */
 #define MAX_MSG_SIZE 2048
@@ -73,12 +78,12 @@ struct msgtemplate {
 	char buf[MAX_MSG_SIZE];
 };
 
-static void *proc_root = NULL;
-
-struct proc_cmdline {
+struct cmdline {
 	pid_t pid;
 	char *cmdline;
 };
+
+static void *tree_root = NULL;
 
 struct ctx_netlink {
 	uint16_t cpuid;
@@ -86,7 +91,14 @@ struct ctx_netlink {
 	char cpumask[100 + 6 * MAX_CPUS];
 };
 
+struct ctx_bpf {
+	struct ring_buffer *ringbuf;
+	struct bpf_object *file;
+	struct bpf_link *link;
+};
+
 enum {
+	FD_BPF,
 	FD_NETLINK,
 	FD_MAX,
 };
@@ -107,11 +119,15 @@ struct fd_handler {
 static struct fd_handler fd_handler_list[FD_MAX];
 
 static void usage(void)                                                       __attribute__((noreturn));
-static int proc_compare(const void *a, const void *b)                         __attribute__((nonnull(1, 2)));
+static int tree_compare(const void *a, const void *b)                         __attribute__((nonnull(1, 2)));
 static int process_netlink_events(struct fd_handler *el);
 static int prepare_netlink(struct fd_handler *el);
 static int finish_netlink(struct fd_handler *el);
 static void setup_netlink_fd(struct fd_handler *el);
+static int process_ringbuf_event(void *ctx, void *data, size_t data_sz);
+static int process_bpf_events(struct fd_handler *el);
+static int finish_bpf(struct fd_handler *el);
+static void setup_bpf_fd(struct fd_handler *el);
 static ssize_t send_cmd(int fd, uint16_t nlmsg_type, uint8_t genl_cmd,
                         uint16_t nla_type, void *nla_data, uint16_t nla_len);
 static uint16_t get_family_id(int fd);
@@ -119,10 +135,10 @@ static void print_procacct(int fd, struct taskstats *t)                       __
 static void handle_aggr(struct nlattr *na, int fd)                            __attribute__((nonnull(1)));
 static int setup_epoll_fd(struct fd_handler list[FD_MAX]);
 
-int proc_compare(const void *a, const void *b)
+int tree_compare(const void *a, const void *b)
 {
-	pid_t pid_a = ((struct proc_cmdline *)a)->pid;
-	pid_t pid_b = ((struct proc_cmdline *)b)->pid;
+	pid_t pid_a = ((struct cmdline *)a)->pid;
+	pid_t pid_b = ((struct cmdline *)b)->pid;
 
 	if (pid_a < pid_b)
 		return -1;
@@ -243,8 +259,10 @@ uint16_t get_family_id(int fd)
 
 void print_procacct(int fd, struct taskstats *t)
 {
-	struct proc_cmdline key = { .pid = (pid_t) t->ac_pid };
-	struct proc_cmdline *proc = tfind(&key, proc_root, proc_compare);
+	struct cmdline *proc, key = { .pid = (pid_t) t->ac_pid };
+	void **val = tfind(&key, &tree_root, tree_compare);
+
+	proc = (val ? *val : NULL);
 
 	dprintf(fd,
 	        "%c\t%u\t%u\t%u\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t[%s]\t%s\n",
@@ -263,8 +281,14 @@ void print_procacct(int fd, struct taskstats *t)
 	        (t->read_bytes),                     // bytes of read I/O
 	        (t->write_bytes),                    // bytes of write I/O
 	        (t->ac_comm),                        // comm
-	        (proc ? proc->cmdline : "")          // cmdline
+	        (proc ? proc->cmdline : "-")         // cmdline
 	       );
+
+	if (proc) {
+		tdelete(proc, &tree_root, tree_compare);
+		free(proc->cmdline);
+		free(proc);
+	}
 }
 
 void handle_aggr(struct nlattr *na, int fd)
@@ -317,14 +341,14 @@ int prepare_netlink(struct fd_handler *el)
 
 	ctx->cpuid = get_family_id(el->fd);
 	if (!ctx->cpuid) {
-		rd_err("error getting family id, errno=%d", errno);
+		rd_err("error getting family id (errno=%d): %m", errno);
 		free(ctx);
 		return -1;
 	}
 
 	ret = send_cmd(el->fd, ctx->cpuid, TASKSTATS_CMD_GET,
 	               TASKSTATS_CMD_ATTR_REGISTER_CPUMASK,
-		       &ctx->cpumask, ctx->cpumask_len);
+	               &ctx->cpumask, ctx->cpumask_len);
 	if (ret < 0) {
 		rd_err("error sending register cpumask");
 		free(ctx);
@@ -343,7 +367,7 @@ int finish_netlink(struct fd_handler *el)
 
 	ret = send_cmd(el->fd, ctx->cpuid, TASKSTATS_CMD_GET,
 	               TASKSTATS_CMD_ATTR_DEREGISTER_CPUMASK,
-		       &ctx->cpumask, ctx->cpumask_len);
+	               &ctx->cpumask, ctx->cpumask_len);
 	if (ret < 0) {
 		rd_err("error sending deregister cpumask");
 		return -1;
@@ -367,7 +391,7 @@ int process_netlink_events(struct fd_handler *el)
 				return 0;
 			if (errno == EINTR)
 				continue;
-			rd_fatal("nonfatal reply error: %m");
+			rd_fatal("fatal reply error: %m");
 		}
 
 		if (msg.n.nlmsg_type == NLMSG_ERROR || !NLMSG_OK((&msg.n), ret)) {
@@ -397,6 +421,105 @@ int process_netlink_events(struct fd_handler *el)
 			na = (struct nlattr *) (GENLMSG_DATA(&msg) + len);
 		}
 	}
+
+	return 0;
+}
+
+int process_ringbuf_event(void *ctx __attribute__((unused)),
+                          void *data,
+                          size_t data_sz  __attribute__((unused)))
+{
+	struct cmdline *new, **val;
+	struct task_cmdline *task = data;
+
+	new = rd_malloc_or_die(sizeof(*new));
+
+	new->pid = task->pid;
+	new->cmdline = rd_calloc_or_die(1, task->cmdline_len * sizeof(char));
+
+	for (size_t i = 0; i < task->cmdline_len; i++) {
+		switch (task->cmdline[i]) {
+			case '\n':
+			case '\0':
+				new->cmdline[i] = ' ';
+				break;
+			default:
+				new->cmdline[i] = task->cmdline[i];
+				break;
+		}
+	}
+
+	val = tsearch(new, &tree_root, tree_compare);
+
+	if (!val) {
+		rd_err("unable to add info about pid=%u", task->pid);
+
+	} else if (*val != new) {
+		struct cmdline *cur = *val;
+
+		free(cur->cmdline);
+		cur->cmdline = new->cmdline;
+		free(new);
+	}
+
+	return 0;
+}
+
+int process_bpf_events(struct fd_handler *el)
+{
+	struct ctx_bpf *ctx = el->data;
+again:
+	errno = 0;
+	if (ring_buffer__poll(ctx->ringbuf, -1) < 0) {
+		if (errno == EINTR)
+			goto again;
+		rd_err("error polling perf buffer: %m");
+	}
+	return 0;
+}
+
+void setup_bpf_fd(struct fd_handler *el)
+{
+	struct ctx_bpf *ctx;
+	struct bpf_program *prog;
+
+	ctx = rd_calloc_or_die(1, sizeof(*ctx));
+
+	ctx->file = bpf_object__open(PROCACCT_BPF_FILE);
+	if (libbpf_get_error(ctx->file))
+		rd_fatal("opening BPF object file failed");
+
+	if (bpf_object__load(ctx->file))
+		rd_fatal("loading BPF object file failed");
+
+	prog = bpf_object__find_program_by_name(ctx->file, "procacct_process_exec");
+	if (!prog)
+		rd_fatal("finding a procacct_task_alloc in the file object failed");
+
+	int id = bpf_object__find_map_fd_by_name(ctx->file, "ringbuf");
+	if (id < 0)
+		rd_fatal("finding a ringbuf in the file object failed");
+
+	ctx->ringbuf = ring_buffer__new(id, process_ringbuf_event, NULL, NULL);
+
+	ctx->link = bpf_program__attach(prog);
+	if (libbpf_get_error(ctx->link))
+		rd_fatal("bpf attach failed");
+
+	el->fd = ring_buffer__epoll_fd(ctx->ringbuf);
+
+	el->data = ctx;
+	el->fd_handler = process_bpf_events;
+	el->fd_finish = finish_bpf;
+}
+
+int finish_bpf(struct fd_handler *el)
+{
+	struct ctx_bpf *ctx = el->data;
+
+	ring_buffer__free(ctx->ringbuf);
+	bpf_link__destroy(ctx->link);
+	bpf_object__close(ctx->file);
 
 	return 0;
 }
@@ -454,6 +577,8 @@ int main(int argc, char *argv[])
 	current_pid = getpid();
 
 	setup_netlink_fd(&fd_handler_list[FD_NETLINK]);
+	setup_bpf_fd(&fd_handler_list[FD_BPF]);
+
 	fd_epoll = setup_epoll_fd(fd_handler_list);
 
 	for (int i = 0; i < FD_MAX; i++) {
