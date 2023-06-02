@@ -250,16 +250,21 @@ void print_procacct(int fd, struct taskstats *t)
 	struct proc_cmdline *proc = tfind(&key, proc_root, proc_compare);
 
 	dprintf(fd,
-	        "%c\t%u\t%u\t%llu\t%llu\t%llu\t%llu\t %llu\t[%s]\t%s\n",
+	        "%c\t%u\t%u\t%u\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t[%s]\t%s\n",
 	        // First letter: T is a mere thread, G the last in a group, U  unknown.
 	        (t->version >= 12 ? (t->ac_flag & AGROUP ? 'P' : 'T') : '?'),
 	        (t->ac_pid),                         // pid
 	        (t->version >= 12 ? t->ac_tgid : 0), // tgid
+	        (t->ac_ppid),                        // ppid
 	        (t->ac_btime64),                     // btime
 	        (t->ac_etime),                       // wall
 	        (t->ac_utime + t->ac_stime),         // cputime
 	        (t->hiwater_vm),                     // vmusage
 	        (t->hiwater_rss),                    // rssusage
+	        (t->read_char),                      // bytes read
+	        (t->write_char),                     // bytes write
+	        (t->read_bytes),                     // bytes of read I/O
+	        (t->write_bytes),                    // bytes of write I/O
 	        (t->ac_comm),                        // comm
 	        (proc ? proc->cmdline : "")          // cmdline
 	       );
