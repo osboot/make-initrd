@@ -11,17 +11,23 @@ dmesg -n "${LOGLEVEL:-1}"
 
 mount -n -t proc -o nodev,noexec,nosuid proc /proc
 
+have_acct=
 quiet=n
-__set_quiet()
+__handler()
 {
-	[ "$1" = 'quiet' ] ||
-		return 0
-	quiet=y
-	[ -z "$2" ] || ! shell_var_is_no "$2" || quiet=n
+	case "${1,,}" in
+		quiet)
+			quiet=y
+			[ -z "$2" ] || ! shell_var_is_no "$2" || quiet=n
+			;;
+		rdacct)
+			have_acct=1
+			;;
+	esac
 }
 
 read -r CMDLINE < /proc/cmdline
-cmdline_foreach "$CMDLINE" __set_quiet
+cmdline_foreach "$CMDLINE" __handler
 
 echo "QUIET=$quiet" >>/etc/sysconfig/init
 
@@ -32,6 +38,11 @@ if shell_var_is_no "$quiet"; then
 		/sbin/monotonic-timestamp
 		echo "INITRAMFS: version $VERSION_ID"
 	}
+fi
+
+if [ -n "$have_acct" ] && [ -x /bin/procacct ]; then
+	mount -n -t sysfs sysfs /sys
+	/bin/procacct -o /tmp/procacct.stats 2>/tmp/procacct.err &
 fi
 
 # Alt-Uparrow

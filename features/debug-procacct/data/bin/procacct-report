@@ -1,0 +1,117 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-2.0
+
+. shell-error
+. shell-quote
+
+readonly def_type=top
+readonly def_kind=cputime:rssusage:etime
+readonly def_limit=10
+
+readonly procacct_stats_file="$1"
+shift
+
+if [ "$#" -eq 0 ]; then
+	[ ! -f /.initrd/initenv ] || . /.initrd/initenv
+
+	if [ -n "${RDACCT-}" ] && [ "${RDACCT-}" != 1 ]; then
+		quote_shell_variable vars "${RDACCT//,/ }"
+		eval -- "$vars"
+	fi
+else
+	kind="${1//:/ }"
+fi
+
+type="${type:-$def_type}"
+kind="${kind:-$def_kind}"
+limit="${limit:-$def_limit}"
+
+set -- ${kind//:/ }
+
+for (( i=$#; i > 0; i-- )) do
+	case "$1" in
+		iobytes) set -- "$@" iorbytes iowbytes ;;
+		bytes)   set -- "$@" rbytes wbytes     ;;
+		*)       set -- "$@" "$1"              ;;
+	esac
+	shift
+done
+
+i=0; FIELD=(); DESC=(); UNIT=();
+
+F_TYPE=$(( $i + 1 ))     ; FIELD[$i]=""         ; DESC[$i]=""                ; UNIT[$i]=""      ; i=$(( $i + 1 ))
+F_PID=$(( $i + 1 ))      ; FIELD[$i]=""         ; DESC[$i]=""                ; UNIT[$i]=""      ; i=$(( $i + 1 ))
+F_TGID=$(( $i + 1 ))     ; FIELD[$i]=""         ; DESC[$i]=""                ; UNIT[$i]=""      ; i=$(( $i + 1 ))
+F_PPID=$(( $i + 1 ))     ; FIELD[$i]=""         ; DESC[$i]=""                ; UNIT[$i]=""      ; i=$(( $i + 1 ))
+F_BTIME=$(( $i + 1 ))    ; FIELD[$i]=""         ; DESC[$i]=""                ; UNIT[$i]=""      ; i=$(( $i + 1 ))
+F_ETIME=$(( $i + 1 ))    ; FIELD[$i]="etime"    ; DESC[$i]="Elapsed time"    ; UNIT[$i]="usec"  ; i=$(( $i + 1 ))
+F_CPUTIME=$(( $i + 1 ))  ; FIELD[$i]="cputime"  ; DESC[$i]="CPU time"        ; UNIT[$i]="usec"  ; i=$(( $i + 1 ))
+F_VMUSAGE=$(( $i + 1 ))  ; FIELD[$i]="vmusage"  ; DESC[$i]="VM usage"        ; UNIT[$i]="kb"    ; i=$(( $i + 1 ))
+F_RSSUSAGE=$(( $i + 1 )) ; FIELD[$i]="rssusage" ; DESC[$i]="RSS usage"       ; UNIT[$i]="kb"    ; i=$(( $i + 1 ))
+F_RBYTES=$(( $i + 1 ))   ; FIELD[$i]="rbytes"   ; DESC[$i]="Read bytes"      ; UNIT[$i]="bytes" ; i=$(( $i + 1 ))
+F_WBYTES=$(( $i + 1 ))   ; FIELD[$i]="wbytes"   ; DESC[$i]="Write bytes"     ; UNIT[$i]="bytes" ; i=$(( $i + 1 ))
+F_IORBYTES=$(( $i + 1 )) ; FIELD[$i]="iorbytes" ; DESC[$i]="Read I/O bytes"  ; UNIT[$i]="bytes" ; i=$(( $i + 1 ))
+F_IOWBYTES=$(( $i + 1 )) ; FIELD[$i]="iowbytes" ; DESC[$i]="Write I/O bytes" ; UNIT[$i]="bytes" ; i=$(( $i + 1 ))
+F_COMM=$(( $i + 1 ))     ; FIELD[$i]=""         ; DESC[$i]=""                ; UNIT[$i]=""      ; i=$(( $i + 1 ))
+F_CMDLINE=$(( $i + 1 ))  ; FIELD[$i]=""         ; DESC[$i]=""                ; UNIT[$i]=""      ; i=$(( $i + 1 ))
+
+cut_output()
+{
+	case "$limit" in
+		(-[1-9]*) tail -n "${limit#-}" ;;
+		( [1-9]*) head -n "$limit" ;;
+		(   ''|0) cat ;;
+	esac
+}
+
+output_top()
+{
+	printf '%s:\n' "Top $limit of ${DESC[$index]}"
+
+	cut -f "${F_TYPE},${F_PID},${F_TGID},${F_BTIME},${field},${F_COMM}-" \
+		"$1" |
+	while IFS='	' read -r ptype pid tgid btime data comm cmdline; do
+		date="$(date -u +'%Y-%m-%d %H:%M:%S' -d "@$btime" 2>/dev/null)" ||
+			date="@$btime secs"
+
+		case "$ptype" in
+			P) name="Process" ;;
+			T) name="Thread $pid" ;;
+			*) name="Unknown thing id=$pid" ;;
+		esac
+
+		[ "$cmdline" != - ] ||
+			cmdline="$comm"
+
+		printf '  * %s (pid=%s):\n' "$name" "$tgid"
+		printf '    - %-15s: %s\n' "Start time"      "$date"
+		printf '    - %-15s: %s\n' "${DESC[$index]}" "$data ${UNIT[$index]}"
+		printf '    - %-15s: %s\n' "Command"         "$cmdline"
+	done
+	printf '\n'
+}
+
+data_file="/tmp/$PROG.stats"
+
+for by_kind; do
+	by_kind="${by_kind,,}"
+
+	for index in "${!FIELD[@]}" 0; do
+		[ "${FIELD[$index]}" != "$by_kind" ] ||
+			break
+	done
+
+	[ $index -gt 0 ] ||
+		continue
+
+	field=$(( $index + 1 ))
+
+	sort -nrk "$field,$field" "$procacct_stats_file" |
+		cut_output > "$data_file"
+
+	case "$type" in
+		top) output_top "$data_file" ;;
+	esac
+
+	echo rm -f -- "$data_file"
+done

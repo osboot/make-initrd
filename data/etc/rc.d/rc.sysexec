@@ -3,6 +3,18 @@
 . /.initrd/initenv
 . /etc/init.d/functions
 
+if [ -s /tmp/procacct.stats ]; then
+	printf '### Accounting Results ###\n'
+	/bin/procacct-report /tmp/procacct.stats
+	printf '### Accounting Done ###\n'
+fi
+
+if [ -s /tmp/procacct.err ]; then
+	printf '### Accounting Error ###\n'
+	cat /tmp/procacct.err
+	printf '### Accounting FAILES ###\n'
+fi
+
 ! mountpoint -q /proc ||
 	umount -fl /proc
 
