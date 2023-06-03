@@ -1,11 +1,12 @@
 #!/bin/bash
 
-MAKE_INITRD_PACKAGES="make udev libelf libkmod zlib bzlib libzstd liblzma"
+MAKE_INITRD_PACKAGES="make udev libelf libkmod zlib bzlib libzstd liblzma libbpf"
 
 MAKE_INITRD_PACKAGES_DEVEL="$MAKE_INITRD_PACKAGES"
 MAKE_INITRD_PACKAGES_DEVEL+=" gcc make automake autoconf bison flex"
 MAKE_INITRD_PACKAGES_DEVEL+=" libkmod-devel zlib-devel bzlib-devel liblzma-devel"
 MAKE_INITRD_PACKAGES_DEVEL+=" libzstd-devel libelf-devel libtirpc-devel libcrypt-devel"
+MAKE_INITRD_PACKAGES_DEVEL+=" llvm clang libbpf-devel"
 
 KERNEL_PACKAGES="kernel-image$KERNEL_FLAVOR"
 

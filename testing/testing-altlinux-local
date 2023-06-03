@@ -45,6 +45,15 @@ for step in "$@"; do
 			cd "$builddir"
 			rc=0
 
+			ALTWRAP_LLVM_VERSION="\$(
+				rpmquery -a --qf='%{name}\n' llvm\*-libs |
+				sed -e 's/^llvm//' -e 's/-libs//' |
+				sort -g |
+				tail -1
+			)"
+			[ -z "\$ALTWRAP_LLVM_VERSION" ] ||
+				export ALTWRAP_LLVM_VERSION
+
 			./autogen.sh
 			./configure \
 				--enable-local-build \
