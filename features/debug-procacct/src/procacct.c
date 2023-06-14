@@ -63,7 +63,7 @@
 #define NLA_PAYLOAD(len)	(len - NLA_HDRLEN)
 
 static pid_t current_pid;
-static int rcvbufsz;
+static int rcvbufsz = MAX_MSG_SIZE * 32;
 static char name[100];
 static int fd_out = 1;
 
