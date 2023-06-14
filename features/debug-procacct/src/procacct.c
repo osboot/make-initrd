@@ -144,7 +144,7 @@ void setup_netlink_fd(struct fd_handler *el)
 {
 	struct sockaddr_nl local;
 
-	el->fd = socket(AF_NETLINK, SOCK_RAW | SOCK_NONBLOCK | SOCK_CLOEXEC, NETLINK_GENERIC);
+	el->fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_GENERIC);
 	if (el->fd < 0)
 		rd_fatal("error creating Netlink socket: %m");
 
@@ -361,7 +361,7 @@ int process_netlink_events(struct fd_handler *el)
 		struct nlattr *na;
 
 		errno = 0;
-		ret = recv(el->fd, &msg, sizeof(msg), 0);
+		ret = recv(el->fd, &msg, sizeof(msg), MSG_DONTWAIT);
 		if (ret < 0) {
 			if (errno == EAGAIN || errno == EWOULDBLOCK)
 				return 0;
