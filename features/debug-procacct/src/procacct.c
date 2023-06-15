@@ -568,12 +568,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (write_file) {
-		fd_out = open(logfile, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0644);
-		if (fd_out < 0)
-			rd_fatal("cannot open output file: %s: %m", logfile);
-	}
-
 	current_pid = getpid();
 
 	setup_netlink_fd(&fd_handler_list[FD_NETLINK]);
@@ -586,6 +580,12 @@ int main(int argc, char *argv[])
 			continue;
 		if (fd_handler_list[i].fd_prepare(&fd_handler_list[i]) < 0)
 			rd_fatal("unable to prepare file descriptor");
+	}
+
+	if (write_file) {
+		fd_out = open(logfile, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0644);
+		if (fd_out < 0)
+			rd_fatal("cannot open output file: %s: %m", logfile);
 	}
 
 	while (1) {

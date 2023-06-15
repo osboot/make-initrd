@@ -43,6 +43,9 @@ fi
 if [ -n "$have_acct" ] && [ -x /bin/procacct ]; then
 	mount -n -t sysfs sysfs /sys
 	/bin/procacct -o /tmp/procacct.stats 2>/tmp/procacct.err &
+	while [ ! -f /tmp/procacct.stats ]; do
+		sleep 0.1
+	done
 fi
 
 # Alt-Uparrow
