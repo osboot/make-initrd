@@ -47,7 +47,7 @@
 #include "rd/memory.h"
 
 /* Maximum size of response requested or message sent */
-#define MAX_MSG_SIZE 1024
+#define MAX_MSG_SIZE 2048
 
 /* Maximum number of cpus expected to be specified in a cpumask */
 #define MAX_CPUS 64
@@ -213,35 +213,32 @@ ssize_t send_cmd(int fd, uint16_t nlmsg_type, uint8_t genl_cmd, uint16_t nla_typ
  */
 uint16_t get_family_id(int fd)
 {
-	struct {
-		struct nlmsghdr n;
-		struct genlmsghdr g;
-		char buf[256];
-	} ans;
-
-	strcpy(name, TASKSTATS_GENL_NAME);
+	struct msgtemplate msg;
 
 	ssize_t ret = send_cmd(fd, GENL_ID_CTRL, CTRL_CMD_GETFAMILY,
-	                       CTRL_ATTR_FAMILY_NAME, name, strlen(TASKSTATS_GENL_NAME) + 1);
+	                       CTRL_ATTR_FAMILY_NAME,
+	                       (char *) TASKSTATS_GENL_NAME, sizeof(TASKSTATS_GENL_NAME));
 	if (ret < 0)
 		return 0;
 
-	ret = recv(fd, &ans, sizeof(ans), 0);
+	ret = recv(fd, &msg, sizeof(msg), 0);
+	if (ret < 0)
+		rd_fatal("receive NETLINK family: %m");
 
-	if (ans.n.nlmsg_type == NLMSG_ERROR || (ret < 0) || !NLMSG_OK((&ans.n), ret))
-		return 0;
+	if (msg.n.nlmsg_type == NLMSG_ERROR || !NLMSG_OK((&msg.n), ret)) {
+		struct nlmsgerr *err = NLMSG_DATA(&msg);
+		rd_fatal("receive NETLINK family: %s (errno=%d)", strerror(-err->error),  err->error);
+	}
 
 	struct nlattr *na;
 
-	na = (struct nlattr *) GENLMSG_DATA(&ans);
+	na = (struct nlattr *) GENLMSG_DATA(&msg);
 	na = (struct nlattr *) ((char *) na + NLA_ALIGN(na->nla_len));
 
-	uint16_t id = 0;
+	if (na->nla_type != CTRL_ATTR_FAMILY_ID)
+		rd_fatal("unexpected family id");
 
-	if (na->nla_type == CTRL_ATTR_FAMILY_ID)
-		id = *(uint16_t *) NLA_DATA(na);
-
-	return id;
+	return *(uint16_t *) NLA_DATA(na);
 }
 
 void print_procacct(int fd, struct taskstats *t)
@@ -375,7 +372,7 @@ int process_netlink_events(struct fd_handler *el)
 
 		if (msg.n.nlmsg_type == NLMSG_ERROR || !NLMSG_OK((&msg.n), ret)) {
 			struct nlmsgerr *err = NLMSG_DATA(&msg);
-			rd_fatal("fatal reply error, errno=%d", err->error);
+			rd_fatal("reply error: %s (errno=%d)", strerror(-err->error), err->error);
 		}
 
 		ret = GENLMSG_PAYLOAD(&msg.n);
