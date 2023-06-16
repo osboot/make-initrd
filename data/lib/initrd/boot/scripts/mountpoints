@@ -10,16 +10,13 @@ while [ -z "${eof-}" ]; do
 	read -r fsdev fsdir _ ||
 		eof=1
 
-	[ -n "$fsdev" ] ||
+	[ -n "$fsdev" ] && [ -d "$fsdir" ] ||
 		continue
 
 	if [ -n "${ROOTONLY-}" ]; then
 		[ "$fsdir" = "$rootmnt" ] ||
 			continue
 	fi
-
-	[ -d "$fsdir" ] ||
-		fatal "$fsdir: Does not exist"
 
 	mountpoint -q "$fsdir" ||
 		fatal "$fsdir: Not mounted"
