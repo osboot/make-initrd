@@ -193,11 +193,8 @@ qemu_create_disk()
 		return 0
 
 	case "$fmt" in
-		qcow2)
-			qemu-img create -q -f "$fmt" -o preallocation=falloc,lazy_refcounts=on,cluster_size=2M "$fn" "$size"
-			;;
-		raw)
-			qemu-img create -q -f "$fmt" -o preallocation=falloc "$fn" "$size"
+		qcow2|raw)
+			qemu-img create -q -f "$fmt" "$fn" "$size"
 			;;
 	esac
 }
