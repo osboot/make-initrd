@@ -1,7 +1,7 @@
-# Polld Details
+# Poll Details
 
-`polld` it is a daemon for periodically executing scripts. All scripts are
-executed one by one. The daemon executes two types of scripts:
+Polling is implemented as a queue in uventd. It periodically executing scripts.
+All scripts are executed one by one. Queue executes two types of scripts:
 
 - Boot contidion [scripts](PollDetails.md#boot-conditions);
 - Other custom [scripts](PollDetails.md#other-scripts).
@@ -16,10 +16,10 @@ the boot methods. A separate directory is created for each method:
 
 `/lib/initrd/boot/method/<METHOD>`
 
-From this directory `polld` uses two scripts "check" and "action". The "action"
+From this directory script uses two scripts "check" and "action". The "action"
 script will be executed if "check" succeeds.
 
-On each iteration, `polld` reads the name of the current boot method from the
+On each iteration, script reads the name of the current boot method from the
 `/etc/initrd/method` file. So, at some point, one boot method may switch to
 another method.
 
@@ -39,5 +39,4 @@ Scripts from the directory are executed sequentially one by one.
 
 `/lib/uevent/extenders/`
 
-Scripts in this directory must be prefixed with `[0-9][0-9][0-9]-`. The daemon
-ignores the return code of scripts.
+Scripts in this directory must be prefixed with `[0-9][0-9][0-9]-`.

@@ -3,27 +3,26 @@
 When we talk about event-driven infrastructure it means that there is no
 hardcoded sequence of steps to mount system root.
 
-The initramfs init starts a few services: udevd, [ueventd](UeventDetails.md),
-[polld](PollDetails.md). The interaction between these services looks like this:
+The initramfs init starts a few services: udevd and [ueventd](UeventDetails.md).
+The interaction between these services looks like this:
 
 ```
-.==========.        .----------------.        .------------------.
-||        ||        | polld          |     .->| boot real system |
-|| kernel ||        |       .-----------.  |  '------------------'
-||        ||        |       | extenders |--'
-'=========='        |       |           |<-.
-     ||             |       '-----------'  |
-     ||             |                |     |
-     ||             '----------------'     |
-     ||  .----------. .--------------.     |
-     |'->| devtmpfs | | mountpoints  |-----'
-     |   | /dev     | | /...         |<----.
-     V   '----------' '--------------'     |
-.---------.        .-----------------.     |
-| udevd   |        | ueventd         |     |
-|  .---------.  .---------.  .----------.  |
-|  | filters |->| uevents |->| handlers |--'
-|  '---------'  '---------'  '----------'
+.==========.      .-------------------.
+||        ||----->| devtmpfs (/dev)   |
+|| kernel ||      |-------------------|
+||        ||----->| mountpoints (/..) |<----.
+'=========='      '-------------------'     |
+     |                                      |
+     V                                      |
+.---------.        .-----------------.      |
+| udevd   |        | ueventd         |      |
+|  .---------.  .---------.  .-----------.  |
+|  | filters |->| uevents |->| handlers  |--' (mount, etc.)
+|  '---------'  '---------'  '-----------'
+|         |        |                 |
+|         |        |         .-----------.    .------------------.
+|         |        |         | extenders |--->| boot real system |
+|         |        |         '-----------'    '------------------'
 |         |        |                 |
 '---------'        '-----------------'
 ```
@@ -46,11 +45,11 @@ about the appearance of `/dev/md0`. Now, mount-handler can check it and if it
 contains the root filesystem, then handler will mount this block device.
 
 So, we mounted some block devices somewhere. We need something that would make
-a decision that we met all the conditions for real system boot. The `polld` is
-responsible for this. The server periodically runs `extenders` scripts that
-perform checks (console is not active, the system init was found, etc.),
-and if all scripts succeed, the server initiates a system boot. See [polling
-details](PollDetails.md) for more information.
+a decision that we met all the conditions for real system boot. The server
+periodically runs `extenders` scripts that perform checks (console is not
+active, the system init was found, etc.), and if all scripts succeed, the server
+initiates a system boot. See [polling details](PollDetails.md) for more
+information.
 
 This scheme is used to mount system root device, resume system, configure
 network. Basically it's used for everything based on kernel events.
