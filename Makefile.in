@@ -437,7 +437,8 @@ installdirs:
 	 $(DESTDIR)$(projectdir)/$(FEATURESDIR) \
 	 $(DESTDIR)$(execdir)/$(FEATURESDIR) \
 	 $(DESTDIR)$(runtimedir)/bin \
-	 $(DESTDIR)$(runtimedir)/sbin
+	 $(DESTDIR)$(runtimedir)/sbin \
+	 $(DESTDIR)$(runtimedir)/$(libcdir)
 
 install: build-progs build-manpages installdirs
 	$(Q)cp -at "$(DESTDIR)$(bindir)" -- $(addprefix $(dest_bindir)/,$(BIN_NAMES))
@@ -451,6 +452,7 @@ install: build-progs build-manpages installdirs
 	$(Q)cp -at "$(DESTDIR)$(execdir)/$(FEATURESDIR)" -- $(wildcard $(dest_execdir)/$(FEATURESDIR)/*)
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/bin" -- $(addprefix $(dest_data_bindir)/,$(RUNTIME_BIN_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/sbin" -- $(addprefix $(dest_data_sbindir)/,$(RUNTIME_SBIN_NAMES))
+	$(Q)cp -at "$(DESTDIR)$(runtimedir)/$(libcdir)" -- $(dest_data_libdir)/lib*
 ifneq ($(HELP2MAN),)
 	$(Q)cp -at "$(DESTDIR)$(man1dir)" -- $(addprefix $(dest_man1dir)/,$(MANPAGE_NAMES))
 endif
