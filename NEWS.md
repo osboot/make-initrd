@@ -1,3 +1,23 @@
+Version 2.36.0
+
+- Runtime:
+  + Reimplement ueventd, replace polld by uevent queue.
+  + Create a shared libinitramfs library with shared code.
+  + Use flock-based locking.
+  + Rewrite console locking.
+  + Add /dev to fstab and mount it as other filesystems.
+  + Do not fail if required mountpoint does not exist.
+- New feature:
+  + Add debug-procacct. The feature is designed to debug the boot process inside
+    the initramfs.
+- Feature mdadm:
+  + Boot from IMSM.
+  + Put mdmon if external metadata detected.
+- Feature system-glibc:
+  + Do not hardcode min_uid/min_gid values.
+- Utilities:
+  + udev-rules: Add more udev rule checks.
+
 Version 2.35.0
 
 - Guess subsystem:
