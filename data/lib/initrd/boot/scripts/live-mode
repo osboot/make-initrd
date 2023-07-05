@@ -1,6 +1,0 @@
-#!/bin/bash
-
-. /.initrd/initenv
-
-[ "${RDMODE-}" != 'live' ] ||
-	exit
