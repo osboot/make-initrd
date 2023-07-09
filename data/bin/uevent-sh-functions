@@ -14,7 +14,6 @@ ueventdir='/.initrd/uevent/events'
 # backward compatibility
 eventdir='/.initrd/uevent/events/udev'
 
-extendir='/lib/uevent/extenders'
 handlerdir='/lib/uevent/handlers'
 
 make_event() {
