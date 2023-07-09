@@ -1,0 +1,25 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            rootdelay
+# Default-Start:       3 4 5
+### END INIT INFO
+
+. /etc/init.d/template
+
+NAME=rootdelayd
+PIDFILE=/var/run/$NAME.pid
+ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --displayname $NAME --name $NAME"
+
+start() {
+	start_daemon --background --make-pidfile $ARGS -- "$NAME"
+	RETVAL=$?
+	return $RETVAL
+}
+
+stop() {
+	stop_daemon $ARGS -- "$NAME"
+	RETVAL=$?
+	return $RETVAL
+}
+
+switch "${1-}"

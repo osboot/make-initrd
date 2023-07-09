@@ -1,7 +1,7 @@
 #!/bin/bash
 ### BEGIN INIT INFO
 # Provides:            cmdline
-# Required-Start:
+# Required-Start:      rootdelay
 # Should-Start:
 # Required-Stop:
 # Should-Stop:
@@ -18,6 +18,7 @@
 . shell-error
 . shell-var
 . shell-cmdline
+. shell-locks
 
 defaults()
 {
@@ -186,10 +187,12 @@ parse()
 		fi
 	fi
 
+	fd_lock 90 /.initrd/initenv
 	{
 		echo __initrd_initenv=1
 		environ -q -s -p 'export ' -u '_*,INITLOG_FILE,RUNLEVEL,runlevel,PWD,SHLVL'
 	} > /.initrd/initenv
+	fd_unlock 90
 }
 
 action_shell 'Parsing cmdline arguments:' parse
