@@ -89,6 +89,8 @@ UnmountFilesystems()
 		for (( i=$(( ${#points[@]} - 1 )); i >= 0; i-- )) do
 			mnt="${points[$i]}"
 
+			[ -n "$mnt" ] || continue
+
 			action "Unmounting filesystem$msg [$mnt]:" umount -fl "$mnt"
 
 			if mountpoint -q "$mnt"; then
