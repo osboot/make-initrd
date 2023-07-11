@@ -1,5 +1,0 @@
-#!/bin/bash -e
-
-. shell-locks
-
-fd_trylock 90 /dev/console

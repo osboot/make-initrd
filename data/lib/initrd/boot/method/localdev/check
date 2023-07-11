@@ -1,7 +1,0 @@
-#!/bin/bash -efu
-
-cd /lib/initrd/boot/scripts
-./resume
-./console-inactive
-./mountpoints
-./sysinit

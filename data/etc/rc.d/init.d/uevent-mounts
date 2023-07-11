@@ -1,0 +1,31 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            uevent-mounts
+# Required-Start:      mountfs
+# X-Start-Before:      uevent
+# Default-Start:       3 4 5
+### END INIT INFO
+
+. /.initrd/initenv
+. /etc/init.d/template
+. uevent-sh-functions
+
+NAME=ueventd-mounts
+PIDFILE=/var/run/$NAME.pid
+ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --displayname $NAME --name $NAME"
+
+start() {
+	mkdir -p -- "$filterdir/mount/.tmp"
+
+	start_daemon --background --make-pidfile $ARGS -- "$NAME"
+	RETVAL=$?
+	return $RETVAL
+}
+
+stop() {
+	stop_daemon $ARGS -- "$NAME"
+	RETVAL=$?
+	return $RETVAL
+}
+
+switch "${1-}"

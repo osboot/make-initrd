@@ -9,12 +9,12 @@ disabled="/.initrd/rootdelay/disabled"
 period=1
 
 while :; do
-	if [ -e "$disabled" ]; then
+	if [ -e "$disabled" ] || rootdelay_paused; then
 		sleep $period
 		continue
 	fi
 
-	if [ -z "${__initrd_initenv-}" ]; then
+	if [ -z "${__initrd_initenv-}" ] && [ -f /.initrd/initenv ]; then
 		fd_rlock 90 /.initrd/initenv
 		. /.initrd/initenv
 		fd_unlock 90
@@ -26,12 +26,10 @@ while :; do
 		fi
 
 		[ "${RDLOG-}" != 'console' ] &&
-			logfile=/var/log/mounts.log ||
+			logfile=/var/log/$PROG.log ||
 			logfile=/dev/console
 
 		exec >"$logfile" 2>&1
-
-		message "ready"
 	fi
 
 	if [ -n "${RDSHELL-}" ]; then
@@ -59,13 +57,6 @@ while :; do
 
 	deadline="${deadline:-$now}"
 	delay=$(( $deadline - $now ))
-
-	if rootdelay_paused; then
-		echo $(( $now + $delay )) > "$_rootdelay_timestamp"
-
-		sleep $period
-		continue
-	fi
 
 	if [ "$delay" -le 0 ]; then
 		if ! resume_checked; then
