@@ -100,7 +100,7 @@ seq=5
 if [ "$rc" -eq 0 ]; then
 	for seq in 1 2 3 4 5; do
 		killall5 -18 $omitpid || break
-		sleep 1
+		sleep 0.1
 	done
 fi
 

@@ -301,7 +301,7 @@ stop_daemon()
 	if [ "$DEFAULT" = true ] && [ $STATUS -eq 0 ]; then
 		sleep 0.1
 		if start-stop-daemon $FLAGS --test > /dev/null; then
-			sleep 1
+			sleep 0.1
 			SIGNAL="$(/bin/kill -l KILL)" || SIGNAL=9
 			start-stop-daemon $FLAGS --signal "$SIGNAL" > /dev/null
 		fi
