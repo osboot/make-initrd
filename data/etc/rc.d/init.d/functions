@@ -152,16 +152,6 @@ start_daemon()
 	[ -z "$BACKGROUND" ] || FLAGS="$FLAGS $BACKGROUND"
 	[ -z "$MAKE_PIDFILE" ] || FLAGS="$FLAGS $MAKE_PIDFILE"
 
-	# Is it running at all?
-	! start-stop-daemon --stop --quiet --test --signal 0 --exec "$WHICH" > /dev/null
-	STATUS=$?
-
-	if [ $STATUS != 0 ]; then
-		[ -z "$ANNOUNCE" ] || msg_already_running "$DISPNAME"
-		passed "$BASENAME startup"
-		return $STATUS
-	fi
-
 	# Announce the action.
 	[ -z "$ANNOUNCE" ] || msg_starting "$DISPNAME"
 
