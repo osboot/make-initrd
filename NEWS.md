@@ -1,3 +1,14 @@
+Version 2.37.0
+
+- Runtime:
+  + Reduce few timeouts.
+  + Get rid of localdev polling.
+  + Convert rootdelay to service.
+  + Drop extender scripts.
+- Feature zfs:
+  + Replace extender script by service.
+  + Drop live-mode.
+
 Version 2.36.0
 
 - Runtime:
