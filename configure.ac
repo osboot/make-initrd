@@ -273,47 +273,6 @@ PKG_CHECK_MODULES(HAVE_LIBKMOD, libkmod, [HAVE_LIBKMOD=yes], [HAVE_LIBKMOD=no])
 AS_IF([test "x$HAVE_LIBKMOD" != xyes],
 	[AC_MSG_ERROR([libkmod was not found: https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git])])
 
-AC_ARG_WITH([feature-bootloader],
-	[AS_HELP_STRING([--with-feature-bootloader],
-			[build bootloader feature (default: auto)])],
-	[],
-	[: m4_divert_text([DEFAULTS], [with_feature_bootloader=auto])])
-
-USE_FEATURE_BOOTLOADER=no
-HAVE_LIBNEWT=no
-HAVE_LIBSLANG=no
-HAVE_LIBINIPARSER=no
-
-if test "x$with_feature_bootloader" != xno; then
-	PKG_CHECK_MODULES(HAVE_LIBNEWT, libnewt, [HAVE_LIBNEWT=yes], [HAVE_LIBNEWT=no]);
-	PKG_CHECK_MODULES(HAVE_LIBSLANG, slang, [HAVE_LIBSLANG=yes], [HAVE_LIBSLANG=no]);
-	AC_CHECK_LIB(iniparser, iniparser_load, [
-		HAVE_LIBINIPARSER=yes
-		HAVE_LIBINIPARSER_LIBS=-liniparser
-		HAVE_LIBINIPARSER_CFLAGS=''
-	], [HAVE_LIBINIPARSER=no])
-
-	if test "x$HAVE_LIBINIPARSER" = xyes; then
-		AC_CHECK_HEADERS([iniparser.h iniparser/iniparser.h])
-		if test "x$ac_cv_header_iniparser_iniparser_h" = "xyes"; then
-			HAVE_LIBINIPARSER_CFLAGS="-I${includedir}/iniparser"
-		fi
-	fi
-
-	if test "x$with_feature_bootloader" != xauto; then
-		AS_IF([test "x$HAVE_LIBNEWT" != xyes],
-			[AC_MSG_ERROR([libnewt was not found: https://fedorahosted.org/releases/n/e/newt/])])
-		AS_IF([test "x$HAVE_LIBSLANG" != xyes],
-			[AC_MSG_ERROR([slang was not found: https://www.jedsoft.org/slang/])])
-		AS_IF([test "x$HAVE_LIBINIPARSER" != xyes],
-			[AC_MSG_ERROR([libiniparser was not found: https://github.com/ndevilla/iniparser])])
-	fi
-
-	if test "x-$HAVE_LIBNEWT-$HAVE_LIBSLANG-$HAVE_LIBINIPARSER" = x-yes-yes-yes; then
-		USE_FEATURE_BOOTLOADER=yes
-	fi
-fi
-
 AC_ARG_WITH([feature-procacct],
 	[AS_HELP_STRING([--with-feature-procacct],
 			[build procacct feature (default: auto)])],
