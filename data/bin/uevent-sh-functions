@@ -26,7 +26,7 @@ publish_event() {
 
 release_event() {
 	local num dummy
-	num=$(/sbin/monotonic-timestamp raw)
+	num=$(/sbin/timestamp monotonic raw)
 	publish_event "$1.${num:-0.0}${2##*/}" "$2"
 }
 

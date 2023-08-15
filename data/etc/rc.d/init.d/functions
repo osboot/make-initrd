@@ -379,7 +379,7 @@ status()
 
 show_tstamp()
 {
-	[ -z "${SHOW_TIMESTAMP-}" ] || /sbin/monotonic-timestamp
+	[ -z "${SHOW_TIMESTAMP-}" ] || /sbin/timestamp monotonic
 }
 
 is_quiet()
