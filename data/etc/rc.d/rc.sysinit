@@ -35,7 +35,7 @@ if shell_var_is_no "$quiet"; then
 	. /etc/initrd-release
 
 	[ -z "${VERSION_ID-}" ] || {
-		/sbin/timestamp monotonic
+		/sbin/timestamp boottime
 		echo "INITRAMFS: version $VERSION_ID"
 	}
 fi

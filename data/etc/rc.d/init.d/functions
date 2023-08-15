@@ -379,7 +379,7 @@ status()
 
 show_tstamp()
 {
-	[ -z "${SHOW_TIMESTAMP-}" ] || /sbin/timestamp monotonic
+	[ -z "${SHOW_TIMESTAMP-}" ] || /sbin/timestamp boottime
 }
 
 is_quiet()
