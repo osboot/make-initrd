@@ -16,6 +16,10 @@ SourceIfNotEmpty /etc/$NAME/$NAME.conf
 
 start() {
 	local t n m
+
+	[ -n "$(findmnt -nko TARGET -t devpts 2>/dev/null)" ] ||
+		mount -t devpts devpts /dev/pts
+
 	for t in rsa dss ecdsa; do
 		n="/etc/dropbear/dropbear_${t}_host_key"
 		[ ! -f "$n" ] ||
