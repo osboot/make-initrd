@@ -126,7 +126,8 @@ rootdelay_paused()
 rootdelay_reset_timer()
 {
 	local now
-	now="$(date +'%s')"
+	now="$(timestamp boottime raw)"
+	now="${now%.*}"
 	echo $(( $now + $ROOTDELAY )) > "$_rootdelay_timestamp"
 }
 

@@ -19,8 +19,9 @@ done
 [ -n "$delay" ] && [ "$delay" -gt 0 ] ||
 	exit 0
 
-now="$(date +'%s')"
-touch -d "@$(($now + $delay))" "$tsfile"
+now="$(timestamp boottime raw)"
+now="${now%.*}"
+echo "$(($now + $delay))" > "$tsfile"
 
 [ ! -e "$pidfile" ] ||
 	exit 0
@@ -38,8 +39,12 @@ is_raid()
 
 (
 	while :; do
-		now="$(date +'%s')"
-		ts="$(stat -c '%Y' "$tsfile")"
+		now="$(timestamp boottime raw)"
+		now="${now%.*}"
+
+		ts=
+		readline ts "$tsfile"
+
 		[ "$ts" -ge "$now" ] ||
 			break
 		sleep 1

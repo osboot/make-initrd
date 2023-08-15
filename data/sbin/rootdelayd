@@ -42,7 +42,8 @@ while :; do
 	fi
 
 	first_iter=
-	now="$(date +'%s')"
+	now="$(timestamp boottime raw)"
+	now="${now%.*}"
 	consmsg="/.initrd/rootdelay/message"
 
 	if [ ! -f "$_rootdelay_timestamp" ]; then
@@ -52,7 +53,7 @@ while :; do
 		mkdir -p -- "${_rootdelay_timestamp%/*}"
 		echo $deadline > "$_rootdelay_timestamp"
 	else
-		read -r deadline < "$_rootdelay_timestamp"
+		readline deadline "$_rootdelay_timestamp"
 	fi
 
 	deadline="${deadline:-$now}"
