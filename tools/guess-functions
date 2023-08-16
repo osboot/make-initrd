@@ -56,7 +56,7 @@ guess_device() {
 	[ -z "${device_file##$SYSFS_PATH/devices/*}" ] ||
 		return 0
 
-	for m in modalias parent slaves ${GUESS_DEVICE_SCRIPTS-}; do
+	for m in modalias parent slaves supplier ${GUESS_DEVICE_SCRIPTS-}; do
 		"$m" "${device_file#$SYSFS_PATH}"
 	done
 }
@@ -101,6 +101,27 @@ slaves() {
 	for slave in "$SYSFS_PATH$1/slaves"/*; do
 		[ ! -e "$slave" ] ||
 			guess_device "$1/slaves/${slave##*/}"
+	done
+}
+
+devlink_visited=" "
+
+supplier() {
+	local supplier devlink
+
+	for supplier in "$SYSFS_PATH$1/"supplier:*; do
+		[ -e "$supplier" ] ||
+			continue
+
+		devlink="$(readlink -ev "$supplier")" ||
+			continue
+
+		devlink="${devlink#$SYSFS_PATH/devices/virtual/devlink/}"
+
+		if [ -n "${devlink_visited##* $devlink *}" ]; then
+			devlink_visited="$devlink_visited$devlink "
+			guess_device "${supplier#$SYSFS_PATH}/supplier"
+		fi
 	done
 }
 
