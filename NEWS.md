@@ -1,3 +1,14 @@
+Version 2.38.0
+
+- Runtime:
+  + Rename monotonic-timestamp -> timestamp.
+  + Use boottime instead of monotonic time.
+- Feature dropbear:
+  + Mount devpts if not mounted.
+- Guess subsystem:
+  + Add device suppliers to initrd.
+- Remove unsupported bootloader feature.
+
 Version 2.37.0
 
 - Runtime:
