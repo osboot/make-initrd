@@ -186,7 +186,7 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 					warnx("%s: symbols does not match", kmod_module_get_path(mod));
 			}
 
-		} else if (rc < 0 && rc != -ENOENT) {
+		} else if (rc < 0 && rc != -ENOENT && rc != -ENODATA) {
 			errno = -rc;
 			warn("Could not get symbols from '%s'", modname);
 			goto exit;
