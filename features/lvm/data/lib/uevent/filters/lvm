@@ -4,5 +4,5 @@
 . uevent-sh-functions
 
 event="$(make_event)"
-environ -q > "$event"
+environ -qs > "$event"
 release_event lvm "$event"
