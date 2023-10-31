@@ -15,29 +15,32 @@
 . /etc/init.d/template
 . initrd-sh-functions
 
-show_splash() {
-	udevadm settle --timeout=30 --exit-if-exists=/sys/class/drm/card0/dev
-	udevadm settle --timeout=30 --exit-if-exists=/sys/class/graphics/fb0/dev
-	plymouth show-splash
-}
-
 start() {
 	[ -z "${NOSPLASH-}" ] ||
 		return 0
 
-	local pid=/run/plymouth/pid
+	udevadm settle --timeout=30 --exit-if-exists=/sys/class/drm/card0/dev
+	udevadm settle --timeout=30 --exit-if-exists=/sys/class/graphics/fb0/dev
+
+	local pidfile=/run/plymouth/pid
 
 	mkdir -m 0755 /run/plymouth 2>/dev/null ||:
 	: > /run/systemd/plymouth
 
-	start_daemon --lockfile "$LOCKFILE" -- plymouthd --mode=boot --tty=/dev/tty1 --pid-file=$pid ||
+	start_daemon --lockfile "$LOCKFILE" -- plymouthd --mode=boot --tty=/dev/tty1 --pid-file=$pidfile ||
 		RETVAL=$?
 
 	[ "$RETVAL" = 0 ] ||
 		return $RETVAL
 
-	omit_pid "$(cat "$pid")"
-	show_splash &
+	pid="$(cat "$pidfile")"
+
+	while [ -e "/proc/$pid" ] && ! plymouth --ping 2>/dev/null; do
+		sleep 1
+	done
+
+	omit_pid "$pid"
+	plymouth show-splash
 }
 
 stop() {
