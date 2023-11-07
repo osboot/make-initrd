@@ -1,3 +1,12 @@
+Version 2.39.0
+
+- Feature plymouth:
+  + Show splash in synchronous mode to avoid race with plymouth users.
+- Feature fsck:
+  + Fix typo in boot variable and fix the FASTBOOT parameter.
+- Utilities:
+  + initrd-scanmod: Add support for kmod > v30-25-g5c004af.
+
 Version 2.38.0
 
 - Runtime:
