@@ -23,7 +23,7 @@ jobs:
       - name: "Install Tools"
         run: |
          sudo apt-get -y -qq install \
-          gcc make automake autoconf pkg-config udev help2man \
+          gcc make automake autoconf pkg-config udev scdoc \
           libkmod-dev libz-dev libbz2-dev liblzma-dev libzstd-dev libelf-dev libtirpc-dev libcrypt-dev
          sudo apt-get -y -qq install astyle
          sudo apt-get -y -qq install shellcheck

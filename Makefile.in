@@ -141,10 +141,10 @@ CPPFLAGS += @CPPFLAGS@ @DEFS@ -I$(CURDIR) -I$(CURDIR)/utils
 
 UDEVD		= @UDEVD@
 UDEVADM		= @UDEVADM@
-HELP2MAN	= @HELP2MAN@
 STRIP		= @STRIP@
 USE_BUSYBOX	= @USE_BUSYBOX@
 USE_LIBSHELL	= @USE_LIBSHELL@
+SCDOC		= @SCDOC@
 
 SED = @SED@ \
 	-e 's|@UDEVD[@]|$(UDEVD)|g' \
@@ -257,13 +257,12 @@ $(dest_rulesdir)/%.mk: mk/%.mk.in
 
 build: $(addprefix $(dest_rulesdir)/,$(RULE_NAMES))
 
-ifneq ($(HELP2MAN),)
-MANPAGE_NAMES = $(notdir $(basename $(wildcard man/*.1.inc)))
+ifneq ($(SCDOC),)
+MANPAGE_NAMES = $(notdir $(basename $(wildcard Documentation/manpages/*.md)))
 
-$(dest_man1dir)/%.1: man/%.1.inc
+$(dest_man1dir)/%.1: Documentation/manpages/%.1.md
 	$(Q)mkdir -p -- $(dir $@)
-	$(call quiet_cmd,MAN,$@,env -i PATH="${PATH}" $(HELP2MAN) -N) \
-	  -i $< -- $(notdir $*) >$@
+	$(call quiet_cmd,MAN,$@,$(SCDOC)) < $< > $@
 
 build-manpages: build-progs $(addprefix $(dest_man1dir)/,$(MANPAGE_NAMES))
 build: build-manpages
@@ -437,7 +436,7 @@ install: build-progs build-manpages installdirs
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/bin" -- $(addprefix $(dest_data_bindir)/,$(RUNTIME_BIN_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/sbin" -- $(addprefix $(dest_data_sbindir)/,$(RUNTIME_SBIN_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/$(libcdir)" -- $(dest_data_libdir)/lib*
-ifneq ($(HELP2MAN),)
+ifneq ($(SCDOC),)
 	$(Q)cp -at "$(DESTDIR)$(man1dir)" -- $(addprefix $(dest_man1dir)/,$(MANPAGE_NAMES))
 endif
 ifeq ($(USE_BUSYBOX),yes)

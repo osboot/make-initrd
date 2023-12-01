@@ -42,7 +42,7 @@ To build a initramfs, you have to install the following software packages:
 - Compression libraries are required for the initramfs image parsing utilities:
   [zlib](https://zlib.net), [bzip2](https://www.sourceware.org/bzip2/),
   [xz](http://tukaani.org/xz/), [zstd](https://facebook.github.io/zstd/).
-- [help2man](https://www.gnu.org/software/help2man/) is used to generate man-pages.
+- [scdoc](https://git.sr.ht/~sircmpwn/scdoc) is used to generate man-pages.
 
 ## Build
 

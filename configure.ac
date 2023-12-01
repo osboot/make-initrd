@@ -197,14 +197,15 @@ if ! test -x "$with_udevadm"; then
 fi
 AC_SUBST([UDEVADM], [$with_udevadm])
 
-AC_ARG_WITH([help2man],
-	[AS_HELP_STRING([--with-help2man=FILE],
-			[Path to help2man utility (default: auto)])],
+# https://git.sr.ht/~sircmpwn/scdoc
+AC_ARG_WITH([scdoc],
+	[AS_HELP_STRING([--with-scdoc=FILE],
+			[Path to scdoc utility (default: auto)])],
 	[], [])
-if ! test -x "$with_help2man"; then
-	AC_PATH_PROGS([with_help2man], [help2man])
+if ! test -x "$with_scdoc"; then
+	AC_PATH_PROGS([with_scdoc], [scdoc])
 fi
-AC_SUBST([HELP2MAN], [$with_help2man])
+AC_SUBST([SCDOC], [$with_scdoc])
 
 AC_PATH_PROGS([STRIP], [strip])
 AC_SUBST([STRIP], [$STRIP])

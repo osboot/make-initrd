@@ -1,18 +1,63 @@
-.\" Copyright (C) 2021  Alexey Gladkov <gladkov.alexey@gmail.com>
-.\"
-.\" Additional documentation for the depinfo.
-.\"
-.\" This file is covered by the GNU General Public License,
-.\" which should be included with make-initrd as the file LICENSE.
+depinfo(1)
 
-[NAME]
-depinfo \- shows module dependencies
+# NAME
 
-[EXAMPLE]
+depinfo - shows module dependencies
+
+# SYNOPSIS
+
+*depinfo* [options] [module|filename|alias]...
+
+# DESCRIPTION
+
+Displays the full path to module and its dependencies. It also shows the full
+path to firmware.
+
+# OPTIONS
+
+*-t, --tree*
+	Show dependencies between modules hierarchically.
+
+*-D, --no-deps*
+	Don’t show dependence.
+
+*-P, --no-prefix*
+	Omit the prefix describing the type of file.
+
+*-M, --no-modules*
+	Omit modules from the output.
+
+*-F, --no-firmware*
+	Omit firmware from the output.
+
+*-B, --no-builtin*
+	Omit builtin modules from the output.
+
+*-k, --set-version=*_VERSION_
+	Use _VERSION_ instead of ‘uname -r‘.
+
+*-b, --base-dir=DIR*
+	Use _DIR_ as filesystem root for /lib/modules.
+
+*-f, --firmware-dir=*_DIR_
+	Use _DIR_ as colon-separated list of firmware directories (default: /lib/firmware/updates:/lib/firmware).
+
+*--use-blacklist*
+	Apply blacklist commands in the configuration files.
+
+*-i, --input=*_FILE_
+	Read names from _FILE_.
+
+*-V, --version*
+	Show version of program and exit.
+
+*-h, --help*
+	Show this text and exit.
+
+# EXAMPLE
+
 To see module dependencies and required firmware:
-.PP
-.in +4n
-.EX
+```
 # depinfo -k 5.11.0-rc6 -t b43
 module /lib/modules/5.11.0-rc6/kernel/drivers/net/wireless/broadcom/b43/b43.ko.xz
    \\_ firmware /lib/firmware/b43/ucode9.fw
@@ -36,14 +81,10 @@ module /lib/modules/5.11.0-rc6/kernel/drivers/net/wireless/broadcom/b43/b43.ko.x
       \\_ module /lib/modules/5.11.0-rc6/kernel/lib/crypto/libarc4.ko.xz
    \\_ module /lib/modules/5.11.0-rc6/kernel/drivers/bcma/bcma.ko.xz
    \\_ module /lib/modules/5.11.0-rc6/kernel/lib/math/cordic.ko.xz
-.EE
-.in
-.PP
+```
 
 You can also get a simple list of modules:
-.PP
-.in +4n
-.EX
+```
 # depnfo -k 5.11.0-rc6 -F b43
 module /lib/modules/5.11.0-rc6/kernel/drivers/net/wireless/broadcom/b43/b43.ko.xz
 module /lib/modules/5.11.0-rc6/kernel/net/mac80211/mac80211.ko.xz
@@ -52,14 +93,10 @@ module /lib/modules/5.11.0-rc6/kernel/net/rfkill/rfkill.ko.xz
 module /lib/modules/5.11.0-rc6/kernel/lib/crypto/libarc4.ko.xz
 module /lib/modules/5.11.0-rc6/kernel/drivers/bcma/bcma.ko.xz
 module /lib/modules/5.11.0-rc6/kernel/lib/math/cordic.ko.xz
-.EE
-.in
-.PP
+```
 
 Some modules can be compiled into the kernel:
-.PP
-.in +4n
-.EX
+```
 # depinfo -k 5.11.0-rc6 -F btrfs
 module /lib/modules/5.11.0-rc6/kernel/fs/btrfs/btrfs.ko.xz
 module /lib/modules/5.11.0-rc6/kernel/crypto/blake2b_generic.ko.xz
@@ -70,10 +107,16 @@ module /lib/modules/5.11.0-rc6/kernel/lib/libcrc32c.ko.xz
 builtin crc32c_generic
 module /lib/modules/5.11.0-rc6/kernel/lib/raid6/raid6_pq.ko.xz
 module /lib/modules/5.11.0-rc6/kernel/crypto/xor.ko.xz
-.EE
-.in
-.PP
+```
 
-[SEE ALSO]
-.BR modinfo (1),
-.BR modprobe (1)
+# AUTHOR
+
+Written by Alexey Gladkov.
+
+# BUGS
+
+Report bugs to the authors.
+
+# SEE ALSO
+
+_modinfo_(1) _modprobe_(1)
