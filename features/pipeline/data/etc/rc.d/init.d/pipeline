@@ -17,6 +17,9 @@
 [ "${ROOT-}" = pipeline ] ||
 	exit 0
 
+dir=/.initrd/pipeline/step-failed
+mkdir -p -- "$dir"
+
 dir=/.initrd/pipeline/waitdev
 mkdir -p -- "$dir"
 

@@ -109,4 +109,22 @@ pipe_event()
 	release_event "$1" "$event"
 }
 
+pipe_failed()
+{
+	[ -n "${PIPE_RETRY:-}" ] ||
+		return 0
+
+	local failed fn
+
+	failed=0
+	fn="/.initrd/pipeline/step-failed/$callnum"
+
+	[ ! -f "$fn" ] || read -r failed < "$fn"
+	failed="$(( $failed + 1 ))"
+
+	echo "$failed" > "$fn"
+
+	[ "$failed" -le "${PIPE_RETRY:-}" ]
+}
+
 fi # __pipeline_sh_functions

@@ -75,6 +75,9 @@ handler_step()
 			fi
 
 			message "step #$pipenum: $name: handler failed (rc=$rc)."
+
+			pipe_failed ||
+				mkdir -p -- "$uevent_confdb/queue/pause/pipeline"
 			return 1
 		fi
 	else
