@@ -10,7 +10,9 @@ target="$(resolve_target "$param")"
 	fatal "unable to resolve: $param"
 
 opts=
-[ -c "$target" ] || [ -b "$target" ] ||
+if [ ! -c "$target" ] && [ ! -b "$target" ]; then
+	modprobe -q 'devname:loop-control' ||:
 	opts='ro,loop'
+fi
 
 run mount ${opts:+-o $opts} "$target" "$destdir"
