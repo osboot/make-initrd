@@ -29,7 +29,7 @@ while :; do
 			logfile=/var/log/$PROG.log ||
 			logfile=/dev/console
 
-		exec >"$logfile" 2>&1
+		exec >>"$logfile" 2>&1
 	fi
 
 	if [ -n "${RDSHELL-}" ]; then

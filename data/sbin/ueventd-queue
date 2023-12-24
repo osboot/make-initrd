@@ -6,7 +6,7 @@
 	logfile=/var/log/ueventd.log ||
 	logfile=/dev/console
 
-exec >"$logfile" 2>&1
+exec >>"$logfile" 2>&1
 
 . shell-error
 . uevent-sh-functions
