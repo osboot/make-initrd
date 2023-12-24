@@ -5,4 +5,4 @@ PIPELINE_DATADIR = $(FEATURESDIR)/pipeline/data
 PIPELINE_RULES = \
 	*-cdrom_id.rules
 
-PIPELINE_MODULES = isofs squashfs overlay
+PIPELINE_MODULES = fs-iso9660 fs-squashfs fs-overlay
