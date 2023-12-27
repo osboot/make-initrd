@@ -7,8 +7,17 @@ target="$(get_parameter OVERLAYFS)"
 [ -n "$target" ] || [ -n "$prevdir" ] ||
 	fatal "no previous step to use as lower directory"
 
-pipe="${target:-$prevdir}"
+mountopts=
 lowerdirs=
+
+pipe="${target-}"
+
+if [ -n "$pipe" ] && [ -z "${pipe##*:*}" ]; then
+	mountopts="${pipe%%:*}"
+	pipe="${pipe#*:}"
+fi
+
+pipe="${pipe:-$prevdir}"
 
 while [ -n "$pipe" ]; do
 	name="${pipe%%,*}"
@@ -22,5 +31,5 @@ done
 
 mkdir -p -- "$datadir/rw" "$datadir/work"
 
-run mount -o "lowerdir=$lowerdirs,upperdir=$datadir/rw,workdir=$datadir/work" \
+run mount -o "${mountopts:+$mountopts,}lowerdir=$lowerdirs,upperdir=$datadir/rw,workdir=$datadir/work" \
 	-t overlay overlay "$destdir"
