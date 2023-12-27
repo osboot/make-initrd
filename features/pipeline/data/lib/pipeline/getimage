@@ -17,4 +17,5 @@ if [ -n "${url##file://*}" ]; then
 else
 	cp -f -- "${url#file://}" "$datadir/image"
 fi
+modprobe -q 'devname:loop-control' ||:
 run mount -o ro,loop "$datadir/image" "$destdir"
