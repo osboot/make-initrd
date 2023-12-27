@@ -21,8 +21,10 @@ pipe="${pipe:-$prevdir}"
 
 while [ -n "$pipe" ]; do
 	name="${pipe%%,*}"
+	dir=
 
-	dir="$(resolve_target "$name")"
+	[ -z "$name" ] ||
+		dir="$(resolve_target "$name")"
 	lowerdirs="${lowerdirs:+$lowerdirs:}$dir"
 
 	pipe="${pipe#$name}"
