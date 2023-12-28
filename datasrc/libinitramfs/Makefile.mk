@@ -2,6 +2,7 @@ libinitramfs_DEST = $(dest_data_libdir)/libinitramfs.so
 libinitramfs_SRCS = \
 	datasrc/libinitramfs/logging.c \
 	datasrc/libinitramfs/memory.c \
+	datasrc/libinitramfs/console.c \
 	$(NULL)
 
 libinitramfs_CFLAGS = \

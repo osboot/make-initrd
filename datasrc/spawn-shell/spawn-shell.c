@@ -12,6 +12,8 @@
 #include <unistd.h>    /* sleep */
 #include <err.h>       /* err */
 
+#include <rd/console.h>
+
 struct modifier {
 	const char *name;
 	const int bit;
@@ -30,16 +32,6 @@ struct modifier {
 	{ 0, 0 }
 };
 
-static const char *conspath[] = {
-	"/dev/console",
-	"/dev/systty",
-	"/dev/tty0",
-	"/dev/tty",
-	"/dev/vc/0",
-	"/proc/self/fd/0",
-	NULL
-};
-
 int confd;
 int verbose = 0;
 char *prog;
@@ -48,59 +40,6 @@ static void show_usage(int rc)
 {
 	fprintf(stderr, "Usage: %s [-v|-h] [modificators ...] keycode KEYCODE\n", prog);
 	exit(rc);
-}
-
-static int is_a_console(int fd)
-{
-	char arg = 0;
-	return (isatty(fd) &&
-	        !ioctl(fd, KDGKBTYPE, &arg) &&
-	        ((arg == KB_101) || (arg == KB_84)));
-}
-
-static int open_a_console(const char *fnam)
-{
-	int fd;
-
-	/*
-	 * For ioctl purposes we only need some fd and permissions
-	 * do not matter.
-	 */
-	fd = open(fnam, O_RDWR);
-	if (fd < 0)
-		fd = open(fnam, O_WRONLY);
-	if (fd < 0)
-		fd = open(fnam, O_RDONLY);
-	if (fd < 0)
-		return -1;
-	return fd;
-}
-
-static int getfd(void)
-{
-	int fd;
-
-	for (int i = 0; conspath[i]; i++) {
-		if ((fd = open_a_console(conspath[i])) >= 0) {
-			if (is_a_console(fd)) {
-				if (verbose)
-					warnx("using %s", conspath[i]);
-				return fd;
-			}
-			close(fd);
-		}
-	}
-
-	for (fd = 0; fd < 3; fd++) {
-		if (is_a_console(fd)) {
-			if (verbose)
-				warnx("using %d", fd);
-			return fd;
-		}
-	}
-
-	/* total failure */
-	errx(EXIT_FAILURE, "couldn't get a file descriptor referring to the console.");
 }
 
 static void sighup(int n __attribute__((unused)))
@@ -141,7 +80,8 @@ int main(int argc, char **argv)
 	if (optind == argc)
 		show_usage(EXIT_SUCCESS);
 
-	confd = getfd();
+	if ((confd = rd_open_console()) < 0)
+		errx(EXIT_FAILURE, "couldn't get a file descriptor referring to the console.");
 
 	for (int i = optind; i < argc; i++) {
 		if (!strcasecmp(argv[i], "keycode")) {
