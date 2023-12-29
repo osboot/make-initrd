@@ -1,0 +1,58 @@
+#!/bin/bash -efu
+
+. pipeline-sh-functions
+
+check_parameter PING
+param="$(get_parameter PING)"
+
+iter=-1
+ipver=
+pingopts=( -q -c 3 -w 1 -A )
+
+if [ -n "${param-}" ] && [ -z "${param##*:*}" ]; then
+	opts=()
+	readarray -d, -t opts < <(echo -n "${param%%:*}")
+
+	for o in "${opts[@]}"; do
+		case "$o" in
+			v4) ipver=4 ;;
+			v6) ipver=6 ;;
+			waitfor)
+				iter=-1
+				;;
+			iter=[0-9]*)
+				iter="$(( ${o#iter=} - 1 ))"
+				;;
+		esac
+	done
+
+	pingopts+=( ${ipver:+-$ipver} )
+	param="${param#*:}"
+fi
+
+target=
+while :; do
+	if [ -z "$target" ]; then
+		case "$param" in
+			%gateway|'')
+				target="$(ip ${ipver:+-$ipver} route show default 2>/dev/null |
+					sed -r -n -e 's/^default via ([^[:space:]]+).*/\1/p')"
+				;;
+			*)
+				target="$param"
+				;;
+		esac
+	fi
+
+	if [ -n "$target" ]; then
+		! ping "${pingopts[@]}" "$target" >/dev/null 2>&1 ||
+			break
+
+		[ $iter -ne 0 ] ||
+			break
+
+		iter=$(( $iter - 1 ))
+	fi
+
+	sleep 0.2
+done

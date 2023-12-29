@@ -6,7 +6,6 @@ check_parameter GETIMAGE
 url="$(get_parameter GETIMAGE)"
 
 if [ -n "${url##file://*}" ]; then
-	# FIXME: make a better waiting for network
 	n=0
 	while [ "$n" != 5 ]; do
 		! wget -O "$datadir/image" "$url" ||
