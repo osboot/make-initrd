@@ -1,3 +1,17 @@
+Version 2.40.0
+
+- Runtime:
+  + Do not overwrite logfiles.
+  + Add function to pick a console to common library.
+- Feature pipeline:
+  + getimage: check whether the loop module is loaded before mounting the image.
+  + overlayfs: fix delim in overlayfs options.
+  + overlayfs: allow to specify mounting parameters.
+  + overlayfs: add support the "data-only" lower layers.
+  + mountfs: optionally load loop module if needed.
+  + ping: Add helper to ping remote host.
+  + Add cmdline parameter to limit steps failure.
+
 Version 2.39.0
 
 - Feature plymouth:
