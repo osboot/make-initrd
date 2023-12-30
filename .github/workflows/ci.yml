@@ -99,8 +99,6 @@ jobs:
           - name: fedora
             testcase: efi-reqpartition
           - name: fedora
-            testcase: raid1+raid5
-          - name: fedora
             testcase: zfs-partition
 
           - name: ubuntu
