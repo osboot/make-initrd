@@ -20,9 +20,8 @@ handler_init()
 	mount -t tmpfs tmpfs "$mntdir" ||
 		return 1
 
-	mkdir -- \
-		"$mntdir/src" \
-		"$mntdir/dst" ||
+	chmod 700 -- "$mntdir"
+	mkdir -m 700 -- "$mntdir/src" "$mntdir/dst" ||
 		return 1
 
 	pipe_event "pipeline.step" "" "0"
@@ -53,12 +52,12 @@ handler_step()
 	if [ ! -d "$destdir" ] || ! mountpoint -q "$destdir"; then
 		message "step #$pipenum: $name: executing handler '$exe'."
 
-		if [ ! -d "$datadir" ] && ! mkdir -- "$datadir"; then
+		if [ ! -d "$datadir" ] && ! mkdir -m 700 -- "$datadir"; then
 			message "step #$pipenum: $name: unable to create data directory."
 			return 1
 		fi
 
-		if [ ! -d "$destdir" ] && ! mkdir -- "$destdir"; then
+		if [ ! -d "$destdir" ] && ! mkdir -m 700 -- "$destdir"; then
 			message "step #$pipenum: $name: unable to create destination directory."
 			return 1
 		fi
