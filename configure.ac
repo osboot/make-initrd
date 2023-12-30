@@ -14,7 +14,7 @@ AC_PROG_MKDIR_P
 AC_PROG_LN_S
 AC_PROG_SED
 AC_PROG_YACC
-AC_PROG_LEX
+AC_PROG_LEX([noyywrap])
 
 m4_ifndef([PKG_PROG_PKG_CONFIG],
   [m4_fatal([Could not locate the pkg-config autoconf
@@ -177,7 +177,7 @@ AC_ARG_WITH([udevd],
 	[], [])
 if ! test -x "$with_udevd"; then
 	AC_PATH_PROGS([with_udevd], [udevd eudevd systemd-udevd], [],
-		[/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:${sbindir}:${bindir}:/lib/systemd])
+		[/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:${sbindir}:${bindir}:/lib/systemd:/usr/lib/systemd])
 	if ! test -x "$with_udevd"; then
 		AC_MSG_FAILURE([required utility not found: udevd])
 	fi
@@ -190,7 +190,7 @@ AC_ARG_WITH([udevadm],
 	[], [])
 if ! test -x "$with_udevadm"; then
 	AC_PATH_PROGS([with_udevadm], [udevadm eudevadm], [],
-		[/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:${sbindir}:${bindir}:/lib/systemd])
+		[/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:${sbindir}:${bindir}:/lib/systemd:/usr/lib/systemd])
 	if ! test -x "$with_udevadm"; then
 		AC_MSG_FAILURE([required utility not found: udevadm])
 	fi
