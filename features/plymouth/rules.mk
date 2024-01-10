@@ -4,18 +4,18 @@ PLYMOUTH_PACK_MODULES := $(shell $(call shell-export-vars) $(FEATURESDIR)/plymou
 PLYMOUTH_PACK_FONT    := $(or $(PLYMOUTH_FONT),$(shell fc-match -f '%{file}\n' 'DejaVuSans' ||:))
 PLYMOUTH_PACK_THEME   := $(shell $(call shell-export-vars) $(FEATURESDIR)/plymouth/bin/get-theme-files "$(PLYMOUTH_THEME)")
 
+PLYMOUTH_EXCLUDE_MODULES   ?=
+PLYMOUTH_EXCLUDE_RENDERERS ?= $(PLYMOUTH_LIBDIR)/renderers/x11.so
+
 PLYMOUTH_PACK_FILES ?= \
 	$(wildcard $(SYSCONFDIR)/plymouth/plymouthd.conf) \
 	$(wildcard $(SYSCONFDIR)/*-release) \
 	$(wildcard /var/lib/plymouth/boot-duration) \
 	$(wildcard $(DATADIR)/plymouth/plymouthd.defaults) \
+	$(filter-out $(PLYMOUTH_EXCLUDE_MODULES),$(wildcard $(PLYMOUTH_LIBDIR)/*.so)) \
+	$(filter-out $(PLYMOUTH_EXCLUDE_RENDERERS),$(wildcard $(PLYMOUTH_LIBDIR)/renderers/*.so)) \
 	$(DATADIR)/plymouth/themes/details/details.plymouth \
 	$(DATADIR)/plymouth/themes/text/text.plymouth \
-	$(PLYMOUTH_LIBDIR)/details.so \
-	$(PLYMOUTH_LIBDIR)/text.so \
-	$(PLYMOUTH_LIBDIR)/label.so \
-	$(PLYMOUTH_LIBDIR)/renderers/drm.so \
-	$(PLYMOUTH_LIBDIR)/renderers/frame-buffer.so \
 	$(PLYMOUTH_PACK_FONT) \
 	$(PLYMOUTH_PACK_THEME)
 
