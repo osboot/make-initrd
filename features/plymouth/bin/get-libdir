@@ -11,6 +11,8 @@ if type -P dpkg &>/dev/null; then
 	libdir=$(dpkg -L plymouth 2>/dev/null |sed -n -e 's,/plymouth/details\.so$,,p')
 elif type -P rpm &>/dev/null; then
 	libdir=$(rpm -ql plymouth 2>/dev/null |sed -n -e 's,/plymouth/details\.so$,,p')
+elif type -P equery &>/dev/null; then
+	libdir=$(equery f sys-boot/plymouth 2>/dev/null |sed -n -e 's,/plymouth/details\.so$,,p')
 fi
 
 [ -z "$libdir" ] ||
