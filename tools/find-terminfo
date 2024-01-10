@@ -58,7 +58,7 @@ DIRS=(
 if infocmp=$(type -P infocmp); then
 	readarray -t DIRS < <($infocmp -D)
 elif toe="$(type -P toe)"; then
-	readarray -t DIRS < <(toe -a -s | grep '^-\+>' |cut -d\  -f2-)
+	readarray -t DIRS < <($toe -a -s | grep '^-\+>' |cut -d\  -f2-)
 fi
 
 sub=
