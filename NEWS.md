@@ -1,3 +1,12 @@
+Version 2.41.0
+
+- Feature pipeline:
+  + Restrict permissions to directories that can be accessed in the booted
+    system. Only root should have access to these directories.
+- Feature plymouth:
+  + Detect libdir on gentoo.
+  + Pack all plymouth modules by default.
+
 Version 2.40.0
 
 - Runtime:
