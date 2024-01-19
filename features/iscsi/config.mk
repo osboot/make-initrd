@@ -1,3 +1,5 @@
+$(call feature-requires,network)
+
 ISCSI_MODULES = iscsi-ibft \
                      iscsi-tcp \
                      iscsi-boot-sysfs \
