@@ -52,7 +52,7 @@ int rd_open_console(void)
 	for (int i = 0; conspath[i]; i++) {
 		if ((fd = open_a_console(conspath[i])) >= 0) {
 			if (is_a_console(fd)) {
-				rd_info("using %s", conspath[i]);
+				rd_dbg("using %s", conspath[i]);
 				return fd;
 			}
 			close(fd);
@@ -61,7 +61,7 @@ int rd_open_console(void)
 
 	for (fd = 0; fd < 3; fd++) {
 		if (is_a_console(fd)) {
-			rd_info("using %d", fd);
+			rd_dbg("using %d", fd);
 			return fd;
 		}
 	}
