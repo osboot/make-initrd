@@ -39,8 +39,6 @@ PROCFS_PATH	?= /proc
 
 BIN_FEATURESDIR := @execdir@/features
 
-feature_kbd_kbddir := @feature_kbd_kbddir@
-
 UDEVD		:= @UDEVD@
 UDEVADM		:= @UDEVADM@
 

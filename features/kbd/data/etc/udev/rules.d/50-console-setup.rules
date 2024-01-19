@@ -1,4 +1,0 @@
-SUBSYSTEM=="tty",      ACTION=="add", ENV{MAJOR}=="4",                  RUN+="/lib/uevent/filters/console"
-SUBSYSTEM=="tty",      ACTION=="add", ENV{MAJOR}=="5", ENV{MINOR}=="1", RUN+="/lib/uevent/filters/console"
-SUBSYSTEM=="graphics", ACTION=="add", KERNEL=="fb[0-9]",                RUN+="/lib/uevent/filters/console"
-SUBSYSTEM=="drm",      ACTION=="add",                                   RUN+="/lib/uevent/filters/console"

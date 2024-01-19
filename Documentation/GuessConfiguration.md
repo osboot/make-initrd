@@ -121,7 +121,7 @@ MODULES_ADD += \
 
 FEATURES += \
         add-modules add-udev-rules buildinfo cleanup compress \
-        gpu-drm kbd network rdshell rootfs system-glibc ucode
+        gpu-drm network rdshell rootfs system-glibc ucode
 ```
 
 ## Guess Modules

@@ -25,7 +25,6 @@ rulesdir    = ${projectdir}/mk
 
 libcdir := $(shell $(CURDIR)/tools/get-libc-dir)
 
-feature_kbd_kbddir := @kbddir@
 external_srcdir = $(CURDIR)/external
 
 localbuilddir =
@@ -157,7 +156,6 @@ SED = @SED@ \
 	-e 's|@libdir[@]|$(libdir)|g' \
 	-e 's|@statedir[@]|$(statedir)|g' \
 	-e 's|@runtimedir[@]|$(runtimedir)|g' \
-	-e 's|@feature_kbd_kbddir[@]|$(feature_kbd_kbddir)|g' \
 	-e 's|@projectdir[@]|$(localbuilddir)$(projectdir)|g' \
 	-e 's|@localbuilddir[@]|$(localbuilddir)|g' \
 	-e 's|@execdir[@]|$(execdir)|g' \
