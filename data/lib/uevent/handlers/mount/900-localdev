@@ -78,7 +78,6 @@ while [ "$method" = localdev ]; do
 
 	message "$QUEUE: session=$SESSION: $method ready. acting!"
 
-	echo ROOTFS_FOUND=1 >> /.initrd/initenv
 	echo 2 > /.initrd/telinit
 
 	fd_unlock 90
