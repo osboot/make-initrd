@@ -1,7 +1,0 @@
-#!/bin/bash -efu
-
-. shell-locks
-
-if fd_trylock 90 /dev/console; then
-	rdshell "Emergency shell" &
-fi

@@ -47,6 +47,3 @@ if [ -n "$have_acct" ] && [ -x /bin/procacct ]; then
 		sleep 0.1
 	done
 fi
-
-# Alt-Uparrow
-spawn-shell ${CONSOLE_KEYSTROKE:-alt keycode 103} &
