@@ -267,48 +267,12 @@ PKG_CHECK_MODULES(HAVE_LIBKMOD, libkmod, [HAVE_LIBKMOD=yes], [HAVE_LIBKMOD=no])
 AS_IF([test "x$HAVE_LIBKMOD" != xyes],
 	[AC_MSG_ERROR([libkmod was not found: https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git])])
 
-AC_ARG_WITH([feature-procacct],
-	[AS_HELP_STRING([--with-feature-procacct],
-			[build procacct feature (default: auto)])],
-	[],
-	[: m4_divert_text([DEFAULTS], [with_feature_procacct=auto])])
-
-USE_FEATURE_PROCACCT=no
-HAVE_LIBBPF=no
-
-if test "x$with_feature_procacct" != xno; then
-	PKG_CHECK_MODULES(HAVE_LIBBPF, libbpf, [HAVE_LIBBPF=yes], [HAVE_LIBBPF=no]);
-	AC_PATH_PROGS([with_clang], [clang])
-	AC_PATH_PROGS([with_llvm_strip], [llvm-strip])
-
-	if test "x$with_feature_procacct" != xauto; then
-		AS_IF([test "x$HAVE_LIBBPF" != xyes],
-			[AC_MSG_ERROR([libbpf was not found: https://github.com/libbpf/libbpf])])
-		AS_IF([! test -x "$with_clang"],
-			[AC_MSG_ERROR([required utility not found: clang])])
-	fi
-
-	if test "x-$HAVE_LIBBPF" = x-yes && test -x "$with_clang"; then
-		USE_FEATURE_PROCACCT=yes
-	fi
-
-	if ! test -x "$with_llvm_strip"; then
-		with_llvm_strip=/bin/true
-	fi
-
-	AC_SUBST([HAVE_LIBBPF])
-	AC_SUBST([CLANG], [$with_clang])
-	AC_SUBST([LLVM_STRIP], [$with_llvm_strip])
-fi
-
-
 AC_SUBST([HAVE_GZIP])
 AC_SUBST([HAVE_BZIP2])
 AC_SUBST([HAVE_LZMA])
 AC_SUBST([HAVE_ZSTD])
 AC_SUBST([HAVE_LIBELF])
 AC_SUBST([HAVE_LIBKMOD])
-AC_SUBST([USE_FEATURE_PROCACCT])
 AC_SUBST([MKLOCAL])
 AC_SUBST([YACC])
 AC_SUBST([LEX])
