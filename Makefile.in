@@ -416,8 +416,18 @@ install: build-progs build-manpages installdirs
 	$(Q)cp -at "$(DESTDIR)$(rulesdir)" -- $(addprefix $(dest_rulesdir)/,$(RULE_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(projectdir)" -- \
 	    $$(readlink -e $(addprefix $(dest_projectdir)/,$(PROJECT_SUBDIRS)))
-	$(Q)cp -at "$(DESTDIR)$(projectdir)/$(FEATURESDIR)" -- \
-	    $$(readlink -e $(addprefix $(dest_projectdir)/$(FEATURESDIR)/,$(FEATURES_SUBDIRS)))
+	$(Q)mkdir -p -- "$(DESTDIR)$(projectdir)/$(FEATURESDIR)"
+	$(Q)for n in $(FEATURES_SUBDIRS); do \
+		target="$(dest_projectdir)/$(FEATURESDIR)/$$n"; \
+		dest="$(DESTDIR)$(projectdir)/$(FEATURESDIR)/$$n"; \
+	        if [ -d "$$target" ]; then \
+	            mkdir -p -- "$$dest"; \
+	            find "$$target/" -mindepth 1 -maxdepth 1 '!' -name src \
+	                -exec cp -at "$$dest" -- '{}' '+'; \
+	        else \
+	            cp -aL -- "$$target" "$$dest"; \
+	        fi; \
+	    done;
 	$(Q)cp -at "$(DESTDIR)$(execdir)/$(FEATURESDIR)" -- $(wildcard $(dest_execdir)/$(FEATURESDIR)/*)
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/bin" -- $(addprefix $(dest_data_bindir)/,$(RUNTIME_BIN_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/sbin" -- $(addprefix $(dest_data_sbindir)/,$(RUNTIME_SBIN_NAMES))
