@@ -1,4 +1,4 @@
-# make-initrd [![Integration Tests](https://github.com/osboot/make-initrd/actions/workflows/integration.yml/badge.svg?branch=master)](https://github.com/osboot/make-initrd/actions/workflows/integration.yml)
+# make-initrd
 
 make-initrd is a new, uevent-driven initramfs infrastructure based around udev.
 
