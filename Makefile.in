@@ -232,9 +232,6 @@ release:
 release: PKGFILE=$(CURDIR)/$(PACKAGE_NAME)-$(PACKAGE_VERSION)
 release: PREFIX=$(PACKAGE_NAME)-$(PACKAGE_VERSION)
 
-notes:
-	@sed -n -e '1p' -e '2,/^$$/p' NEWS.md
-
 RULE_NAMES = $(patsubst mk/%.in,%,$(wildcard mk/*.mk.in))
 
 $(dest_rulesdir)/%.mk: mk/%.mk.in
