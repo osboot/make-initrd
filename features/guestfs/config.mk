@@ -36,7 +36,10 @@ GUESTFS_PROGS_PATTERNS = \
 	*/*label \
 	*/*resize* \
 	*disk \
-	*/hivex*
+	*/hivex* \
+	*/gostsum \
+	*/gost12sum
+
 
 GUESTFS_FILES = \
 	$(GUESTFS_FILE_DATABASE) \
