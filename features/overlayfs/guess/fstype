@@ -1,0 +1,38 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[ "$#" -eq 3 ] ||
+	exit 0
+
+devname="$1"; shift
+fstype="$1"; shift
+mntdir="$1"; shift
+
+[ "$fstype" = 'overlay' ] ||
+	exit 0
+
+. guess-functions
+
+options=()
+readarray -t -d, options < <(findmnt -nko FS-OPTIONS --target "$mntdir")
+
+for o in "${options[@]}"; do
+	[ -n "$o" ] && [ -z "${o##lowerdir=*}" ] ||
+		continue
+
+	lowerdirs=()
+	readarray -t -d: lowerdirs < <(printf '%s' "${o#lowerdir=}")
+
+	for d in "${lowerdirs[@]}"; do
+		device="$(findmnt -nko SOURCE --target "$d")" && [ -b "$device" ] ||
+			continue
+
+		if fstype="$(blkid -o value -s TYPE -c /dev/null "$device")"; then
+			guess_fstype "$device" "$fstype"
+		fi
+
+		if majmin="$(get_majmin "$device")"; then
+			guess_device "/dev/block/$majmin"
+		fi
+	done
+done
