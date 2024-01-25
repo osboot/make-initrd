@@ -56,7 +56,7 @@ guess_device() {
 	[ -z "${device_file##$SYSFS_PATH/devices/*}" ] ||
 		return 0
 
-	for m in modalias parent slaves supplier ${GUESS_DEVICE_SCRIPTS-}; do
+	for m in modalias parent slaves supplier loop ${GUESS_DEVICE_SCRIPTS-}; do
 		"$m" "${device_file#$SYSFS_PATH}"
 	done
 }
@@ -102,6 +102,13 @@ slaves() {
 		[ ! -e "$slave" ] ||
 			guess_device "$1/slaves/${slave##*/}"
 	done
+}
+
+loop() {
+	[ -d "$SYSFS_PATH$1/"loop ] ||
+		return 0
+
+	guess_modalias "devname:loop-control"
 }
 
 devlink_visited=" "
