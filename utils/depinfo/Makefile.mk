@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 ifeq ($(HAVE_LIBKMOD),yes)
 depinfo_DEST = $(dest_sbindir)/depinfo
 depinfo_SRCS = utils/depinfo/kmod-depinfo.c

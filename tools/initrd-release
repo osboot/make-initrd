@@ -1,4 +1,5 @@
 #!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
 #
 # See http://www.freedesktop.org/software/systemd/man/os-release.html
 #

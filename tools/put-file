@@ -1,3 +1,4 @@
 #!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 exec initrd-put ${IMAGEFILES:+--log="$IMAGEFILES"} "$@"

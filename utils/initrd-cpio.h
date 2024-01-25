@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 #ifndef INITRD_CPIO_H
 #define INITRD_CPIO_H
 

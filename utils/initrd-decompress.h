@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 #ifndef INITRD_DECOMPRESS_H
 #define INITRD_DECOMPRESS_H
 

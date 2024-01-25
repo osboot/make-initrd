@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 KEYBOARD_DEFAULT_MODULES ?= \
 	atkbd i8042 usbhid hid-apple hid-sunplus hid-cherry \
 	hid-logitech hid-logitech-dj hid-microsoft \

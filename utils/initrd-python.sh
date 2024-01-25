@@ -1,4 +1,5 @@
 #!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 DESTDIR="$1"; shift
 PYTHON="$1"; shift

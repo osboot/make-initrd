@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 ueventd_DEST = $(dest_data_sbindir)/ueventd
 ueventd_SRCS = \
 	datasrc/ueventd/path.c \

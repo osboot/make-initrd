@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 #ifndef _INITRD_SCANMOD_H_
 #define _INITRD_SCANMOD_H_
 

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 $(call feature-requires,add-modules add-udev-rules qemu mdadm lvm luks devmapper btrfs compress cleanup)
 $(call feature-disables,plymouth ucode)
 

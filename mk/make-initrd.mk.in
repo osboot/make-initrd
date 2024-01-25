@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 .NOTPARALLEL:
 .EXPORT_ALL_VARIABLES:
 .DEFAULT_GOAL := all

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 libinitramfs_DEST = $(dest_data_libdir)/libinitramfs.so
 libinitramfs_SRCS = \
 	datasrc/libinitramfs/logging.c \

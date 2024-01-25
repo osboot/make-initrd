@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 ifneq ($(LOCALES),)
 
 define enforce_utf8

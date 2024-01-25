@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 MODULES_ADD += $(NETWORK_MODULES)
 
 PUT_FEATURE_DIRS  += $(NETWORK_DATADIR)

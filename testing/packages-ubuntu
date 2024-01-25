@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 MAKE_INITRD_PACKAGES="make udev libelf1 libkmod2 zlib1g libbz2-1.0 libzstd1 liblzma5"
 

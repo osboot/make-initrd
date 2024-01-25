@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 MDADM_UDEV_RULES := \
 	$(foreach majmin,$(GENERATE_UDEV_RULES_FOR_MD_DEVICE),\
 		$(shell $(call shell-export-vars) $(FEATURESDIR)/mdadm/bin/generate-udev-rules $(majmin)))

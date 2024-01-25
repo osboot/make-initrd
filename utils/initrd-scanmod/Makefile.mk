@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 ifeq ($(HAVE_LIBKMOD),yes)
 initrd_scanmod_DEST = $(dest_sbindir)/initrd-scanmod
 initrd_scanmod_SRCS = \

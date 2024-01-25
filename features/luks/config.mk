@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 $(call feature-requires,depmod-image devmapper modules-crypto-user-api system-glibc)
 
 CRYPTSETUP_BIN		?= cryptsetup

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 KICKSTART_DIRS := $(shell $(call shell-export-vars) $(FEATURESDIR)/kickstart/bin/get-ks-configs)
 
 FAT_MODULES = nls_cp866 nls_utf8 fs-vfat

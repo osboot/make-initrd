@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 MODULES_TRY_ADD += drivers/scsi/ drivers/ata/ fs/
 MODULES_TRY_ADD += dm-raid raid0 raid1 raid456 raid10
 MODULES_PRELOAD += virtio_console

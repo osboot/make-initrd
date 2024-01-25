@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>

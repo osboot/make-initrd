@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 udev_rules_DEST = $(dest_sbindir)/udev-rules
 
 udev_rules_SRCDIR = utils/udev-rules

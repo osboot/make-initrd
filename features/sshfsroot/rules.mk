@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 SSHFS_DIRS := $(shell $(call shell-export-vars) $(FEATURESDIR)/sshfsroot/bin/get-dirs)
 
 MODULES_PRELOAD	+= $(SSHFS_PRELOAD)

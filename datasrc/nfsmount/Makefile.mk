@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 nfsmount_DEST = $(dest_data_bindir)/nfsmount
 nfsmount_SRCS = \
 	datasrc/nfsmount/dummypmap.c \

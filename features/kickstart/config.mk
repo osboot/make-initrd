@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 $(call feature-requires,devmapper luks lvm mdadm modules-filesystem system-glibc network)
 
 KICKSTART_PROGS  = sfdisk wipefs blkid findmnt mkswap mount mountpoint chroot \

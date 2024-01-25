@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 #ifndef __RD_LOGGING_H__
 #define __RD_LOGGING_H__

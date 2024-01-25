@@ -1,4 +1,5 @@
 #!/bin/bash -u
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 v="$("$UDEVD" --version)" ||:
 [ -n "${v##*[!0-9]*}" ] || v="$("$UDEVADM" --version)" ||:

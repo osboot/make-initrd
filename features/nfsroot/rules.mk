@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 MODULES_PRELOAD	+= $(NFS_PRELOAD)
 
 PUT_FEATURE_DIRS  += $(NFS_DATADIR)

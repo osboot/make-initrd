@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 MODULES_TRY_ADD += $(PIPELINE_MODULES)
 
 PUT_UDEV_RULES += $(PIPELINE_RULES)

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 PLYMOUTH_LIBDIR := $(shell $(call shell-export-vars) $(FEATURESDIR)/plymouth/bin/get-libdir)
 
 PLYMOUTH_PACK_MODULES := $(shell $(call shell-export-vars) $(FEATURESDIR)/plymouth/bin/get-modules)

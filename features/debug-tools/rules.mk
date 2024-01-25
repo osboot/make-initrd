@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 ifeq "$(GDB_PROG)" ''
 GDB_PROG = gdb
 endif

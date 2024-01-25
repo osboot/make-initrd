@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 FILESYSTEM_PATTERN_SET =
 FILESYSTEM_PATTERN_SET += alias:^fs-
 FILESYSTEM_PATTERN_SET += not-filename:.*/kernel/arch/.*

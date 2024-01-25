@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 MODULES_PRELOAD += $(BTRFS_PRELOAD)
 MODULES_ADD     += $(BTRFS_MODULES)
 

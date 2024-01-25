@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 MODULES_PRELOAD	+= $(MULTIPATH_PRELOAD)
 
 MULTIPATH_PATTERN_SET = name:^scsi_dh

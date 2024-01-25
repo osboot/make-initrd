@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 #ifndef __UDEV_RULES_H__
 #define __UDEV_RULES_H__

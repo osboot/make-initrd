@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 initrd_ls_DEST = $(dest_sbindir)/initrd-ls
 initrd_ls_SRCS = \
 	utils/initrd-ls/initrd-ls.h \

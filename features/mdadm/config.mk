@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 $(call feature-disables,raid)
 $(call feature-requires,add-udev-rules)
 

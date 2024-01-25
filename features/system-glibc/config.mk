@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 INITRD_NO_LIBNSS   ?=
 INITRD_NO_LIBGCC_S ?=
 INITRD_NO_PWGR     ?=

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 LUKS_CRYPTTAB_DATA =
 
 ifneq "$(LUKS_CRYPTTAB)" ""

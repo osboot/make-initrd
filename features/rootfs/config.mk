@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 RUNTIME_QUIET = no
 RUNTIME_DMESG_LOGLEVEL = 1
 RUNTIME_CONSOLE_KEYSTROKE = alt keycode 103

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 ifeq ($(HAVE_LIBELF),yes)
 initrd_put_DEST = $(dest_bindir)/initrd-put
 initrd_put_SRCS = utils/initrd-put/initrd-put.c

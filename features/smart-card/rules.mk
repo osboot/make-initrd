@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 put_pkcs11_name:
 	@$(VMSG) "Put file with PKCS#11 name ..."
 	$Qmkdir -p "$(WORKDIR)/img/.initrd/pkcs11"

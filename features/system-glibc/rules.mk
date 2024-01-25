@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 ifeq ($(INITRD_NO_LIBNSS),)
 SYSTEM_GLIBC_LIBNSS_BIN   := $(FEATURESDIR)/system-glibc/bin/system-glibc-libnss
 SYSTEM_GLIBC_LIBNSS_FILES := $(shell $(call shell-export-vars) $(SYSTEM_GLIBC_LIBNSS_BIN) files)

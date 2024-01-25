@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 initrd_extract_DEST = $(dest_sbindir)/initrd-extract
 initrd_extract_SRCS = \
 	utils/initrd-extract/initrd-extract.c \
