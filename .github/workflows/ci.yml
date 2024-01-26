@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout Repository"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: "Checkout Submodules"
         run: |
@@ -125,7 +125,7 @@ jobs:
           sudo apt-get -qq -y install git expect qemu-kvm ovmf
 
       - name: "Checkout Repository"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: "Checkout Submodules"
         run: |
@@ -162,7 +162,7 @@ jobs:
         run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} run-boot
 
       - name: "Archive Metrics"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: "metrics-${{ matrix.name }}-${{ matrix.test }}-${{ matrix.testcase }}"
           path: testing/status/artifact-*.txt
@@ -199,7 +199,7 @@ jobs:
           sudo apt-get -qq -y install git qemu-kvm
 
       - name: "Checkout Repository"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: "Checkout submodules"
         run: |
@@ -226,7 +226,7 @@ jobs:
         run: testing/testing-${{ matrix.name }}-${{ matrix.test }} test-root-${{ matrix.testcase }} run-boot
 
       - name: "Archive Metrics"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: "metrics-${{ matrix.name }}-${{ matrix.test }}-${{ matrix.testcase }}"
           path: testing/status/artifact-*.txt
@@ -241,10 +241,10 @@ jobs:
     if: success() || failure()
     steps:
       - name: "Checkout Repository"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: "Download Metrics"
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
 
@@ -259,7 +259,7 @@ jobs:
     if: success() || cancelled()
     steps:
       - name: "Remove Artifacts"
-        uses: geekyeggo/delete-artifact@v2
+        uses: geekyeggo/delete-artifact@v4
         with:
           name: metrics-*
           failOnError: false
