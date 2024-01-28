@@ -1,5 +1,6 @@
 register_parameter string PIPELINE
 register_parameter number PIPE_RETRY
+register_array string PING
 register_array string GETIMAGE
 register_array string MOUNTFS
 register_array string OVERLAYFS
