@@ -7,3 +7,4 @@ PIPELINE_RULES = \
 	*-cdrom_id.rules
 
 PIPELINE_MODULES = fs-iso9660 fs-squashfs fs-overlay devname:loop-control
+PIPELINE_PROGS = ip ping wget
