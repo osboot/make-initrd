@@ -51,10 +51,15 @@ jobs:
         run: |
          make verify
 
+      - name: "Check services"
+        run: |
+         export PATH="$PWD/external/libshell/upstream:$PATH"
+         make check-services
+
       - name: "Unit Tests"
         run: |
          export PATH="$PWD/external/libshell/upstream:$PATH"
-         make check
+         make check-unit
 
 
   e2e-local:

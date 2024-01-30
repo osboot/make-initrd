@@ -183,6 +183,21 @@ verify: SHELLCHECK_EXCLUDE = SC1003,SC1090,SC1091,SC2004,SC2006,SC2015,SC2034,SC
 check-unit: build
 	@testing/units/run
 
+check-services:
+	@rc=0; \
+	for svc in \
+	   `find data/ -executable -path '*/etc/rc.d/init.d/*' |sort` \
+	   `find features/ -path '*/etc/rc.d/init.d/*' |sort`; \
+	do \
+	   ret=0; \
+	   errors=`tools/sort-services --json "$$svc" 2>&1 >/dev/null` || ret=1; \
+	   if [ $$ret != 0 ] || [ -n "$$errors" ]; then \
+	      echo >&2 "BAD service: $$svc: $$errors"; rc=1; \
+	   else \
+	      echo >&2 "OK service $$svc"; \
+	   fi; \
+	done; exit $$rc;
+
 check: check-unit
 
 .PHONY: indent-c
