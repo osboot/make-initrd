@@ -26,7 +26,9 @@ check-for-root:
 depmod-host: check-for-root
 	@if [ -z "$$IGNORE_DEPMOD" ]; then \
 	   $(MSG) "Generating module dependencies on host ..."; \
-	   depmod -a -F "$(BOOTDIR)/System.map-$(KERNEL)" "$(KERNEL)"; \
+	   system_map_file="$(BOOTDIR)/System.map-$(KERNEL)"; \
+	   [ -e "$$system_map_file" ] || system_map_file=""; \
+	   depmod -a $${system_map_file:+-F "$$system_map_file"} "$(KERNEL)"; \
 	fi
 
 ifeq "$(MAKECMDGOALS)" 'process-config'
