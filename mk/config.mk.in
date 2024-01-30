@@ -69,7 +69,6 @@ endif
 # Global variables
 RESOLVE_MODALIAS	?= 1
 USE_MODPROBE_BLACKLIST	?=
-UDEV_VERSION		?= $(shell env "UDEVD=$(UDEVD)" "UDEVADM=$(UDEVADM)" $(TOOLSDIR)/udev-version)
 KERNEL			?= $(shell uname -r)
 KERNEL_CONFIG		?= $(BOOTDIR)/config-$(KERNEL)
 KERNEL_MODULES_DIR	?= /lib/modules/$(KERNEL)
