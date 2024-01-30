@@ -1,5 +1,5 @@
 #!/bin/sh
-# BEGIN INFO
+### BEGIN INIT INFO
 # Provides:		lkrg
 # Required-Start:	cmdline modules
 # Should-Start:
@@ -9,7 +9,7 @@
 # Default-Stop:
 # Short-Description:	Linux Kernel Runtime Guard.
 # Description:		Linux Kernel Runtime Guard.
-# END INFO
+### END INIT INFO
 
 [ "$1" = start ] || exit 0
 
