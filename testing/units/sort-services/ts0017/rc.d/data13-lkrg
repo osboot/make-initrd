@@ -1,0 +1,34 @@
+#!/bin/sh
+# BEGIN INFO
+# Provides:		lkrg
+# Required-Start:	cmdline modules
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:	3 4 5
+# Default-Stop:
+# Short-Description:	Linux Kernel Runtime Guard.
+# Description:		Linux Kernel Runtime Guard.
+# END INFO
+
+[ "$1" = start ] || exit 0
+
+. /.initrd/initenv
+
+[ -z "${NOLKRG-}" ] || exit 0
+
+[ -z "${NOEARLYLKRG-}" ] || exit 0
+
+load_lkrg()
+{
+	local modname=
+	if modinfo lkrg >/dev/null 2>&1; then
+		modname=lkrg
+	else
+		modname=p_lkrg
+	fi
+
+	modprobe "$modname"
+}
+
+action_shell 'Loading LKRG:' load_lkrg

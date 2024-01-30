@@ -1,0 +1,6 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            mountsrc
+# Required-Start:      udev uevent
+# Default-Start:       3 4 5
+### END INIT INFO

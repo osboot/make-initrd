@@ -1,0 +1,6 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            poll
+# Required-Start:      cmdline mountvirtfs
+# Default-Start:       3 4 5
+### END INIT INFO

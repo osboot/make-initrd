@@ -1,2 +1,4 @@
 sort-services: Service without LSB header (ignored)
-rc=1
+[
+]
+rc=0

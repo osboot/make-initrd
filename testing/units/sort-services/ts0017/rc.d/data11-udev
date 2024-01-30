@@ -1,0 +1,7 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            udev
+# Required-Start:      cmdline modules mountvirtfs
+# Should-Start:        $syslog
+# Default-Start:       3 4 5
+### END INIT INFO

@@ -1,0 +1,6 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            fstab
+# Required-Start:      cmdline
+# Default-Start:       3 4 5
+### END INIT INFO

@@ -1,0 +1,5 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            killall
+# Default-Start:       0 2 6
+### END INIT INFO

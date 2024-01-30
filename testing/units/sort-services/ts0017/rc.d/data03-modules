@@ -1,0 +1,6 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            modules
+# Required-Start:      sysctl cmdline
+# Default-Start:       3 4 5
+### END INIT INFO

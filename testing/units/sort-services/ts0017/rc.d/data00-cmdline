@@ -1,0 +1,6 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            cmdline
+# Required-Start:      shell
+# Default-Start:       3 4 5
+### END INIT INFO

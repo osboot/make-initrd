@@ -1,0 +1,6 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            sysctl
+# Required-Start:      mountvirtfs
+# Default-Start:       3 4 5
+### END INIT INFO
