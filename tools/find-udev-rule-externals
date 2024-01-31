@@ -53,6 +53,9 @@ parse_command()
 			[A-Za-z_]*=*)
 				continue
 				;;
+			-*|%*)
+				break
+				;;
 		esac
 
 		cmd="$arg"
