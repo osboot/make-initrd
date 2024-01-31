@@ -67,6 +67,7 @@ parse_command()
 
 	if [ -z "${cmd##/*}" ]; then
 		# Absolute path is given.
+		verbose "add $cmd"
 		put_file "$cmd"
 		return 0
 	fi
@@ -85,7 +86,7 @@ parse_command()
 		import)
 			case "$hint" in
 				file)
-					fatal "it's not obvious where to look for '$cmd'"
+					verbose "it's not obvious where to look for '$cmd'"
 					;;
 				program|builtin)
 					! is_builtin "$cmd" ||
@@ -101,11 +102,12 @@ parse_command()
 
 	# Search external command
 	if path=$(type -P "$cmd" 2>/dev/null); then
+		verbose "add $path"
 		put_file "$path"
 		return 0
 	fi
 
-	fatal "command not found: $cmd"
+	verbose "command not found: $cmd"
 }
 
 while IFS=$'\t' read -r file rule attr cmd; do
