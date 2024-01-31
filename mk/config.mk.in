@@ -74,6 +74,7 @@ KERNEL_CONFIG		?= $(BOOTDIR)/config-$(KERNEL)
 KERNEL_MODULES_DIR	?= /lib/modules/$(KERNEL)
 KERNEL_MODULES		?= $(KERNEL_MODULES_DIR)/kernel
 ARCH			?= $(shell uname -m)
+LIB_DIRS		?= /lib /lib64 /usr/lib /usr/lib64
 
 FSTAB			?= /etc/fstab
 PROC_MOUNTS		?= $(PROCFS_PATH)/mounts

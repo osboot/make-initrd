@@ -220,6 +220,11 @@ fi
 [ -z "$no_depmod" ] ||
 	export IGNORE_DEPMOD=1
 
+if ldconfig=$(type -P ldconfig 2>/dev/null); then
+	LIB_DIRS="$($ldconfig -p | sed -n -e 's,.* => \(/.*\)/[^/]\+$,\1,p' | sort -u)"
+	export LIB_DIRS
+fi
+
 export TMPDIR TEMPDIR KERNEL BOOTDIR VERBOSE FEATURE_NAMES
 unset MAKELEVEL
 
