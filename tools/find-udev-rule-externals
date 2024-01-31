@@ -43,7 +43,14 @@ parse_command()
 	cmd=
 	for arg; do
 		case "$arg" in
-			'$'*|[A-Za-z_]*=*)
+			'$'*)
+				if [ -z "${arg##*/*}" ] && [ -n "${arg##*=*}" ]; then
+					arg="${arg##*/}"
+				else
+					continue
+				fi
+				;;
+			[A-Za-z_]*=*)
 				continue
 				;;
 		esac
