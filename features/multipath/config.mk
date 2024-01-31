@@ -26,4 +26,11 @@ MULTIPATH_RULES   = \
 	*-multipath.rules \
 	*-scsi-sg3*.rules \
 	*-usb-blacklist.rules
-MULTIPATH_FILES = /lib/udev/fc_wwpn_id
+
+ifeq "$(MULTIPATH_PLUGINS_DIRS)" ""
+MULTIPATH_PLUGINS_DIRS = $(foreach d,$(LIB_DIRS),$(wildcard $(d)/multipath))
+endif
+
+MULTIPATH_FILES = \
+	/lib/udev/fc_wwpn_id \
+	$(MULTIPATH_PLUGINS_DIRS)
