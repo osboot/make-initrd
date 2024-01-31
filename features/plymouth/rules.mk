@@ -1,20 +1,20 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-PLYMOUTH_LIBDIR := $(shell $(call shell-export-vars) $(FEATURESDIR)/plymouth/bin/get-libdir)
+PLYMOUTH_DIRS := $(foreach d,$(LIB_DIRS),$(wildcard $(d)/plymouth))
 
 PLYMOUTH_PACK_MODULES := $(shell $(call shell-export-vars) $(FEATURESDIR)/plymouth/bin/get-modules)
 PLYMOUTH_PACK_FONT    := $(or $(PLYMOUTH_FONT),$(shell fc-match -f '%{file}\n' 'DejaVuSans' ||:))
 PLYMOUTH_PACK_THEME   := $(shell $(call shell-export-vars) $(FEATURESDIR)/plymouth/bin/get-theme-files "$(PLYMOUTH_THEME)")
 
 PLYMOUTH_EXCLUDE_MODULES   ?=
-PLYMOUTH_EXCLUDE_RENDERERS ?= $(PLYMOUTH_LIBDIR)/renderers/x11.so
+PLYMOUTH_EXCLUDE_RENDERERS ?= %/x11.so
 
 PLYMOUTH_PACK_FILES ?= \
 	$(wildcard $(SYSCONFDIR)/plymouth/plymouthd.conf) \
 	$(wildcard $(SYSCONFDIR)/*-release) \
 	$(wildcard /var/lib/plymouth/boot-duration) \
 	$(wildcard $(DATADIR)/plymouth/plymouthd.defaults) \
-	$(filter-out $(PLYMOUTH_EXCLUDE_MODULES),$(wildcard $(PLYMOUTH_LIBDIR)/*.so)) \
-	$(filter-out $(PLYMOUTH_EXCLUDE_RENDERERS),$(wildcard $(PLYMOUTH_LIBDIR)/renderers/*.so)) \
+	$(filter-out $(PLYMOUTH_EXCLUDE_MODULES),$(foreach d,$(PLYMOUTH_DIRS),$(wildcard $(d)/*.so))) \
+	$(filter-out $(PLYMOUTH_EXCLUDE_RENDERERS),$(foreach d,$(PLYMOUTH_DIRS),$(wildcard $(d)/renderers/*.so))) \
 	$(DATADIR)/plymouth/themes/details/details.plymouth \
 	$(DATADIR)/plymouth/themes/text/text.plymouth \
 	$(PLYMOUTH_PACK_FONT) \
