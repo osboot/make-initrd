@@ -48,12 +48,16 @@ get_module()
 
 				set -- ${l#*=}
 
-				fn="$PLYMOUTH_LIBDIR/$*.so"
+				fn=
+				for d in $PLYMOUTH_DIRS; do
+					if [ -f "$d/$*.so" ]; then
+						fn="$d/$*.so"
+						printf '%s\n' "$fn"
+					fi
+				done
 
 				[ -f "$fn" ] ||
 					fatal "ModuleName: file not found: $fn"
-
-				printf '%s\n' "$fn"
 				;;
 		esac
 	done < "$themedir/$name.plymouth"
