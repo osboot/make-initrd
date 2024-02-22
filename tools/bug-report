@@ -84,6 +84,7 @@ copy \
 	/proc/partitions \
 	/proc/self/mountinfo \
 	/proc/self/mounts \
+	/proc/self/mountstats \
 	/proc/sys \
 	/proc/version \
 	"$SYSFS_PATH/block" \
