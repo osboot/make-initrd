@@ -54,12 +54,13 @@ if [ -n "$kver" ]; then
 fi
 
 mkdir -p -- "$reportdir"/dev
-LANG=C find /dev \! -type d -exec ls -lad '{}' '+' >"$reportdir"/dev/list
+LANG=C find /dev -xdev -a \! -type d -exec ls -lad '{}' '+' >"$reportdir"/dev/list
 progress "$c"
 
 (
 	export LANG=C;
-	find /dev \( -type b -o -type c \) -exec stat -L -c '%A %t %T %n' '{}' '+' 2>/dev/null |
+	find /dev -xdev -a \! -type d -exec stat -L -c '%A %t %T %n' '{}' '+' 2>/dev/null |
+		grep -e '^[cb]' |
 		sort >"$reportdir"/dev/devlist
 ) ||
 	rm -f -- "$reportdir"/dev/devlist
