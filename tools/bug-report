@@ -28,6 +28,7 @@ copy()
 		cp -d --preserve=all -- \
 			"$filename" "$reportdir/${filename%/*}"/ 2>/dev/null ||:
 	done
+	find -P "$@" -type d -empty -exec mkdir -p -- '{}' '+' ||:
 }
 
 progress "$c"
