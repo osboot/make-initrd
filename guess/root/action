@@ -198,6 +198,8 @@ for dir in ${MOUNTPOINTS-} ${GUESS_MOUNTPOINTS-} $MORE_MOUNTPOINTS; do
 	! in_list "$dir" "${pass[@]}" ||
 		continue
 
+	verbose "Processing mount point \`$dir' ..."
+
 	[ -z "${MAKE_INITRD_BUG_REPORT-}" ] &&
 		findmnt='system_findmnt' ||
 		findmnt='report_findmnt'
