@@ -16,7 +16,7 @@
 . initrd-sh-functions
 
 start() {
-	[ -z "${NOSPLASH-}" ] ||
+	[ -z "${NOSPLASH-}" ] && [ -z "${RDSHELL-}" ] ||
 		return 0
 
 	udevadm settle --timeout=30 --exit-if-exists=/sys/class/drm/card0/dev
