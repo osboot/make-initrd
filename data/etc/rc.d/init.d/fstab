@@ -119,6 +119,8 @@ gen_fstab()
 	in_list /sys "${userdef_mounts[@]}" ||
 		fstab+=("sysfs /sys sysfs nodev,noexec,nosuid 0 0")
 
+	modprobe -q fs-efivarfs >/dev/null 2>&1 ||:
+
 	if grep -qsw efivarfs /proc/filesystems; then
 		fstab+=("efivarfs /sys/firmware/efi/efivars efivarfs rw,nosuid,nodev,noexec,relatime 0 0")
 	fi
