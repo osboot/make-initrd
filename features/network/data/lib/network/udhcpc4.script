@@ -41,6 +41,8 @@ MASK="${mask-}"
 MTU="${mtu-}"
 ROUTER="${router-}"
 ROOTPATH="${rootpath-}"
+SIADDR="${siaddr-}"
+WINS="${wins-}"
 
 # broadcast can be set only for IPv4 addresses
 [ "$V" = 4 ] || BROADCAST=
@@ -109,6 +111,10 @@ env_to_configs()
 
 	[ "${#ROOTPATH}" = 0 ] ||
 		printf '%s\n' "$ROOTPATH" > "$dir/rootpath"
+	[ "${#SIADDR}" = 0 ] ||
+		printf '%s\n' "$SIADDR" > "$dir/siaddr"
+	[ "${#WINS}" = 0 ] ||
+		printf '%s\n' "$WINS" > "$dir/wins"
 }
 
 gen_net_event()
