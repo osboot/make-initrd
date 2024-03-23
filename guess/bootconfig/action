@@ -3,8 +3,10 @@
 
 . guess-functions
 
-[ -f "$KERNEL_CONFIG" ] && grep -qs "^CONFIG_BOOT_CONFIG=y" "$KERNEL_CONFIG" ||
-	exit 0
+if [ -f "$KERNEL_CONFIG" ]; then
+	grep -qs "^CONFIG_BOOT_CONFIG=y" "$KERNEL_CONFIG" ||
+		exit 0
+fi
 
 if [ -z "${BOOT_CONFIG-}" ]; then
 	[ -s "/proc/bootconfig" ] ||

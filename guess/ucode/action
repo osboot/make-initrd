@@ -3,6 +3,7 @@
 
 . guess-functions
 
+[ -f "$KERNEL_CONFIG" ] &&
 grep -E -qs "^CONFIG_MICROCODE(|_INTEL|_AMD)=[my]" "$KERNEL_CONFIG" ||
 	exit 0
 

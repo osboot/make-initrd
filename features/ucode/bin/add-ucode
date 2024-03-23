@@ -4,9 +4,10 @@
 . sh-functions
 
 # to be sure that microcode loading supported by kernel
-[ -f "$KERNEL_CONFIG" ] &&
+if [ -f "$KERNEL_CONFIG" ]; then
 	grep -E -qs "^CONFIG_MICROCODE(|_INTEL|_AMD)=[my]" "$KERNEL_CONFIG" ||
-	fatal "Microcode loading support is missing in kernel"
+		fatal "Microcode loading support is missing in kernel"
+fi
 
 if ! IUCODE_BIN="$(type -P iucode_tool)"; then
 	message "Utility not found: iucode_tool"

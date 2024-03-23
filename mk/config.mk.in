@@ -130,4 +130,13 @@ endif
 # Load extra configs
 include $(feature-configs)
 
+ifeq "$(__CHECKED_KERNEL_CONFIG)" ""
+__CHECKED_KERNEL_CONFIG := 1
+
+ifeq "$(wildcard $(KERNEL_CONFIG))" ""
+$(info WARNING: Kernel config not found. Some checks will not work. \
+	Specify `KERNEL_CONFIG' as a env variable or in the initrd.mk.)
+endif
+endif # __CHECKED_KERNEL_CONFIG
+
 endif # MAKELEVEL != 0
