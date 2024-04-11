@@ -34,12 +34,16 @@ all_mounted()
 			return 1
 		fi
 	done < /etc/fstab
+
+	message "$QUEUE: session=$SESSION: All mountpoints found"
 }
 
 sysinit_found()
 {
-	! chrooted "$rootmnt" test -e "$INIT" ||
+	if chrooted "$rootmnt" test -e "$INIT"; then
+		message "$QUEUE: session=$SESSION: system init ($INIT) found"
 		return 0
+	fi
 
 	local msglock="/.initrd/polld/$PROG/message-shown"
 	local deadline='/.initrd/rootdelay/deadline'

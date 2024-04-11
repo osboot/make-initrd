@@ -5,6 +5,7 @@
 
 . initrd-sh-functions
 
+message_time=1
 disabled="/.initrd/rootdelay/disabled"
 period=1
 
@@ -68,17 +69,29 @@ while :; do
 			continue
 		fi
 
-		# Disallow console access
-		[ "${PANIC-}" != "0" ] || reboot -f
-
 		msg=
 		[ ! -f "$consmsg" ] ||
 			msg="$(cat "$consmsg")"
 
-		mkdir -p -- "$disabled"
+		msg="${msg:-The waiting time expired!}"
 
 		fd_lock 90 /dev/console
-		rdshell "${msg:-The waiting time expired!}" &
+
+		# Disallow console access
+		if [ "${PANIC-}" = "0" ]; then
+			{
+				PROG=initramfs
+
+				message "$msg"
+				message "Disallow console access (panic=0). reboot."
+			} >/dev/console 2>&1 90<&- ||:
+
+			reboot -f
+		fi
+
+		mkdir -p -- "$disabled"
+
+		rdshell "$msg" &
 
 		continue
 	fi
