@@ -14,6 +14,7 @@ int rd_logging_level(const char *lvl)                           __attribute__((n
 void rd_vmessage(const char *fmt, va_list ap)                   __attribute__((format(printf, 1, 0)));
 void rd_log_vmessage(int priority, const char *fmt, va_list ap) __attribute__((format(printf, 2, 0)));
 void rd_log_message(int priority, const char *fmt, ...)         __attribute__((format(printf, 2, 3)));
+void rd_log_setup_stderr(const char *logfile)                   __attribute__((nonnull(1)));
 
 #define rd_fatal(format, arg...)                    \
 	do {                                        \

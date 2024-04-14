@@ -11,6 +11,14 @@
 #include "rd/memory.h"
 #include "rd/logging.h"
 
+char *rd_strdup_or_die(const char *s)
+{
+	char *r = strdup(s);
+	if (!r)
+		rd_fatal("vasprintf: %m");
+	return r;
+}
+
 void *rd_calloc_or_die(size_t nmemb, size_t size)
 {
 	void *r = calloc(nmemb, size);

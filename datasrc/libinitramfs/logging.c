@@ -132,3 +132,21 @@ void rd_log_message(int priority, const char *fmt, ...)
 	}
 	va_end(ap);
 }
+
+void rd_log_setup_stderr(const char *logfile)
+{
+	if (getenv("RDLOG_STDERR"))
+		return;
+
+	char *rdlog = getenv("RDLOG");
+
+	if (rdlog && !strcasecmp(rdlog, "console"))
+		logfile = "/dev/console";
+
+	FILE *cons = fopen(logfile, "w+");
+	if (!cons)
+		rd_fatal("open(%s): %m", logfile);
+
+	fclose(stderr);
+	stderr = cons;
+}
