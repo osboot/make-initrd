@@ -9,6 +9,7 @@
 # Set the initial default search path for use by startup scripts.
 export PATH="/sbin:/usr/sbin:/usr/local/sbin:/lib/initrd/bin:/bin:/usr/bin:/usr/local/bin"
 
+. shell-error
 . shell-var
 
 SourceIfExists()     { [ -f "$1" ] && . "$@"; }
@@ -17,6 +18,7 @@ SourceIfNotEmpty()   { [ -s "$1" ] && . "$@"; }
 ExecIfExecutable()   { [ -x "$1" ] && "$@"; }
 absolute() { { command -v "$@"; } 2>/dev/null; }
 
+message_time=1
 SHOW_TIMESTAMP=1
 QUIET=no
 LANG=C
@@ -42,10 +44,6 @@ CONSOLETYPE=$(absolute consoletype) && [ "$($CONSOLETYPE)" = serial ] &&
 
 [ "$BOOTUP" != color ] ||
 	SourceIfNotEmpty /etc/init.d/outformat
-
-INITLOG=initlog
-INITLOG_ARGS=
-[ "${BOOTUP-}" = verbose ] || INITLOG_ARGS="-q"
 
 [ "${LOGLEVEL:--1}" -ge 0 ] 2>/dev/null ||
 	LOGLEVEL=1
@@ -156,7 +154,7 @@ start_daemon()
 	[ -z "$ANNOUNCE" ] || msg_starting "$DISPNAME"
 
 	# Actually start the daemon.
-	$INITLOG $INITLOG_ARGS -n "service: $BASENAME" -c "start-stop-daemon $FLAGS -- $*"
+	start-stop-daemon $FLAGS -- "$@"
 	STATUS=$?
 
 	if [ $STATUS = 0 ]; then
@@ -444,7 +442,8 @@ echo_passed()
 # Log that something succeeded
 success()
 {
-	$INITLOG $INITLOG_ARGS -n "service: $0" -s "$1" -e 1
+	[ -z "${INITLOG_FILE-}" ] ||
+		message "$1 succeeded" >"$INITLOG_FILE"
 	[ "${RDLOG-}" != 'console' ] ||
 		return 0
 	echo_success
@@ -456,7 +455,8 @@ success()
 failure()
 {
 	local rc=$?
-	$INITLOG $INITLOG_ARGS -n "service: $0" -s "$1" -e 2
+	[ -z "${INITLOG_FILE-}" ] ||
+		message "$1 failed" >"$INITLOG_FILE"
 	[ "${RDLOG-}" != 'console' ] ||
 		return $rc
 	echo_failure
@@ -468,7 +468,8 @@ failure()
 passed()
 {
 	local rc=$?
-	$INITLOG $INITLOG_ARGS -n "service: $0" -s "$1" -e 1
+	[ -z "${INITLOG_FILE-}" ] ||
+		message "$1 passed" >"$INITLOG_FILE"
 	[ "${RDLOG-}" != 'console' ] ||
 		return $rc
 	echo_passed
@@ -483,7 +484,7 @@ action()
 	STRING="$1"
 	shift
 	[ "${RDLOG-}" = 'console' ] || echo_msg "$STRING"
-	$INITLOG $INITLOG_ARGS -c "$*"
+	"$@"
 	rc=$?
 	[ $rc -eq 0 ] && success "$STRING" || failure "$STRING"
 	return $rc
