@@ -442,10 +442,11 @@ echo_passed()
 # Log that something succeeded
 success()
 {
-	[ -z "${INITLOG_FILE-}" ] ||
-		message "$1 succeeded" >"$INITLOG_FILE"
-	[ "${RDLOG-}" != 'console' ] ||
+	if [ "${RDLOG-}" = 'console' ]; then
+		[ -z "${INITLOG_FILE-}" ] ||
+			message "$1 succeeded" >"$INITLOG_FILE"
 		return 0
+	fi
 	echo_success
 	echo_newline
 	return 0
@@ -455,10 +456,11 @@ success()
 failure()
 {
 	local rc=$?
-	[ -z "${INITLOG_FILE-}" ] ||
-		message "$1 failed" >"$INITLOG_FILE"
-	[ "${RDLOG-}" != 'console' ] ||
+	if [ "${RDLOG-}" = 'console' ]; then
+		[ -z "${INITLOG_FILE-}" ] ||
+			message "$1 failed" >"$INITLOG_FILE"
 		return $rc
+	fi
 	echo_failure
 	echo_newline
 	return $rc
@@ -468,10 +470,11 @@ failure()
 passed()
 {
 	local rc=$?
-	[ -z "${INITLOG_FILE-}" ] ||
-		message "$1 passed" >"$INITLOG_FILE"
-	[ "${RDLOG-}" != 'console' ] ||
+	if [ "${RDLOG-}" = 'console' ]; then
+		[ -z "${INITLOG_FILE-}" ] ||
+			message "$1 passed" >"$INITLOG_FILE"
 		return $rc
+	fi
 	echo_passed
 	echo_newline
 	return $rc
