@@ -48,6 +48,11 @@ CONSOLETYPE=$(absolute consoletype) && [ "$($CONSOLETYPE)" = serial ] &&
 [ "${LOGLEVEL:--1}" -ge 0 ] 2>/dev/null ||
 	LOGLEVEL=1
 
+if [ -z "${RUN_INITRD-}" ] && [ -z "${RDLOG-}" ]; then
+	! grep -qs rdlog=console /proc/cmdline ||
+		export RDLOG=console
+fi
+
 start_daemon()
 {
 	# Process options.
