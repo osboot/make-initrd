@@ -244,10 +244,13 @@ release:
 	    tar -A -f $(PKGFILE).tar $(PKGFILE)-sm.tar; \
 	    rm -f -- $(PKGFILE)-sm.tar;'
 	$(Q)xz -S .xz -f $(PKGFILE).tar
+	$(Q)[ -z "$(GPG)" ] || $(GPG) --default-key $(GPG_KEY) -sb $(PKGFILE).tar.xz
 	$(Q)echo; echo "Release tarball: $(PKGFILE).tar.xz"; echo;
 
 release: PKGFILE=$(CURDIR)/$(PACKAGE_NAME)-$(PACKAGE_VERSION)
 release: PREFIX=$(PACKAGE_NAME)-$(PACKAGE_VERSION)
+release: GPG=gpg
+release: GPG_KEY=4CFFD434
 
 RULE_NAMES = $(patsubst mk/%.in,%,$(wildcard mk/*.mk.in))
 
