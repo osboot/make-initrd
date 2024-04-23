@@ -44,8 +44,8 @@ start() {
 	[ "$RETVAL" = 0 ] ||
 		return $RETVAL
 
-	udevadm control --log-priority=info
-	[ -z "${DEBUG-}" ] || udevadm control --log-priority=debug
+	udevadm control --log-priority=info 2>/dev/null
+	[ -z "${DEBUG-}" ] || udevadm control --log-priority=debug 2>/dev/null
 
 	udevadm control --property=STARTUP=1
 	udevadm control --reload >/dev/null 2>&1 ||:
