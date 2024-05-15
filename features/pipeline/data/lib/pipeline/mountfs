@@ -9,10 +9,11 @@ target="$(resolve_target "$param")"
 [ -n "$target" ] ||
 	fatal "unable to resolve: $param"
 
-opts=
+opts="$(get_parameter MOUNTFS_OPTS)"
+
 if [ ! -c "$target" ] && [ ! -b "$target" ]; then
 	modprobe -q 'devname:loop-control' ||:
-	opts='ro,loop'
+	opts="${opts:+$opts,}ro,loop"
 fi
 
 run mount ${opts:+-o $opts} "$target" "$destdir"
