@@ -79,9 +79,29 @@ register_alias()
 	done
 }
 
+__set_arr()
+{
+	local sz i
+	eval "sz=\${$1:-0}"
+	i="${3:-$sz}"
+	while [ $sz -lt $i ]; do
+		eval "export $1$sz=\"\""
+		sz=$(($sz + 1))
+	done
+	[ $sz -ne $i ] ||
+		sz=$(($sz + 1))
+	eval "export $1=$sz"
+	eval "export $1$i=\"\$2\""
+}
+
 __set_var()
 {
-	local n="$1" v="$2" flags x
+	eval "export $1=\"\$2\""
+}
+
+__set()
+{
+	local n="$1" v="$2" flags x index=''
 
 	if [ -n "$n" ]; then
 		x="${n%%=*}"
@@ -92,6 +112,12 @@ __set_var()
 		else
 			n="$x"
 		fi
+	fi
+
+	if [ -n "$n" ] && [ -z "${n##*\[[0-9]*\]}" ]; then
+		index="${n##*\[}"
+		index="${index%\]}"
+		n="${n%\[[0-9]*]}"
 	fi
 
 	while [ -z "${__aliases##* $n:*}" ]; do
@@ -142,14 +168,15 @@ __set_var()
 		RW) READONLY=  ;;
 	esac
 
-	if [ $flags -gt $VAR_ARR ]; then
-		local i
-		eval "i=\${$n:-0}"
-		eval "export $n=$(($i + 1))"
-		eval "export $n$i=\"\$v\""
-	else
-		eval "export $n=\"\$v\""
-	fi
+	set -- "$n" "$v" "$index"
+
+	[ $flags -gt $VAR_ARR ] &&
+		set -- __set_arr "$@" ||
+		set -- __set_var "$@"
+
+	unset n v flags x index
+
+	"$@"
 }
 
 parse()
@@ -174,7 +201,7 @@ parse()
 		read -r CMDLINE < /proc/cmdline
 	export CMDLINE
 
-	cmdline_foreach "$CMDLINE" __set_var
+	cmdline_foreach "$CMDLINE" __set
 
 	[ -z "$DEBUG" ] || QUIET=
 	STOP=",$STOP,"
@@ -182,8 +209,7 @@ parse()
 	if [ -z "$IP" ] || [ "$IP" = 0 ]; then
 		# Special case for nfsroot.
 		if [ -n "$NFSROOT" ] || [ "$ROOT" = '/dev/nfs' ]; then
-			export IP0=dhcp
-			export IP=1
+			__set_arr IP dhcp
 		fi
 	fi
 
