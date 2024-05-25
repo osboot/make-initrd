@@ -10,21 +10,19 @@ The interaction between these services looks like this:
 .==========.      .-------------------.
 ||        ||----->| devtmpfs (/dev)   |
 || kernel ||      |-------------------|
-||        ||----->| mountpoints (/..) |<----.
-'=========='      '-------------------'     |
-     |                                      |
-     V                                      |
-.---------.        .-----------------.      |
-| udevd   |        | ueventd         |      |
-|  .---------.  .---------.  .-----------.  |
-|  | filters |->| uevents |->| handlers  |--' (mount, etc.)
-|  '---------'  '---------'  '-----------'
-|         |        |                 |
-|         |        |         .-----------.    .------------------.
-|         |        |         | extenders |--->| boot real system |
-|         |        |         '-----------'    '------------------'
-|         |        |                 |
-'---------'        '-----------------'
+||        ||----->| mountpoints (/..) |<-----------------.
+'=========='      '-------------------'                  |
+   ||                                                    |
+   ||  .-------------.         .-------------------.     |
+   ||  | udevd       |         | ueventd           |     |
+   |`->|     .---------.     .---------.  .-----------.  |
+   |   |     | filters |---->| uevents |->| handlers  |--' (mount, etc.)
+   |   |     '---------' .-->|         |->|           |--.
+   |   |             |   |   '---------'  '-----------'  |  .------------------.
+   |   '-------------'   |     |                   |     '->| boot real system |
+   |   .---------------. |     |                   |        '------------------'
+   `-->| uevent-mounts |-'     '-------------------'
+       '---------------'
 ```
 
 The `udevd` listens to kernel events and performs actions according to its rules.
@@ -44,12 +42,9 @@ the raid-handler will assemble it. This in turn will spawn a new kernel event
 about the appearance of `/dev/md0`. Now, mount-handler can check it and if it
 contains the root filesystem, then handler will mount this block device.
 
-So, we mounted some block devices somewhere. We need something that would make
-a decision that we met all the conditions for real system boot. The server
-periodically runs `extenders` scripts that perform checks (console is not
-active, the system init was found, etc.), and if all scripts succeed, the server
-initiates a system boot. See [polling details](PollDetails.md) for more
-information.
+In addition to udev events, we launch a daemon that monitors the appearance of
+mountpoints. Every time something mount, we check the conditions to boot the
+real system. If all scripts succeed, the uevent handler initiates a system boot.
 
 This scheme is used to mount system root device, resume system, configure
 network. Basically it's used for everything based on kernel events.
