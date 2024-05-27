@@ -28,6 +28,7 @@ rulesdir    = ${projectdir}/mk
 libcdir := $(shell $(CURDIR)/tools/get-libc-dir)
 
 runtime_srcdir = datasrc
+utils_srcdir = utils
 external_srcdir = $(CURDIR)/external
 
 localbuilddir =
@@ -100,7 +101,7 @@ all: build
 -include \
 	$(filter-out \
 		$(foreach skip,$(SKIP_FEATURES),$(FEATURESDIR)/$(skip)/src/Makefile.mk), \
-		$(wildcard utils/*/Makefile.mk) \
+		$(wildcard $(utils_srcdir)/*/Makefile.mk) \
 		$(wildcard $(runtime_srcdir)/*/Makefile.mk) \
 		$(wildcard $(FEATURESDIR)/*/src/Makefile.mk))
 
@@ -127,7 +128,7 @@ CFLAGS = @CFLAGS@ \
 	-Wno-pointer-arith \
 	-Werror=shadow -Werror=missing-prototypes -Werror=implicit-function-declaration
 
-CPPFLAGS += @CPPFLAGS@ @DEFS@ -I$(CURDIR) -I$(CURDIR)/utils
+CPPFLAGS += @CPPFLAGS@ @DEFS@ -I$(CURDIR)
 
 UDEVD		= @UDEVD@
 UDEVADM		= @UDEVADM@
@@ -178,7 +179,7 @@ verify:
 	    }; \
 	done; exit $$rc; \
 
-verify: SHELLCHECK_DIRS = data features guess tools utils
+verify: SHELLCHECK_DIRS = data features guess tools $(utils_srcdir)
 verify: SHELLCHECK_EXCLUDE = SC1003,SC1090,SC1091,SC2004,SC2006,SC2015,SC2034,SC2086,SC2154,SC2295,SC2317
 
 check-unit: build

@@ -2,8 +2,8 @@
 
 udev_rules_DEST = $(dest_sbindir)/udev-rules
 
-udev_rules_SRCDIR = utils/udev-rules
-udev_rules_GENDIR = $(GENDIR)/utils/udev-rules
+udev_rules_SRCDIR = $(utils_srcdir)/udev-rules
+udev_rules_GENDIR = $(GENDIR)/$(utils_srcdir)/udev-rules
 
 udev_rules_SRCS = \
 		$(udev_rules_GENDIR)/udev-rules-parser.c \
