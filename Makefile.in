@@ -27,7 +27,7 @@ rulesdir    = ${projectdir}/mk
 
 libcdir := $(shell $(CURDIR)/tools/get-libc-dir)
 
-runtime_srcdir = datasrc
+runtime_srcdir = runtime/src
 utils_srcdir = utils
 external_srcdir = $(CURDIR)/external
 
@@ -158,11 +158,12 @@ SED = @SED@ \
 build-libs: $(LIBS)
 build-progs: build-libs $(PROGS) $(SCRIPTS)
 
-PROJECT_SUBDIRS = data guess tools
+PROJECT_SUBDIRS = guess tools
 FEATURES_SUBDIRS = $(filter-out $(SKIP_FEATURES),$(notdir $(wildcard $(FEATURESDIR)/*)))
 
 build: $(addprefix $(dest_projectdir)/,$(PROJECT_SUBDIRS))
 build: $(addprefix $(dest_projectdir)/features/,$(FEATURES_SUBDIRS))
+build: $(dest_projectdir)/data
 build: build-progs build-libs
 
 verify:
@@ -179,7 +180,7 @@ verify:
 	    }; \
 	done; exit $$rc; \
 
-verify: SHELLCHECK_DIRS = data features guess tools $(utils_srcdir)
+verify: SHELLCHECK_DIRS = runtime/data features guess tools $(utils_srcdir)
 verify: SHELLCHECK_EXCLUDE = SC1003,SC1090,SC1091,SC2004,SC2006,SC2015,SC2034,SC2086,SC2154,SC2295,SC2317
 
 check-unit: build
@@ -188,7 +189,7 @@ check-unit: build
 check-services:
 	@rc=0; \
 	for svc in \
-	   `find data/ -executable -path '*/etc/rc.d/init.d/*' |sort` \
+	   `find runtime/data/ -executable -path '*/etc/rc.d/init.d/*' |sort` \
 	   `find features/ -path '*/etc/rc.d/init.d/*' |sort`; \
 	do \
 	   ret=0; \
@@ -272,6 +273,11 @@ $(dest_man1dir)/%.1: Documentation/manpages/%.1.md
 build-manpages: build-progs $(addprefix $(dest_man1dir)/,$(MANPAGE_NAMES))
 build: build-manpages
 endif
+
+$(dest_projectdir)/data: runtime/data
+	$(Q)mkdir -p -- $(dir $@)
+	$(Q)rm -f -- "$@"
+	$(call quiet_cmd,SLINK,$@,ln) -sf -- "$(CURDIR)/$<" "$@"
 
 $(dest_projectdir)/%: %
 	$(Q)mkdir -p -- $(dir $@)
@@ -434,6 +440,7 @@ install: build-progs build-manpages installdirs
 	$(Q)cp -at "$(DESTDIR)$(sysconfdir)" -- $(addprefix $(dest_sysconfdir)/,$(SYSCONF_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(rulesdir)" -- $(addprefix $(dest_rulesdir)/,$(RULE_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(projectdir)" -- \
+	    $$(readlink -e $(dest_projectdir)/data) \
 	    $$(readlink -e $(addprefix $(dest_projectdir)/,$(PROJECT_SUBDIRS)))
 	$(Q)mkdir -p -- "$(DESTDIR)$(projectdir)/$(FEATURESDIR)"
 	$(Q)for n in $(FEATURES_SUBDIRS); do \

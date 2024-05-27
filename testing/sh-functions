@@ -70,7 +70,7 @@ pack_sysimage()
 		--mount="type=image,src=localhost/mi-$VENDOR:sysimage,dst=/image" \
 		--mount="type=tmpfs,destination=/image$builddir" \
 		--mount="type=bind,src=$topdir/.build/dest,dst=/image$builddir/.build/dest" \
-		--mount="type=bind,src=$topdir/data,dst=/image$builddir/data" \
+		--mount="type=bind,src=$topdir/runtime,dst=/image$builddir/runtime" \
 		--mount="type=bind,src=$topdir/features,dst=/image$builddir/features" \
 		--mount="type=bind,src=$topdir/guess,dst=/image$builddir/guess" \
 		--mount="type=bind,src=$topdir/tools,dst=/image$builddir/tools" \

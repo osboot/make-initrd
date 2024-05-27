@@ -2,7 +2,7 @@
 
 cwd="${0%/*}"
 
-. data/bin/shell-locks
+. runtime/data/bin/shell-locks
 
 show_self_locks()
 {
