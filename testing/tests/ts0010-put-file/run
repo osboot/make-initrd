@@ -2,7 +2,7 @@
 
 cwd="${0%/*}"
 
-. "$cwd"/../sh-functions
+. "$cwd"/../put-file-sh-functions
 
 make_fs()
 {

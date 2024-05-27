@@ -4,7 +4,7 @@ set -o pipefail
 
 cwd="${0%/*}"
 
-. "$cwd"/../sh-functions
+. "$cwd"/../put-file-sh-functions
 
 rm -rf -- "$cwd/from"
 mkdir -p -- "$cwd/from"

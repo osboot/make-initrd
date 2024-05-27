@@ -8,18 +8,29 @@ cwd="$(readlink -ev "$0")"
 cwd="${cwd%/*}"
 
 ret=0
-for testsuite in "$cwd"/*; do
+for testsuite in "$@"; do
 	[ -d "$testsuite" ] ||
 		continue
 
-	echo "=== Check ${testsuite##*/}";
+	name="${testsuite%/tests}"
+	name="${name}"
 
+	testsuite="$PWD/$testsuite"
+	max=$(find "$testsuite" -type d -name 'ts*' | wc -l)
+
+	echo "=== Check $name [$max]";
+
+	i=1
 	for ts in "$testsuite"/ts*; do
 		[ -d "$ts" ] ||
 			continue
 
-		[ -z "${VERBOSE:-${V:-}}" ] ||
-			echo " == ${ts##*/}"
+		if [ -n "${VERBOSE:-${V:-}}" ]; then
+			num="$(printf '%4s' "$i")"
+			i=$(( $i + 1 ))
+
+			echo "[$num/$max] ${ts##*/}"
+		fi
 
 		{
 			rc=0

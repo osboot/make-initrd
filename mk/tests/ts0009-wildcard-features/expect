@@ -1,0 +1,6 @@
+FILE(config.mk): mk/tests/ts0009-wildcard-features/aaa/config.mk
+FILE(config.mk): mk/tests/ts0009-wildcard-features/ccc/config.mk
+FILE(rules.mk): mk/tests/ts0009-wildcard-features/aaa/rules.mk
+FILE(rules.mk): mk/tests/ts0009-wildcard-features/bbb/rules.mk
+FILE(rules.mk): mk/tests/ts0009-wildcard-features/ccc/rules.mk
+rc=0

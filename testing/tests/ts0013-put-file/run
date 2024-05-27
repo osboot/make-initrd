@@ -4,12 +4,12 @@ set -o pipefail
 
 cwd="${0%/*}"
 
-. "$cwd"/../sh-functions
+. "$cwd"/../put-file-sh-functions
 
 rm -rf -- "$cwd/to"
 mkdir -p -- "$cwd/to"
 
-tools/put-file -r "$cwd/from" "$cwd/to" "$cwd/from/bin/foo"
+tools/put-file -r "$cwd/from" "$cwd/to" "$cwd/from/bin/bar"
 
 cd "$cwd/to"
 print_info . | sort -u -d

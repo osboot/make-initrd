@@ -183,8 +183,12 @@ verify:
 verify: SHELLCHECK_DIRS = runtime/data features guess tools $(utils_srcdir)
 verify: SHELLCHECK_EXCLUDE = SC1003,SC1090,SC1091,SC2004,SC2006,SC2015,SC2034,SC2086,SC2154,SC2295,SC2317
 
-check-unit: build
-	@testing/units/run
+UNITTEST_DIRS = $(sort \
+			$(foreach 1, guess features runtime mk utils testing, \
+				$(wildcard $(1)/tests $(1)/*/tests)))
+
+check-unit: $(UNITTEST_DIRS)
+	@testing/tests/run $?
 
 check-services:
 	@rc=0; \
@@ -448,7 +452,11 @@ install: build-progs build-manpages installdirs
 		dest="$(DESTDIR)$(projectdir)/$(FEATURESDIR)/$$n"; \
 	        if [ -d "$$target" ]; then \
 	            mkdir -p -- "$$dest"; \
-	            find "$$target/" -mindepth 1 -maxdepth 1 '!' -name src \
+	            find "$$target/" -mindepth 1 -maxdepth 1 \
+	                '(' \
+	                        '!' -name 'src' -a \
+	                        '!' -name 'tests'  \
+	                ')' \
 	                -exec cp -at "$$dest" -- '{}' '+'; \
 	        else \
 	            cp -aL -- "$$target" "$$dest"; \

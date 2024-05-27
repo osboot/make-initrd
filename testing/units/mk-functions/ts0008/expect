@@ -1,6 +1,0 @@
-FILE(config.mk): testing/units/mk-functions/ts0008/aaa/config.mk
-FILE(config.mk): testing/units/mk-functions/ts0008/ccc/config.mk
-FILE(rules.mk): testing/units/mk-functions/ts0008/aaa/rules.mk
-FILE(rules.mk): testing/units/mk-functions/ts0008/bbb/rules.mk
-FILE(rules.mk): testing/units/mk-functions/ts0008/ccc/rules.mk
-rc=0

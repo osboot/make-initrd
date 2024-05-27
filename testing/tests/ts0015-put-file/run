@@ -4,7 +4,7 @@ set -o pipefail
 
 cwd="${0%/*}"
 
-. "$cwd"/../sh-functions
+. "$cwd"/../put-file-sh-functions
 
 if [ -d "$cwd/from" ]; then
 	chmod -R +w "$cwd/from"
