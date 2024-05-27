@@ -2,14 +2,14 @@
 
 libinitramfs_DEST = $(dest_data_libdir)/libinitramfs.so
 libinitramfs_SRCS = \
-	datasrc/libinitramfs/logging.c \
-	datasrc/libinitramfs/memory.c \
-	datasrc/libinitramfs/console.c \
+	$(runtime_srcdir)/libinitramfs/logging.c \
+	$(runtime_srcdir)/libinitramfs/memory.c \
+	$(runtime_srcdir)/libinitramfs/console.c \
 	$(NULL)
 
 libinitramfs_CFLAGS = \
 	-fPIC \
-	-Idatasrc/libinitramfs \
+	-I$(runtime_srcdir)/libinitramfs \
 	-D_GNU_SOURCE
 
 libinitramfs_LDFLAGS = -shared -fPIC

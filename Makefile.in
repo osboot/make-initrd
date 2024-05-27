@@ -27,6 +27,7 @@ rulesdir    = ${projectdir}/mk
 
 libcdir := $(shell $(CURDIR)/tools/get-libc-dir)
 
+runtime_srcdir = datasrc
 external_srcdir = $(CURDIR)/external
 
 localbuilddir =
@@ -100,7 +101,7 @@ all: build
 	$(filter-out \
 		$(foreach skip,$(SKIP_FEATURES),$(FEATURESDIR)/$(skip)/src/Makefile.mk), \
 		$(wildcard utils/*/Makefile.mk) \
-		$(wildcard datasrc/*/Makefile.mk) \
+		$(wildcard $(runtime_srcdir)/*/Makefile.mk) \
 		$(wildcard $(FEATURESDIR)/*/src/Makefile.mk))
 
 define VAR_c_CFLAGS =
