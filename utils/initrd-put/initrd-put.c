@@ -428,10 +428,8 @@ void enqueue_canonicalized_path(const char *name, bool add_recursively)
 error:
 	*dest++ = '\0';
 
-	if (failed) {
-		warn("unable to process component of path: %s", rname);
-		return;
-	}
+	if (failed)
+		err(EXIT_FAILURE, "unable to process component of path: %s", rname);
 
 	errno = 0;
 
@@ -643,7 +641,7 @@ void enqueue_path(struct file *p)
 
 	if (S_IFREG == (p->stat.st_mode & S_IFMT)) {
 		if (enqueue_regular_file(p->src) < 0)
-			warnx("failed to read regular file: %s", p->src);
+			err(EXIT_FAILURE, "failed to read regular file: %s", p->src);
 		return;
 	}
 }
