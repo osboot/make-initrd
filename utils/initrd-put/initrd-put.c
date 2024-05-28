@@ -835,14 +835,16 @@ void install_file(struct file *p)
 	int sfd, dfd;
 
 	errno = 0;
-	if ((dfd = creat(install_path, p->stat.st_mode)) < 0) {
-		if (errno == ENOENT)
-			return;
-		err(EX_CANTCREAT, "creat: %s", install_path);
-	}
-
 	if ((sfd = open(p->src, O_RDONLY)) < 0)
 		err(EX_NOINPUT, "open: %s", p->src);
+
+	if ((dfd = creat(install_path, p->stat.st_mode)) < 0) {
+		if (errno == ENOENT) {
+			close(sfd);
+			return;
+		}
+		err(EX_CANTCREAT, "creat: %s", install_path);
+	}
 
 	posix_fadvise(sfd, 0, p->stat.st_size, POSIX_FADV_SEQUENTIAL);
 	posix_fallocate(dfd, 0, p->stat.st_size);
