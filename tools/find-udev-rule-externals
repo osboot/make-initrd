@@ -67,6 +67,10 @@ parse_command()
 
 	if [ -z "${cmd##/*}" ]; then
 		# Absolute path is given.
+		if [ ! -e "$cmd" ]; then
+			verbose "utility not found: $cmd"
+			return 0
+		fi
 		verbose "add $cmd"
 		put_file "$cmd"
 		return 0
