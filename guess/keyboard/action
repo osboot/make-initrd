@@ -3,6 +3,8 @@
 
 . guess-functions
 
+$TRACE_SOURCE "Processing ..."
+
 detect()
 {
 	hid_required=

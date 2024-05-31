@@ -3,6 +3,8 @@
 
 . guess-functions
 
+$TRACE_SOURCE "Processing ..."
+
 depinfo ${KERNEL:+-k "$KERNEL"} --no-deps --no-firmware lkrg p_lkrg 2>/dev/null |grep -e '^module ' ||
 	exit 0
 

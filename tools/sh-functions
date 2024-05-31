@@ -75,4 +75,145 @@ in_list() {
 	return 1
 }
 
+TRACE_ENTER=:
+TRACE_ENTER_RETCODE=:
+TRACE_SOURCE=:
+TRACE_RESOLVE_MODALIAS=:
+TRACE_RUN=
+
+if [ -n "${MAKE_INITRD_TRACE-}" ]; then
+	MAKE_INITRD_TRACE_PIDS=${MAKE_INITRD_TRACE_PIDS-1}
+
+	TRACE_KIND_ENTER=0
+	TRACE_KIND_RUN=1
+	TRACE_KIND_SOURCE=2
+	TRACE_KIND_RESOLVE_MODALIAS=3
+
+	TRACE_KINDS=()
+	TRACE_KINDS_LEN=0
+
+	TRACE_KINDS[$TRACE_KIND_ENTER]="function"
+	TRACE_KINDS[$TRACE_KIND_RUN]="run"
+	TRACE_KINDS[$TRACE_KIND_SOURCE]="execute"
+	TRACE_KINDS[$TRACE_KIND_RESOLVE_MODALIAS]="modules"
+
+	for i in "${TRACE_KINDS[@]}"; do
+		[ $TRACE_KINDS_LEN -ge ${#i} ] ||
+			TRACE_KINDS_LEN=${#i}
+	done
+
+	TRACE_ENTER=trace_enter
+	TRACE_ENTER_RETCODE=trace_enter_retcode
+	TRACE_SOURCE=trace_source
+	TRACE_RESOLVE_MODALIAS=trace_resolve_modalias
+	TRACE_RUN=trace_run
+
+	TRACE_FUNCNAMES=("main")
+
+	__trace_get_func() {
+		local i
+
+		func="${FUNCNAME[2]}"
+		i=$(( ${#TRACE_FUNCNAMES[@]} - 1 ))
+
+		[ "${TRACE_FUNCNAMES[$i]}" != main ] || [ "$func" != main ] ||
+			func=subshell
+	}
+
+	__is_traceable() {
+		local arg pattern
+		arg="$1"; shift
+		[ -n "$arg" ] || return 0
+		for pattern; do [ -n "${arg##$pattern}" ] || return 0; done
+		[ $# -eq 0 ] || return 1
+	}
+
+	__trace_print() {
+		local n kind src funcs
+
+		kind="$1"; shift
+		funcs="$1"; shift
+
+		n="$(( ${#BASH_SOURCE[@]} - 1 ))"
+		src="${BASH_SOURCE[$n]#${PROJECTDIR}/}"
+		src="${BASH_SOURCE[$n]#${TOPDIR}/}"
+
+		if ! __is_traceable "$src" ${MAKE_INITRD_TRACE_EXECUTE_PATTERNS-}; then
+			export MAKE_INITRD_TRACE_SRC_PATTERNS='-'
+			export MAKE_INITRD_TRACE_FUNC_PATTERNS='-'
+			export MAKE_INITRD_TRACE_RUN_PATTERNS='-'
+			return 0
+		fi
+
+		__is_traceable "$src" ${MAKE_INITRD_TRACE_SRC_PATTERNS-} ||
+			return 0
+
+		printf >&2 \
+			'TRACE %-'${TRACE_KINDS_LEN}'s:%s source=%s: %s: %s\n' \
+			"${TRACE_KINDS[$kind]}" "${MAKE_INITRD_TRACE_PIDS:+ pid=$BASHPID:}" "$src" "$funcs" "$*"
+	}
+
+	trace_source() {
+		__trace_print $TRACE_KIND_SOURCE \
+			"main" "$*"
+		export MAKE_INITRD_TRACE_EXECUTE_PATTERNS=''
+	}
+
+	trace_resolve_modalias() {
+		local modalias_list kmodules_list kmodules m
+
+		modalias_list="$1"; shift
+		kmodules_list="$1"; shift
+
+		kmodules=()
+		while read -r m; do
+			kmodules+=("${m##/lib/modules/$kernel/}")
+		done < "$kmodules_list"
+
+		__trace_print $TRACE_KIND_RESOLVE_MODALIAS \
+			"main" "${modalias_list##*/} -> (${kmodules[*]})"
+	}
+
+	trace_enter() {
+		local func
+		__trace_get_func
+
+		__is_traceable "$func" ${MAKE_INITRD_TRACE_FUNC_PATTERNS-} ||
+			return 0
+
+		__trace_print $TRACE_KIND_ENTER \
+			"${TRACE_FUNCNAMES[*]} $func" "$*"
+	}
+
+	trace_enter_retcode() {
+		return $1
+	}
+
+	trace_run() {
+		local rc i func cmd cmdname
+		__trace_get_func
+
+		i=${#TRACE_FUNCNAMES[@]}
+		TRACE_FUNCNAMES+=("$func")
+
+		cmd="$1"
+		shift
+
+		[ -z "${cmd##/*}" ] &&
+			cmdname="${cmd#$TOPDIR/}" ||
+			cmdname="$cmd"
+
+		if __is_traceable "$cmdname" ${MAKE_INITRD_TRACE_RUN_PATTERNS-}; then
+			__trace_print $TRACE_KIND_RUN \
+				"${TRACE_FUNCNAMES[*]}" "$cmdname" "$*"
+		fi
+
+		rc=0
+		"$cmd" "$@" || rc=$?
+
+		unset "TRACE_FUNCNAMES[$i]"
+		return $rc
+	}
+fi
+
 fi #__included_make_initrd_sh_functions

@@ -3,6 +3,8 @@
 
 . guess-functions
 
+$TRACE_SOURCE "Processing ..."
+
 modules_fmt() {
 	while read -r m; do
 		m="${m##*/}"
@@ -86,6 +88,8 @@ if [ -n "${RESOLVE_MODALIAS-}" ]; then
 				--no-builtin \
 			2>/dev/null |
 			sort -u >> "$guessdir/guess:modules$suffix"
+
+		$TRACE_RESOLVE_MODALIAS "$m" "$guessdir/guess:modules$suffix"
 
 		rm -f "$m"
 	done

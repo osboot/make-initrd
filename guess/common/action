@@ -5,4 +5,6 @@
 
 $TRACE_SOURCE "Processing ..."
 
-guess_feature "rdshell"
+for m in $GUESS_COMMON_SCRIPTS; do
+	[ ! -x "$m" ] || "$m"
+done

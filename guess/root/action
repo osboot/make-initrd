@@ -4,6 +4,8 @@
 . sh-functions
 . guess-functions
 
+$TRACE_SOURCE "Processing ..."
+
 export LIBMOUNT_FSTAB="${FSTAB:-/etc/fstab}"
 export LIBMOUNT_MTAB="${PROC_MOUNTS:-$PROCFS_PATH/mounts}"
 

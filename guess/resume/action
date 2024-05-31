@@ -4,6 +4,8 @@
 . sh-functions
 . guess-functions
 
+$TRACE_SOURCE "Processing ..."
+
 cmdline=
 readline cmdline "$PROCFS_PATH/cmdline"
 

@@ -11,6 +11,10 @@ ifeq "$(TEMPDIR)" ''
 $(error TEMPDIR is empty. You SHOULD NOT use config.mk directly.)
 endif
 
+ifeq "$(TOPDIR)" ""
+TOPDIR := $(CURDIR)
+endif
+
 # This is the working directory for each image.
 # It is created for each configuration file.
 WORKDIR_SUFFIX	?= work
@@ -25,8 +29,9 @@ GUESSDIR	 = $(WORKDIR)/guess
 # This is directory used for bug-report target.
 REPORTDIR	 = $(WORKDIR)/report
 
-TOOLSDIR	:= @projectdir@/tools
 LOCALBUILDDIR	:= @localbuilddir@
+PROJECTDIR	:= @projectdir@
+TOOLSDIR	:= @projectdir@/tools
 FEATURESDIR	:= @projectdir@/features
 DETECTDIR	:= @projectdir@/guess
 BASEDATADIR	:= @projectdir@/data

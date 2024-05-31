@@ -4,6 +4,8 @@
 . sh-functions
 . guess-functions
 
+$TRACE_SOURCE "Processing ..."
+
 iface="${GUESS_NET_IFACE-}"
 
 case "$iface" in

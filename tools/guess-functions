@@ -7,6 +7,10 @@ __included_make_initrd_guess_functions=1
 . sh-functions
 
 get_device() {
+	$TRACE_ENTER "$@" || {
+		$TRACE_ENTER_RETCODE $?
+		return $?
+	}
 	case "$1" in
 		*=*)
 			blkid -c /dev/null -t "$1" -o device
@@ -21,20 +25,37 @@ get_device() {
 }
 
 guess_modalias() {
+	$TRACE_ENTER "$@" || {
+		$TRACE_ENTER_RETCODE $?
+		return $?
+	}
 	printf '%s\n' "$1" >> "$guessdir/guess:modalias${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
 }
 
 guess_module() {
+	$TRACE_ENTER "$@" || {
+		$TRACE_ENTER_RETCODE $?
+		return $?
+	}
 	printf '%s\n' "$1" >> "$guessdir/guess:modules${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
 }
 
 guess_feature() {
+	$TRACE_ENTER "$@" || {
+		$TRACE_ENTER_RETCODE $?
+		return $?
+	}
 	printf '%s\n' "$1" >> "$guessdir/guess:features${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
 }
 
 guess_variable() {
 	[ "$#" -ge 2 ] ||
 		return 0
+
+	$TRACE_ENTER "$@" || {
+		$TRACE_ENTER_RETCODE $?
+		return $?
+	}
 
 	local var="$1"
 	shift
@@ -43,12 +64,21 @@ guess_variable() {
 }
 
 guess_fstype() {
+	$TRACE_ENTER "$@" || {
+		$TRACE_ENTER_RETCODE $?
+		return $?
+	}
 	for m in ${GUESS_FSTYPE_SCRIPTS-}; do
-		"$m" "$@"
+		$TRACE_RUN "$m" "$@"
 	done
 }
 
 guess_device() {
+	$TRACE_ENTER "$@" || {
+		$TRACE_ENTER_RETCODE $?
+		return $?
+	}
+
 	local device_file
 	device_file="$(readlink -ev "$SYSFS_PATH$1" 2>/dev/null)" ||
 		return 0
@@ -58,7 +88,7 @@ guess_device() {
 		return 0
 
 	for m in modalias parent slaves supplier loop ${GUESS_DEVICE_SCRIPTS-}; do
-		"$m" "${device_file#$SYSFS_PATH}"
+		$TRACE_RUN "$m" "${device_file#$SYSFS_PATH}"
 	done
 }
 
@@ -99,6 +129,7 @@ parent() {
 slaves() {
 	[ -d "$SYSFS_PATH$1/slaves" ] ||
 		return 0
+
 	for slave in "$SYSFS_PATH$1/slaves"/*; do
 		[ ! -e "$slave" ] ||
 			guess_device "$1/slaves/${slave##*/}"
