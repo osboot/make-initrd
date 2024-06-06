@@ -14,7 +14,7 @@ while read -r fsname more; do
 		found=1
 		break
 	fi
-done < /proc/filesystems
+done < "$PROCFS_PATH/filesystems"
 
 [ -n "$found" ] ||
 	fatal "No filesystem found for '$fstype'"

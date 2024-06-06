@@ -9,10 +9,10 @@ if [ -f "$KERNEL_CONFIG" ]; then
 fi
 
 if [ -z "${BOOT_CONFIG-}" ]; then
-	[ -s "/proc/bootconfig" ] ||
+	[ -s "$PROCFS_PATH/bootconfig" ] ||
 		exit 0
 
-	BOOT_CONFIG=/proc/bootconfig
+	BOOT_CONFIG="$PROCFS_PATH/bootconfig"
 
 	guess_variable BOOT_CONFIG "$BOOT_CONFIG"
 fi

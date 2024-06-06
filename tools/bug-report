@@ -3,6 +3,7 @@
 
 . sh-functions
 
+PROCFS_PATH="${PROCFS_PATH:-/proc}"
 SYSFS_PATH="${SYSFS_PATH:-/sys}"
 reportdir="$workdir/report"
 
@@ -35,8 +36,8 @@ progress "$c"
 mkdir -p -- \
 	"$reportdir"/boot \
 	"$reportdir"/etc \
-	"$reportdir"/sys \
-	"$reportdir"/proc/self \
+	"$reportdir"/"$SYSFS_PATH" \
+	"$reportdir"/"$PROCFS_PATH/self" \
 #
 
 if [ -f "${KERNEL_CONFIG-}" ]; then
@@ -73,21 +74,21 @@ progress "$c"
 copy \
 	/etc/blkid.tab \
 	/etc/fstab \
-	/proc/cmdline \
-	/proc/config.gz \
-	/proc/cpuinfo \
-	/proc/crypto \
-	/proc/devices \
-	/proc/filesystems \
-	/proc/mdstat \
-	/proc/modules \
-	/proc/mounts \
-	/proc/partitions \
-	/proc/self/mountinfo \
-	/proc/self/mounts \
-	/proc/self/mountstats \
-	/proc/sys \
-	/proc/version \
+	"$PROCFS_PATH/cmdline" \
+	"$PROCFS_PATH/config.gz" \
+	"$PROCFS_PATH/cpuinfo" \
+	"$PROCFS_PATH/crypto" \
+	"$PROCFS_PATH/devices" \
+	"$PROCFS_PATH/filesystems" \
+	"$PROCFS_PATH/mdstat" \
+	"$PROCFS_PATH/modules" \
+	"$PROCFS_PATH/mounts" \
+	"$PROCFS_PATH/partitions" \
+	"$PROCFS_PATH/self/mountinfo" \
+	"$PROCFS_PATH/self/mounts" \
+	"$PROCFS_PATH/self/mountstats" \
+	"$PROCFS_PATH/sys" \
+	"$PROCFS_PATH/version" \
 	"$SYSFS_PATH/block" \
 	"$SYSFS_PATH/bus" \
 	"$SYSFS_PATH/class" \
