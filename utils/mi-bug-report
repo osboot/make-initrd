@@ -7,10 +7,11 @@ export LC_ALL=C
 . shell-error
 . shell-getopt
 . shell-args
+. shell-temp
 
 print_version() {
 	cat <<-EOF
-	mi-bug-report version 1.0
+	mi-bug-report version 2.0
 	Written by  Alexey Gladkov.
 
 	Copyright (C) 2024  Alexey Gladkov <gladkov.alexey@gmail.com>
@@ -23,7 +24,7 @@ print_version() {
 show_help() {
 	cat <<-EOF
 
-	Usage: $PROG [<option>] <workdir> <report-archive>
+	Usage: $PROG [<option>] <report-archive> [<command> [<args>]]
 
 	Options:
 	   -v, --verbose          print a message for each action;
@@ -41,18 +42,13 @@ if [ -z "${__BUG_REPORT-}" ]; then
 		show_usage
 	eval set -- "$TEMP"
 
-	workdir=/tmp/report
-
 	while :; do
 		case "$1" in
-			-w|--workdir) shift
-				workdir="$(opt_check_dir --workdir "$1")"
-				;;
 			-h|--help)
 				show_help
 				;;
 			-v|--verbose)
-				export verbose="-v"
+				verbose="-v"
 				;;
 			-V|--version)
 				print_version
@@ -67,143 +63,172 @@ if [ -z "${__BUG_REPORT-}" ]; then
 		shift
 	done
 
-	[ "$#" = 1 ] ||
-		fatal "more arguments required"
+	if [ "$#" -eq 0 ]; then
+		message "more arguments required"
+		show_usage
+	fi
 
-	mkdir ${verbose-} -- "$workdir"
-
-	verbose "making new mount namespace ..."
-
-	export __BUG_REPORT='setup'
-
-	rc=0
-	unshare --mount \
-		--wd="$workdir" "$(readlink -ev "$0")" "$@" || rc=$?
-
-	rmdir ${verbose-} -- "$workdir"
-	exit $rc
-
-elif [ "${__BUG_REPORT-}" = setup ]; then
-	archive="$1"
+	archive=$(readlink -ev "$1")
 	shift
 
+	[ "$#" -gt 0 ] ||
+		set -- "$@" /bin/bash -l
+
+	workdir=
+	create_temporary workdir
+
+	mkdir -- \
+		"$workdir/proc" \
+		"$workdir/root" \
+		#
+
+	verbose "making new namespace ..."
+
+	export verbose
+	export __BUG_REPORT=1
+	export __BUG_REPORT_ARCHIVE="$archive"
+	export __BUG_REPORT_PWD="$PWD"
+
+	unshare --mount \
+		--pid --mount-proc="$workdir/proc" --fork \
+		--user --map-root-user \
+		--wd="$workdir" "$(readlink -ev "$0")" "$@"
+else
 	workdir="$PWD"
 
 	verbose "setup workdir $workdir ..."
-	mount ${verbose-} -t tmpfs tmpfs "$workdir"
-	cd "$workdir"
 
-	for n in \
-		dev \
-		etc \
-		proc \
-		sys \
-		tmp \
-		var/lib \
-		virt/home \
-		virt/host \
-		virt/proc;
-	do
-		mkdir ${verbose-} -p -- "./$n"
-	done
+	mount $verbose -t tmpfs tmpfs "$workdir/root"
+	cd "$workdir/root"
 
-	mount ${verbose-} --bind -o ro / ./virt/host
-
-	for n in "/home" "/usr" "/var"; do
-		! mountpoint -q "$n" ||
-			mount ${verbose-} --bind -o ro "$n" ./virt/host"$n"
-	done
-
-	for n in \
-		bin \
-		etc/alternatives \
-		etc/ld.so.cache \
-		etc/ld.so.conf \
-		etc/protocols \
-		etc/rpc \
-		etc/services \
-		home \
-		lib \
-		lib64 \
-		sbin \
-		usr;
-	do
-		[ -e "./$n" ] || [ -L "./$n" ] ||
-			ln ${verbose-} -snr -- ./virt/host/"$n" ./"$n"
-	done
-
-	verbose "unpacking archive $archive ..."
+	verbose "unpacking archive $__BUG_REPORT_ARCHIVE ..."
 	{
-		tar --strip-components=1 -xf "$archive"
-	}
+		tar --strip-components=1 -xf "$__BUG_REPORT_ARCHIVE"
+	} >&2
 	verbose "unpacked"
 
-	if ! mountpoint -q dev; then
-		makenod() { [ -e dev/$1 ] || mknod dev/$1 $2 $3 $4; }
-		makenod ram     b 1 1
-		makenod null    c 1 3
-		makenod zero    c 1 5
-		makenod full    c 1 7
-		makenod random  c 1 8
-		makenod ptmx    c 5 2
+	# Create part of /dev with several necessary devices
+	{
+		mkdir -p -- dev
+
+		for name in null zero full random tty ptmx; do
+			touch "dev/$name"
+			mount --rbind "/dev/$name" "dev/$name"
+		done
+
+		ln -s /proc/self/fd   dev/fd
+		ln -s /proc/self/fd/0 dev/stdin
+		ln -s /proc/self/fd/1 dev/stdout
+		ln -s /proc/self/fd/2 dev/stderr
+	}
+
+	# We can't overlay or bind mount to dynamic part of procfs, but some
+	# programs (for example findmnt) use only them to obtain data.
+	# So we emulate parts of procfs. Yes, it's dirty, but it allows you to
+	# fool programs.
+	{
+		mkdir -p -- proc/self
+
+		find /proc/self/ -mindepth 1 -maxdepth 1 -type d -printf '%f\n' |
+		while read -r name; do
+			[ -e "proc/self/$name" ] ||
+				ln -s -- "$workdir/proc/self/$name" "proc/self/$name"
+		done
+
+		for name in 1 uptime cpuinfo meminfo locks net sys; do
+			[ -e "proc/$name" ] ||
+				ln -s -- "$workdir/proc/$name" "proc/$name"
+		done
+
+		ln -s -- self proc/thread-self
+	}
+
+	# I'm not sure we need to override /etc.
+	{
+		mkdir -p -- etc
+
+		for name in ld.so.cache ld.so.conf protocols rpc services; do
+			src="$(readlink -ev "/etc/$name" 2>/dev/null)" ||
+				continue
+			touch "etc/$name"
+			mount $verbose --bind -- "$src" "etc/$name"
+		done
+
+		ln -s -- /proc/mounts etc/mtab
+
+		[ -f etc/passwd    ] || printf > etc/passwd    'root:x:0:0:root:%s:/bin/bash\n' "$workdir"
+		[ -f etc/group     ] || printf > etc/group     'root:x:0:\n'
+		[ -f etc/initrd.mk ] || printf > etc/initrd.mk 'AUTODETECT = all\n'
+	}
+
+	# We overlap the system directories with prepared directories from the
+	# bug report.
+	find . -mindepth 1 -maxdepth 1 -type d -printf './%f /%f\n' |
+	while read -r src dst; do
+		case "$dst" in
+			/lib)
+				[ -d lib/modules ] && [ -d /lib/modules ] ||
+					continue
+				src=lib/modules
+				dst="$(readlink -ev /lib/modules)"
+				;;
+		esac
+		[ ! -L "$dst" ] ||
+			dst="$(readlink -ev "$dst")"
+
+		if [ ! -e "$dst" ]; then
+			verbose "skip \`$dst'"
+			continue
+		fi
+		mount $verbose --rbind "$src" "$dst"
+	done
+
+	mkdir -p -- "$workdir"/bin
+	cat > "$workdir"/bin/procfs <<-'EOF'
+	#!/bin/bash -efu
+	PROG="${0##*/}"
+	varname="__procfs_${PROG//-/_}"
+	if eval "test -n \"\${$varname-}\""; then
+	   mount --bind "$HOME/proc" /proc
+	   export "PATH=${PATH#$HOME/bin:}"
+	   exec "$PROG" "$@"
 	fi
+	export "$varname=1"
+	exec unshare --mount "$0" "$@"
+	EOF
+	chmod 755 -- "$workdir"/bin/procfs
 
-	if ! mountpoint -q proc; then
-		mount -t proc proc virt/proc
+	ln -s -- procfs "$workdir"/bin/ps
+	ln -s -- procfs "$workdir"/bin/pstree
+	ln -s -- procfs "$workdir"/bin/top
 
-		makeln() { [ -e "$2" ] || ln ${verbose-} -snf -- "$1" "$2"; }
-		makeln /virt/proc/self        proc/self
-		makeln /virt/proc/thread-self proc/thread-self
-		makeln /virt/proc/self/fd     proc/self/fd
-		makeln /virt/proc/self/fdinfo proc/self/fdinfo
-		makeln /virt/proc/self/fd     dev/fd
-		makeln /virt/proc/self/fd/0   dev/stdin
-		makeln /virt/proc/self/fd/1   dev/stdout
-		makeln /virt/proc/self/fd/2   dev/stderr
-	fi
-
-	if [ -d lib ]; then
-		mv ${verbose-} -- lib virt/lib
-		ln ${verbose-} -snr -- ./virt/host/lib lib
-
-		mount ${verbose-} --bind virt/lib/modules lib/modules
-	fi
-
-	[ -f etc/passwd ] || printf 'root:x:0:0:root:/virt/home:/bin/bash\n' > etc/passwd
-	[ -f etc/group  ] || printf 'root:x:0:\n' > etc/group
-
-	[ -f etc/initrd.mk ] ||
-		cat > etc/initrd.mk <<-EOF
-		AUTODETECT = all
-		EOF
-
-	cat > virt/home/.bashrc <<-'EOF'
+	cat > "$workdir/.profile" <<-'EOF'
 	alias cp='cp -i'
 	alias mv='mv -i'
 	alias rm='rm -i'
 	alias l='ls -la'
 	EOF
 
-	export __BUG_REPORT='shell'
+	[ -d lib/modules ] &&
+		kver=$(find lib/modules/ -mindepth 1 -maxdepth 1 -printf '%f' -quit ||:) ||
+		kver=$(uname -r)
 
-	exec unshare --root="$workdir" --wd=/ "$0" ||
-		fatal "stage=$MAKE_INITRD_BUG_REPORT: exec failed"
-
-elif [ "${__BUG_REPORT-}" = shell ]; then
-	kver=$(find /lib/modules/ -mindepth 1 -maxdepth 1 -printf '%f' -quit ||:)
-
-	kmodules="$(find "lib/modules/$kver/kernel" -name '*.ko*' -print -quit 2>/dev/null ||:)"
+	kmodules="$(find "/lib/modules/$kver/kernel" -name '*.ko*' -print -quit 2>/dev/null ||:)"
 	[ -n "$kmodules" ] ||
 		message "WARNING: There are no modules in the directory: /lib/modules/$kver/kernel"
 
-	export KERN="$kver"
-	export HOME=/virt/home
+	export KERNEL="$kver"
+	export HOME="$workdir"
+	export PATH="$HOME/bin:$PATH"
 	export TMPDIR=/tmp
-	export PS1='[report ($KERN) \W]# '
-	export MAKE_INITRD_BUG_REPORT=1
+	export PS1='[report ($KERNEL) \W]\$ '
+	export MAKE_INITRD_TESTING=1
 
-	exec /bin/bash ||
-		fatal "stage=$MAKE_INITRD_BUG_REPORT: exec failed"
+	[ -e /etc/findmnt.out1 ] &&
+		export MAKE_INITRD_BUG_REPORT=2 ||
+		export MAKE_INITRD_BUG_REPORT=1
+
+	cd "${__BUG_REPORT_PWD:-/}" ||:
+
+	exec "$@"
 fi
-
-fatal "unknown condition"
