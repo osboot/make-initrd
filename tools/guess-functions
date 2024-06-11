@@ -13,7 +13,7 @@ get_device() {
 	}
 	case "$1" in
 		*=*)
-			blkid -c /dev/null -t "$1" -o device
+			sys_blkid -c /dev/null -t "$1" -o device
 			return 0
 			;;
 		/*)

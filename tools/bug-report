@@ -68,11 +68,17 @@ progress "$c"
 	rm -f -- "$reportdir"/dev/devlist
 progress "$c"
 
-blkid -c /dev/null >"$reportdir"/etc/blkid.out
+blkid -c /dev/null --no-encoding --output export |
+	sed -r -e 's/^([^=]+)=/\1\t/' \
+	       -e '${ s/^.*/&\n/ }' \
+	       >"$reportdir"/etc/blkid.out1
+findmnt -v --direction forward --pairs --output-all  |
+	sed -r -e 's/" /"\n/g' -e 's/$/\n/' |
+	sed -r -e 's/^([^=]+)="(.*)"$/\1\t\2/' \
+	       >"$reportdir"/etc/findmnt.out1
 progress "$c"
 
 copy \
-	/etc/blkid.tab \
 	/etc/fstab \
 	"$PROCFS_PATH/cmdline" \
 	"$PROCFS_PATH/config.gz" \

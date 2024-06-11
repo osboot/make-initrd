@@ -9,7 +9,7 @@ fstype="$1"; shift
 [ "$fstype" = 'btrfs' ] ||
 	exit 0
 
-uuid="$(blkid -o value -s UUID -c /dev/null "$devname")"
+uuid="$(sys_blkid -o value -s UUID -c /dev/null "$devname")"
 
 for path in "$SYSFS_PATH/fs/btrfs/$uuid/devices"/*; do
 	[ -e "$path" ] ||

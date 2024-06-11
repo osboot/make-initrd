@@ -5,6 +5,7 @@ if [ -z "${__included_make_initrd_sh_functions-}" ]; then
 __included_make_initrd_sh_functions=1
 
 . shell-error
+. wrapper-functions
 
 # shellcheck disable=SC2153
 export verbose="${VERBOSE:+-v}"

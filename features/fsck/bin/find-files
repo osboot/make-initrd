@@ -1,8 +1,10 @@
 #!/bin/bash -efu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+. sh-functions
+
 for m in $MOUNTPOINTS; do
-	fstype="$(findmnt -n -o FSTYPE --target "$m")"
+	fstype="$(sys_findmnt -n -o FSTYPE --target "$m")"
 	type -P "fsck.$fstype" ||:
 
 	case "$fstype" in

@@ -11,7 +11,7 @@ zfs_needed=
 zfs_mounts=()
 
 #[ -z "$mnt" ] ||
-#	readarray -t zfs_mounts < <(findmnt -l -k -n -R -o FSTYPE,SOURCE "$mnt")
+#	readarray -t zfs_mounts < <(sys_findmnt -l -k -n -R -o FSTYPE,SOURCE "$mnt")
 
 [ "$fstype" != 'zfs' ] ||
 	zfs_mounts+=("zfs $devname")

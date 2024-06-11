@@ -9,7 +9,7 @@ $TRACE_SOURCE "Processing ..."
 export LIBMOUNT_FSTAB="${FSTAB:-/etc/fstab}"
 export LIBMOUNT_MTAB="${PROC_MOUNTS:-$PROCFS_PATH/mounts}"
 
-if [ -n "${MAKE_INITRD_BUG_REPORT-}" ]; then
+if [ "${MAKE_INITRD_BUG_REPORT-}" = 1 ]; then
 
 BLKID_OUT="/etc/blkid.out"
 LIST_FILE="/dev/list"
@@ -174,7 +174,7 @@ else	# MAKE_INITRD_BUG_REPORT
 
 system_findmnt()
 {
-	findmnt -n -v -o MAJ:MIN,FSTYPE,SOURCE --target "$1"
+	sys_findmnt -n -v -o MAJ:MIN,FSTYPE,SOURCE --target "$1"
 }
 
 fi	# MAKE_INITRD_BUG_REPORT
@@ -193,7 +193,7 @@ fi
 #   comment="x-initrd-mount"
 #   x-initrd-mount
 #
-MORE_MOUNTPOINTS+=" $(findmnt -s -O x-initrd-mount -no TARGET 2>/dev/null ||:)"
+MORE_MOUNTPOINTS+=" $(sys_findmnt -s -O x-initrd-mount -no TARGET 2>/dev/null ||:)"
 
 pass=()
 for dir in ${MOUNTPOINTS-} ${GUESS_MOUNTPOINTS-} $MORE_MOUNTPOINTS; do
@@ -202,11 +202,11 @@ for dir in ${MOUNTPOINTS-} ${GUESS_MOUNTPOINTS-} $MORE_MOUNTPOINTS; do
 
 	verbose "Processing mount point \`$dir' ..."
 
-	[ -z "${MAKE_INITRD_BUG_REPORT-}" ] &&
-		findmnt='system_findmnt' ||
-		findmnt='report_findmnt'
+	[ "${MAKE_INITRD_BUG_REPORT-}" = 1 ] &&
+		_findmnt='report_findmnt' ||
+		_findmnt='system_findmnt'
 
-	out="$($findmnt "$dir")" ||
+	out="$($_findmnt "$dir")" ||
 		fatal "Unable to find device for '$dir' mount point"
 
 	printf '%s\n' "$out" |

@@ -9,7 +9,7 @@ $TRACE_SOURCE "Processing ..."
 process_fstype() {
 	local device="$1"
 
-	fstype="$(blkid -o value -s TYPE -c /dev/null "$device")" ||
+	fstype="$(sys_blkid -o value -s TYPE -c /dev/null "$device")" ||
 		return 0
 
 	case "$fstype" in

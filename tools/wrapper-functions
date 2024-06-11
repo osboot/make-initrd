@@ -1,0 +1,286 @@
+#!/bin/sh -efu
+# SPDX-License-Identifier: GPL-2.0-only
+
+if [ -z "${__included_make_initrd_sh_wrapper_functions-}" ]; then
+__included_make_initrd_sh_wrapper_functions=1
+
+. shell-getopt
+
+FINDMNT_STATE_FILE="${FINDMNT_STATE_FILE:-/etc/findmnt.out1}"
+BLKID_STATE_FILE="${BLKID_STATE_FILE:-/etc/blkid.out1}"
+
+__fake_find_mountpoint()
+{
+	[ -n "$1" ] && [ -z "${1##/*}" ] ||
+		return 0
+	sed -n -e 's/^TARGET[[:space:]]//p' "$FINDMNT_STATE_FILE" | sort -d -r |
+	while read -r target; do
+		if [ "$target" = "$1" ] || [ -z "${1##$target/*}" ]; then
+			printf '%s\n' "$target"
+			exit 0
+		fi
+		if [ "$target" = / ] && [ -z "${1##/*}" ]; then
+			printf '%s\n' "$target"
+			exit 0
+		fi
+	done
+}
+
+__fake_findmnt()
+{
+	local TEMP output types exclude_types req_matches target devspec devspec_param headings first_only
+	exclude_types=0 req_matches=0 target='' devspec='' devspec_param='' headings='show' first_only=''
+	output=()
+	types=()
+
+	TEMP=`getopt -n "findmnt" -o "D,I,f,k,n,v,m:,S:,o:,t:,T:" -l "df,dfi,first-only,kernel,noheadings,nofsroot,mountpoint:,source:,output:,types:,target:" -- "$@"` || {
+		echo "Try \`findmnt --help' for more information." >&2
+		return 1
+	}
+	eval set -- "$TEMP"
+	while :; do
+		case "$1" in
+			-D|--df)  output=('SOURCE' 'FSTYPE' 'SIZE' 'USED' 'AVAIL' 'USE%' 'TARGET') ;;
+			-I|--dfi) output=('SOURCE' 'FSTYPE' 'INO.TOTAL' 'INO.USED' 'INO.AVAIL' 'INO.USE%' 'TARGET') ;;
+			-f|--first-only) first_only=1 ;;
+			-n|--noheadings) headings='hide' ;;
+			-S|--source) shift
+				devspec_param='SOURCE'
+				devspec="$1"
+				req_matches=$(( $req_matches + 1 ))
+				;;
+			-m|--mountpoint) shift
+				devspec_param='TARGET'
+				devspec="$1"
+				req_matches=$(( $req_matches + 1 ))
+				;;
+			-T|--target) shift
+				devspec_param='TARGET'
+				devspec="$(__fake_find_mountpoint "$1")"
+				req_matches=$(( $req_matches + 1 ))
+				;;
+			-t|--types) shift
+				[ -n "$1" ] && [ -n "${1##no*}" ] ||
+					exclude_types=1
+				readarray -t -d, types < <(printf '%s' "${1#no}")
+				req_matches=$(( $req_matches + 1 ))
+				;;
+			-o|--output) shift
+				readarray -t -d, output < <(printf '%s' "$1")
+				;;
+			--) shift; break
+				;;
+			*)
+				;;
+		esac
+		shift
+	done
+
+	if [ "$#" -gt 0 ]; then
+		devspec="$1"
+		sed -n -e 's/^TARGET[[:space:]]//p' "$FINDMNT_STATE_FILE" | grep -qs -Fx -e "$devspec" &&
+			devspec_param='TARGET' ||
+			devspec_param='SOURCE'
+		req_matches=$(( $req_matches + 1 ))
+		shift
+	fi
+
+	local values name value i found
+
+	values=()
+	found=0
+
+	while IFS=$'\t' read -r name value; do
+		if [ -z "$name" ]; then
+			if [ $found -ge $req_matches ]; then
+				if [ "$headings" = 'show' ]; then
+					headings='hide'
+					for (( i=0; i<${#output[@]}; i++ )) do
+						[ $i -eq 0 ] || printf '\t'
+						printf '%s' "${output[$i]}"
+					done
+					printf '\n'
+				fi
+
+				for (( i=0; i<${#values[@]}; i++ )) do
+					[ $i -eq 0 ] || printf '\t'
+					printf '%s' "${values[$i]}"
+				done
+				printf '\n'
+
+				[ -z "$first_only" ] ||
+					return 0
+			fi
+
+			values=()
+			found=0
+			continue
+		fi
+
+		for (( i=0; i < ${#output[@]}; i++ )) do
+			[ "$name" != "${output[$i]}" ] || values[$i]="$value"
+		done
+
+		case "$devspec" in
+			'')
+				;;
+			LABEL=*|UUID=*|PARTLABEL=*|PARTUUID=*)
+				[ "$name" != "${devspec%%=*}" ] || [ "$value" != "${devspec#*=}" ] ||
+					found=$(( $found + 1 ))
+				;;
+			[0-9]*:[0-9]*)
+				[ "$name" != 'MAJ:MIN' ] || [ "$value" != "$devspec" ] ||
+					found=$(( $found + 1 ))
+				;;
+			*)
+				[ "$name" != "$devspec_param" ] || [ "$value" != "$devspec" ] ||
+					found=$(( $found + 1 ))
+				;;
+		esac
+
+		if [ "$name" = 'FSTYPE' ] && [ ${#types[@]} -gt 0 ]; then
+			local found_in_types=0
+			for (( i=0; i < ${#types[@]}; i++ )) do
+				if [ "$value" = "${types[$i]}" ]; then
+					found_in_types=1
+					break
+				fi
+			done
+			case "$exclude_types$found_in_types" in
+				10|01)
+					found=$(( $found + 1 ))
+					;;
+			esac
+		fi
+	done < "$FINDMNT_STATE_FILE"
+}
+
+sys_findmnt()
+{
+	if [ -n "${MAKE_INITRD_BUG_REPORT-}" ]; then
+		__fake_findmnt "$@"
+		return $?
+	fi
+	findmnt "$@"
+}
+
+__fake_blkid()
+{
+	local TEMP device output match_token match_tag list_one
+	device='' output='' match_token='' match_tag='' list_one=''
+
+	TEMP=`getopt -n "blkid" -o "l,c:,U:,L:,o:,s:,t:" -l "list-one,cache-file:,uuid:,label:,output:,match-tag:,match-token:" -- "$@"` || {
+		echo "Try \`blkid --help' for more information." >&2
+		return 1
+	}
+	eval set -- "$TEMP"
+	while :; do
+		case "$1" in
+			-c|--cache-file) shift
+				;;
+			-o|--output) shift
+				output="$1"
+				;;
+			-s|--match-tag) shift
+				match_tag="$1"
+				;;
+			-t|--match-token) shift
+				match_token="$1"
+				;;
+			-l|--list-one)
+				list_one=1
+				;;
+			-L|--label) shift
+				match_token="LABEL=$1"
+				output='device'
+				list_one=1
+				;;
+			-U|--uuid) shift
+				match_token="UUID=$1"
+				output='device'
+				list_one=1
+				;;
+			--) shift; break
+				;;
+			*)
+				fatal "unsupported option: $1"
+				;;
+		esac
+		shift
+	done
+
+	if [ "$#" -gt 0 ]; then
+		device="$1"
+		shift
+	fi
+
+	local name value names values i found devname_i
+
+	names=() values=() found=0 i=0
+	devname_i=0
+
+	while IFS=$'\t' read -r name value; do
+		if [ -z "$name" ]; then
+			if [ $found -gt 0 ]; then
+				if [ "$output" = 'value' ]; then
+					for (( i=0; i<${#names[@]}; i++ )) do
+						if [ -n "$match_tag" ] && [ "${names[$i]}" != "$match_tag" ]; then
+							continue
+						fi
+						printf '%s\n' "${values[$i]}"
+					done
+				elif [ "$output" = 'device' ]; then
+					printf '%s\n' "${values[$devname_i]}"
+				else
+					printf '%s:' "${values[$devname_i]}"
+					for (( i=0; i<${#names[@]}; i++ )) do
+						if [ -n "$match_tag" ] && [ "${names[$i]}" != "$match_tag" ]; then
+							continue
+						fi
+						printf ' %s="%q"' "${names[$i]}" "${values[$i]}"
+					done
+					printf '\n'
+				fi
+				[ -z "$list_one" ] ||
+					break
+			fi
+			names=() values=() found=0 i=0
+			continue
+		fi
+
+		if [ "$name" = 'DEVNAME' ]; then
+			[ "$value" != "$device" ] ||
+				found=$(( $found + 1 ))
+			devname_i=$i
+		fi
+
+		if [ -n "$match_token" ] && [ "$match_token" = "$name=$value" ]; then
+			found=$(( $found + 1 ))
+		fi
+
+		names+=("$name")
+		values+=("$value")
+		i=$(( $i + 1 ))
+
+	done < "$BLKID_STATE_FILE"
+}
+
+sys_blkid()
+{
+	if [ -n "${MAKE_INITRD_BUG_REPORT-}" ]; then
+		__fake_blkid "$@"
+		return $?
+	fi
+	blkid "$@"
+}
+
+is_block_device()
+{
+	if [ -n "${MAKE_INITRD_BUG_REPORT-}" ]; then
+		grep -qs -e "^b.* $1\$" /dev/devlist
+		return $?
+	fi
+	test -b "$1"
+}
+
+fi
