@@ -1,0 +1,18 @@
+#!/bin/bash -eu
+
+cwd="${0%/*}"
+
+export GUESS_SUFFIX=add:guess-root
+export TEST_GUESS_ACTIONS="guess/root/action guess-config"
+
+export RESOLVE_MODALIAS=
+export KERNEL_CONFIG=/dev/null
+
+export MAKE_INITRD_TRACE=1
+export MAKE_INITRD_TRACE_PIDS=
+export MAKE_INITRD_TRACE_EXECUTE_PATTERNS='guess/root/action'
+export MAKE_INITRD_TRACE_SRC_PATTERNS='features/rootfs/guess/fstype guess/root/action'
+export MAKE_INITRD_TRACE_RUN_PATTERNS='features/rootfs/guess/fstype guess/root/action'
+
+utils/mi-bug-report "$cwd/rootfs.tar.xz" -- \
+	.build/dest/usr/sbin/make-initrd --no-depmod test-guess

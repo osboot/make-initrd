@@ -1,0 +1,22 @@
+RUN: guess/root/action
+TRACE function: source=features/overlayfs/guess/fstype: main guess_fstype: /dev/loop0 squashfs
+TRACE run     : source=features/overlayfs/guess/fstype: main guess_fstype: features/overlayfs/guess/fstype /dev/loop0 squashfs
+TRACE function: source=features/rootfs/guess/fstype: main guess_modalias: fs-squashfs
+TRACE function: source=features/overlayfs/guess/fstype: main guess_fstype: /dev/loop1 squashfs
+TRACE run     : source=features/overlayfs/guess/fstype: main guess_fstype: features/overlayfs/guess/fstype /dev/loop1 squashfs
+TRACE function: source=features/rootfs/guess/fstype: main guess_modalias: fs-squashfs
+TRACE function: source=features/overlayfs/guess/fstype: main guess_fstype: /dev/loop2 squashfs
+TRACE run     : source=features/overlayfs/guess/fstype: main guess_fstype: features/overlayfs/guess/fstype /dev/loop2 squashfs
+TRACE function: source=features/rootfs/guess/fstype: main guess_modalias: fs-squashfs
+TRACE function: source=features/rootfs/guess/fstype: main guess_modalias: fs-overlay
+RUN: guess-config
+MOUNTPOINTS = \
+	/
+
+MODULES_ADD += \
+	fs-overlay fs-squashfs
+
+FEATURES += \
+	add-modules add-udev-rules rootfs
+
+rc=0

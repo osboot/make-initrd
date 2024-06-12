@@ -1,0 +1,31 @@
+RUN: guess/root/action
+TRACE execute : source=guess/root/action: main: Processing ...
+TRACE function: source=guess/root/action: main guess_device: /dev/block/259:2
+TRACE function: source=guess/root/action: main guess_device guess_device: /devices/pci0000:00/0000:00:01.1/0000:01:00.0/nvme/nvme0/nvme0n1/nvme0n1p2/..
+TRACE function: source=guess/root/action: main guess_device guess_device guess_device: /devices/pci0000:00/0000:00:01.1/0000:01:00.0/nvme/nvme0/nvme0n1/..
+TRACE function: source=guess/root/action: main guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:01.1/0000:01:00.0/nvme/nvme0/..
+TRACE function: source=guess/root/action: main guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:01.1/0000:01:00.0/nvme/..
+TRACE function: source=guess/root/action: main guess_device guess_device guess_device guess_device guess_device guess_modalias: pci:v000015B7d00005009sv000015B7sd00005009bc01sc08i02
+TRACE function: source=guess/root/action: main guess_device guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:01.1/0000:01:00.0/..
+TRACE function: source=guess/root/action: main guess_device guess_device guess_device guess_device guess_device guess_device guess_modalias: pci:v00001022d00001483sv00001022sd00001234bc06sc04i00
+TRACE function: source=guess/root/action: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:01.1/..
+TRACE function: source=guess/root/action: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/..
+TRACE function: source=guess/root/action: main guess_fstype: /dev/nvme0n1p2 ext4 /
+TRACE run     : source=guess/root/action: main guess_fstype: features/rootfs/guess/fstype /dev/nvme0n1p2 ext4 /
+TRACE function: source=features/rootfs/guess/fstype: main guess_modalias: fs-ext4
+TRACE function: source=guess/root/action: main guess_feature: rootfs
+TRACE function: source=guess/root/action: main guess_feature: add-udev-rules
+TRACE function: source=guess/root/action: main guess_variable: MOUNTPOINTS /
+RUN: guess-config
+MOUNTPOINTS = \
+	/
+
+MODULES_ADD += \
+	fs-ext4 \
+	pci:v00001022d00001483sv00001022sd00001234bc06sc04i00 \
+	pci:v000015B7d00005009sv000015B7sd00005009bc01sc08i02
+
+FEATURES += \
+	add-modules add-udev-rules rootfs
+
+rc=0

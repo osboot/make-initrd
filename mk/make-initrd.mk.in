@@ -4,8 +4,14 @@
 .EXPORT_ALL_VARIABLES:
 .DEFAULT_GOAL := all
 
+TESTING_PUBLIC_GOALS =
+
+ifneq "$(MAKE_INITRD_TESTING)" ""
+TESTING_PUBLIC_GOALS += test-guess
+endif
+
 ifeq "$(MAKELEVEL)" '0'
-public-goals  := all guess-config guess-modules feature-info bug-report
+public-goals  := all guess-config guess-modules feature-info bug-report $(TESTING_PUBLIC_GOALS)
 private-goals := $(filter-out $(public-goals),$(MAKECMDGOALS))
 
 ifneq "$(private-goals)" ''
@@ -36,7 +42,7 @@ STARTUP_TIME   = $(shell date +'%s')
 WORKDIR_SUFFIX = $(basename $(notdir $(INITRD_CONFIG)))
 endif
 
-ifneq "$(filter guess guess-config guess-modules,$(MAKECMDGOALS))" ''
+ifneq "$(filter guess guess-config guess-modules test-guess-actions,$(MAKECMDGOALS))" ''
 AUTODETECT ?= all
 
 ifeq "$(MAKECMDGOALS)" 'guess-modules'
@@ -91,6 +97,10 @@ guess: pre-guess
 	$V printf '============================================================\n\n' >&2
 	@$(VMSG) "Guessing config ..."
 	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk guess PASSED_GUESS_MODULES+="$(GUESS_MODULES)"
+
+test-guess-actions: pre-guess
+	@[ -n "$(TEST_GUESS_ACTIONS)" ] || { printf "TEST_GUESS_ACTIONS not specified\n" >&2; exit 1; }
+	@for exe in $(TEST_GUESS_ACTIONS); do echo "RUN: $$exe"; "$$exe"; done
 
 else # !GUESS_MODULES
 
@@ -205,6 +215,11 @@ guess-modules: check-for-root guess
 	   sort -u >&4
 	$Qrm -rf -- "$(GUESSDIR)"
 	$Qrmdir -- "$(WORKDIR)"
+
+test-guess:
+	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk test-guess-actions
+	$Qrm -rf -- "$(GUESSDIR)"
+	$Qrm -rf -- "$(WORKDIR)"
 
 ifneq "$(filter show-feature-info,$(MAKECMDGOALS))" ''
 INITRD_CONFIG = /dev/null
