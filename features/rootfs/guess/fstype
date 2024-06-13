@@ -19,7 +19,9 @@ done < "$PROCFS_PATH/filesystems"
 [ -n "$found" ] ||
 	fatal "No filesystem found for '$fstype'"
 
-depinfo ${KERNEL:+-k "$KERNEL"} -D "fs-$fsmod" >/dev/null 2>&1 ||
-	exit 0
+if [ -n "${RESOLVE_MODALIAS-}" ]; then
+	depinfo ${KERNEL:+-k "$KERNEL"} -D "fs-$fsmod" >/dev/null 2>&1 ||
+		exit 0
+fi
 
 guess_modalias "fs-$fsmod"
