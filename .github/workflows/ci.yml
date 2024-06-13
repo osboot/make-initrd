@@ -10,7 +10,7 @@ on:
 jobs:
   verify:
     name: "Verify"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: "Checkout Repository"
         uses: actions/checkout@v4
@@ -19,6 +19,12 @@ jobs:
         run: |
           git submodule set-url external/busybox/upstream https://github.com/mirror/busybox
           git submodule update --init --recursive
+
+      - name: "Setup host"
+        run: |
+         sudo sysctl -w kernel.unprivileged_userns_clone=1 ||:
+         sudo sysctl -w kernel.apparmor_restrict_unprivileged_unconfined=0 ||:
+         sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 ||:
 
       - name: "Install Tools"
         run: |
@@ -31,7 +37,7 @@ jobs:
       - name: "Configure"
         run: |
          ./autogen.sh
-         ./configure
+         ./configure --enable-local-build
 
       - name: "Build Sources"
         run: |
