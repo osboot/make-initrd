@@ -22,16 +22,22 @@ if [ "${metadata_ver:0:9}" = 'external:' ]; then
 	[ "$container_ver" = 'external:imsm' ] && mod_names+=(efivarfs)
 fi
 
-depinfo \
-		--set-version="$kernel" \
-		--no-builtin \
-		--no-prefix \
-		--no-firmware \
-		"${mod_names[@]}" 2>/dev/null |
-	sort -u |
-while read -r mod; do
-	guess_module "$mod"
-done
+if [ -n "${RESOLVE_MODALIAS-}" ]; then
+	depinfo \
+			--set-version="$kernel" \
+			--no-builtin \
+			--no-prefix \
+			--no-firmware \
+			"${mod_names[@]}" 2>/dev/null |
+		sort -u |
+	while read -r mod; do
+		guess_module "$mod"
+	done
+else
+	for mod in "${mod_names[@]}"; do
+		guess_modalias "$mod"
+	done
+fi
 
 guess_feature mdadm
 
