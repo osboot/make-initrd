@@ -117,6 +117,10 @@ PUT_DIRS  ?=
 PUT_FILES ?=
 PUT_PROGS ?=
 
+# See https://github.com/systemd/systemd/blob/main/docs/ELF_DLOPEN_METADATA.md
+IGNORE_PUT_DLOPEN_FEATURE  ?=
+IGNORE_PUT_DLOPEN_PRIORITY ?=
+
 # Load user configuration
 include $(INITRD_CONFIG)
 

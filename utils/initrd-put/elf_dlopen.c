@@ -32,6 +32,32 @@ struct visit_data {
 	char *outbuf;
 };
 
+static int in_list(const char *list, const char delim, const char *value)
+{
+	const char *s, *e, *p;
+
+	if (!list)
+		return 0;
+
+	s = p = list;
+	e = s + strlen(s);
+
+	while (p < e) {
+		p = strchr(s, delim);
+		if (!p)
+			p = e + 1;
+		if (!strncmp(s, value, (size_t)(p - s)))
+			return 1;
+		s = p + 1;
+	}
+	return 0;
+}
+
+static int in_envvar(const char *envname, const char *value)
+{
+	return in_list(getenv(envname), ',', value);
+}
+
 static int resolve_soname(const char **soname, size_t len, char *outbuf)
 {
 	int pipefd[2];
@@ -179,7 +205,21 @@ static int visit_userfunc(json_object *jso, int flags, json_object *,
 	if (json_object_object_get_ex(jso, "soname", &value)) {
 		size_t array_len = json_object_array_length(value);
 		size_t i;
-		const char **soname = calloc(array_len, sizeof(char *));
+		const char **soname;
+
+		if (!elf_metadata.feature)
+			elf_metadata.feature = "-";
+
+		if (!elf_metadata.priority)
+			elf_metadata.priority = "recommended";
+
+		if (in_envvar("IGNORE_PUT_DLOPEN_FEATURE", elf_metadata.feature) ||
+		    in_envvar("IGNORE_PUT_DLOPEN_PRIORITY", elf_metadata.priority))
+			return JSON_C_VISIT_RETURN_SKIP;
+
+		soname = calloc(array_len, sizeof(char *));
+		if (!soname)
+			err(EXIT_FAILURE, "calloc");
 
 		for (i = 0; i < array_len; i++) {
 			json_object *child = json_object_array_get_idx(value, i);
@@ -195,12 +235,6 @@ static int visit_userfunc(json_object *jso, int flags, json_object *,
 		free(soname);
 
 		if (verbose > 0) {
-			if (!elf_metadata.feature)
-				elf_metadata.feature = "-";
-
-			if (!elf_metadata.priority)
-				elf_metadata.priority = "recommended";
-
 			warnx("(elf dlopen): feature=%s: priority=%s: shared object '%s' depends on '%s'",
 			      elf_metadata.feature,
 			      elf_metadata.priority,
