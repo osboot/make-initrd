@@ -1,12 +1,13 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-MAKE_INITRD_PACKAGES="make findutils udev elfutils-libelf kmod-libs zlib-ng bzip2-libs libzstd xz-libs libxcrypt-compat"
+MAKE_INITRD_PACKAGES="make findutils udev elfutils-libelf kmod-libs zlib-ng bzip2-libs libzstd xz-libs libxcrypt-compat json-c"
 
 MAKE_INITRD_PACKAGES_DEVEL="$MAKE_INITRD_PACKAGES"
 MAKE_INITRD_PACKAGES_DEVEL+=" gcc make automake autoconf bison flex"
 MAKE_INITRD_PACKAGES_DEVEL+=" kmod-devel zlib-ng-devel bzip2-devel xz-devel libxcrypt-devel"
 MAKE_INITRD_PACKAGES_DEVEL+=" libzstd-devel elfutils-libelf-devel libtirpc-devel"
+MAKE_INITRD_PACKAGES_DEVEL+=" json-c-devel"
 
 KERNEL_PACKAGES="kernel$KERNEL_FLAVOR"
 

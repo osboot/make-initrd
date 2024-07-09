@@ -25,7 +25,10 @@
 
 #include <gelf.h>
 
+#define _FDO_ELF_METADATA 0x407c0c0a
+
 #include "config.h"
+#include "elf_dlopen.h"
 
 struct file {
 	struct file *prev;
@@ -45,7 +48,7 @@ static size_t destdir_len = 0;
 static char *prefix = NULL;
 static size_t prefix_len = 0;
 static char *logfile = NULL;
-static int verbose = 0;
+int verbose = 0;
 static int dry_run = 0;
 static int force = 0;
 static void *files = NULL;
@@ -78,6 +81,7 @@ static bool dir_check(const char *dir, char *dirend) __attribute__((__nonnull__ 
 static void enqueue_canonicalized_path(const char *name, bool add_recursively);
 
 static bool is_dynamic_elf_file(const char *filename, int fd) __attribute__((__nonnull__ (1)));
+static int enqueue_elf_dlopen(const char *filename, int fd) __attribute__((__nonnull__ (1)));
 static int enqueue_shared_libraries(const char *filename) __attribute__((__nonnull__ (1)));
 static int enqueue_regular_file(const char *filename) __attribute__((__nonnull__ (1)));
 static void enqueue_path(struct file *p) __attribute__((__nonnull__ (1)));
@@ -443,6 +447,67 @@ error:
 		f->recursive = add_recursively;
 }
 
+int enqueue_elf_dlopen(const char *filename, int fd)
+{
+	int ret = 0;
+	char library[PATH_MAX + 1];
+	Elf *e;
+	Elf_Scn *scn;
+
+	if ((e = elf_begin(fd, ELF_C_READ, NULL)) == NULL) {
+		warnx("%s: elf_begin: %s", filename, elf_errmsg(-1));
+		goto err;
+	}
+
+	switch (elf_kind(e)) {
+		case  ELF_K_NONE:
+		case  ELF_K_AR:
+		case ELF_K_COFF:
+		case  ELF_K_ELF:
+			break;
+		default:
+			goto end;
+	}
+
+	for (scn = NULL; (scn = elf_nextscn(e, scn)) != NULL;) {
+		GElf_Shdr  shdr;
+		GElf_Nhdr nhdr;
+		size_t off, next, n_off, d_off;
+		Elf_Data *data;
+
+		if (gelf_getshdr(scn, &shdr) != &shdr) {
+			warnx("%s: gelf_getshdr: %s", filename, elf_errmsg(-1));
+			goto end;
+		}
+
+		if (shdr.sh_type != SHT_NOTE)
+			continue;
+
+		data = elf_getdata(scn, NULL);
+		if (data == NULL) {
+			warnx("%s: elf_getdata: %s", filename, elf_errmsg(-1));
+			goto end;
+		}
+
+		off = 0;
+		while ((next = gelf_getnote(data, off, &nhdr, &n_off, &d_off)) > 0) {
+			if (nhdr.n_type == _FDO_ELF_METADATA && nhdr.n_namesz == sizeof(ELF_NOTE_FDO) && !strcmp(data->d_buf + n_off, ELF_NOTE_FDO)) {
+				library[0] = '\0';
+
+				process_json_metadata(filename, (char *)data->d_buf + d_off, library);
+
+				if (library[0] == '/' && !is_path_added(library))
+					enqueue_item(library, -1);
+			}
+			off = next;
+		}
+	}
+end:
+	elf_end(e);
+err:
+	return ret;
+}
+
 bool is_dynamic_elf_file(const char *filename, int fd)
 {
 	bool is_dynamic = false;
@@ -593,6 +658,8 @@ int enqueue_regular_file(const char *filename)
 	    buf[3] == ELFMAG[3] &&
 	    is_dynamic_elf_file(filename, fd)) {
 		ret = enqueue_shared_libraries(filename);
+		if (!ret)
+			ret = enqueue_elf_dlopen(filename, fd);
 		goto end;
 	}
 
