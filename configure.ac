@@ -206,7 +206,7 @@ AC_SUBST([STRIP], [$STRIP])
 # Checks for libraries.
 AC_ARG_WITH([zlib],
 	[AS_HELP_STRING([--with-zlib],
-			[support zlib compression @<:@default=yes@:>@])],
+			[support zlib compression @<:@default=auto@:>@])],
 	[],
 	[: m4_divert_text([DEFAULTS], [with_zlib=yes])])
 
@@ -216,7 +216,7 @@ AS_IF([test "x$with_zlib" != xno],
 
 AC_ARG_WITH([bzip2],
 	[AS_HELP_STRING([--with-bzip2],
-			[support bzip2 compression @<:@default=yes@:>@])],
+			[support bzip2 compression @<:@default=auto@:>@])],
 	[],
 	[: m4_divert_text([DEFAULTS], [with_bzip2=yes])])
 
@@ -234,7 +234,7 @@ fi
 
 AC_ARG_WITH([lzma],
 	[AS_HELP_STRING([--with-lzma],
-			[support lzma compression @<:@default=yes@:>@])],
+			[support lzma compression @<:@default=auto@:>@])],
 	[],
 	[: m4_divert_text([DEFAULTS], [with_lzma=yes])])
 
@@ -244,7 +244,7 @@ AS_IF([test "x$with_lzma" != xno],
 
 AC_ARG_WITH([zstd],
 	[AS_HELP_STRING([--with-zstd],
-			[support zstd compression @<:@default=yes@:>@])],
+			[support zstd compression @<:@default=auto@:>@])],
 	[],
 	[: m4_divert_text([DEFAULTS], [with_zstd=yes])])
 
@@ -254,7 +254,7 @@ AS_IF([test "x$with_zstd" != xno],
 
 AC_ARG_WITH([libelf],
 	[AS_HELP_STRING([--with-libelf],
-			[use elf to detect file types @<:@default=yes@:>@])],
+			[use elf to detect file types @<:@default=auto@:>@])],
 	[],
 	[: m4_divert_text([DEFAULTS], [with_libelf=yes])])
 
