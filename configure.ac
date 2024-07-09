@@ -262,7 +262,16 @@ AS_IF([test "x$with_elf" != xno],
 	[PKG_CHECK_MODULES(HAVE_LIBELF, libelf, [HAVE_LIBELF=yes], [HAVE_LIBELF=no])],
 	[HAVE_LIBELF=no])
 
-PKG_CHECK_MODULES(HAVE_LIBJSON_C, json-c, [HAVE_LIBJSON_C=yes], [HAVE_LIBJSON_C=no])
+AC_ARG_WITH([json-c],
+	[AS_HELP_STRING([--with-json-c],
+			[use json-c to parse optional dependencies of systemd-like libraries @<:@default=auto@:>@])],
+	[],
+	[: m4_divert_text([DEFAULTS], [with_json_c=yes])])
+
+AS_IF([test "x$with_json_c" != xno],
+	[PKG_CHECK_MODULES(HAVE_LIBJSON_C, json-c, [HAVE_LIBJSON_C=yes], [HAVE_LIBJSON_C=no])],
+	[HAVE_LIBJSON_C=no])
+
 PKG_CHECK_MODULES(HAVE_LIBKMOD, libkmod, [HAVE_LIBKMOD=yes], [HAVE_LIBKMOD=no])
 
 AS_IF([test "x$HAVE_LIBKMOD" != xyes],
