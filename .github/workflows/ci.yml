@@ -270,7 +270,7 @@ jobs:
     if: success() || cancelled()
     steps:
       - name: "Remove Artifacts"
-        uses: geekyeggo/delete-artifact@v4
+        uses: geekyeggo/delete-artifact@v5
         with:
           name: metrics-*
           failOnError: false
