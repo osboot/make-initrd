@@ -29,7 +29,7 @@ for testsuite in "$@"; do
 			num="$(printf '%4s' "$i")"
 			i=$(( $i + 1 ))
 
-			echo "[$num/$max] ${ts##*/}"
+			echo -n "[$num/$max] ${ts##*/} "
 		fi
 
 		{
@@ -37,6 +37,15 @@ for testsuite in "$@"; do
 			"$ts"/run || rc=$?
 			echo "rc=$rc";
 		} > "$ts"/output 2>&1
+
+		if [ "$rc" = 127 ]; then
+			[ -z "${VERBOSE:-${V:-}}" ] ||
+				echo "[skipped]"
+			rm -f -- "$ts"/output
+			continue
+		fi
+		[ -z "${VERBOSE:-${V:-}}" ] ||
+			echo
 
 		[ ! -f "$ts"/expect.in ] ||
 			sed \

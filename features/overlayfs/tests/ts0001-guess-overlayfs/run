@@ -1,5 +1,8 @@
 #!/bin/bash -eu
 
+[ -z "${IGNORE_UNPRIV_USERNS_TESTS-}" ] ||
+	exit 127
+
 cwd="${0%/*}"
 
 export GUESS_SUFFIX=add:guess-root
