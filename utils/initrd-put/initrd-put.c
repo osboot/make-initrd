@@ -3,16 +3,15 @@
 
 #include <sys/param.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/sendfile.h>
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <string.h>
 #include <getopt.h>
 #include <errno.h>
 #include <err.h>
@@ -20,59 +19,34 @@
 #include <fts.h>
 #include <fcntl.h>
 #include <ctype.h>
-#include <search.h>
 #include <regex.h>
 
-#include <gelf.h>
-
-#define _FDO_ELF_METADATA 0x407c0c0a
-
 #include "config.h"
-#include "elf_dlopen.h"
-
-struct file {
-	struct file *prev;
-	struct file *next;
-	struct stat stat;
-	char *src;
-	char *dst;
-	char *symlink;
-	bool recursive;
-	bool installed;
-};
+#include "memory.h"
+#include "queue.h"
+#include "tree.h"
+#include "enqueue.h"
 
 static const char *progname = NULL;
 
 static char *destdir = NULL;
 static size_t destdir_len = 0;
-static char *prefix = NULL;
+char *prefix = NULL;
 static size_t prefix_len = 0;
 static char *logfile = NULL;
 int verbose = 0;
 static int dry_run = 0;
 static int force = 0;
-static void *files = NULL;
-static struct file *inqueue = NULL;
 static size_t installed = 0;
-static size_t queue_nr = 0;
 
-static regex_t *exclude_match = NULL;
-static size_t exclude_match_nr = 0;
+regex_t *exclude_match = NULL;
+size_t exclude_match_nr = 0;
 
 static void show_version(void) __attribute__((__noreturn__));
 static void show_help(int rc) __attribute__((__noreturn__));
 
-static char *xstrdup(const char *s) __attribute__((__nonnull__ (1)));
-static char *xstrndup(const char *s, size_t n) __attribute__((__nonnull__ (1)));
-
-static void free_file(void *ptr) __attribute__((__nonnull__ (1)));
-static struct file *enqueue_item(const char *str, ssize_t len) __attribute__((__nonnull__ (1)));
-static void dequeue_item(struct file *ptr);
-static void enqueue_parent_directory(char *path);
-
-static int compare(const void *a, const void *b) __attribute__((__nonnull__ (1, 2)));
 static void fill_stat(struct file *p, struct stat *sb) __attribute__((__nonnull__ (1, 2)));
-static bool is_path_added(const char *path) __attribute__((__nonnull__ (1)));
+static void enqueue_parent_directory(char *path);
 static void enqueue_directory(char *path) __attribute__((__nonnull__ (1)));
 static int mksock(const char *path) __attribute__((__nonnull__ (1)));
 
@@ -80,86 +54,15 @@ static bool suffix_requires_dir_check(char const *end) __attribute__((__nonnull_
 static bool dir_check(const char *dir, char *dirend) __attribute__((__nonnull__ (1, 2)));
 static void enqueue_canonicalized_path(const char *name, bool add_recursively);
 
-static bool is_dynamic_elf_file(const char *filename, int fd) __attribute__((__nonnull__ (1)));
-static int enqueue_elf_dlopen(const char *filename, int fd) __attribute__((__nonnull__ (1)));
-static int enqueue_shared_libraries(const char *filename) __attribute__((__nonnull__ (1)));
 static int enqueue_regular_file(const char *filename) __attribute__((__nonnull__ (1)));
 static void enqueue_path(struct file *p) __attribute__((__nonnull__ (1)));
 static void print_file(struct file *p) __attribute__((__nonnull__ (1)));
 static void install_file(struct file *p) __attribute__((__nonnull__ (1)));
 static void apply_permissions(struct file *p) __attribute__((__nonnull__ (1)));
-static void walk_action(const void *nodep, VISIT which, void *closure) __attribute__((__nonnull__ (1, 3)));
 
-char *xstrdup(const char *s)
+void fill_stat(struct file *p, struct stat *sb)
 {
-	char *x = strdup(s);
-	if (!x)
-		err(EX_OSERR, "strdup");
-	return x;
-}
-
-char *xstrndup(const char *s, size_t n)
-{
-	char *x = strndup(s, n);
-	if (!x)
-		err(EX_OSERR, "strndup");
-	return x;
-}
-
-struct file *enqueue_item(const char *str, ssize_t len)
-{
-	struct file *new;
-
-	if (exclude_match_nr) {
-		char buf[PATH_MAX + 1];
-
-		strncpy(buf, str, (len <= 0 ? PATH_MAX : (size_t) len));
-		buf[(len <= 0 ? PATH_MAX : len) + 1]  = 0;
-
-		for (size_t i = 0; i < exclude_match_nr; i++) {
-			if (!regexec(&exclude_match[i], buf, 0, NULL, 0)) {
-				if (verbose > 1)
-					warnx("exclude path: %s", buf);
-				return NULL;
-			}
-		}
-	}
-
-	new = calloc(1, sizeof(*new));
-	if (!new)
-		err(EX_OSERR, "calloc");
-
-	new->src = (len < 0)
-	           ? xstrdup(str)
-	           : xstrndup(str, (size_t) len);
-
-	if (verbose > 1)
-		warnx("add to list: %s", new->src);
-
-	if (inqueue) {
-		if (inqueue->prev)
-			errx(EX_SOFTWARE, "bad queue head");
-		inqueue->prev = new;
-		new->next = inqueue;
-	}
-
-	inqueue = new;
-	queue_nr++;
-
-	return new;
-}
-
-void dequeue_item(struct file *ptr)
-{
-	if (!ptr)
-		return;
-	if (ptr->prev)
-		ptr->prev->next = ptr->next;
-	if (ptr->next)
-		ptr->next->prev = ptr->prev;
-	if (inqueue == ptr)
-		inqueue = NULL;
-	queue_nr--;
+	memcpy(&p->stat, sb, sizeof(p->stat));
 }
 
 void enqueue_parent_directory(char *path)
@@ -172,23 +75,6 @@ void enqueue_parent_directory(char *path)
 		return;
 
 	enqueue_item(path, p - path);
-}
-
-int compare(const void *a, const void *b)
-{
-	return strcmp(((struct file *)a)->src, ((struct file *)b)->src);
-}
-
-void fill_stat(struct file *p, struct stat *sb)
-{
-	memcpy(&p->stat, sb, sizeof(p->stat));
-}
-
-bool is_path_added(const char *path)
-{
-	struct file v = { 0 };
-	v.src = (char *) path;
-	return tfind(&v, &files, compare) != NULL;
 }
 
 void enqueue_directory(char *path)
@@ -447,170 +333,6 @@ error:
 		f->recursive = add_recursively;
 }
 
-int enqueue_elf_dlopen(const char *filename, int fd)
-{
-	int ret = 0;
-	char library[PATH_MAX + 1];
-	Elf *e;
-	Elf_Scn *scn;
-
-	if ((e = elf_begin(fd, ELF_C_READ, NULL)) == NULL) {
-		warnx("%s: elf_begin: %s", filename, elf_errmsg(-1));
-		goto err;
-	}
-
-	switch (elf_kind(e)) {
-		case  ELF_K_NONE:
-		case  ELF_K_AR:
-		case ELF_K_COFF:
-		case  ELF_K_ELF:
-			break;
-		default:
-			goto end;
-	}
-
-	for (scn = NULL; (scn = elf_nextscn(e, scn)) != NULL;) {
-		GElf_Shdr  shdr;
-		GElf_Nhdr nhdr;
-		size_t off, next, n_off, d_off;
-		Elf_Data *data;
-
-		if (gelf_getshdr(scn, &shdr) != &shdr) {
-			warnx("%s: gelf_getshdr: %s", filename, elf_errmsg(-1));
-			goto end;
-		}
-
-		if (shdr.sh_type != SHT_NOTE)
-			continue;
-
-		data = elf_getdata(scn, NULL);
-		if (data == NULL) {
-			warnx("%s: elf_getdata: %s", filename, elf_errmsg(-1));
-			goto end;
-		}
-
-		off = 0;
-		while ((next = gelf_getnote(data, off, &nhdr, &n_off, &d_off)) > 0) {
-			if (nhdr.n_type == _FDO_ELF_METADATA && nhdr.n_namesz == sizeof(ELF_NOTE_FDO) && !strcmp(data->d_buf + n_off, ELF_NOTE_FDO)) {
-				library[0] = '\0';
-
-				process_json_metadata(filename, (char *)data->d_buf + d_off, library);
-
-				if (library[0] == '/' && !is_path_added(library))
-					enqueue_item(library, -1);
-			}
-			off = next;
-		}
-	}
-end:
-	elf_end(e);
-err:
-	return ret;
-}
-
-bool is_dynamic_elf_file(const char *filename, int fd)
-{
-	bool is_dynamic = false;
-	Elf *e;
-	Elf_Scn *scn;
-	size_t shstrndx;
-
-	if ((e = elf_begin(fd, ELF_C_READ, NULL)) == NULL) {
-		warnx("%s: elf_begin: %s", filename, elf_errmsg(-1));
-		goto err;
-	}
-
-	switch (elf_kind(e)) {
-		case  ELF_K_NONE:
-		case  ELF_K_AR:
-		case ELF_K_COFF:
-		case  ELF_K_ELF:
-			break;
-		default:
-			goto end;
-	}
-
-	if (elf_getshdrstrndx(e, &shstrndx) != 0) {
-		warnx("%s: elf_getshdrstrndx: %s", filename, elf_errmsg(-1));
-		goto end;
-	}
-
-	for (scn = NULL; (scn = elf_nextscn(e, scn)) != NULL;) {
-		GElf_Shdr  shdr;
-
-		if (gelf_getshdr(scn, &shdr) != &shdr) {
-			warnx("%s: gelf_getshdr: %s", filename, elf_errmsg(-1));
-			goto end;
-		}
-
-		if (shdr.sh_type == SHT_DYNAMIC) {
-			is_dynamic = true;
-			break;
-		}
-	}
-end:
-	elf_end(e);
-err:
-	return is_dynamic;
-}
-
-int enqueue_shared_libraries(const char *filename)
-{
-	FILE *pfd;
-	char *line = NULL;
-	size_t len = 0;
-	ssize_t n;
-	char command[PATH_MAX + 10];
-
-	snprintf(command, sizeof(command), "ldd %s 2>&1", filename);
-
-	pfd = popen(command, "r");
-	if (!pfd) {
-		warn("popen(ldd): %s", filename);
-		return -1;
-	}
-
-	while ((n = getline(&line, &len, pfd)) != -1) {
-		char *p;
-
-		if (line[n - 1] == '\n')
-			line[n - 1] = '\0';
-
-		p = strstr(line, "(0x");
-		if (!p)
-			continue;
-		*p-- = '\0';
-
-		while (line != p && isspace(*p))
-			*p-- = '\0';
-
-		p = strstr(line, " => ");
-		if (p)
-			p += 4;
-		else
-			p = line;
-
-		while (*p != '\0' && isspace(*p))
-			*p++ = '\0';
-
-		if (*p != '/')
-			continue;
-
-		if (verbose > 1)
-			warnx("shared object '%s' depends on '%s'", filename, p);
-
-		if (is_path_added(p))
-			continue;
-
-		enqueue_item(p, -1);
-	}
-
-	free(line);
-	pclose(pfd);
-
-	return 0;
-}
-
 int enqueue_regular_file(const char *filename)
 {
 	static char buf[LINE_MAX];
@@ -633,34 +355,16 @@ int enqueue_regular_file(const char *filename)
 
 	buf[LINE_MAX - 1] = 0;
 
-	if (!access(filename, X_OK) &&
-	    buf[0] == '#' &&
-	    buf[1] == '!') {
-		char *p, *q;
-
-		for (p = &buf[2]; *p && isspace(*p); p++);
-		for (q = p; *q && (!isspace(*q)); q++);
-		*q = '\0';
-
-		if (verbose > 1)
-			warnx("shell script '%s' uses the '%s' interpreter", filename, p);
-
-		if (!is_path_added(p))
-			enqueue_item(p, -1);
-
-		ret = 0;
-		goto end;
+	if (!access(filename, X_OK) && is_shebang(buf)) {
+		ret = enqueue_shebang(filename, buf);
+		if (ret)
+			goto end;
 	}
 
-	if (buf[0] == ELFMAG[0] &&
-	    buf[1] == ELFMAG[1] &&
-	    buf[2] == ELFMAG[2] &&
-	    buf[3] == ELFMAG[3] &&
-	    is_dynamic_elf_file(filename, fd)) {
-		ret = enqueue_shared_libraries(filename);
-		if (!ret)
-			ret = enqueue_elf_dlopen(filename, fd);
-		goto end;
+	if (is_elf_file(buf)) {
+		ret = enqueue_libraries(filename, fd);
+		if (ret)
+			goto end;
 	}
 
 	ret = 0;
@@ -751,14 +455,6 @@ void print_file(struct file *p)
 	        p->src,
 	        destdir, p->dst,
 	        (p->symlink ? p->symlink : ""));
-}
-
-void free_file(void *ptr)
-{
-	struct file *p = ptr;
-	free(p->src);
-	free(p->symlink);
-	free(p);
 }
 
 static char install_path[PATH_MAX + 1];
@@ -1010,54 +706,6 @@ void apply_permissions(struct file *p)
 	}
 }
 
-void walk_action(const void *nodep, VISIT which, void *closure)
-{
-	struct file *p;
-	void (*file_handler)(struct file *p) = closure;
-
-	switch (which) {
-		case preorder:
-			break;
-		case postorder:
-			p = *(struct file **) nodep;
-			file_handler(p);
-			break;
-		case endorder:
-			break;
-		case leaf:
-			p = *(struct file **) nodep;
-			file_handler(p);
-			break;
-	}
-}
-
-#ifndef HAVE_TWALK_R
-static void *twalk_r_closure;
-static void (*twalk_r_action)(const void *nodep, VISIT which, void *closure);
-
-static void twalk_handler(const void *nodep, VISIT which,
-                          int depth __attribute__((unused)))
-{
-	twalk_r_action(nodep, which, twalk_r_closure);
-}
-
-static void twalk_r(const void *root,
-                    void (*action)(const void *nodep, VISIT which, void *closure),
-                    void *closure)
-{
-	twalk_r_action  = action;
-	twalk_r_closure = closure;
-	twalk(root, twalk_handler);
-}
-#endif
-
-#ifndef HAVE_TDESTROY
-static inline void tdestroy(
-        void *root __attribute__((unused)),
-        void (*free_node)(void *nodep) __attribute__((unused)))
-{}
-#endif
-
 void show_help(int rc)
 {
 	fprintf(stdout,
@@ -1127,9 +775,7 @@ int main(int argc, char **argv)
 		switch (c) {
 			case 'e':
 				if (strlen(optarg) > 0) {
-					exclude_match = realloc(exclude_match, (exclude_match_nr + 1) * sizeof(regex_t));
-					if (!exclude_match)
-						err(EX_OSERR, "no memory");
+					exclude_match = xrealloc(exclude_match, (exclude_match_nr + 1), sizeof(regex_t));
 
 					if (regcomp(&exclude_match[exclude_match_nr], optarg, REG_NOSUB | REG_NEWLINE | REG_EXTENDED))
 						errx(EX_USAGE, "bad regexp");
@@ -1179,8 +825,7 @@ int main(int argc, char **argv)
 	if (optind == argc)
 		errx(EX_USAGE, "more arguments required");
 
-	if (elf_version(EV_CURRENT) == EV_NONE)
-		errx(EXIT_FAILURE, "ELF library initialization failed: %s", elf_errmsg(-1));
+	init_elf_library();
 
 	for (int i = optind; i < argc; i++) {
 		enqueue_canonicalized_path(argv[i], true);
@@ -1189,11 +834,8 @@ int main(int argc, char **argv)
 	strncpy(install_path, destdir, sizeof(install_path) - 1);
 	install_path[destdir_len] = 0;
 
-	while (inqueue != NULL) {
-		struct file *queue = inqueue;
-
+	for (struct file *queue = get_queue(NULL); queue; queue = get_queue(NULL)) {
 		while (queue != NULL) {
-			void *ptr;
 			struct file *next = queue->next;
 
 			queue->dst = queue->src;
@@ -1226,12 +868,8 @@ int main(int argc, char **argv)
 				}
 			}
 
-			ptr = tsearch(queue, &files, compare);
-			if (!ptr)
-				err(EX_OSERR, "tsearch");
-
-			if ((*(struct file **)ptr) == queue) {
-				enqueue_path(*(struct file **) ptr);
+			if (tree_add_file(queue)) {
+				enqueue_path(queue);
 				dequeue_item(queue);
 			} else {
 				if (verbose > 1)
@@ -1248,8 +886,10 @@ int main(int argc, char **argv)
 		if (verbose > 1)
 			warnx("dry run only ...");
 		logout = stdout;
-		twalk_r(files, walk_action, print_file);
+		tree_walk(print_file);
 	} else {
+		size_t queue_nr = 0;
+
 		if (verbose > 1)
 			warnx("copying files ...");
 
@@ -1258,31 +898,33 @@ int main(int argc, char **argv)
 		while (1) {
 			size_t prev_installed = installed;
 
-			twalk_r(files, walk_action, install_file);
+			tree_walk(install_file);
 
 			if (prev_installed == installed)
 				break;
 		}
 
+		get_queue(&queue_nr);
+
 		if (queue_nr > installed) {
 			logout = stdout;
-			twalk_r(files, walk_action, print_file);
+			tree_walk(print_file);
 			errx(EXIT_FAILURE, "unable to create the files listed above");
 		}
 
-		twalk_r(files, walk_action, apply_permissions);
+		tree_walk(apply_permissions);
 	}
 
 	if (logfile) {
 		if ((logout = fopen(logfile, "a")) == NULL)
 			err(EX_CANTCREAT, "open: %s", logfile);
 
-		twalk_r(files, walk_action, print_file);
+		tree_walk(print_file);
 
 		fclose(logout);
 	}
 
-	tdestroy(files, free_file);
+	tree_destroy();
 	free(destdir);
 
 	for (size_t i = 0; i < exclude_match_nr; i++)

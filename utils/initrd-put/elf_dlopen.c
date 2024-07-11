@@ -15,6 +15,7 @@
 #include <json-c/json_visit.h>
 
 #include "config.h"
+#include "memory.h"
 #include "elf_dlopen.h"
 
 extern int verbose;
@@ -217,9 +218,7 @@ static int visit_userfunc(json_object *jso, int flags, json_object *,
 		    in_envvar("IGNORE_PUT_DLOPEN_PRIORITY", elf_metadata.priority))
 			return JSON_C_VISIT_RETURN_SKIP;
 
-		soname = calloc(array_len, sizeof(char *));
-		if (!soname)
-			err(EXIT_FAILURE, "calloc");
+		soname = xcalloc(array_len, sizeof(char *));
 
 		for (i = 0; i < array_len; i++) {
 			json_object *child = json_object_array_get_idx(value, i);
