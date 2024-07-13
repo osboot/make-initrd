@@ -10,4 +10,4 @@ PUT_FILES += \
 	/bin/openvt \
 	/sbin/chroot \
 	/sbin/badblocks \
-	/sbin/fsck.*
+	$(wildcard /sbin/fsck.*)
