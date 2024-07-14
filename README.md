@@ -39,6 +39,10 @@ To build a initramfs, you have to install the following software packages:
 - [elfutils](https://sourceware.org/elfutils/) is optional but highly desirable
   for proper operation. This library is used to calculate the dependencies of
   binary utilities that are copied into the initramfs image.
+- [json-c](https://github.com/json-c/json-c) is needed to get dependencies from
+  [ELF DLOPEN Medatata](https://github.com/systemd/systemd/blob/main/docs/ELF_DLOPEN_METADATA.md).
+  The systemd-256 switched to dynamic loading of libraries that the authors
+  consider optional.
 - Compression libraries are required for the initramfs image parsing utilities:
   [zlib](https://zlib.net), [bzip2](https://www.sourceware.org/bzip2/),
   [xz](http://tukaani.org/xz/), [zstd](https://facebook.github.io/zstd/).
