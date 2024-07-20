@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #define _GNU_SOURCE
 
+#include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -59,6 +60,11 @@ static int in_envvar(const char *envname, const char *value)
 	return in_list(getenv(envname), ',', value);
 }
 
+static pid_t waitpid_retry(pid_t pid, int *wstatus, int options)
+{
+	return (pid_t) TEMP_FAILURE_RETRY(waitpid(pid, wstatus, options));
+}
+
 static int resolve_soname(const char **soname, size_t len, char *outbuf)
 {
 	int pipefd[2];
@@ -108,6 +114,10 @@ static int resolve_soname(const char **soname, size_t len, char *outbuf)
 		}
 		ret = 0;
 out_parent:
+		int status;
+		if (waitpid_retry(pid, &status, 0) < 0)
+			warn("waitpid");
+
 		close(pipefd[0]); // read
 		close(pipefd[1]); // write
 
@@ -123,16 +133,16 @@ out_parent:
 		if (handle)
 			dlclose(handle);
 
-		if (!(handle = dlopen(soname[i], RTLD_LAZY)))
-			continue;
-
-		if (dlinfo(handle, RTLD_DI_LINKMAP, &map) < 0) {
-			warnx("dladdr(%s) failed: %s", soname[i], dlerror());
-			continue;
-		}
-
 		offset = 0;
-		siz = strlen(map->l_name) + 1;
+		siz = 0;
+
+		if ((handle = dlopen(soname[i], RTLD_LAZY)) != NULL) {
+			if (dlinfo(handle, RTLD_DI_LINKMAP, &map) == 0) {
+				siz = strlen(map->l_name) + 1;
+			} else {
+				warnx("dladdr(%s) failed: %s", soname[i], dlerror());
+			}
+		}
 
 		errno = 0;
 		n = TEMP_FAILURE_RETRY(write(pipefd[1], &siz, sizeof(siz)));
@@ -154,7 +164,8 @@ out_parent:
 			offset += (size_t) n;
 		}
 
-		break;
+		if (map)
+			break;
 	}
 	ret = EXIT_SUCCESS;
 out_child:
