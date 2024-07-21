@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([make-initrd],[2.48.0],[gladkov.alexey@gmail.com])
+AC_INIT([make-initrd],[2.48.1],[gladkov.alexey@gmail.com])
 AC_CONFIG_HEADERS([config.h])
 
 AC_PREFIX_DEFAULT([/usr])
