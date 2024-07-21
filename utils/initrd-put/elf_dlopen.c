@@ -2,6 +2,8 @@
 #define _GNU_SOURCE
 
 #include <sys/wait.h>
+#include <sys/prctl.h>
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -123,6 +125,9 @@ out_parent:
 
 		return ret;
 	}
+
+	if (prctl(PR_SET_PDEATHSIG, SIGKILL) < 0)
+		warn("prctl(PR_SET_PDEATHSIG)");
 
 	handle = NULL;
 	ret = EXIT_FAILURE;
