@@ -1,0 +1,33 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. guess-functions
+
+$TRACE_SOURCE "Processing ..."
+
+# The idea comes from tslib. Touchscreen devices have
+# the INPUT_PROP_DIRECT property, which is determined
+# by the first from zero bit of the property number
+
+INPUT_PROP_DIRECT=1
+bitmask=$((1 << $INPUT_PROP_DIRECT))
+
+for i in "$SYSFS_PATH"/class/input/event*/device/properties; do
+	[ -f "$i" ] ||
+		continue
+
+	readline prop "$i"
+
+	(($prop & $bitmask)) ||
+		continue
+
+	p="$(readlink -e "$i")"
+
+	while [ "$p" != "$SYSFS_PATH"/devices ]; do
+		if [ -f "$p"/modalias ]; then
+			readline alias "$p"/modalias
+			guess_modalias "$alias"
+		fi
+		p="${p%/*}"
+	done
+done
