@@ -11,9 +11,14 @@
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
 
-#include "kinit.h"
-#include "do_mounts.h"
+#include "name_to_dev.h"
 #include "resume.h"
+
+#ifdef DEBUG
+# define dbg_printf printf
+#else
+# define dbg_printf(...) ((void)0)
+#endif
 
 #ifndef CONFIG_PM_STD_PARTITION
 # define CONFIG_PM_STD_PARTITION ""
@@ -68,7 +73,7 @@ int resume(const char *resume_file, unsigned long long resume_offset)
 	if (len >= (ssize_t) sizeof(device_string))
 		goto fail_r;
 
-	dprintf("kinit: trying to resume from %s\n", resume_file);
+	dbg_printf("kinit: trying to resume from %s\n", resume_file);
 
 	if (write(powerfd, device_string, (size_t) len) != len)
 		goto fail_r;
@@ -77,7 +82,7 @@ int resume(const char *resume_file, unsigned long long resume_offset)
 failure:
 	if (powerfd >= 0)
 		close(powerfd);
-	dprintf("kinit: No resume image, doing normal boot...\n");
+	dbg_printf("kinit: No resume image, doing normal boot...\n");
 	return -1;
 
 fail_r:

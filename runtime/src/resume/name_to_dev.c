@@ -8,8 +8,7 @@
 #include <alloca.h>
 #include <inttypes.h>
 
-#include "do_mounts.h"
-#include "kinit.h"
+#include "name_to_dev.h"
 
 #define BUF_SZ		65536
 
@@ -63,8 +62,6 @@ static dev_t try_name(char *name, unsigned long int part)
 
 	/* if partition is within range - we got it */
 	if (part < range) {
-		dprintf("kinit: try_name %s,%d = %s\n", name, part,
-		        bdevname(res + part));
 		return res + part;
 	}
 
@@ -182,8 +179,6 @@ fail:
 dev_t name_to_dev_t(const char *name)
 {
 	dev_t dev = name_to_dev_t_real(name);
-
-	dprintf("kinit: name_to_dev_t(%s) = %s\n", name, bdevname(dev));
 	return dev;
 }
 
