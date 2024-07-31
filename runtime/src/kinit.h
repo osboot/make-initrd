@@ -21,9 +21,6 @@ extern int init_argc;
 extern char **init_argv;
 extern const char *progname;
 
-char *get_arg(int argc, char *argv[], const char *name);
-int get_flag(int argc, char *argv[], const char *name);
-
 int getintfile(const char *path, long *val);
 
 ssize_t readfile(const char *path, char **pptr);

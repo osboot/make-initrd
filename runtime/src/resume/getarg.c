@@ -1,5 +1,5 @@
 #include <string.h>
-#include "kinit.h"
+#include "resume.h"
 
 /*
  * Routines that hunt for a specific argument.  Please note that

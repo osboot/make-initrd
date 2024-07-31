@@ -5,8 +5,8 @@ resume_SRCS = \
 	$(runtime_srcdir)/resume/resume.h \
 	$(runtime_srcdir)/resume/resume.c \
 	$(runtime_srcdir)/resume/resumelib.c \
+	$(runtime_srcdir)/resume/getarg.c \
 	$(runtime_srcdir)/devname.c \
-	$(runtime_srcdir)/getarg.c \
 	$(runtime_srcdir)/name_to_dev.c \
 	$(runtime_srcdir)/do_mounts.h \
 	$(runtime_srcdir)/kinit.h \
