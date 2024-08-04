@@ -1,4 +1,4 @@
-#!/bin/sh -efu
+#!/bin/bash -efu
 # SPDX-License-Identifier: GPL-2.0-only
 
 if [ -z "${__included_make_initrd_sh_wrapper_functions-}" ]; then
