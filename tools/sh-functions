@@ -139,6 +139,8 @@ if [ -n "${MAKE_INITRD_TRACE-}" ]; then
 		src="${BASH_SOURCE[$n]#${PROJECTDIR}/}"
 		src="${BASH_SOURCE[$n]#${TOPDIR}/}"
 
+		local GLOBIGNORE='.*:*'
+
 		if ! __is_traceable "$src" ${MAKE_INITRD_TRACE_EXECUTE_PATTERNS-}; then
 			export MAKE_INITRD_TRACE_SRC_PATTERNS='-'
 			export MAKE_INITRD_TRACE_FUNC_PATTERNS='-'
@@ -179,6 +181,8 @@ if [ -n "${MAKE_INITRD_TRACE-}" ]; then
 		local func
 		__trace_get_func
 
+		local GLOBIGNORE='.*:*'
+
 		__is_traceable "$func" ${MAKE_INITRD_TRACE_FUNC_PATTERNS-} ||
 			return 0
 
@@ -204,10 +208,16 @@ if [ -n "${MAKE_INITRD_TRACE-}" ]; then
 			cmdname="${cmd#$TOPDIR/}" ||
 			cmdname="$cmd"
 
+		local prev_GLOBIGNORE="${GLOBIGNORE-}"
+		local GLOBIGNORE='.*:*'
+
 		if __is_traceable "$cmdname" ${MAKE_INITRD_TRACE_RUN_PATTERNS-}; then
+			GLOBIGNORE="$prev_GLOBIGNORE"
 			__trace_print $TRACE_KIND_RUN \
 				"${TRACE_FUNCNAMES[*]}" "$cmdname" "$*"
 		fi
+
+		GLOBIGNORE="$prev_GLOBIGNORE"
 
 		rc=0
 		"$cmd" "$@" || rc=$?
