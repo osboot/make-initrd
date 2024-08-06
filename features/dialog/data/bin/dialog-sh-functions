@@ -1,0 +1,118 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+if [ -z "${__dialog_sh_functions-}" ]; then
+__dialog_sh_functions=1
+
+__dialog_plymouth_is_running=
+
+# shellcheck disable=SC2120
+dialog_plymouth_is_running()
+{
+	local recheck="${1-}"
+
+	if [ -n "$recheck" ] || [ -z "${__dialog_plymouth_is_running-}" ]; then
+		type -P plymouth >/dev/null && plymouth --ping 2>/dev/null &&
+			__dialog_plymouth_is_running=1 ||
+			__dialog_plymouth_is_running=0
+	fi
+
+	[ "$__dialog_plymouth_is_running" = 1 ]
+}
+
+__ask_pass_directly()
+{
+	local prompt tries cmd rc
+
+	prompt="$1"; shift
+	tries="$1"; shift
+	cmd="$1"; shift
+
+	! dialog_plymouth_is_running ||
+		plymouth hide-splash 2>/dev/null
+
+	rc=2
+
+	while [ "$rc" != 0 ] && [ "$tries" != 0 ]; do
+		"$cmd"
+		rc="$?"
+		tries=$(($tries - 1))
+	done
+
+	! dialog_plymouth_is_running ||
+		plymouth show-splash 2>/dev/null
+
+	return $rc
+}
+
+__ask_pass_with_unl0kr()
+{
+	local prompt tries cmd rc
+
+	prompt="$1"; shift
+	tries="$1"; shift
+	cmd="$1"; shift
+
+	! dialog_plymouth_is_running ||
+		plymouth hide-splash 2>/dev/null
+
+	rc=2
+
+	while [ "$rc" != 0 ] && [ "$tries" != 0 ]; do
+		unl0kr 2>/dev/null | "$cmd"
+		rc="$?"
+		tries=$(($tries - 1))
+	done
+
+	! dialog_plymouth_is_running ||
+		plymouth show-splash 2>/dev/null
+
+	return $rc
+}
+
+__ask_pass_with_plymouth()
+{
+	local prompt tries cmd
+
+	prompt="$1"; shift
+	tries="$1"; shift
+	cmd="$1"; shift
+
+	plymouth ask-for-password \
+		--prompt "$prompt" \
+		--number-of-tries="$tries" \
+		--command="$cmd"
+}
+
+dialog_ask_pass()
+{
+	local rc tries ask
+
+	prompt="$1"; shift
+	tries="$1"; shift
+
+	ask=__ask_pass_directly
+
+	! dialog_plymouth_is_running || ask=__ask_pass_with_plymouth
+	! type -P unl0kr >/dev/null  || ask=__ask_pass_with_unl0kr
+
+	# To avoid issues with quoting arguments for the utility, a temporary
+	# wrapper can be created.
+	local cmdwrapper
+	cmdwrapper="/.initrd/dialog-ask-pass-$$.$BASHPID"
+	{
+		printf '#!/bin/bash\n'
+		printf 'exec '
+		printf ' %q' "$@"
+	} > "$cmdwrapper"
+	chmod +x "$cmdwrapper"
+
+	rc=0
+	"$ask" "$prompt" "$tries" "$cmdwrapper" || rc="$?"
+
+	rm -f -- "$cmdwrapper"
+
+	return $rc
+}
+
+fi # __dialog_sh_functions

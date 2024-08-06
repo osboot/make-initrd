@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-$(call feature-requires,depmod-image devmapper modules-crypto-user-api system-glibc)
+$(call feature-requires,depmod-image devmapper modules-crypto-user-api system-glibc dialog)
 
 CRYPTSETUP_BIN		?= cryptsetup
 LUKS_DATADIR		?= $(FEATURESDIR)/luks/data
