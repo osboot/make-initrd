@@ -1,0 +1,30 @@
+mi-bug-report: WARNING: There are no modules in the directory: /lib/modules/6.6.41-un-def-alt0.p11.1/kernel
+RUN: guess/root/action
+TRACE function: source=features/mdadm/guess/device: main guess_variable: MDADM_EXTRA_PROGS mdmon
+TRACE function: source=features/mdadm/guess/device: main guess_modalias: md-raid0
+TRACE function: source=features/mdadm/guess/device: main guess_modalias: efivarfs
+TRACE function: source=features/mdadm/guess/device: main guess_feature: mdadm
+TRACE function: source=features/mdadm/guess/device: main guess_variable: GENERATE_UDEV_RULES_FOR_MD_DEVICE 9:126
+TRACE function: source=features/devmapper/guess/device: main guess_feature: devmapper
+TRACE function: source=features/rootfs/guess/fstype: main guess_modalias: fs-ext4
+RUN: guess-config
+GENERATE_UDEV_RULES_FOR_MD_DEVICE = \
+	9:126
+MDADM_EXTRA_PROGS = \
+	mdmon
+MOUNTPOINTS = \
+	/
+
+MODULES_ADD += \
+	efivarfs fs-ext4 md-raid0 \
+	pci:v00002646d00005017sv00002646sd00005017bc01sc08i02 \
+	pci:v00002646d0000501Dsv00002646sd0000501Dbc01sc08i02 \
+	pci:v00008086d0000464Dsv00000000sd00000000bc06sc04i00 \
+	pci:v00008086d0000467Fsv00008086sd00000000bc01sc04i00 \
+	pci:v00008086d00007AC4sv00000000sd00000000bc06sc04i00 \
+	pci:v00008086d00007AC8sv00000000sd00000000bc06sc04i00
+
+FEATURES += \
+	add-modules add-udev-rules devmapper mdadm rootfs
+
+rc=0
