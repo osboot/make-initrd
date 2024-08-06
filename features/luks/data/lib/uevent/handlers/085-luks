@@ -8,6 +8,7 @@
 
 . uevent-sh-functions
 . initrd-sh-functions
+. dialog-sh-functions
 . crypttab-sh-functions
 
 PROG="${QUEUE:--}: session=${SESSION:-0}: $PROG"
@@ -48,28 +49,6 @@ match_dev_in_array() {
 	return 1
 }
 
-luks_unl0kr_ask_pass() {
-	[ "$#" = 2 ] || return 1
-
-	local cmd tries rc
-
-	rc=2
-	cmd="$1"; shift
-	tries="$1"; shift
-
-	plymouth hide-splash 2>/dev/null
-
-	while [ "$rc" != 0 ] && [ "$tries" != 0 ]; do
-		unl0kr 2>/dev/null | $cmd
-		rc=$?
-		tries=$(($tries - 1))
-	done
-
-	plymouth show-splash 2>/dev/null
-
-	return $rc
-}
-
 read_pkcs11_key() {
 	local keyid="$1" tries=${luks_tries:-3}
 
@@ -104,25 +83,10 @@ read_pkcs11_key() {
 	type="data"
 	output_file="$path"
 	flags="-l -r"
-	if plymouth --ping 2>/dev/null; then
-		if type -P unl0kr >/dev/null; then
-			luks_unl0kr_ask_pass pkcs11-tool-wrapper $tries
-			rc=$?
-		else
-			add_new_line="true"\
-			plymouth ask-for-password \
-				--prompt "Please enter passphrase for smart card:" \
-				--number-of-tries=$tries \
-				--command="pkcs11-tool-wrapper"
-			rc=$?
-		fi
-	else
-		rc=1
-                while [ "$rc" != "0" ]; do
-			pkcs11-tool-wrapper
-			rc="$?"
-                done
-	fi
+
+	dialog_ask_pass "Please enter passphrase for smart card:" "$tries" \
+		"pkcs11-tool-wrapper"
+	rc="$?"
 
 	return "$rc"
 }
@@ -192,40 +156,6 @@ findkey() {
 
 	# Keyfile not found yet.
 	return 2
-}
-
-cryptsetup_ask_pass() {
-	local rc=0 tries=${luks_tries:-3}
-
-	{
-		printf 'exec cryptsetup'
-		printf ' %q' "$@"
-	} > /.initrd/cryptsetup-ask-pass
-
-	if plymouth --ping 2>/dev/null; then
-		if type -P unl0kr >/dev/null; then
-			luks_unl0kr_ask_pass "bash /.initrd/cryptsetup-ask-pass" $tries
-			rc=$?
-		else
-			plymouth ask-for-password \
-				--prompt "Please enter passphrase for $LUKS_ROOT:" \
-				--number-of-tries=$tries \
-				--command="bash /.initrd/cryptsetup-ask-pass"
-			rc="$?"
-		fi
-	else
-		rc=2
-		# WARNING: Wait decrypt forever!
-		while [ "$rc" = 2 ] && [ "$tries" -ne 0 ]; do
-			bash /.initrd/cryptsetup-ask-pass
-			rc="$?"
-			tries=$(( $tries - 1 ))
-		done
-	fi
-
-	rm -f -- /.initrd/cryptsetup-ask-pass
-
-	return $rc
 }
 
 in_list() {
@@ -427,7 +357,9 @@ handler() {
 		fi
 		if [ "$rc" -ne 0 ]; then
 			message "Trying to ask the user for a password."
-			cryptsetup_ask_pass "$@"
+			dialog_ask_pass \
+				"Please enter passphrase for $LUKS_ROOT:" "$luks_tries" \
+				"cryptsetup" "$@"
 			rc="$?"
 		fi
 	fi
