@@ -16,17 +16,21 @@ for i in "$SYSFS_PATH"/class/input/event*/device/properties; do
 	[ -f "$i" ] ||
 		continue
 
+	prop=
 	readline prop "$i"
 
-	(($prop & $bitmask)) ||
+	[ -n "$prop" ] && (($prop & $bitmask)) ||
 		continue
 
 	p="$(readlink -e "$i")"
 
 	while [ "$p" != "$SYSFS_PATH"/devices ]; do
 		if [ -f "$p"/modalias ]; then
+			alias=
 			readline alias "$p"/modalias
-			guess_modalias "$alias"
+
+			[ -z "$alias" ] ||
+				guess_modalias "$alias"
 		fi
 		p="${p%/*}"
 	done
