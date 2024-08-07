@@ -109,9 +109,24 @@ copy \
 progress "done"
 echo
 
-outfile="$PWD/make-initrd-bugreport-$(date +"%Y%m%d").tar.bz2"
+compress="cat"
+compargs=()
+suffix=
+
+if compress="$(type -P xz)"; then
+	compargs=("-9")
+	suffix=".xz"
+elif compress="$(type -P bzip2)"; then
+	compargs=("-9")
+	suffix=".bz2"
+elif compress="$(type -P gzip)"; then
+	compargs=("-9")
+	suffix=".gz"
+fi
+
+outfile="$PWD/make-initrd-bugreport-$(date +"%Y%m%d").tar$suffix"
 
 cd "$workdir"
-tar -cjf "$outfile" report
+tar -cf - report | "$compress" "${compargs[@]}" >"$outfile"
 
 printf '\nPlease submit %s to authors\n\n' "$outfile"
