@@ -1,0 +1,20 @@
+ROUTE: 192.168.200.0/24:192.168.100.222:ens10
+ - mask     : 192.168.200.0/24
+ - gateway  : 192.168.100.222
+ - interface: ens10
+
+ROUTE: 192.168.200.0/24:192.168.100.222
+run: syntax error: route must contain 3 components
+ - FAILED
+
+ROUTE: 192.168.200.0/24::ens10
+ - mask     : 192.168.200.0/24
+ - gateway  : 
+ - interface: ens10
+
+ROUTE: [2001:DB8:3::/8]:[2001:DB8:2::1]:ens10
+ - mask     : 2001:DB8:3::/8
+ - gateway  : 2001:DB8:2::1
+ - interface: ens10
+
+rc=0

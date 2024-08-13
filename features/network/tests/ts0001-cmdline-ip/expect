@@ -1,0 +1,170 @@
+IP: 
+ - ipaddr    : 
+ - peer      : 
+ - gateway   : 
+ - netmask   : 
+ - hostname  : 
+ - interface : 
+ - autoconf  : error
+ - mtu       : 
+ - macaddr   : 
+ - dns1      : 
+ - dns2      : 
+
+IP: dhcp
+ - ipaddr    : 
+ - peer      : 
+ - gateway   : 
+ - netmask   : 
+ - hostname  : 
+ - interface : 
+ - autoconf  : dhcp
+ - mtu       : 
+ - macaddr   : 
+ - dns1      : 
+ - dns2      : 
+
+IP: eth0:dhcp6
+ - ipaddr    : 
+ - peer      : 
+ - gateway   : 
+ - netmask   : 
+ - hostname  : 
+ - interface : eth0
+ - autoconf  : dhcp6
+ - mtu       : 
+ - macaddr   : 
+ - dns1      : 
+ - dns2      : 
+
+IP: eth0.3:auto
+ - ipaddr    : 
+ - peer      : 
+ - gateway   : 
+ - netmask   : 
+ - hostname  : 
+ - interface : eth0.3
+ - autoconf  : auto
+ - mtu       : 
+ - macaddr   : 
+ - dns1      : 
+ - dns2      : 
+
+IP: eth0:dhcp::52:54:00:12:34:56
+ - ipaddr    : 
+ - peer      : 
+ - gateway   : 
+ - netmask   : 
+ - hostname  : 
+ - interface : eth0
+ - autoconf  : dhcp
+ - mtu       : 
+ - macaddr   : 52:54:00:12:34:56
+ - dns1      : 
+ - dns2      : 
+
+IP: eth0:dhcp:1500:52:54:00:12:34:56
+ - ipaddr    : 
+ - peer      : 
+ - gateway   : 
+ - netmask   : 
+ - hostname  : 
+ - interface : eth0
+ - autoconf  : dhcp
+ - mtu       : 1500
+ - macaddr   : 52:54:00:12:34:56
+ - dns1      : 
+ - dns2      : 
+
+IP: 192.168.76.2::192.168.76.1:255.255.255.0:foobar:ether0:none::52:54:00:12:34:56
+ - ipaddr    : 192.168.76.2
+ - peer      : 
+ - gateway   : 192.168.76.1
+ - netmask   : 255.255.255.0
+ - hostname  : foobar
+ - interface : ether0
+ - autoconf  : none
+ - mtu       : 
+ - macaddr   : 52:54:00:12:34:56
+ - dns1      : 
+ - dns2      : 
+
+IP: 192.168.76.2::192.168.76.1:255.255.255.0:foobar:ether0:none:1500:52:54:00:12:34:56
+ - ipaddr    : 192.168.76.2
+ - peer      : 
+ - gateway   : 192.168.76.1
+ - netmask   : 255.255.255.0
+ - hostname  : foobar
+ - interface : ether0
+ - autoconf  : none
+ - mtu       : 1500
+ - macaddr   : 52:54:00:12:34:56
+ - dns1      : 
+ - dns2      : 
+
+IP: 192.168.76.2::192.168.76.1:255.255.255.0::ether0:none:1500:52:54:00:12:34:56
+ - ipaddr    : 192.168.76.2
+ - peer      : 
+ - gateway   : 192.168.76.1
+ - netmask   : 255.255.255.0
+ - hostname  : 
+ - interface : ether0
+ - autoconf  : none
+ - mtu       : 1500
+ - macaddr   : 52:54:00:12:34:56
+ - dns1      : 
+ - dns2      : 
+
+IP: [2401:db00:10:d0fb:face:0:1:0]:::::ether0:none
+ - ipaddr    : 2401:db00:10:d0fb:face:0:1:0
+ - peer      : 
+ - gateway   : 
+ - netmask   : 
+ - hostname  : 
+ - interface : ether0
+ - autoconf  : none
+ - mtu       : 
+ - macaddr   : 
+ - dns1      : 
+ - dns2      : 
+
+IP: 192.168.122.111::192.168.122.1:255.255.255.0:fcos:bond0:none
+ - ipaddr    : 192.168.122.111
+ - peer      : 
+ - gateway   : 192.168.122.1
+ - netmask   : 255.255.255.0
+ - hostname  : fcos
+ - interface : bond0
+ - autoconf  : none
+ - mtu       : 
+ - macaddr   : 
+ - dns1      : 
+ - dns2      : 
+
+IP: 192.168.122.111::192.168.122.1:255.255.255.0:fcos:bond0:none:8.8.8.8
+ - ipaddr    : 192.168.122.111
+ - peer      : 
+ - gateway   : 192.168.122.1
+ - netmask   : 255.255.255.0
+ - hostname  : fcos
+ - interface : bond0
+ - autoconf  : none
+ - mtu       : 
+ - macaddr   : 
+ - dns1      : 8.8.8.8
+ - dns2      : 
+
+IP: 192.168.122.111::192.168.122.1:255.255.255.0:fcos:bond0:none:8.8.8.8:4.4.4.4
+ - ipaddr    : 192.168.122.111
+ - peer      : 
+ - gateway   : 192.168.122.1
+ - netmask   : 255.255.255.0
+ - hostname  : fcos
+ - interface : bond0
+ - autoconf  : none
+ - mtu       : 
+ - macaddr   : 
+ - dns1      : 8.8.8.8
+ - dns2      : 4.4.4.4
+
+rc=0

@@ -1,0 +1,29 @@
+#!/bin/bash -eu
+
+. features/network/data/bin/network-cmdline-sh-functions
+
+testcase()
+{
+	printf 'ROUTE: %s\n' "$1"
+
+	local route_mask='' route_gw='' interface=''
+
+	route_to_var "$1"
+
+	printf ' - mask     : %s\n' "$route_mask"
+	printf ' - gateway  : %s\n' "$route_gw"
+	printf ' - interface: %s\n' "$interface"
+	printf '\n'
+}
+
+failed()
+{
+	printf ' - FAILED\n'
+	printf '\n'
+}
+
+# expect success
+(testcase "192.168.200.0/24:192.168.100.222:ens10") || failed
+(testcase "192.168.200.0/24:192.168.100.222") || failed
+(testcase "192.168.200.0/24::ens10") || failed
+(testcase "[2001:DB8:3::/8]:[2001:DB8:2::1]:ens10") || failed

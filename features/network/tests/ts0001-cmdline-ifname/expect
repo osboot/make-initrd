@@ -1,0 +1,17 @@
+IFNAME: bootif0:8b:3f:d2:1c:d6:bc
+ - interface: bootif0
+ - macaddr  : 8b:3f:d2:1c:d6:bc
+
+IFNAME: bootif0:00:00:10:29:fe:80:00:00:00:00:00:00:b8:ce:f6:03:00:99:4c:42
+ - interface: bootif0
+ - macaddr  : 00:00:10:29:fe:80:00:00:00:00:00:00:b8:ce:f6:03:00:99:4c:42
+
+IFNAME: bootif0:8b:3f:d2:1c:d6
+run: syntax error: ifname must contain 7 or 21 components
+ - FAILED
+
+IFNAME: bootif0:8b:3f:d2:1c:d6:bc:ab
+run: syntax error: ifname must contain 7 or 21 components
+ - FAILED
+
+rc=0

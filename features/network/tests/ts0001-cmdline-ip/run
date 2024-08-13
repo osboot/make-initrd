@@ -1,0 +1,52 @@
+#!/bin/bash -eu
+
+. features/network/data/bin/network-cmdline-sh-functions
+
+testcase()
+{
+	printf 'IP: %s\n' "$1"
+
+	local ipaddr='' srv='' gw='' netmask='' hostname='' interface='' autoconf='' macaddr='' mtu='' dns1='' dns2=''
+
+	ip_to_var "$1"
+
+	printf ' - ipaddr    : %s\n' "$ipaddr"
+	printf ' - peer      : %s\n' "$srv"
+	printf ' - gateway   : %s\n' "$gw"
+	printf ' - netmask   : %s\n' "$netmask"
+	printf ' - hostname  : %s\n' "$hostname"
+	printf ' - interface : %s\n' "$interface"
+	printf ' - autoconf  : %s\n' "$autoconf"
+	printf ' - mtu       : %s\n' "$mtu"
+	printf ' - macaddr   : %s\n' "$macaddr"
+	printf ' - dns1      : %s\n' "$dns1"
+	printf ' - dns2      : %s\n' "$dns2"
+	printf '\n'
+}
+
+failed()
+{
+	printf ' - FAILED\n'
+	printf '\n'
+}
+
+# format: ip=<autoconf>
+(testcase "") || failed
+(testcase "dhcp") || failed
+
+# format: ip=<interface>:<autoconf>[:[<mtu>][:<macaddr>]]
+(testcase "eth0:dhcp6") || failed
+(testcase "eth0.3:auto") || failed
+(testcase "eth0:dhcp::52:54:00:12:34:56") || failed
+(testcase "eth0:dhcp:1500:52:54:00:12:34:56") || failed
+
+# format: ip=<ipaddr>:[<peer>]:<gw>:<netmask>:<hostname>:<interface>:<autoconf>[:[<mtu>][:<macaddr>]]
+(testcase "192.168.76.2::192.168.76.1:255.255.255.0:foobar:ether0:none::52:54:00:12:34:56") || failed
+(testcase "192.168.76.2::192.168.76.1:255.255.255.0:foobar:ether0:none:1500:52:54:00:12:34:56") || failed
+(testcase "192.168.76.2::192.168.76.1:255.255.255.0::ether0:none:1500:52:54:00:12:34:56") || failed
+(testcase "[2401:db00:10:d0fb:face:0:1:0]:::::ether0:none") || failed
+
+# format: ip=<ipaddr>:[<peer>]:<gw>:<netmask>:<hostname>:<interface>:<autoconf>[:[<dns1>][:<dns2>]]
+(testcase "192.168.122.111::192.168.122.1:255.255.255.0:fcos:bond0:none") || failed
+(testcase "192.168.122.111::192.168.122.1:255.255.255.0:fcos:bond0:none:8.8.8.8") || failed
+(testcase "192.168.122.111::192.168.122.1:255.255.255.0:fcos:bond0:none:8.8.8.8:4.4.4.4") || failed
