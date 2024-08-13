@@ -76,6 +76,23 @@ IP: eth0:dhcp:1500:52:54:00:12:34:56
  - dns1      : 
  - dns2      : 
 
+IP: eth0:dhcp:1500:00:00:10:29:fe:80:00:00:00:00:00:00:b8:ce:f6:03:00:99:4c:42
+ - ipaddr    : 
+ - peer      : 
+ - gateway   : 
+ - netmask   : 
+ - hostname  : 
+ - interface : eth0
+ - autoconf  : dhcp
+ - mtu       : 1500
+ - macaddr   : 00:00:10:29:fe:80:00:00:00:00:00:00:b8:ce:f6:03:00:99:4c:42
+ - dns1      : 
+ - dns2      : 
+
+IP: eth0:dhcp:1500:00:00:10:29:fe:80:00:00:00:00:00:00:b8:ce:f6:03:00:99:4c:xz
+run: syntax error: value does not look like a MAC address
+ - FAILED
+
 IP: 192.168.76.2::192.168.76.1:255.255.255.0:foobar:ether0:none::52:54:00:12:34:56
  - ipaddr    : 192.168.76.2
  - peer      : 
