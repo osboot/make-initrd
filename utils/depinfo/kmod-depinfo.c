@@ -88,7 +88,7 @@ is_kernel_builtin_match(const char *str)
 static int
 append_kernel_builtin(char *name)
 {
-	struct kernel_builtin *new, *next, *last;
+	struct kernel_builtin *new, *next, *last = NULL;
 
 	if (kbuiltin) {
 		last = next = kbuiltin;
@@ -115,7 +115,8 @@ append_kernel_builtin(char *name)
 		return 0;
 	}
 
-	last->next = new;
+	if (last)
+		last->next = new;
 	return 0;
 }
 
