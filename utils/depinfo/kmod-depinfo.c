@@ -352,14 +352,14 @@ static int
 depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req);
 
 static int
-process_depends(struct kmod_ctx *ctx, const char *depends)
+__process_depends(struct kmod_ctx *ctx, const char *depends, const char *delim, enum alias_need req)
 {
 	int ret = 0;
 	char *s, *str, *token, *saveptr = NULL;
 	s = str = strdup(depends);
 
-	while ((token = strtok_r(str, ",", &saveptr)) != NULL) {
-		if (depinfo_alias(ctx, token, ALIAS_REQUIRED) < 0)
+	while ((token = strtok_r(str, delim, &saveptr)) != NULL) {
+		if (depinfo_alias(ctx, token, req) < 0)
 			ret = -1;
 		str = NULL;
 	}
@@ -367,26 +367,30 @@ process_depends(struct kmod_ctx *ctx, const char *depends)
 	return ret;
 }
 
+
+static int
+process_depends(struct kmod_ctx *ctx, const char *depends)
+{
+	return __process_depends(ctx, depends, ",", ALIAS_REQUIRED);
+}
+
 static int
 process_soft_depends(struct kmod_ctx *ctx, const char *depends)
 {
-	int ret = 0;
-	char *s, *str, *token, *saveptr = NULL;
 	size_t len = strlen(depends);
-	s = str = strdup(depends);
 
-	if (len > 5 && !strncmp("pre: ", s, 5))
-		str += 5;
-	else if (len > 6 && !strncmp("post: ", s, 6))
-		str += 6;
+	if (len > 5 && !strncmp("pre: ", depends, 5))
+		depends += 5;
+	else if (len > 6 && !strncmp("post: ", depends, 6))
+		depends += 6;
 
-	while ((token = strtok_r(str, " ", &saveptr)) != NULL) {
-		if (depinfo_alias(ctx, token, ALIAS_OPTIONAL) < 0)
-			ret = -1;
-		str = NULL;
-	}
-	free(s);
-	return ret;
+	return __process_depends(ctx, depends, " ", ALIAS_OPTIONAL);
+}
+
+static int
+process_weak_depends(struct kmod_ctx *ctx, const char *depends)
+{
+	return __process_depends(ctx, depends, " ", ALIAS_OPTIONAL);
 }
 
 static int
@@ -439,6 +443,9 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 					ret = -1;
 			} else if (!strcmp("softdep", key)) {
 				if (process_soft_depends(ctx, val) < 0)
+					ret = -1;
+			} else if (!strcmp("weakdep", key)) {
+				if (process_weak_depends(ctx, val) < 0)
 					ret = -1;
 			}
 		}
