@@ -12,6 +12,11 @@ ks_devname()
 {
 	local devname=''
 	case "$1" in
+		/dev/root)
+			[ -n "$ROOT" ] || fatal "/dev/root is not defined"
+			ks_devname "$ROOT"
+			return
+			;;
 		LABEL=*)
 			devname="$(blkid -o device -L "${1#LABEL=}")"
 			;;
