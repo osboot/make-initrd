@@ -820,7 +820,7 @@ part()
 		local partnum
 		read -r partnum < "/sys/class/block/$partdev/partition"
 
-		dev="$(readlink -ev "/sys/class/block/$partdev")"
+		dev="$(readlink-e "/sys/class/block/$partdev")"
 		dev="${dev%/*}"
 		dev="${dev##*/}"
 
