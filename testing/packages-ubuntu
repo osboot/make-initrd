@@ -20,7 +20,7 @@ SYSIMAGE_EXTRA_PACKAGES="pwgen mdadm lvm2 cryptsetup btrfs-progs e2fsprogs xfspr
 KICKSTART_PACKAGES="$MAKE_INITRD_PACKAGES"
 KICKSTART_PACKAGES+=" e2fsprogs btrfs-progs xfsprogs dosfstools cryptsetup lvm2"
 KICKSTART_PACKAGES+=" mdadm util-linux rsync wget unzip tar cpio pwgen zstd lz4"
-KICKSTART_PACKAGES+=" eject fdisk"
+KICKSTART_PACKAGES+=" eject fdisk f2fs-tools"
 
 SSH_SERVER_PACKAGES="openssh-server"
 
