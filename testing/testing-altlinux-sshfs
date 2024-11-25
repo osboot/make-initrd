@@ -9,7 +9,7 @@ topdir="${topdir%/*/*}"
 readonly VENDOR=altlinux
 readonly ARCH=x86_64
 readonly IMAGE=alt:sisyphus
-readonly KERNEL_FLAVOR=-std-def
+readonly KERNEL_FLAVOR=-latest
 
 . "$topdir/testing/packages-$VENDOR"
 
@@ -34,6 +34,8 @@ readonly statusdir="$topdir/testing/status"
 readonly top_workdir="$topdir/$workdir"
 readonly top_logdir="$topdir/$logdir"
 
+apt_args="-y -qq -o=APT::Install::Virtual=true -o=APT::Install::VirtualVersion=true"
+
 prepare_testsuite
 
 if [ ! -d "$top_workdir/.ssh" ]; then
@@ -49,8 +51,8 @@ for step in "$@"; do
 			cat_exec "$top_workdir/run.sh" <<-EOF
 			#!/bin/bash -efux
 
-			apt-get -y -qq update
-			apt-get -y -qq install $MAKE_INITRD_PACKAGES_DEVEL
+			apt-get $apt_args update
+			apt-get $apt_args install $MAKE_INITRD_PACKAGES_DEVEL
 
 			cd "$builddir"
 			rc=0
@@ -94,9 +96,9 @@ for step in "$@"; do
 					-f - <<-EOF
 				FROM $IMAGE
 				RUN rpm -ql filesystem | xargs -r mkdir -p
-				RUN apt-get -y -qq update
-				RUN apt-get -y -qq install $SYSIMAGE_PACKAGES
-				RUN apt-get -y -qq clean
+				RUN apt-get $apt_args update
+				RUN apt-get $apt_args install $SYSIMAGE_PACKAGES
+				RUN apt-get $apt_args clean
 				RUN \
 				 find /usr/share/license /usr/share/license-exception -delete; \
 				 find /usr/share/locale/ -mindepth 3 -maxdepth 3 -type f -name '*.mo' -delete; \
@@ -180,9 +182,9 @@ for step in "$@"; do
 			 MKINITRD=$builddir/.build/dest/usr/sbin/mkinitrd-make-initrd
 			EOF1
 
-			apt-get -y -qq update
-			apt-get -y -qq install $MAKE_INITRD_PACKAGES
-			apt-get -y -qq install $KERNEL_PACKAGES
+			apt-get $apt_args update
+			apt-get $apt_args install $MAKE_INITRD_PACKAGES
+			apt-get $apt_args install $KERNEL_PACKAGES
 
 			cp -L /boot/vmlinuz    $builddir/$workdir/sshfsroot-vmlinuz
 			cp -L /boot/initrd.img $builddir/$workdir/sshfsroot-initrd.img
@@ -201,9 +203,9 @@ for step in "$@"; do
 
 			cat > "$top_workdir/Dockerfile" <<-EOF
 			FROM $IMAGE
-			RUN apt-get -y -qq update
-			RUN apt-get -y -qq install $SSH_SERVER_PACKAGES
-			RUN apt-get -y -qq clean
+			RUN apt-get $apt_args update
+			RUN apt-get $apt_args install $SSH_SERVER_PACKAGES
+			RUN apt-get $apt_args clean
 
 			ADD .ssh/id_rsa.pub /etc/openssh/authorized_keys/sftp
 

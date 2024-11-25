@@ -9,7 +9,7 @@ topdir="${topdir%/*/*}"
 readonly VENDOR=altlinux
 readonly ARCH=x86_64
 readonly IMAGE=alt:sisyphus
-readonly KERNEL_FLAVOR=-std-def
+readonly KERNEL_FLAVOR=-latest
 
 . "$topdir/testing/packages-$VENDOR"
 
@@ -30,6 +30,8 @@ readonly statusdir="$topdir/testing/status"
 readonly top_workdir="$topdir/$workdir"
 readonly top_logdir="$topdir/$logdir"
 
+apt_args="-y -qq -o=APT::Install::Virtual=true -o=APT::Install::VirtualVersion=true"
+
 prepare_testsuite
 
 for step in "$@"; do
@@ -40,8 +42,8 @@ for step in "$@"; do
 			cat_exec "$top_workdir/run.sh" <<-EOF
 			#!/bin/bash -efux
 
-			apt-get -y -qq update
-			apt-get -y -qq install $MAKE_INITRD_PACKAGES_DEVEL
+			apt-get $apt_args update
+			apt-get $apt_args install $MAKE_INITRD_PACKAGES_DEVEL
 
 			cd "$builddir"
 			rc=0
@@ -98,9 +100,9 @@ for step in "$@"; do
 				 'AUTODETECT =' \
 				 'FEATURES += compress cleanup'
 				RUN rpm -ql filesystem | xargs -r mkdir -p
-				RUN apt-get -y -qq update
-				RUN apt-get -y -qq install $SYSIMAGE_PACKAGES $KERNEL_PACKAGES
-				RUN apt-get -y -qq clean
+				RUN apt-get $apt_args update
+				RUN apt-get $apt_args install $SYSIMAGE_PACKAGES $KERNEL_PACKAGES
+				RUN apt-get $apt_args clean
 				RUN \
 				 find /lib/modules \( \
 				  -path '*/kernel/drivers/bluetooth/*' -o \
@@ -167,9 +169,9 @@ for step in "$@"; do
 			 MKINITRD=$builddir/.build/dest/usr/sbin/mkinitrd-make-initrd
 			EOF1
 
-			apt-get -y -qq update
-			apt-get -y -qq install $KICKSTART_PACKAGES
-			apt-get -y -qq install $KERNEL_PACKAGES
+			apt-get $apt_args update
+			apt-get $apt_args install $KICKSTART_PACKAGES
+			apt-get $apt_args install $KERNEL_PACKAGES
 
 			cp -L /boot/vmlinuz    $builddir/$workdir/boot-ks-vmlinuz
 			cp -L /boot/initrd.img $builddir/$workdir/boot-ks-initrd.img
