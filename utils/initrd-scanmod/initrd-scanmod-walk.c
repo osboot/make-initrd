@@ -261,22 +261,15 @@ dsort(const FTSENT **a, const FTSENT **b)
 static int
 is_kernel_modname(const char *filename)
 {
+	const char *exts[] = {".ko", ".ko.zst", ".ko.xz", ".ko.gz", ".ko.bz2"};
+	size_t num_exts = sizeof(exts) / sizeof(exts[0]);
 	size_t len = strlen(filename);
-	if (len < 3)
-		return 0;
 
-	if (!strcmp(".ko", filename + len - 3))
-		return 1;
-
-	if (len <= 6)
-		return 0;
-
-	if (!strcmp(".ko.gz", filename + len - 6))
-		return 1;
-
-	if (!strcmp(".ko.xz", filename + len - 6))
-		return 1;
-
+	for (size_t i = 0; i < num_exts; i++) {
+		size_t ext_len = strlen(exts[i]);
+		if (len >= ext_len && !strcmp(filename + len - ext_len, exts[i]))
+			return 1;
+	}
 	return 0;
 }
 
