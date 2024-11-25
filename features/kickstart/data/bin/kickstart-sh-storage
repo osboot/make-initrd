@@ -12,6 +12,11 @@ ks_devname()
 {
 	local devname=''
 	case "$1" in
+		/dev/root)
+			[ -n "$ROOT" ] || fatal "/dev/root is not defined"
+			ks_devname "$ROOT"
+			return
+			;;
 		LABEL=*)
 			devname="$(blkid -o device -L "${1#LABEL=}")"
 			;;
@@ -539,6 +544,60 @@ ks_get_dev_id()
 	printf '%s\n' "$1"
 }
 
+ks_requires_ext4=("e2fsck resize2fs")
+ks_requires_xfs=("xfs_growfs")
+ks_requires_f2fs=("resize.f2fs")
+ks_growfs()
+{
+       local PROG
+       local fs="" requires="" ret=0
+
+       PROG="kickstart"
+       message "command: ${FUNCNAME[0]} $*"
+
+       fs="$(blkid --output value --match-tag TYPE -c /dev/null "$1")" ||
+               return 0
+
+       case "$fs" in
+               ext*) requires="ks_growfs_ext4" ;;
+               xfs)  requires="ks_growfs_xfs"  ;;
+               f2fs) requires="ks_growfs_f2fs" ;;
+               *)
+                       # resize unsupported.
+                       return 0
+                       ;;
+       esac
+
+       ks_check_requires "$requires" ||
+               return 1
+
+       verbose "Increase filesystem to partition size: $1"
+
+       case "$fs" in
+               ext*)
+                       e2fsck -f "$1" && resize2fs "$1" ||
+                               ret=1
+                       ;;
+               xfs)
+                       mount -n -o rw,X-mount.mkdir \
+                               "$1" \
+                               "$ks_datadir/xfs.dir"
+                       xfs_growfs \
+                               "$ks_datadir/xfs.dir" ||
+                               ret=1
+                       umount -f \
+                               "$ks_datadir/xfs.dir"
+                        ;;
+               f2fs)
+                       resize.f2fs "$1" ||
+                               ret=1
+                       ;;
+       esac
+
+       return $ret
+}
+
+
 ks_requires_part=("numfmt" "sfdisk")
 part()
 {
@@ -820,7 +879,7 @@ part()
 		local partnum
 		read -r partnum < "/sys/class/block/$partdev/partition"
 
-		dev="$(readlink -ev "/sys/class/block/$partdev")"
+		dev="$(readlink-e "/sys/class/block/$partdev")"
 		dev="${dev%/*}"
 		dev="${dev##*/}"
 
@@ -828,6 +887,7 @@ part()
 
 		printf ', %s\n' "$size" |
 			sfdisk -q -N "$partnum" "/dev/$dev"
+		ks_growfs "/dev/$dev$partnum"
 	fi
 
 	if [ -n "$encrypted" ]; then
