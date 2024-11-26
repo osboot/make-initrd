@@ -883,11 +883,11 @@ part()
 		dev="${dev%/*}"
 		dev="${dev##*/}"
 
-		verbose "increasing partition /dev/$dev$partnum"
+		verbose "increasing partition /dev/$partdev"
 
 		printf ', %s\n' "$size" |
 			sfdisk -q -N "$partnum" "/dev/$dev"
-		ks_growfs "/dev/$dev$partnum"
+		ks_growfs "/dev/$partdev"
 	fi
 
 	if [ -n "$encrypted" ]; then
