@@ -575,7 +575,7 @@ ks_growfs()
 
        case "$fs" in
                ext*)
-                       e2fsck -f "$1" && resize2fs "$1" ||
+                       e2fsck -yf "$1" && resize2fs "$1" ||
                                ret=1
                        ;;
                xfs)
