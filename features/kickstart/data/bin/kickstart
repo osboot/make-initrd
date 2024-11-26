@@ -190,7 +190,7 @@ ks_block_devices()
 		blocktype="$(get_device_type "$maj")"
 
 		case "$blocktype" in
-			sd|virtblk|mmc)
+			sd|virtblk|mmc|blkext)
 				;;
 			*)
 				continue
