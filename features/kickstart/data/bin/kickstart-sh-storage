@@ -544,8 +544,8 @@ ks_get_dev_id()
 	printf '%s\n' "$1"
 }
 
-ks_requires_ext4=("e2fsck resize2fs")
-ks_requires_xfs=("xfs_growfs")
+ks_requires_ext4=("e2fsck" "resize2fs")
+ks_requires_xfs=("xfs_growfs" "mount")
 ks_requires_f2fs=("resize.f2fs")
 ks_growfs()
 {
