@@ -583,7 +583,7 @@ ks_growfs()
 			# 0 - No errors
 			# 1 - File system errors corrected
 			# 2 - File system errors corrected, system should be rebooted
-			[ "$rc" -le 2 ] && resize2fs "$1" ||
+			[ "$rc" -le 2 ] && resize2fs -f "$1" ||
 				ret=1
 			;;
 		xfs)
