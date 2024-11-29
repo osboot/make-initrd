@@ -116,7 +116,7 @@ ignoredisk()
 ks_requires_clearpart=("findmnt" "wipefs" "sfdisk" "umount")
 clearpart()
 {
-	local PROG TEMP dev skipped
+	local PROG TEMP dev devname num skipped
 	local all='' disks='' list='' initlabel=''
 
 	PROG="kickstart"
@@ -182,24 +182,27 @@ clearpart()
 
 	for dev in $disks; do
 		skipped=0
-		for num in $(sfdisk -d "/dev/$dev" | sed -n -e 's,^/dev/[^[:space:]]\+\([0-9]\+\) : .*,\1,p'); do
-			if [ "$list" != ',,' ] && [ -n "${list##,$dev$num,}" ]; then
+		num=0
+		for devname in $(sfdisk -d "/dev/$dev" | sed -n -e 's,^/dev/\([^[:space:]]\+[0-9]\+\) : .*,\1,p'); do
+			num=$(( $num + 1 ))
+
+			if [ "$list" != ',,' ] && [ -n "${list##*,$devname,*}" ]; then
 				skipped=$(( $skipped + 1 ))
 				continue
 			fi
 
-			[ -b "/dev/$dev$num" ] ||
+			[ -b "/dev/$devname" ] ||
 				continue
 
-			findmnt -no TARGET "/dev/$dev$num" |
+			findmnt -no TARGET "/dev/$devname" |
 			while read -r mntpoint; do
 				verbose "umounting $mntpoint"
 				umount -fR "$mntpoint"
 			done
 
-			verbose "dropping /dev/$dev$num"
+			verbose "dropping /dev/$devname"
 
-			wipefs -qfa "/dev/$dev$num" ||:
+			wipefs -qfa "/dev/$devname" ||:
 			sfdisk -q --delete "/dev/$dev" "$num" ||
 				return 1
 			dropped=1
