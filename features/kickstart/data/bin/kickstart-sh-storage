@@ -550,7 +550,7 @@ ks_requires_f2fs=("resize.f2fs")
 ks_growfs()
 {
        local PROG
-       local fs="" requires="" ret=0
+       local fs="" requires="" ret=0 rc=0
 
        PROG="kickstart"
        message "command: ${FUNCNAME[0]} $*"
@@ -575,7 +575,12 @@ ks_growfs()
 
        case "$fs" in
                ext*)
-                       e2fsck -yf "$1" && resize2fs "$1" ||
+                       e2fsck -y -p -f "$1" ||
+                               rc="$?"
+                       # 0 - No errors
+                       # 1 - File system errors corrected
+                       # 2 - File system errors corrected, system should be rebooted
+                       [ "$rc" -le 2 ] && resize2fs "$1" ||
                                ret=1
                        ;;
                xfs)
