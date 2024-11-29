@@ -549,57 +549,57 @@ ks_requires_xfs=("xfs_growfs" "mount")
 ks_requires_f2fs=("resize.f2fs")
 ks_growfs()
 {
-       local PROG
-       local fs="" requires="" ret=0 rc=0
+	local PROG
+	local fs="" requires="" ret=0 rc=0
 
-       PROG="kickstart"
-       message "command: ${FUNCNAME[0]} $*"
+	PROG="kickstart"
+	message "command: ${FUNCNAME[0]} $*"
 
-       fs="$(blkid --output value --match-tag TYPE -c /dev/null "$1")" ||
-               return 0
+	fs="$(blkid --output value --match-tag TYPE -c /dev/null "$1")" ||
+		return 0
 
-       case "$fs" in
-               ext*) requires="ks_growfs_ext4" ;;
-               xfs)  requires="ks_growfs_xfs"  ;;
-               f2fs) requires="ks_growfs_f2fs" ;;
-               *)
-                       # resize unsupported.
-                       return 0
-                       ;;
-       esac
+	case "$fs" in
+		ext*) requires="ks_growfs_ext4" ;;
+		xfs)  requires="ks_growfs_xfs"  ;;
+		f2fs) requires="ks_growfs_f2fs" ;;
+		*)
+			# resize unsupported.
+			return 0
+			;;
+	esac
 
-       ks_check_requires "$requires" ||
-               return 1
+	ks_check_requires "$requires" ||
+		return 1
 
-       verbose "Increase filesystem to partition size: $1"
+	verbose "Increase filesystem to partition size: $1"
 
-       case "$fs" in
-               ext*)
-                       e2fsck -y -p -f "$1" ||
-                               rc="$?"
-                       # 0 - No errors
-                       # 1 - File system errors corrected
-                       # 2 - File system errors corrected, system should be rebooted
-                       [ "$rc" -le 2 ] && resize2fs "$1" ||
-                               ret=1
-                       ;;
-               xfs)
-                       mount -n -o rw,X-mount.mkdir \
-                               "$1" \
-                               "$ks_datadir/xfs.dir"
-                       xfs_growfs \
-                               "$ks_datadir/xfs.dir" ||
-                               ret=1
-                       umount -f \
-                               "$ks_datadir/xfs.dir"
-                        ;;
-               f2fs)
-                       resize.f2fs "$1" ||
-                               ret=1
-                       ;;
-       esac
+	case "$fs" in
+		ext*)
+			e2fsck -y -p -f "$1" ||
+				rc="$?"
+			# 0 - No errors
+			# 1 - File system errors corrected
+			# 2 - File system errors corrected, system should be rebooted
+			[ "$rc" -le 2 ] && resize2fs "$1" ||
+				ret=1
+			;;
+		xfs)
+			mount -n -o rw,X-mount.mkdir \
+				"$1" \
+				"$ks_datadir/xfs.dir"
+			xfs_growfs \
+				"$ks_datadir/xfs.dir" ||
+				ret=1
+			umount -f \
+				"$ks_datadir/xfs.dir"
+			;;
+		f2fs)
+			resize.f2fs "$1" ||
+				ret=1
+			;;
+	esac
 
-       return $ret
+	return $ret
 }
 
 
