@@ -26,7 +26,7 @@ handler()
 
 	rootdelay_pause
 
-	action "Checking filesystem [$MOUNTDEV]:" fsck -t noloop,noswap -Tay "$MOUNTDEV" ||
+	action "Checking filesystem [$MOUNTDEV]:" fsck -t noloop,noswap -T "$MOUNTDEV" -- -p ||
 		rc=$?
 
 	if [ "$rc" = 0 ] || [ "$rc" = 1 ]; then
