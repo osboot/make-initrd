@@ -141,12 +141,16 @@ if [ -n "${MODULES_PATTERN_SETS-}" ]; then
 
 			printf '%s %s\n' "${prefix:+$prefix-}$keyword" "$regexp"
 		done > "$tempdir/filter-$i"
+
+		MODULES_PATTERN_SETS_FILES="${MODULES_PATTERN_SETS_FILES-} $tempdir/filter-$i"
+
 		i=$(($i + 1))
 	done
+fi
 
-	find "$tempdir" \
-		-name 'filter-*' \
-		-exec initrd-scanmod --set-version="$kernel" '{}' '+' \
+if [ -n "${MODULES_PATTERN_SETS_FILES-}" ]; then
+	printf '%s\n' ${MODULES_PATTERN_SETS_FILES-} |
+		xargs -r initrd-scanmod --set-version="$kernel" \
 		>> "$tempdir/mods.required"
 fi
 
