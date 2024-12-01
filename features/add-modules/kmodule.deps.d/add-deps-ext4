@@ -6,10 +6,13 @@
 kmodules_list="$1"
 shift
 
-grep -E -qs '^ext4[[:space:]]' "$kmodules_list" ||
+modname="${PROG##add-deps-}"
+
+grep -E -qs '^'"$modname"'[[:space:]]' "$kmodules_list" ||
 	exit 0
 
-depinfo --set-version="$kernel" -D "ext4" 2>/dev/null | grep -E -qs '^module ' ||
+depinfo --set-version="$kernel" -D "$modname" 2>/dev/null |
+	grep -E -qs '^module ' ||
 	exit 0
 
 printf '%s\n' crc32c
