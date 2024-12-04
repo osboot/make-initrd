@@ -11,13 +11,19 @@ TESTING_PUBLIC_GOALS += test-guess
 endif
 
 ifeq "$(MAKELEVEL)" '0'
-public-goals  := all guess-config guess-modules feature-info bug-report $(TESTING_PUBLIC_GOALS)
+public-goals  := all uki guess-config guess-modules feature-info bug-report $(TESTING_PUBLIC_GOALS)
 private-goals := $(filter-out $(public-goals),$(MAKECMDGOALS))
 
 ifneq "$(private-goals)" ''
 $(error You MUST NOT call private goals directly: $(private-goals))
 endif
 endif # MAKELEVEL = 0
+
+UKI ?=
+
+ifeq "$(MAKECMDGOALS)" 'uki'
+UKI := 1
+endif
 
 include @projectdir@/mk/config.mk
 
@@ -131,6 +137,7 @@ create: depmod-host
 	@mkdir -m 755 -p $(verbose) -- $(ROOTDIR)
 	@$(TOOLSDIR)/create-initrd
 
+ifeq "$(UKI)" ""
 pack: create
 	@$(VMSG) "Sorting sysvinit services ..."
 	@$(TOOLSDIR)/sort-services --rcdir="$(ROOTDIR)/etc/rc.d" "$(ROOTDIR)/etc/rc.d/init.d"
@@ -159,6 +166,7 @@ install: pack
 	    mv -f $(verbose) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"; \
 	    echo "$(IMAGEFILE)" >> "$(TEMPDIR)/images"; \
 	fi
+endif # UKI
 
 genimage: install
 	@$(MSG) "Image is saved as $(IMAGEFILE)"
@@ -180,9 +188,9 @@ $(call include-features-once,$(sort $(ALL_ACTIVE_FEATURES)))
 
 endif # MAKECMDGOALS = genimage
 
-.PHONY: all process-config guess-config guess-modules feature-info bug-report
+.PHONY: all uki process-config guess-config guess-modules feature-info bug-report
 
-all: check-for-root
+all uki: check-for-root
 	@for c in $(INITRD_CONFIG_LIST); do \
 	    $(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk \
 	       process-config INITRD_CONFIG="$$c" || { rc=1; break; }; \
