@@ -132,20 +132,18 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 }
 
 static int
-filename_in_ruleset(char *filename)
+filename_in_ruleset(size_t n_rules, char *filename)
 {
-	int i               = 0;
-	struct ruleset *set = NULL;
+	size_t i = 0;
 
 	if (!filter_rules)
 		return 0;
 
-	set = filter_rules[i++];
-	while (set) {
-		if (!strcmp(set->filename, filename))
+	for (i = 0; i < n_rules; i++) {
+		if (!strcmp(filter_rules[i]->filename, filename))
 			return 1;
-		set = filter_rules[i++];
 	}
+
 	return 0;
 }
 
@@ -156,7 +154,7 @@ parse_rules(int n_files, char **files)
 	size_t n_rules = 0;
 
 	for (i = 0; i < n_files; i++) {
-		if (!files || !files[i] || filename_in_ruleset(files[i]))
+		if (!files || !files[i] || filename_in_ruleset(n_rules, files[i]))
 			continue;
 
 		struct ruleset *set = xcalloc(1, sizeof(struct ruleset));
