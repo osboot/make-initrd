@@ -20,7 +20,7 @@ show_usage()
 	exit
 }
 
-TEMP=`getopt -n "$PROG" -o "f" -l "first" -- "$@"` ||
+TEMP=`getopt -n "$PROG" -o "f," -l "first,help" -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 

@@ -1,0 +1,173 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. sh-functions
+. shell-error
+
+BOOTDIR="${BOOTDIR:-/boot}"
+PROCFS_PATH="${PROCFS_PATH:-/proc}"
+arch="${ARCH:-$(uname -m)}"
+
+uefi_stub="${UKI_UEFI_STUB-}"
+kernel="${UKI_KERNEL-}"
+initrd="$workdir/initrd.img"
+outfile="${UKI_EFI_INTERNAL_IMAGE:-$workdir/linux.efi}"
+
+
+get_offset_value()
+{
+	local idx name size vma lma file_off algn
+
+	printf -v "$1" '0'
+
+	while read -r idx name size vma lma file_off algn; do
+		[ -z "$idx" ] || [ -z "${idx##*[!0-9]*}" ] ||
+			printf -v "$1" '%s' "$(( 16#${size} + 16#${vma} ))"
+	done < <(objdump -h "$2" 2>/dev/null)
+}
+
+filter_objdump()
+{
+	local k a b c d e;
+
+	eval "$1=('' '' '' '' '')"
+
+	while read -r k a b c d e; do
+		[ "$k" != "$3" ] ||
+			eval "$1=(\"\$a\" \"\$b\" \"\$c\" \"\$d\" \"\$e\")"
+	done < <(objdump -p "$2" 2>/dev/null)
+}
+
+pe_get_int_value()
+{
+	local values
+	filter_objdump values "$2" "$3"
+
+	[ -n "${values[0]}" ] &&
+		printf -v "$1" '%s' "$(( 16#${values[0]} ))" ||
+		return 1
+}
+
+pe_file_format()
+{
+	local magic=0
+	pe_get_int_value magic "$1" "Magic"
+
+	case "$magic" in
+		267|523) # 010b (PE32) | 020b (PE32+)
+			return 0
+			;;
+	esac
+	return 1
+}
+
+section_align=0
+offset=0
+update_section_offset()
+{
+	[ "$#" -eq 0 ] ||
+		offset=$(( $offset + $(stat -Lc%s "$1") ))
+	offset=$(( $offset + $section_align - $offset % $section_align ))
+}
+
+args=()
+add_section()
+{
+	local offs
+	printf -v offs '0x%x' "$offset"
+	args+=( --add-section "$1=$2" --change-section-vma "$1=$offs" )
+	update_section_offset "$2"
+}
+
+[ -n "$kernel" ] ||
+	kernel="$("$FEATURESDIR"/uki/bin/find-kernel)"
+
+[ -f "$kernel" ] ||
+	fatal "Can't find a kernel image to create a UEFI executable"
+
+if [ -z "$uefi_stub" ]; then
+	case "$arch" in
+		x86_64)  efi_type=x64  ;;
+		i?86)    efi_type=ia32 ;;
+		aarch64) efi_type=aa64 ;;
+		*)
+			fatal "Architecture '$arch' not supported to create a UEFI executable"
+			;;
+	esac
+
+	uefi_stub="/usr/lib/systemd/boot/efi/linux${efi_type}.efi.stub"
+fi
+
+pe_file_format "$uefi_stub" ||
+	fatal "wrong file format: $uefi_stub"
+
+get_offset_value offset "$uefi_stub"
+
+[ $offset -gt 0 ] ||
+	fatal "failed to get the size of $uefi_stub to create UEFI image file"
+
+pe_get_int_value section_align "$uefi_stub" SectionAlignment ||
+	fatal "failed to get the SectionAlignment of the stub PE header to create the UEFI image file"
+
+image_base=0
+pe_get_int_value image_base "$uefi_stub" ImageBase ||
+	fatal "failed to get the ImageBase of the stub PE header to create the UEFI image file"
+
+printf -v image_base '0x%x' "$image_base"
+
+args=( --image-base="$image_base" )
+
+update_section_offset
+
+for f in /usr/lib/os-release /etc/os-release; do
+	if [ -s "$f" ]; then
+		add_section ".osrel" "$f"
+		break
+	fi
+done
+
+# shellcheck disable=SC2206
+cmdline=( ${UKI_CMDLINE-} )
+
+if [ "${#cmdline[@]}" -gt 0 ]; then
+	:;
+elif [ -d /etc/cmdline.d ]; then
+	for conf in /etc/cmdline.d/*.conf; do
+		[ -e "$conf" ] ||
+			continue
+		while read -r l; do
+			# shellcheck disable=SC2206
+			cmdline+=( $l )
+		done < "$conf"
+	done
+elif [ -e "$PROCFS_PATH/cmdline" ]; then
+	while read -r l; do
+		# shellcheck disable=SC2206
+		cmdline+=( $l )
+	done < "$PROCFS_PATH/cmdline"
+fi
+
+uefi_cmdline="$workdir/cmdline.txt"
+printf >"$uefi_cmdline" '%s\0' "${cmdline[*]}"
+
+add_section ".cmdline" "$uefi_cmdline"
+
+[ -z "${UKI_SPLASH_IMAGE-}" ] || [ ! -s "$UKI_SPLASH_IMAGE" ] ||
+	add_section ".splash" "$UKI_SPLASH_IMAGE"
+
+uefi_sbat="$workdir/uki.sbat"
+printf >"$uefi_sbat" '%s\n' \
+	"sbat,1,SBAT Version,sbat,1,https://github.com/rhboot/shim/blob/main/SBAT.md" \
+	${UKI_SBAT:+"$UKI_SBAT"}
+
+add_section ".sbat"   "$uefi_sbat"
+add_section ".linux"  "$kernel"
+add_section ".initrd" "$initrd"
+
+uefi_stub_file="$workdir/stub.efi"
+
+cp $verbose -f -- "$uefi_stub" "$uefi_stub_file"
+objcopy --remove-section ".sbat" "$uefi_stub_file" >/dev/null 2>&1
+objcopy $verbose "${args[@]}" "$uefi_stub_file" "$outfile"
+
+rm -f -- "$uefi_cmdline" "$uefi_sbat" "$uefi_stub_file" "$initrd"

@@ -125,7 +125,7 @@ PUT_PROGS ?=
 #
 # See https://github.com/systemd/systemd/blob/main/docs/ELF_DLOPEN_METADATA.md
 #
-IGNORE_PUT_DLOPEN_FEATURE  ?=
+IGNORE_PUT_DLOPEN_FEATURE  ?= /libsystemd-shared-.*\.so:archive
 IGNORE_PUT_DLOPEN_PRIORITY ?=
 
 # Load user configuration

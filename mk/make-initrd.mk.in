@@ -11,13 +11,19 @@ TESTING_PUBLIC_GOALS += test-guess
 endif
 
 ifeq "$(MAKELEVEL)" '0'
-public-goals  := all guess-config guess-modules feature-info bug-report $(TESTING_PUBLIC_GOALS)
+public-goals  := all uki guess-config guess-modules feature-info bug-report $(TESTING_PUBLIC_GOALS)
 private-goals := $(filter-out $(public-goals),$(MAKECMDGOALS))
 
 ifneq "$(private-goals)" ''
 $(error You MUST NOT call private goals directly: $(private-goals))
 endif
 endif # MAKELEVEL = 0
+
+UKI ?=
+
+ifeq "$(MAKECMDGOALS)" 'uki'
+UKI := 1
+endif
 
 include @projectdir@/mk/config.mk
 
@@ -137,6 +143,7 @@ pack: create
 	@$(VMSG) "Packing image to archive ..."
 	@$(TOOLSDIR)/pack-image
 
+ifeq "$(UKI)" ""
 install: pack
 	@$(MSG) 'Used features: $(USED_FEATURES)'
 	@$(MSG_N) 'Packed modules: '
@@ -153,7 +160,7 @@ install: pack
 	    exit 1; \
 	else \
 	    $(VMSG) "Installing image ..."; \
-	    $(MSG) "Unpacked size: `du -sh "$(WORKDIR)" |cut -f1 ||:`"; \
+	    $(MSG) "Unpacked size: `du -sh "$(WORKDIR)/img" |cut -f1 ||:`"; \
 	    $(MSG) "Image size: `du -sh "$(WORKDIR)/initrd.img" |cut -f1 ||:`"; \
 	    chmod 600 -- "$(WORKDIR)/initrd.img"; \
 	    mv -f $(verbose) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"; \
@@ -163,6 +170,7 @@ install: pack
 genimage: install
 	@$(MSG) "Image is saved as $(IMAGEFILE)"
 	@echo
+endif # UKI
 
 ALL_FEATURES         := $(call get-all-features)
 ALL_DISABLE_FEATURES := $(call get-all-disable-features)
@@ -180,9 +188,9 @@ $(call include-features-once,$(sort $(ALL_ACTIVE_FEATURES)))
 
 endif # MAKECMDGOALS = genimage
 
-.PHONY: all process-config guess-config guess-modules feature-info bug-report
+.PHONY: all uki process-config guess-config guess-modules feature-info bug-report
 
-all: check-for-root
+all uki: check-for-root
 	@for c in $(INITRD_CONFIG_LIST); do \
 	    $(MAKE) $(MFLAGS) -f @projectdir@/mk/make-initrd.mk \
 	       process-config INITRD_CONFIG="$$c" || { rc=1; break; }; \

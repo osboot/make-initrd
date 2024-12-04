@@ -1,0 +1,93 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. shell-error
+
+BOOTDIR="${BOOTDIR:-/boot}"
+arch="${ARCH:-$(uname -m)}"
+kversion="${KERNEL:-$(uname -r)}"
+
+show_usage()
+{
+	cat <<-EOF
+	Usage: $PROG [options]
+
+	The utility shows the kernel image.
+
+	Options:
+	  --arch=ARCH                 Use ARCH as target architecture instead of `uname -m`;
+	  -k, --set-version=VERSION   Use VERSION instead of `uname -r`;
+	  -h, --help                  Show this text and exit.
+
+	Report bugs to authors.
+
+	EOF
+	exit
+}
+
+TEMP=`getopt -n "$PROG" -o "k:,h" -l "arch:,set-version:,help" -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
+
+while :; do
+	case "$1" in
+		--arch) shift
+			arch="$1"
+			;;
+		-k|--set-version) shift
+			kversion="$1"
+			;;
+		-h|--help)
+			show_usage
+			;;
+		--) shift; break
+			;;
+		*) fatal "unrecognized option: $1"
+			;;
+	esac
+	shift
+done
+
+efi_type=
+
+if [ -n "$arch" ]; then
+        case "$arch" in
+            x86_64)  efi_type=x64  ;;
+            i?86)    efi_type=ia32 ;;
+            aarch64) efi_type=aa64 ;;
+            *)
+                fatal "Architecture '$arch' not supported to create a UEFI executable"
+                ;;
+        esac
+fi
+
+for ent in "$BOOTDIR"/loader/entries/*.conf; do
+	[ -s "$ent" ] ||
+		continue
+
+	version='' architecture='' linux=''
+
+	while read -r k v; do
+		case "$k" in
+			architecture) architecture="$v" ;;
+			version)      version="$v"      ;;
+			linux)        linux="$v"        ;;
+		esac
+	done < "$ent"
+
+	[ -z "$architecture" ] || [ "$architecture" = "$efi_type" ] ||
+		continue
+
+	[ "$version" = "$kverion" ] ||
+		continue
+
+	[ -n "$linux" ] ||
+		continue
+
+	! readlink -ev -- "$linux" 2>/dev/null ||
+		exit 0
+done
+
+readlink -ev -- "$BOOTDIR/vmlinuz-$kversion" 2>/dev/null ||
+readlink -ev -- "/lib/modules/$kversion/vmlinuz" 2>/dev/null ||
+	fatal "kernel not found"
