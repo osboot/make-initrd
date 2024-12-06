@@ -117,7 +117,14 @@ PUT_DIRS  ?=
 PUT_FILES ?=
 PUT_PROGS ?=
 
+#
+# Variables allow to ignore some dependencies from ELF_DLOPEN_METADATA by
+# feature name or by priority.
+#
+# Format: [<filename-regex>:]<value>[,[<regex>:]<value>,...]
+#
 # See https://github.com/systemd/systemd/blob/main/docs/ELF_DLOPEN_METADATA.md
+#
 IGNORE_PUT_DLOPEN_FEATURE  ?=
 IGNORE_PUT_DLOPEN_PRIORITY ?=
 

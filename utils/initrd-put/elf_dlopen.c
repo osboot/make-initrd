@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <regex.h>
 #include <errno.h>
 #include <err.h>
 
@@ -36,30 +37,89 @@ struct visit_data {
 	char *outbuf;
 };
 
-static int in_list(const char *list, const char delim, const char *value)
+static int in_envvar(const char *envname, const char *filename, const char *value)
 {
-	const char *s, *e, *p;
+	const char *s, *e, *p, *list, *sep, *file_regex, *word;
+	size_t sz, file_regex_sz, word_sz, buf_sz;
+	char *buf, *new;
+	int ret;
 
-	if (!list)
+	int regex_err;
+	regex_t regex = { 0 };
+
+	if (!(list = getenv(envname)))
 		return 0;
+
+	ret = 0;
+
+	buf = NULL;
+	buf_sz = 0;
 
 	s = p = list;
 	e = s + strlen(s);
 
-	while (p < e) {
-		p = strchr(s, delim);
-		if (!p)
+	for (; p < e; s = p + 1) {
+		if (!(p = strchr(s, ',')))
 			p = e + 1;
-		if (!strncmp(s, value, (size_t)(p - s)))
-			return 1;
-		s = p + 1;
-	}
-	return 0;
-}
 
-static int in_envvar(const char *envname, const char *value)
-{
-	return in_list(getenv(envname), ',', value);
+		sz = (size_t) (p - s);
+
+		if ((sep = memchr(s, ':', sz)) != NULL) {
+			file_regex = s;
+			file_regex_sz = (size_t) (sep - file_regex);
+
+			word = sep + 1;
+			word_sz = sz - file_regex_sz - 1;
+		} else {
+			file_regex = NULL;
+			file_regex_sz = 0;
+
+			word = s;
+			word_sz = sz;
+		}
+
+		if (file_regex) {
+			// Release the previous regex if any.
+			regfree(&regex);
+
+			// Add place for null-byte.
+			file_regex_sz += 1;
+
+			if (buf_sz < file_regex_sz) {
+				buf_sz = file_regex_sz * 2;
+
+				if (!(new = realloc(buf, buf_sz))) {
+					warn("realloc");
+					break;
+				}
+				buf = new;
+			}
+
+			strlcpy(buf, file_regex, file_regex_sz);
+
+			if ((regex_err = regcomp(&regex, buf, REG_NOSUB | REG_EXTENDED)) != 0) {
+				char errbuf[BUFSIZ];
+
+				regerror(regex_err, &regex, errbuf, sizeof(errbuf));
+
+				warnx("in_envvar: bad regex: %s", errbuf);
+				continue;
+			}
+
+			if (regexec(&regex, filename, 0, NULL, 0) == REG_NOMATCH)
+				continue;
+		}
+
+		if (!strncmp(word, value, word_sz)) {
+			ret = 1;
+			break;
+		}
+	}
+
+	regfree(&regex);
+	free(buf);
+
+	return ret;
 }
 
 static pid_t waitpid_retry(pid_t pid, int *wstatus, int options)
@@ -230,8 +290,8 @@ static int visit_userfunc(json_object *jso, int flags, json_object *,
 		if (!elf_metadata.priority)
 			elf_metadata.priority = "recommended";
 
-		if (in_envvar("IGNORE_PUT_DLOPEN_FEATURE", elf_metadata.feature) ||
-		    in_envvar("IGNORE_PUT_DLOPEN_PRIORITY", elf_metadata.priority))
+		if (in_envvar("IGNORE_PUT_DLOPEN_FEATURE",  data->filename, elf_metadata.feature) ||
+		    in_envvar("IGNORE_PUT_DLOPEN_PRIORITY", data->filename, elf_metadata.priority))
 			return JSON_C_VISIT_RETURN_SKIP;
 
 		soname = xcalloc(array_len, sizeof(char *));
