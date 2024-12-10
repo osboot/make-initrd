@@ -75,9 +75,9 @@ endif
 RESOLVE_MODALIAS	?= 1
 USE_MODPROBE_BLACKLIST	?=
 KERNEL			?= $(shell uname -r)
-KERNEL_CONFIG		?= $(BOOTDIR)/config-$(KERNEL)
 KERNEL_MODULES_DIR	?= /lib/modules/$(KERNEL)
 KERNEL_MODULES		?= $(KERNEL_MODULES_DIR)/kernel
+KERNEL_CONFIG		?= $(firstword $(wildcard $(BOOTDIR)/config-$(KERNEL) $(KERNEL_MODULES_DIR)/config))
 ARCH			?= $(shell uname -m)
 LIB_DIRS		?= /lib /lib64 /usr/lib /usr/lib64
 
