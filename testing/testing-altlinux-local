@@ -101,7 +101,7 @@ for step in "$@"; do
 				 'FEATURES += compress cleanup'
 				RUN rpm -ql filesystem | xargs -r mkdir -p
 				RUN apt-get $apt_args update
-				RUN apt-get $apt_args install $SYSIMAGE_PACKAGES $KERNEL_PACKAGES
+				RUN apt-get $apt_args install $SYSIMAGE_LOCAL_INIT_PACKAGES $SYSIMAGE_PACKAGES $KERNEL_PACKAGES
 				RUN apt-get $apt_args clean
 				RUN \
 				 find /lib/modules \( \

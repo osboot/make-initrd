@@ -97,7 +97,7 @@ for step in "$@"; do
 				FROM $IMAGE
 				RUN rpm -ql filesystem | xargs -r mkdir -p
 				RUN apt-get $apt_args update
-				RUN apt-get $apt_args install $SYSIMAGE_PACKAGES
+				RUN apt-get $apt_args install $SYSIMAGE_NETWORK_INIT_PACKAGES $SYSIMAGE_PACKAGES
 				RUN apt-get $apt_args clean
 				RUN \
 				 find /usr/share/license /usr/share/license-exception -delete; \

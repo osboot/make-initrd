@@ -14,11 +14,14 @@ KERNEL_PACKAGES="kernel$KERNEL_FLAVOR"
 BOOTLOADER_EFI_PACKAGES="grub-common grub-efi"
 BOOTLOADER_PC_PACKAGES="grub-common grub-pc"
 
-SYSIMAGE_BASE_PACKAGES="$MAKE_INITRD_PACKAGES sysvinit startup mingetty"
+SYSIMAGE_LOCAL_INIT_PACKAGES="systemd"
+SYSIMAGE_NETWORK_INIT_PACKAGES="sysvinit startup"
+
+SYSIMAGE_BASE_PACKAGES="$MAKE_INITRD_PACKAGES mingetty"
 SYSIMAGE_EXTRA_PACKAGES="pwgen mdadm lvm2 cryptsetup btrfs-progs e2fsprogs xfsprogs dosfstools reiserfsprogs"
 
 KICKSTART_PACKAGES="$MAKE_INITRD_PACKAGES"
-KICKSTART_PACKAGES+=" sysvinit util-linux rsync wget cryptsetup lvm2 mdadm pwgen"
+KICKSTART_PACKAGES+=" systemd util-linux rsync wget cryptsetup lvm2 mdadm pwgen"
 KICKSTART_PACKAGES+=" e2fsprogs btrfs-progs xfsprogs dosfstools reiserfsprogs"
 KICKSTART_PACKAGES+=" sfdisk unzip tar cpio eject lz4 f2fs-tools"
 
