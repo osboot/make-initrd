@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 PUT_UDEV_RULES += $(SYSTEM_UDEV_RULES)
 
-.PHONY: put-udev-rules
+PHONY += put-udev-rules
 
 put-udev-rules: create
 	@$(VMSG) "Putting udev rules ..."

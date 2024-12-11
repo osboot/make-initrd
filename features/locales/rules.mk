@@ -10,7 +10,7 @@ LANG = $(call enforce_utf8,$(firstword $(LOCALES)))
 
 $(call set-sysconfig,init,LANG,$(LANG))
 
-.PHONY: locales
+PHONY += locales
 
 locales: create
 	@$(VMSG) "Adding locales and l10n..."

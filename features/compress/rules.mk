@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-.PHONY: compress
+PHONY += compress
 
 compress: pack
 	@$(VMSG) "Compressing image ..."

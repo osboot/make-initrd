@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-.PHONY: put-modules
+PHONY += put-modules
 
 put-modules: create
 	@$(VMSG) "Putting modules ..."

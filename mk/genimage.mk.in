@@ -5,7 +5,7 @@
 # The previous call to 'guess' has already done this.
 IGNORE_DEPMOD := 1
 
-.PHONY: create pack install genimage
+PHONY += create pack install genimage
 
 create: depmod-host
 	@$(VMSG) "Creating initrd image ..."

@@ -4,6 +4,7 @@
 .EXPORT_ALL_VARIABLES:
 .DEFAULT_GOAL := all
 
+PHONY =
 TESTING_PUBLIC_GOALS =
 
 ifneq "$(MAKE_INITRD_TESTING)" ""
@@ -19,9 +20,10 @@ $(error You MUST NOT call private goals directly: $(private-goals))
 endif
 endif # MAKELEVEL = 0
 
-include @projectdir@/mk/config.mk
+PHONY += all guess-config guess-modules feature-info bug-report
+PHONY += check-for-root depmod-host process-config test-guess
 
-.PHONY: check-for-root depmod-host
+include @projectdir@/mk/config.mk
 
 check-for-root:
 	@if [ -z "$$IGNORE_PRIV_CHECKS" ] && [ "$$(id -u)" != 0 ]; then \
@@ -49,8 +51,6 @@ ifneq ($(call in-goals,process-config),)
 STARTUP_TIME   = $(shell date +'%s')
 WORKDIR_SUFFIX = $(basename $(notdir $(INITRD_CONFIG)))
 endif
-
-.PHONY: all process-config guess-config guess-modules feature-info bug-report
 
 all: check-for-root
 	@rc=0; \
@@ -92,8 +92,6 @@ test-guess:
 	$Qrm -rf -- "$(GUESSDIR)"
 	$Qrm -rf -- "$(WORKDIR)"
 
-.PHONY: feature-info
-
 feature-info:
 	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/main.mk show-feature-info
 
@@ -106,3 +104,6 @@ bug-report: check-for-root
 	@$(TOOLSDIR)/bug-report >&4
 	$Qrm -rf -- "$(REPORTDIR)"
 	$Qrmdir -- "$(WORKDIR)"
+
+# Declare the contents of the .PHONY variable as phony.
+.PHONY: $(PHONY)

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-.PHONY: guess-smart-card
+PHONY += guess-smart-card
 
 guess-smart-card:
 	$V echo "Processing $@ ..."

@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-
-.PHONY: ucode
+PHONY += ucode
 
 ucode: $(call if-feature,compress)
 	@$(VMSG) "Adding CPU microcode ..."
