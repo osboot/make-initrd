@@ -10,7 +10,7 @@ PUT_FEATURE_PROGS += $(GUESTFS_PROGS)
 PUT_FEATURE_PROGS_WILDCARD += $(GUESTFS_PROGS_PATTERNS)
 
 # libugestfs doesn't work with busybox's swapon, so replace it
-.PHONY: guestfs
+PHONY += guestfs
 
 guestfs: create
 	@put-file -f "$(ROOTDIR)" /sbin/swapon

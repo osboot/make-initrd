@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
+PHONY += put_pkcs11_name
 
 put_pkcs11_name:
 	@$(VMSG) "Put file with PKCS#11 name ..."

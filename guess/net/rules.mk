@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-.PHONY: guess-net
+PHONY += guess-net
 
 guess-net:
 	$V echo "Processing $@ ..."

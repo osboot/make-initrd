@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-.PHONY: clean
+PHONY += clean
 
 clean: install
 	@$(VMSG) "Removing work directory ..."

@@ -31,6 +31,8 @@ $(info GUESS_MODULES        = $(notdir $(GUESS_MODULES)))
 $(info PASSED_GUESS_MODULES = $(notdir $(PASSED_GUESS_MODULES)))
 endif
 
+PHONY += guess
+
 ifneq "$(GUESS_MODULES)" ''
 
 GUESS_DEVICE_SCRIPTS = $(call wildcard-features,guess/device)
@@ -42,7 +44,7 @@ include \
 		$(foreach exl,$(DISABLE_GUESS),$(realpath $(exl:%=$(DETECTDIR)/%/rules.mk))), \
 		$(foreach mod,$(GUESS_MODULES),$(realpath $(DETECTDIR)/$(mod)/rules.mk))))
 
-.PHONY: pre-guess
+PHONY += pre-guess test-guess-actions
 
 pre-guess: check-for-root
 	@mkdir -m 755 -p -- $(GUESSDIR)
@@ -53,8 +55,6 @@ pre-guess: check-for-root
 test-guess-actions: pre-guess
 	@[ -n "$(TEST_GUESS_ACTIONS)" ] || { printf "TEST_GUESS_ACTIONS not specified\n" >&2; exit 1; }
 	@for exe in $(TEST_GUESS_ACTIONS); do echo "RUN: $$exe"; "$$exe"; done
-
-.PHONY: guess
 
 guess: pre-guess
 	$V printf '============================================================\n\n' >&2
@@ -73,8 +73,6 @@ unknown_features = \
 ifneq "$(unknown_features)" ''
 $(info WARNING: Unknown features are specified in the config: $(unknown_features))
 endif
-
-.PHONY: guess
 
 guess: depmod-host
 	@$(VMSG) "Guessing is complete"
