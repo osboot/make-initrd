@@ -32,7 +32,7 @@ check-for-root:
 depmod-host: check-for-root
 	@if [ -z "$$IGNORE_DEPMOD" ]; then \
 	   $(MSG) "Generating module dependencies on host ..."; \
-	   system_map_file="$(BOOTDIR)/System.map-$(KERNEL)"; \
+	   system_map_file="$(KERNEL_SYSTEM_MAP)"; \
 	   [ -e "$$system_map_file" ] || system_map_file=""; \
 	   depmod -a $${system_map_file:+-F "$$system_map_file"} "$(KERNEL)"; \
 	fi

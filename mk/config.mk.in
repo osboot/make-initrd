@@ -78,6 +78,7 @@ KERNEL			?= $(shell uname -r)
 KERNEL_MODULES_DIR	?= /lib/modules/$(KERNEL)
 KERNEL_MODULES		?= $(KERNEL_MODULES_DIR)/kernel
 KERNEL_CONFIG		?= $(firstword $(wildcard $(BOOTDIR)/config-$(KERNEL) $(KERNEL_MODULES_DIR)/config))
+KERNEL_SYSTEM_MAP	?= $(firstword $(wildcard $(BOOTDIR)/System.map-$(KERNEL) $(KERNEL_MODULES_DIR)/System.map))
 ARCH			?= $(shell uname -m)
 LIB_DIRS		?= /lib /lib64 /usr/lib /usr/lib64
 
