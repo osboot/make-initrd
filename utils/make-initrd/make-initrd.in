@@ -59,6 +59,10 @@ show_help() {
 	feature-info [name [name1...]]
 	               shows information about feature;
 
+	uki
+	               creates an UEFI executable with the kernel, cmdline and
+	               initramfs combined;
+
 	Options:
 	   -D, --no-depmod        don't recreate a list of module dependencies;
 	   -N, --no-checks        don't check /dev, /proc and the kernel
@@ -173,6 +177,10 @@ case "${1-}" in
 		shift
 		FEATURE_NAMES="$*"
 		set -- feature-info
+		;;
+	uki)
+		shift
+		export UKI=1
 		;;
 esac
 

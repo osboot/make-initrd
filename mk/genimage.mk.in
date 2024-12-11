@@ -5,7 +5,12 @@
 # The previous call to 'guess' has already done this.
 IGNORE_DEPMOD := 1
 
+# Replace 'install' target by UKI feature because regular initramfs must be
+# converted to create a UEFI image.
+INSTALL_TARGET_SUFFIX := $(if $(UKI),-uki-disabled)
+
 PHONY += create pack install genimage
+PHONY += install$(INSTALL_TARGET_SUFFIX)
 
 create: depmod-host
 	@$(VMSG) "Creating initrd image ..."
@@ -18,7 +23,7 @@ pack: create
 	@$(VMSG) "Packing image to archive ..."
 	@$(TOOLSDIR)/pack-image
 
-install: pack
+install$(INSTALL_TARGET_SUFFIX): pack
 	@$(VMSG) "Installing image ..."
 	@if [ -f "$(TEMPDIR)/images" ] && grep -Fxqs "$(IMAGEFILE)" "$(TEMPDIR)/images"; then \
 	    echo ""; \
