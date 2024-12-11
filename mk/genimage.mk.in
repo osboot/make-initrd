@@ -34,7 +34,7 @@ install: pack
 	    exit 1; \
 	else \
 	    $(VMSG) "Installing image ..."; \
-	    $(MSG) "Unpacked size: `du -sh "$(WORKDIR)" |cut -f1 ||:`"; \
+	    $(MSG) "Unpacked size: `du -sh "$(ROOTDIR)" |cut -f1 ||:`"; \
 	    $(MSG) "Image size: `du -sh "$(WORKDIR)/initrd.img" |cut -f1 ||:`"; \
 	    chmod 600 -- "$(WORKDIR)/initrd.img"; \
 	    mv -f $(verbose) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"; \
