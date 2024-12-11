@@ -261,17 +261,3 @@ jobs:
 
       - name: "Summarize"
         run: testing/generate-metrics artifacts > "$GITHUB_STEP_SUMMARY"
-
-
-  garbage-collection:
-    name: "Garbage Collection"
-    needs: [ metrics ]
-    runs-on: ubuntu-latest
-    if: success() || cancelled()
-    steps:
-      - name: "Remove Artifacts"
-        uses: geekyeggo/delete-artifact@v5
-        with:
-          name: metrics-*
-          failOnError: false
-
