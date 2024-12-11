@@ -1,0 +1,108 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+.NOTPARALLEL:
+.EXPORT_ALL_VARIABLES:
+.DEFAULT_GOAL := all
+
+TESTING_PUBLIC_GOALS =
+
+ifneq "$(MAKE_INITRD_TESTING)" ""
+TESTING_PUBLIC_GOALS += test-guess
+endif
+
+ifeq "$(MAKELEVEL)" '0'
+public-goals  := all guess-config guess-modules feature-info bug-report $(TESTING_PUBLIC_GOALS)
+private-goals := $(filter-out $(public-goals),$(MAKECMDGOALS))
+
+ifneq "$(private-goals)" ''
+$(error You MUST NOT call private goals directly: $(private-goals))
+endif
+endif # MAKELEVEL = 0
+
+include @projectdir@/mk/config.mk
+
+.PHONY: check-for-root depmod-host
+
+check-for-root:
+	@if [ -z "$$IGNORE_PRIV_CHECKS" ] && [ "$$(id -u)" != 0 ]; then \
+	    echo "Only root can do that"; \
+	    exit 1; \
+	fi
+
+depmod-host: check-for-root
+	@if [ -z "$$IGNORE_DEPMOD" ]; then \
+	   $(MSG) "Generating module dependencies on host ..."; \
+	   system_map_file="$(KERNEL_SYSTEM_MAP)"; \
+	   [ -e "$$system_map_file" ] || system_map_file=""; \
+	   depmod -a $${system_map_file:+-F "$$system_map_file"} "$(KERNEL)"; \
+	fi
+
+ifneq ($(call in-goals,guess guess-config guess-modules test-guess-actions),)
+include @projectdir@/mk/guess.mk
+endif
+
+ifneq ($(call in-goals,genimage),)
+include @projectdir@/mk/genimage.mk
+endif
+
+ifneq ($(call in-goals,process-config),)
+STARTUP_TIME   = $(shell date +'%s')
+WORKDIR_SUFFIX = $(basename $(notdir $(INITRD_CONFIG)))
+endif
+
+.PHONY: all process-config guess-config guess-modules feature-info bug-report
+
+all: check-for-root
+	@rc=0; \
+	for c in $(INITRD_CONFIG_LIST); do \
+	    $(MAKE) $(MFLAGS) -f @projectdir@/mk/main.mk process-config INITRD_CONFIG="$$c" || \
+	    { rc=1; break; }; \
+	done; \
+	rm -f -- $(TEMPDIR)/images; \
+	exit $$rc
+
+process-config: $(INITRD_CONFIG)
+	@$(MSG) "Config file: $(INITRD_CONFIG)"
+	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/main.mk guess
+	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/main.mk genimage
+
+guess-config: check-for-root guess
+	@cat $(GUESSDIR)/guessed.mk >&4
+	$Qrm -rf -- "$(GUESSDIR)"
+	$Qrmdir -- "$(WORKDIR)"
+
+guess-modules: check-for-root guess
+	@for f in $(GUESSDIR)/guess:modules* $(GUESSDIR)/guess:modalias*; do \
+		[ ! -s "$$f" ] || cat "$$f"; \
+	done | \
+	   depinfo \
+	      --input=- \
+	      $(if $(USE_MODPROBE_BLACKLIST),--use-blacklist) \
+	      --set-version="$(KERNEL)" \
+	      --no-prefix \
+	      --no-firmware \
+	      --no-builtin \
+	      2>/dev/null | \
+	   sort -u >&4
+	$Qrm -rf -- "$(GUESSDIR)"
+	$Qrmdir -- "$(WORKDIR)"
+
+test-guess:
+	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/main.mk test-guess-actions
+	$Qrm -rf -- "$(GUESSDIR)"
+	$Qrm -rf -- "$(WORKDIR)"
+
+.PHONY: feature-info
+
+feature-info:
+	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/main.mk show-feature-info
+
+ifneq ($(call in-goals,show-feature-info),)
+include @projectdir@/mk/show-feature-info.mk
+endif
+
+bug-report: check-for-root
+	@mkdir -m 755 -p -- $(REPORTDIR)
+	@$(TOOLSDIR)/bug-report >&4
+	$Qrm -rf -- "$(REPORTDIR)"
+	$Qrmdir -- "$(WORKDIR)"

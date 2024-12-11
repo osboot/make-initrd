@@ -6,6 +6,11 @@ __included-functions-mk := 1
 null  :=
 space := $(null) $(null)
 
+# $(call in-goals,<name> <name1> ...)
+define in-goals
+$(strip $(if $(filter in-goals,$(0)),$(filter $(1),$(MAKECMDGOALS))))
+endef
+
 # $(call basedirname,<filename>)
 # Return directory name of <filename>.
 define basedirname

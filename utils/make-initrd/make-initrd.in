@@ -241,4 +241,4 @@ case "$make_version" in
 esac
 
 make $output_sync --no-print-directory -r \
-	-f @projectdir@/mk/make-initrd.mk -- "$@" 4>&1 >&2
+	-f @projectdir@/mk/main.mk -- "$@" 4>&1 >&2
