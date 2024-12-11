@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-$(call feature-requires,depmod-image add-udev-rules gpu-drm)
+$(call feature-requires,add-modules depmod-image add-udev-rules gpu-drm)
 
 PLYMOUTH_FONT  ?=
 PLYMOUTH_THEME ?=
