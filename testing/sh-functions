@@ -134,11 +134,11 @@ qemu_setup_cpu()
 	case "${BOOT_BIOS:-pc}" in
 		efi)
 			[ -f "$top_workdir"/efivars.bin ] ||
-				cp -vTLf /usr/share/OVMF/OVMF_VARS.fd "$top_workdir"/efivars.bin
+				cp -vTLf /usr/share/OVMF/OVMF_VARS_4M.fd "$top_workdir"/efivars.bin
 
 			qemu_args \
 			 -machine q35 \
-			 -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE.fd \
+			 -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd \
 			 -drive if=pflash,format=raw,file="$top_workdir/efivars.bin" \
 			 >> "$workdir/qemu-cpu"
 			;;
