@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-$(call feature-requires,depmod-image add-udev-rules)
+$(call feature-requires,add-modules depmod-image add-udev-rules)
 
 PIPELINE_DATADIR = $(FEATURESDIR)/pipeline/data
 

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-$(call feature-requires,depmod-image add-udev-rules devmapper)
+$(call feature-requires,add-modules depmod-image add-udev-rules devmapper)
 
 # Summary: Utilities for devices that use SCSI command sets
 # URL: https://sg.danny.cz/sg/sg3_utils.html

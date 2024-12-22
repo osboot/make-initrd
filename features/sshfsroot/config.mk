@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-$(call feature-requires,depmod-image network)
+$(call feature-requires,add-modules depmod-image network)
 
 SSHFS_DATADIR	= $(FEATURESDIR)/sshfsroot/data
 SSHFS_PRELOAD	= af_packet fs-fuse

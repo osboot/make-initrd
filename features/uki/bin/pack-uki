@@ -1,0 +1,246 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. sh-functions
+. shell-error
+
+BOOTDIR="${BOOTDIR:-/boot}"
+PROCFS_PATH="${PROCFS_PATH:-/proc}"
+ARCH="${ARCH:-$(uname -m)}"
+KERNEL="${KERNEL:-$(uname -r)}"
+
+outfile="${UKI_EFI_INTERNAL_IMAGE:-$workdir/linux.efi}"
+uefi_stub="${UKI_UEFI_STUB-}"
+linux="${UKI_VMLINUZ-}"
+initrd="$workdir/initrd.img"
+
+garbage=()
+
+get_offset_value()
+{
+	local idx name size vma lma file_off algn
+
+	printf -v "$1" '0'
+
+	while read -r idx name size vma lma file_off algn; do
+		[ -z "$idx" ] || [ -z "${idx##*[!0-9]*}" ] ||
+			printf -v "$1" '%s' "$(( 16#${size} + 16#${vma} ))"
+	done < <(objdump -h "$2" 2>/dev/null)
+}
+
+filter_objdump()
+{
+	local k a b c d e;
+
+	eval "$1=('' '' '' '' '')"
+
+	while read -r k a b c d e; do
+		[ "$k" != "$3" ] ||
+			eval "$1=(\"\$a\" \"\$b\" \"\$c\" \"\$d\" \"\$e\")"
+	done < <(objdump -p "$2" 2>/dev/null)
+}
+
+pe_get_int_value()
+{
+	local values
+	filter_objdump values "$2" "$3"
+
+	[ -n "${values[0]}" ] &&
+		printf -v "$1" '%s' "$(( 16#${values[0]} ))" ||
+		return 1
+}
+
+pe_file_format()
+{
+	local magic=0
+	pe_get_int_value magic "$1" "Magic"
+
+	case "$magic" in
+		267|523) # 010b (PE32) | 020b (PE32+)
+			return 0
+			;;
+	esac
+	return 1
+}
+
+section_align=0
+offset=0
+update_section_offset()
+{
+	[ "$#" -eq 0 ] ||
+		offset=$(( $offset + $(stat -Lc%s "$1") ))
+	offset=$(( $offset + $section_align - $offset % $section_align ))
+}
+
+args=()
+add_section()
+{
+	local offs
+	printf -v offs '0x%x' "$offset"
+	args+=( --add-section "$1=$2" --change-section-vma "$1=$offs" )
+	update_section_offset "$2"
+}
+
+add_text_section()
+{
+	local section="$1"; shift
+
+	printf >"$workdir/uefi${section}.txt" '%s\0' "$*"
+
+	add_section "$section" "$workdir/uefi${section}.txt"
+	garbage+=( "$workdir/uefi${section}.txt" )
+}
+
+if [ -z "$uefi_stub" ]; then
+	case "$ARCH" in
+		x86_64)      efi_type=x64         ;;
+		i?86)        efi_type=ia32        ;;
+		armv*l)      efi_type=arm         ;;
+		aarch64)     efi_type=aa64        ;;
+		riscv32)     efi_type=riscv32     ;;
+		riscv64)     efi_type=riscv64     ;;
+		loongarch32) efi_type=loongarch32 ;;
+		loongarch64) efi_type=loongarch64 ;;
+		*)
+			fatal "architecture '$ARCH' not supported to create a UEFI executable"
+			;;
+	esac
+
+	uefi_stub="/usr/lib/systemd/boot/efi/linux${efi_type}.efi.stub"
+fi
+
+[ -f "$uefi_stub" ] ||
+	fatal "UEFI Stub doesn't exist. Please specify the UEFI Stub manually by specifying the UKI_UEFI_STUB variable."
+
+pe_file_format "$uefi_stub" ||
+	fatal "wrong file format: $uefi_stub"
+
+verbose "UEFI stub file: $uefi_stub"
+
+get_offset_value offset "$uefi_stub"
+
+[ $offset -gt 0 ] ||
+	fatal "failed to get the size of $uefi_stub to create UEFI image file"
+
+pe_get_int_value section_align "$uefi_stub" SectionAlignment ||
+	fatal "failed to get the SectionAlignment of the stub PE header to create the UEFI image file"
+
+image_base=0
+pe_get_int_value image_base "$uefi_stub" ImageBase ||
+	fatal "failed to get the ImageBase of the stub PE header to create the UEFI image file"
+
+printf -v image_base '0x%x' "$image_base"
+args=( --image-base="$image_base" )
+
+update_section_offset
+
+#
+# Section with the ELF Linux kernel image. This section is required.
+#
+[ -n "$linux" ] ||
+	linux="$("$FEATURESDIR"/uki/bin/find-vmlinuz)"
+[ -f "$linux" ] ||
+	fatal "can't find a kernel image to create a UEFI executable. Please specify the kernel image manually by specifying the UKI_VMLINUZ variable."
+
+add_section ".linux" "$linux"
+verbose "Kernel image: $linux"
+
+#
+# Section with the initrd.
+#
+add_section ".initrd" "$initrd"
+garbage+=( "$initrd" )
+
+#
+# Section with the kernel version information.
+#
+add_text_section ".uname" "$KERNEL"
+verbose "UEFI kernel uname: $KERNEL"
+
+#
+# Section with OS release information, i.e. the contents of the os-release(5)
+# file of the OS the kernel belongs to.
+#
+# From systemd source code (systemd/src/shared/pe-binary.c:261):
+#
+# Note that the UKI spec only requires .linux, but we are stricter here, and
+# require .osrel too, since for sd-boot it just doesn't make sense to not have
+# that.
+#
+for f in /usr/lib/os-release /etc/os-release "${rootdir-}"/etc/initrd-release; do
+	if [ -s "$f" ]; then
+		add_section ".osrel" "$f"
+		break
+	fi
+done
+
+#
+# Section with the kernel command line to pass to the invoked kernel.
+#
+# shellcheck disable=SC2206
+cmdline=( ${UKI_CMDLINE-} )
+
+if [ "${#cmdline[@]}" -gt 0 ]; then
+	:;
+elif [ -d /etc/cmdline.d ]; then
+	for conf in /etc/cmdline.d/*.conf; do
+		[ -e "$conf" ] ||
+			continue
+		while read -r l; do
+			[ -n "$l" ] && [ -n "${l##\#*}" ] ||
+				continue
+			# shellcheck disable=SC2206
+			cmdline+=( $l )
+		done < "$conf"
+	done
+elif [ -e "$PROCFS_PATH/cmdline" ]; then
+	while read -r l; do
+		# shellcheck disable=SC2206
+		for a in $l; do
+			case "$a" in
+				# grub adds this parameter.
+				BOOT_IMAGE=*)
+					;;
+				*)	cmdline+=( "$a" )
+					;;
+			esac
+		done
+	done < "$PROCFS_PATH/cmdline"
+fi
+
+if [ "${#cmdline[@]}" -gt 0 ]; then
+	add_text_section ".cmdline" "${cmdline[*]}"
+	verbose "UEFI kernel cmdline: ${cmdline[*]}"
+fi
+
+#
+# Section with SBAT revocation metadata.
+#
+printf -v sbat '%s\n' \
+	"sbat,1,SBAT Version,sbat,1,https://github.com/rhboot/shim/blob/main/SBAT.md" \
+	${UKI_SBAT:+"$UKI_SBAT"}
+add_text_section ".sbat" "$sbat"
+
+#
+# Section with an image (in the Windows .BMP format) to show on screen before
+# invoking the kernel.
+#
+if [ -n "${UKI_SPLASH_FILE-}" ] && [ -s "$UKI_SPLASH_FILE" ]; then
+	add_section ".splash" "$UKI_SPLASH_FILE"
+	verbose "UEFI splash image: $UKI_SPLASH_FILE"
+fi
+
+#
+# Creating UEFI image file.
+#
+uefi_stub_file="$workdir/stub.efi"
+garbage+=( "$uefi_stub_file" )
+
+cp $verbose -f -- "$uefi_stub" "$uefi_stub_file"
+objcopy --remove-section ".sbat" "$uefi_stub_file" >/dev/null 2>&1
+objcopy $verbose "${args[@]}" "$uefi_stub_file" "$outfile"
+
+#
+# Remove temporary files.
+#
+[ "${#garbage[@]}" -eq 0 ] || rm -f -- "${garbage[@]}"

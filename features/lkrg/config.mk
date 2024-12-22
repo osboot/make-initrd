@@ -1,2 +1,4 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-LKRG_DATADIR 	?= $(FEATURESDIR)/lkrg/data
+$(call feature-requires,add-modules depmod-image)
+
+LKRG_DATADIR ?= $(FEATURESDIR)/lkrg/data

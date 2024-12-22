@@ -1,0 +1,22 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+timestamp="$(msg-timestamp)"
+
+KERNEL_MODULES=()
+root_size=0
+image_size=0
+
+readarray -t KERNEL_MODULES < <(
+	find "$ROOTDIR/lib/modules/$KERNEL" -type f \( -name '*.ko'  -o -name '*.ko.*' \) -printf '%f\n' 2>/dev/null |
+		sed -e 's#\.ko\(\.[^\.]\+\)\?$##' |
+		sort -u
+)
+
+read -r root_size  _ < <(du -sh "$ROOTDIR") ||:
+read -r image_size _ < <(du -sh "$1") ||:
+
+printf '%s Used features: %s\n'  "$timestamp" "$USED_FEATURES"
+printf '%s Packed modules: %s\n' "$timestamp" "${KERNEL_MODULES[*]}"
+printf '%s Unpacked size: %s\n'  "$timestamp" "$root_size"
+printf '%s Image size: %s\n'     "$timestamp" "$image_size"

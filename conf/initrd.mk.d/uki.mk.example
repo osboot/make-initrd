@@ -1,0 +1,19 @@
+# trying to detect modules and features to access to root volume
+AUTODETECT = all
+
+UKI = 1
+UKI_FEATURES = \
+	modules-blockdev \
+	modules-filesystem \
+	pipeline
+
+UKI_CMDLINE = \
+	ro panic=30 rdlog=console \
+	root=pipeline \
+	pipeline=waitdev,mountfs,mountfs,mountfs,mountfs,overlayfs,rootfs \
+	waitdev=LABEL=ROOT \
+	mountfs=dev \
+	mountfs=pipe1/sysimage/stateless/local-latest.star \
+	mountfs=pipe1/sysimage/stateless/kernel-$(KERNEL)/kmodules.star \
+	mountfs=pipe1/sysimage/stateless/system-stable.star \
+	overlayfs=pipe2,pipe3,pipe4

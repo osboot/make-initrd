@@ -5,7 +5,12 @@
 # The previous call to 'guess' has already done this.
 IGNORE_DEPMOD := 1
 
+# Replace 'install' target by UKI feature because regular initramfs must be
+# converted to create a UEFI image.
+INSTALL_TARGET_SUFFIX := $(if $(UKI),-uki-disabled)
+
 PHONY += create pack install genimage
+PHONY += install$(INSTALL_TARGET_SUFFIX)
 
 create: depmod-host
 	@$(VMSG) "Creating initrd image ..."
@@ -18,28 +23,21 @@ pack: create
 	@$(VMSG) "Packing image to archive ..."
 	@$(TOOLSDIR)/pack-image
 
-install: pack
-	@$(MSG) 'Used features: $(USED_FEATURES)'
-	@$(MSG_N) 'Packed modules: '
-	@find $(ROOTDIR)/lib/modules/$(KERNEL) -type f \( -name '*.ko'  -o -name '*.ko.*' \) -printf '%f\n' 2>/dev/null | \
-	    sed -e 's/\.ko\(\.[^\.]\+\)\?$$//' | sort -u | tr '\n' ' '
-	@printf '\n'
+install$(INSTALL_TARGET_SUFFIX): pack
+	@$(VMSG) "Installing image ..."
 	@if [ -f "$(TEMPDIR)/images" ] && grep -Fxqs "$(IMAGEFILE)" "$(TEMPDIR)/images"; then \
 	    echo ""; \
-	    echo "An attempt to create two images with the same name. There is possibility" >&2; \
-	    echo "that you forgot to define IMAGE_SUFFIX or IMAGEFILE in one of the config files." >&2; \
-	    echo "" >&2; \
-	    echo "ERROR: Unable to overwrite the image $(IMAGEFILE)" >&2; \
-	    echo "" >&2; \
+	    echo "An attempt to create two images with the same name. There is possibility"; \
+	    echo "that you forgot to define IMAGE_SUFFIX or IMAGEFILE in one of the config files."; \
+	    echo ""; \
+	    echo "ERROR: Unable to overwrite the image $(IMAGEFILE)"; \
+	    echo ""; \
 	    exit 1; \
-	else \
-	    $(VMSG) "Installing image ..."; \
-	    $(MSG) "Unpacked size: `du -sh "$(ROOTDIR)" |cut -f1 ||:`"; \
-	    $(MSG) "Image size: `du -sh "$(WORKDIR)/initrd.img" |cut -f1 ||:`"; \
-	    chmod 600 -- "$(WORKDIR)/initrd.img"; \
-	    mv -f $(verbose) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"; \
-	    echo "$(IMAGEFILE)" >> "$(TEMPDIR)/images"; \
-	fi
+	fi >&2
+	@$(TOOLSDIR)/show-install-info "$(WORKDIR)/initrd.img"
+	@chmod 600 -- "$(WORKDIR)/initrd.img"
+	@mv -f $(verbose) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"
+	@echo "$(IMAGEFILE)" >> "$(TEMPDIR)/images"
 
 genimage: install
 	@$(MSG) "Image is saved as $(IMAGEFILE)"
