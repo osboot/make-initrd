@@ -34,6 +34,11 @@ handler_step()
 	pipe_name "$pipenum"
 	pipe_callnum "$pipenum"
 
+	if [ -z "${name-}" ] || [ -z "${callnum-}" ]; then
+		message "step #$pipenum: unable to get name. stopping..."
+		return 0
+	fi
+
 	exe="$handlerdir/$name"
 
 	if [ ! -x "$exe" ]; then

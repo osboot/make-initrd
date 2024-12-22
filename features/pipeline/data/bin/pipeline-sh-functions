@@ -55,8 +55,10 @@ pipe_name()
 
 	IFS="," read -r -a arr <<<"$PIPELINE"
 
-	[ "$1" -lt "${#arr[@]}" ] ||
+	if [ "$1" -ge "${#arr[@]}" ]; then
+		eval "name=\"\""
 		return 0
+	fi
 
 	local n="$1"
 
@@ -72,8 +74,10 @@ pipe_callnum()
 
 	IFS="," read -r -a arr <<<"$PIPELINE"
 
-	[ "$1" -lt "${#arr[@]}" ] ||
+	if [ "$1" -ge "${#arr[@]}" ]; then
+		eval "callnum=\"\""
 		return 0
+	fi
 
 	local n="$1"
 
