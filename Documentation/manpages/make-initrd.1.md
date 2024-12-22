@@ -48,6 +48,9 @@ Without options, the program generates images for all the configuration files.
 	  required : guestfs kickstart
 	```
 
+*uki*
+	Creates an UEFI executable with the kernel, cmdline and initramfs combined.
+
 # OPTIONS
 *-D, --no-depmod*
 	don’t recreate a list of module dependencies.
