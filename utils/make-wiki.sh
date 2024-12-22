@@ -31,6 +31,7 @@ find Documentation/ \
 	\( \
 		   -name '*.md'             -a \
 		\! -name 'README.md'        -a \
+		\! -path '*/manpages/*'        \
 		\! -path '*/presentation/*'   \
 	\) \
 	-exec cp -f -t .wiki -- '{}' '+'
