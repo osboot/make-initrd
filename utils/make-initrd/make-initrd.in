@@ -150,6 +150,18 @@ while :; do
 	shift
 done
 
+args=()
+vars=()
+
+for a in "$@"; do
+	case "$a" in
+		[!=]*=*) vars+=("$a") ;;
+		*)       args+=("$a") ;;
+	esac
+done
+
+set -- "${args[@]}"
+
 case "${1-}" in
 	guess-config|bug-report)
 		;;
@@ -249,4 +261,4 @@ case "$make_version" in
 esac
 
 make $output_sync --no-print-directory -r \
-	-f @projectdir@/mk/main.mk -- "$@" 4>&1 >&2
+	-f @projectdir@/mk/main.mk -- "$@" "${vars[@]}" 4>&1 >&2
