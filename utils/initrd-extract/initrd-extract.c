@@ -52,7 +52,7 @@ print_version(const char *progname)
 	printf("%s version " PACKAGE_VERSION "\n"
 	       "Written by Alexey Gladkov <gladkov.alexey@gmail.com>\n"
 	       "\n"
-	       "Copyright (C) 2017  Alexey Gladkov <gladkov.alexey@gmail.com>\n"
+	       "Copyright (C) 2017-2024  Alexey Gladkov <gladkov.alexey@gmail.com>\n"
 	       "This is free software; see the source for copying conditions.  There is NO\n"
 	       "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
 	       "\n",

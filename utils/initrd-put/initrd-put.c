@@ -741,7 +741,7 @@ void show_version(void)
 	        "%1$s version " PACKAGE_VERSION "\n"
 	        "Written by Alexey Gladkov.\n"
 	        "\n"
-	        "Copyright (C) 2012-2020  Alexey Gladkov <gladkov.alexey@gmail.com>\n"
+	        "Copyright (C) 2012-2024  Alexey Gladkov <gladkov.alexey@gmail.com>\n"
 	        "This is free software; see the source for copying conditions.  There is NO\n"
 	        "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n",
 	        progname

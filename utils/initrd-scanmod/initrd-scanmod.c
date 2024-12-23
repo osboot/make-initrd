@@ -50,7 +50,7 @@ print_version_and_exit(const char *progname)
 	dprintf(STDOUT_FILENO, "%s version %s\n", progname, PACKAGE_VERSION);
 	dprintf(STDOUT_FILENO,
 	        "Written by Alexey Gladkov.\n\n"
-	        "Copyright (C) 2018  Alexey Gladkov <gladkov.alexey@gmail.com>\n"
+	        "Copyright (C) 2018-2024  Alexey Gladkov <gladkov.alexey@gmail.com>\n"
 	        "This is free software; see the source for copying conditions.  There is NO\n"
 	        "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
 	exit(EXIT_SUCCESS);

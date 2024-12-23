@@ -22,7 +22,7 @@ print_version() {
 	make-initrd version @PACKAGE_VERSION@
 	Written by Alexey Gladkov, Kirill Shutemov.
 
-	Copyright (C) 2009,2010  Alexey Gladkov <gladkov.alexey@gmail.com>
+	Copyright (C) 2009,2024  Alexey Gladkov <gladkov.alexey@gmail.com>
 	Copyright (C) 2009,2010  Kirill A. Shutemov <kirill@shutemov.name>
 	This is free software; see the source for copying conditions.  There is NO
 	warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
