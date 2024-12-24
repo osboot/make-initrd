@@ -201,9 +201,8 @@ append_progs \
         append_libs optional ${PUT_FEATURE_OPTIONAL_LIBS-}
 
 while read -d: -r n; do
-	[ -n "$n" ] ||
+	[ -n "$n" ] && [ -d "$n" ] ||
 		continue
-	(set +f; shopt -s nullglob dotglob; printf '%s\n' "$n"/*) > "$TEMPDIR/list"
 	while read -r bin; do
 		[ -n "$bin" ] ||
 			continue
@@ -218,9 +217,8 @@ while read -d: -r n; do
 				continue
 			append_uniq FILES "$bin"
 		done
-	done < "$TEMPDIR/list"
+	done < <(set +f; shopt -s nullglob dotglob; printf '%s\n' "$n"/*)
 done <<<"$BUILDDIR_PATH:$BUSYBOX_PATH:$SYSTEM_PATH"
-rm -f -- "$TEMPDIR/list"
 
 for n in ${PUT_FEATURE_FILES-} $PUT_FILES; do
 	append_uniq FILES "$n"
