@@ -9,6 +9,9 @@ LOCALFILES=()
 FILES=()
 DIRS=()
 
+LIB_PATHS=()
+BIN_PATHS=()
+
 append_uniq()
 {
 	local arr i sz v
@@ -35,19 +38,7 @@ in_features_bindir()
 
 append_progs()
 {
-	local n f d SEARCH_PATH=''
-
-	[ -z "$LOCALBUILDDIR" ] ||
-		SEARCH_PATH="$LOCALBUILDDIR$RUNTIMEDIR/sbin:$LOCALBUILDDIR$RUNTIMEDIR/bin"
-
-	for n in $ALL_ACTIVE_FEATURES; do
-		for d in "$LOCALBUILDDIR$BIN_FEATURESDIR/$n"/{bin,sbin} "$BIN_FEATURESDIR/$n"/{bin,sbin}; do
-			[ ! -d "$d" ] ||
-				SEARCH_PATH="${SEARCH_PATH:+$SEARCH_PATH:}$d"
-		done
-	done
-
-	SEARCH_PATH="${SEARCH_PATH:+$SEARCH_PATH:}$BUSYBOX_PATH:$SYSTEM_PATH"
+	local n f path found
 
 	for n; do
 		[ -n "$n" ] ||
@@ -61,15 +52,13 @@ append_progs()
 			n="${n##*/}"
 		fi
 		found=
-		while read -d: -r path; do
-			[ -n "$path" ] ||
-				continue
+		for path in "${BIN_PATHS[@]}"; do
 			f="$path/$n"
 			if [ -x "$f" ]; then
 				found=1
 				break
 			fi
-		done <<<"$SEARCH_PATH"
+		done
 
 		[ -n "$found" ] ||
 			fatal "Not found utility: $n"
@@ -90,14 +79,45 @@ append_progs()
 	done
 }
 
+get_lib_paths()
+{
+	LIB_PATHS=()
+
+	local l
+	while read -r l; do
+		if [[ "$l" =~ ^(/[^:]+): ]]; then
+			LIB_PATHS+=("${BASH_REMATCH[1]}")
+		fi
+	done < <(ldconfig -vNX 2>/dev/null)
+}
+
+get_bin_paths()
+{
+	BIN_PATHS=()
+
+	[ -z "$LOCALBUILDDIR" ] ||
+		BIN_PATHS+=("$LOCALBUILDDIR$RUNTIMEDIR/sbin" "$LOCALBUILDDIR$RUNTIMEDIR/bin")
+
+	local n d
+	for n in $ALL_ACTIVE_FEATURES; do
+		for d in "$LOCALBUILDDIR$BIN_FEATURESDIR/$n"/{bin,sbin} "$BIN_FEATURESDIR/$n"/{bin,sbin}; do
+			[ ! -d "$d" ] ||
+				BIN_PATHS+=("$d")
+		done
+	done
+
+	while read -r -d: d; do
+		[ ! -d "$d" ] ||
+			BIN_PATHS+=("$d")
+	done <<<"$BUSYBOX_PATH:$SYSTEM_PATH"
+}
+
 append_libs()
 {
-	local n fn SEARCH_PATH optional
+	local n fn optional
 
 	optional="$1"
 	shift
-
-	SEARCH_PATH="$(ldconfig -vNX 2>/dev/null | grep ^/ | cut -d: -f1)"
 
 	for n; do
 		[ -n "$n" ] ||
@@ -114,13 +134,10 @@ append_libs()
 		local fn="$n"
 		names=("$fn")
 		[[ "$fn" == *".so"* ]] || { fn="$fn.so"; names+=("$fn"); }
-		[[ "$fn" == "lib"* ]]  || { fn="lib$fn"; names+=("$fn");}
+		[[ "$fn" == "lib"*  ]] || { fn="lib$fn"; names+=("$fn"); }
 
 		found=
-		for path in $SEARCH_PATH; do
-			[ -n "$path" ] ||
-				continue
-
+		for path in "${LIB_PATHS[@]}"; do
 			for fn in "${names[@]}"; do
 				f="$path/$fn"
 				if [ -f "$f" ] || [ -h "$f" ]; then
@@ -140,6 +157,9 @@ append_libs()
 
 	done
 }
+
+get_bin_paths
+get_lib_paths
 
 for n in \
 	"$RUNTIMEDIR" "$BASEDATADIR" \
