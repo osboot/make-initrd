@@ -86,6 +86,7 @@ jobs:
           "btrfs-subvol",
           "efi-partition",
           "efi-reqpartition",
+          "f2fs-partition",
           "luks",
           "luks+crypttab+noparam",
           "luks+lukskey-noparam",
