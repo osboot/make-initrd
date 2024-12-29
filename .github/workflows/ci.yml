@@ -103,6 +103,7 @@ jobs:
           "raid1+raid5",
           "raid1-degraded",
           "raid5",
+          "xfs-partition",
           "zfs-partition",
         ]
         exclude:
