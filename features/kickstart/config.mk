@@ -16,6 +16,7 @@ KICKSTART_PROGS_PATTERNS = \
 			   */mkfs.fat \
 			   */mkfs.reiserfs \
 			   */mkfs.vfat \
+			   */mkfs.f2fs \
 			   #
 
 KICKSTART_DATADIR = $(FEATURESDIR)/kickstart/data
