@@ -400,6 +400,7 @@ makefs()
 	case "$fstype" in
 		swap) mkswap -f ${label:+-L "$label"} "/dev/$dev" >/dev/null ;;
 		fat|vfat) mkfs."$fstype" ${label:+-n "$label"} "/dev/$dev" >/dev/null ;;
+		f2fs) "mkfs.$fstype" -q ${label:+-l "$label"} "/dev/$dev" ;;
 		*) "mkfs.$fstype" -q ${label:+-L "$label"} "/dev/$dev" ;;
 	esac
 }
