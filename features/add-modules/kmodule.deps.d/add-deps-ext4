@@ -15,9 +15,9 @@ depinfo --set-version="$kernel" -D "$modname" 2>/dev/null |
 	grep -E -qs '^module ' ||
 	exit 0
 
-printf '%s\n' crc32c
+printf '%s\n' crc32c crc32-generic
 
-grep -E '^alias crc32c ' "$kernel_modules_dir"/modules.alias |
+grep -E '^alias crc32c? ' "$kernel_modules_dir"/modules.alias |
 while read -r prefix alias module; do
 	printf '%s\n' "$module"
 done
