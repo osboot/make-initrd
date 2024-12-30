@@ -17,8 +17,6 @@ MAKE_INITRD_PACKAGES+=" fuse-sshfs"
 
 TESTNAME="$1"; shift
 
-KICKSTART_DISKS=0
-BOOT_DISKS=0
 BOOT_CMDLINE="console=ttyS0,115200n8 fastboot rw"
 
 eval $(sed -n -e 's/^# param //p' "$topdir/testing/$TESTNAME.cfg")

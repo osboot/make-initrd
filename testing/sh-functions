@@ -1,6 +1,12 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+KICKSTART_DISKS=0
+KICKSTART_SDCARDS=0
+BOOT_DISKS=0
+BOOT_SDCARDS=0
+BOOT_CMDLINE=""
+
 PROG="${0##*/}"
 TEST=
 message()
@@ -170,6 +176,7 @@ create_qemu_wrapper()
 	qemu_args+=( -pidfile "$top_workdir/qemu.pid" )
 	. "$top_workdir/qemu-cpu"
 	. "$top_workdir/qemu-disks"
+	. "$top_workdir/qemu-sdcards"
 	set -x
 	exec qemu-system-$ARCH "\${qemu_args[@]}"
 	EOF
@@ -188,7 +195,7 @@ qemu_create_disk()
 	i="$1"; shift
 	fn="$1"; shift
 	fmt="${QEMU_DISK_FORMAT:-qcow2}"
-	size="3G"
+	size="4G"
 
 	[ ! -f "$fn" ] ||
 		return 0
@@ -222,10 +229,32 @@ qemu_init_blockdev()
 {
 	:> "$top_workdir/disks.map"
 	:> "$top_workdir/qemu-disks"
+	:> "$workdir/qemu-sdcards"
 
 	qemu_args \
 	 -device "virtio-scsi-pci,id=scsi" \
 	 >"$workdir/qemu-disks"
+
+	qemu_args \
+	 -device "sdhci-pci" \
+	 >"$workdir/qemu-sdcards"
+}
+
+qemu_add_sdcard()
+{
+	local fn fmt i
+
+	i="$1"; shift
+	fn="$1"; shift
+
+	[ "$#" -eq 0 ] &&
+		fmt="${QEMU_SDCARD_FORMAT:-qcow2}" ||
+		fmt="$1"
+
+	qemu_args \
+	 -device "sd-card,drive=sdcard-$i" \
+	 -drive "id=sdcard-$i,if=none,format=$fmt,file=$fn" \
+	 >>"$workdir/qemu-sdcards"
 }
 
 qemu_add_disk()
@@ -256,6 +285,10 @@ qemu_setup_boot_disks()
 	done
 
 	qemu_activate_disks
+
+	for (( i=1; i <= BOOT_SDCARDS; i++ )); do
+		qemu_add_sdcard "$i" "$top_workdir/sdcard-$i.img"
+	done
 }
 
 qemu_setup_kickstart_disks()
@@ -276,6 +309,15 @@ qemu_setup_kickstart_disks()
 	done
 
 	qemu_activate_disks
+
+	for (( i=1; i <= KICKSTART_SDCARDS; i++ )); do
+		message "creating QEMU sdcard $i ..."
+
+		fn="$top_workdir/sdcard-$i.img"
+
+		qemu_create_disk "$i" "$fn"
+		qemu_add_sdcard "$i" "$fn"
+	done
 }
 
 qemu_calc_boot_duration()

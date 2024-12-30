@@ -15,10 +15,6 @@ readonly KERNEL_FLAVOR=-generic
 
 TESTNAME="$1"; shift
 
-KICKSTART_DISKS=0
-BOOT_DISKS=0
-BOOT_CMDLINE=""
-
 eval $(sed -n -e 's/^# param //p' "$topdir/testing/$TESTNAME.cfg")
 
 readonly builddir=/srv
@@ -144,7 +140,7 @@ for step in "$@"; do
 			 AUTODETECT =
 			 IMAGEFILE = /boot/initrd-ks.img
 			 DISABLE_FEATURES += ucode
-			 FEATURES = add-modules add-udev-rules kickstart qemu rdshell modules-virtio
+			 FEATURES = add-modules add-udev-rules kickstart qemu rdshell modules-virtio modules-blockdev
 			 MODULES_ADD += sd_mod
 			 MODULES_PRELOAD += virtio-blk virtio-scsi virtio-pci
 			 KICKSTART_CONFIGS = $builddir/$workdir/ks.cfg
