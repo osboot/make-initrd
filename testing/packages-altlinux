@@ -9,7 +9,7 @@ MAKE_INITRD_PACKAGES_DEVEL+=" libkmod-devel zlib-devel bzlib-devel liblzma-devel
 MAKE_INITRD_PACKAGES_DEVEL+=" libzstd-devel libelf-devel libtirpc-devel libcrypt-devel"
 MAKE_INITRD_PACKAGES_DEVEL+=" libjson-c-devel"
 
-KERNEL_PACKAGES="kernel$KERNEL_FLAVOR"
+KERNEL_PACKAGES="kernel-latest"
 
 BOOTLOADER_EFI_PACKAGES="grub-common grub-efi"
 BOOTLOADER_PC_PACKAGES="grub-common grub-pc"

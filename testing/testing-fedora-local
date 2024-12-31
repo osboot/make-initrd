@@ -9,7 +9,6 @@ topdir="${topdir%/*/*}"
 readonly VENDOR=fedora
 readonly ARCH=x86_64
 readonly IMAGE=fedora:latest
-readonly KERNEL_FLAVOR=
 
 . "$topdir/testing/packages-$VENDOR"
 
@@ -97,29 +96,7 @@ for step in "$@"; do
 				  [ ! -e "/lib/modules/\$kver/\$i" ] || cp -a "/lib/modules/\$kver/\$i" "/boot/\$i-\$kver"; \
 				 done
 				RUN \
-				 find /lib/modules \( \
-				  -path '*/kernel/drivers/bluetooth/*' -o \
-				  -path '*/kernel/drivers/gpio/*' -o \
-				  -path '*/kernel/drivers/gpu/*' -o \
-				  -path '*/kernel/drivers/hwmon/*' -o \
-				  -path '*/kernel/drivers/i2c/*' -o \
-				  -path '*/kernel/drivers/iio/*' -o \
-				  -path '*/kernel/drivers/infiniband/*' -o \
-				  -path '*/kernel/drivers/input/joystick/*' -o \
-				  -path '*/kernel/drivers/input/misc/*' -o \
-				  -path '*/kernel/drivers/input/touchscreen/*' -o \
-				  -path '*/kernel/drivers/isdn/*' -o \
-				  -path '*/kernel/drivers/leds/*' -o \
-				  -path '*/kernel/drivers/media-core/*' -o \
-				  -path '*/kernel/drivers/net/*' -o \
-				  -path '*/kernel/drivers/net/usb/*' -o \
-				  -path '*/kernel/drivers/nfc/*' -o \
-				  -path '*/kernel/drivers/power/*' -o \
-				  -path '*/kernel/drivers/usb/*' -o \
-				  -path '*/kernel/drivers/video/*' -o \
-				  -path '*/kernel/drivers/watchdog/*' -o \
-				  -path '*/kernel/sound/*' \
-				  \) -delete; \
+				 find /lib/modules $(sysimage_ignore_kmodules) -delete; \
 				 find /usr/share/locale/ -mindepth 3 -maxdepth 3 -type f -name '*.mo' -delete; \
 				 for d in \
 				  /usr/share/doc/ \

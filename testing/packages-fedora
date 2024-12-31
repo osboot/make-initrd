@@ -9,7 +9,7 @@ MAKE_INITRD_PACKAGES_DEVEL+=" kmod-devel zlib-ng-devel bzip2-devel xz-devel libx
 MAKE_INITRD_PACKAGES_DEVEL+=" libzstd-devel elfutils-libelf-devel libtirpc-devel"
 MAKE_INITRD_PACKAGES_DEVEL+=" json-c-devel"
 
-KERNEL_PACKAGES="kernel$KERNEL_FLAVOR kernel-modules"
+KERNEL_PACKAGES="kernel kernel-modules"
 
 BOOTLOADER_EFI_PACKAGES="grub2-efi-x64 grub2-efi-x64-modules"
 BOOTLOADER_PC_PACKAGES="grub2-pc grub2-pc-modules"

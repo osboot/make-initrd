@@ -9,7 +9,6 @@ topdir="${topdir%/*/*}"
 readonly VENDOR=altlinux
 readonly ARCH=x86_64
 readonly IMAGE=alt:sisyphus
-readonly KERNEL_FLAVOR=-latest
 
 . "$topdir/testing/packages-$VENDOR"
 

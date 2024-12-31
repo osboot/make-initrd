@@ -9,7 +9,7 @@ MAKE_INITRD_PACKAGES_DEVEL+=" libkmod-dev libz-dev libbz2-dev liblzma-dev"
 MAKE_INITRD_PACKAGES_DEVEL+=" libzstd-dev libelf-dev libtirpc-dev libcrypt-dev"
 MAKE_INITRD_PACKAGES_DEVEL+=" libjson-c-dev"
 
-KERNEL_PACKAGES="linux$KERNEL_FLAVOR"
+KERNEL_PACKAGES="linux-generic"
 
 BOOTLOADER_EFI_PACKAGES="grub-efi"
 BOOTLOADER_PC_PACKAGES="grub-pc"

@@ -428,3 +428,33 @@ qemu_watchdog()
 	done
 }
 
+sysimage_ignore_kmodules()
+{
+	printf " '%s'" \
+		'(' \
+			-path '*/kernel/drivers/bluetooth/*' -o \
+			-path '*/kernel/drivers/gpio/*' -o \
+			-path '*/kernel/drivers/gpu/*' -o \
+			-path '*/kernel/drivers/hwmon/*' -o \
+			-path '*/kernel/drivers/hwtracing/*' -o \
+			-path '*/kernel/drivers/i2c/*' -o \
+			-path '*/kernel/drivers/iio/*' -o \
+			-path '*/kernel/drivers/infiniband/*' -o \
+			-path '*/kernel/drivers/input/joystick/*' -o \
+			-path '*/kernel/drivers/input/misc/*' -o \
+			-path '*/kernel/drivers/input/touchscreen/*' -o \
+			-path '*/kernel/drivers/isdn/*' -o \
+			-path '*/kernel/drivers/leds/*' -o \
+			-path '*/kernel/drivers/media-core/*' -o \
+			-path '*/kernel/drivers/net/*' -o \
+			-path '*/kernel/drivers/net/usb/*' -o \
+			-path '*/kernel/drivers/nfc/*' -o \
+			-path '*/kernel/drivers/pcmcia/*' -o \
+			-path '*/kernel/drivers/power/*' -o \
+			-path '*/kernel/drivers/usb/*' -o \
+			-path '*/kernel/drivers/video/*' -o \
+			-path '*/kernel/drivers/watchdog/*' -o \
+			-path '*/kernel/drivers/xen/*' -o \
+			-path '*/kernel/sound/*' \
+		')'
+}

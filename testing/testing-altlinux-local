@@ -9,7 +9,6 @@ topdir="${topdir%/*/*}"
 readonly VENDOR=altlinux
 readonly ARCH=x86_64
 readonly IMAGE=alt:sisyphus
-readonly KERNEL_FLAVOR=-latest
 
 . "$topdir/testing/packages-$VENDOR"
 
@@ -100,29 +99,7 @@ for step in "$@"; do
 				RUN apt-get $apt_args install $SYSIMAGE_LOCAL_INIT_PACKAGES $SYSIMAGE_PACKAGES $KERNEL_PACKAGES
 				RUN apt-get $apt_args clean
 				RUN \
-				 find /lib/modules \( \
-				  -path '*/kernel/drivers/bluetooth/*' -o \
-				  -path '*/kernel/drivers/gpio/*' -o \
-				  -path '*/kernel/drivers/gpu/*' -o \
-				  -path '*/kernel/drivers/hwmon/*' -o \
-				  -path '*/kernel/drivers/i2c/*' -o \
-				  -path '*/kernel/drivers/iio/*' -o \
-				  -path '*/kernel/drivers/infiniband/*' -o \
-				  -path '*/kernel/drivers/input/joystick/*' -o \
-				  -path '*/kernel/drivers/input/misc/*' -o \
-				  -path '*/kernel/drivers/input/touchscreen/*' -o \
-				  -path '*/kernel/drivers/isdn/*' -o \
-				  -path '*/kernel/drivers/leds/*' -o \
-				  -path '*/kernel/drivers/media-core/*' -o \
-				  -path '*/kernel/drivers/net/*' -o \
-				  -path '*/kernel/drivers/net/usb/*' -o \
-				  -path '*/kernel/drivers/nfc/*' -o \
-				  -path '*/kernel/drivers/power/*' -o \
-				  -path '*/kernel/drivers/usb/*' -o \
-				  -path '*/kernel/drivers/video/*' -o \
-				  -path '*/kernel/drivers/watchdog/*' -o \
-				  -path '*/kernel/sound/*' \
-				  \) -delete; \
+				 find /lib/modules $(sysimage_ignore_kmodules) -delete; \
 				 find /usr/share/license /usr/share/license-exception -delete; \
 				 find /usr/share/locale/ -mindepth 3 -maxdepth 3 -type f -name '*.mo' -delete; \
 				 find /usr/share/doc/ /usr/share/man/ /usr/share/info/ -mindepth 1 -delete; \
