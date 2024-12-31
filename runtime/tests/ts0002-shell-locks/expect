@@ -1,5 +1,0 @@
-=== step 1 ===
-/proc/self/fdinfo/91:lock:	1: FLOCK  ADVISORY  WRITE 
-=== step 2 ===
-/proc/self/fdinfo/91:lock:	1: FLOCK  ADVISORY  WRITE 
-rc=0
