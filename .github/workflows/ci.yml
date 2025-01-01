@@ -111,16 +111,7 @@ jobs:
         ]
         exclude:
           - name: fedora
-            testcase: efi-partition
-          - name: fedora
-            testcase: efi-reqpartition
-          - name: fedora
             testcase: zfs-partition
-
-          - name: ubuntu
-            testcase: efi-partition
-          - name: ubuntu
-            testcase: efi-reqpartition
 
           - name: altlinux
             testcase: zfs-partition

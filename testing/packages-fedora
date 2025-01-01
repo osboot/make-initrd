@@ -11,7 +11,7 @@ MAKE_INITRD_PACKAGES_DEVEL+=" json-c-devel"
 
 KERNEL_PACKAGES="kernel kernel-modules"
 
-BOOTLOADER_EFI_PACKAGES="grub2-efi-x64 grub2-efi-x64-modules"
+BOOTLOADER_EFI_PACKAGES="systemd-boot-unsigned"
 BOOTLOADER_PC_PACKAGES="grub2-pc grub2-pc-modules"
 
 SYSIMAGE_BASE_PACKAGES="$MAKE_INITRD_PACKAGES $KERNEL_PACKAGES systemd"
