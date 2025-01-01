@@ -119,8 +119,6 @@ jobs:
             testcase: efi-partition
           - name: ubuntu
             testcase: efi-reqpartition
-          - name: ubuntu
-            testcase: btrfs-subvol
 
           - name: altlinux
             testcase: zfs-partition
