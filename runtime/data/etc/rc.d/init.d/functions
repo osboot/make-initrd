@@ -56,7 +56,7 @@ fi
 start_daemon()
 {
 	# Process options.
-	local ANNOUNCE=1 BACKGROUND='' BASENAME='' CHECK='' CMDNAME='' DISPNAME='' EXPECT='' FLAGS='' LOCKFILE='' MAKE_PIDFILE='' NICE=0 PIDFILE='' STATUS='' SU='' WHICH=''
+	local FLAGS ANNOUNCE=1 BACKGROUND='' BASENAME='' CHECK='' CMDNAME='' DISPNAME='' LOCKFILE='' MAKE_PIDFILE='' NICE=0 PIDFILE='' STATUS='' WHICH=''
 
 	while [ "$1" != "${1##[-+]}" ]; do
 		case "$1" in
@@ -110,18 +110,25 @@ start_daemon()
 		msg_usage "start_daemon [options]... {program}..."
 		return 1
 	fi
+
 	if [ -n "$CHECK" ] && [ -n "$CMDNAME" ]; then
 		echo >&2 "start_daemon: --check and --name are mutually exclusive options"
 		return 1
 	fi
+
 	if [ -n "$CMDNAME" ] && [ -z "$PIDFILE" ]; then
 		echo >&2 "start_daemon: --name is set but --pidfile is not set"
 		return 1
 	fi
 
 	# We need the absolute pathname.
-	[ -z "$CHECK" ] || CHECK="$(absolute "$CHECK")" || return 1
-	WHICH="$(absolute "$1")" || return 1
+	[ -z "$CHECK" ] ||
+		CHECK="$(absolute "$CHECK")" ||
+		return 1
+
+	WHICH="$(absolute "$1")" ||
+		return 1
+
 	if [ -n "$CMDNAME" ]; then
 		BASENAME="${CMDNAME##*/}"
 	elif [ -n "$CHECK" ]; then
@@ -130,36 +137,34 @@ start_daemon()
 		BASENAME="${1##*/}"
 	fi
 	shift
-	[ -n "$BASENAME" ] || return 1
-	[ -n "$DISPNAME" ] || DISPNAME="$BASENAME"
+
+	[ -n "$BASENAME" ] ||
+		return 1
+
+	DISPNAME="${DISPNAME:-$BASENAME}"
 
 	[ "${RDLOG-}" != 'console' ] ||
 		ANNOUNCE=''
 
-	# Use a safe umask
-	#umask 077
+	FLAGS=("--start" "-N" "$NICE")
 
-	# Don't export these because they may be invalid under another UID and the
-	# directories may be gone while the daemon is still running.
-	local HOME='' TMP='' TMPDIR=''
-
-	FLAGS="--start -N $NICE"
 	if [ -n "$CMDNAME" ]; then
-		FLAGS="$FLAGS --startas $WHICH --name $CMDNAME"
+		FLAGS+=("--startas" "$WHICH" "--name" "$CMDNAME")
 	elif [ -n "$CHECK" ]; then
-		FLAGS="$FLAGS --exec $CHECK --startas $WHICH"
+		FLAGS+=("--exec" "$CHECK" "--startas" "$WHICH")
 	else
-		FLAGS="$FLAGS --exec $WHICH"
+		FLAGS+=("--exec" "$WHICH")
 	fi
-	[ -z "$PIDFILE" ] || FLAGS="$FLAGS --pidfile $PIDFILE"
-	[ -z "$BACKGROUND" ] || FLAGS="$FLAGS $BACKGROUND"
-	[ -z "$MAKE_PIDFILE" ] || FLAGS="$FLAGS $MAKE_PIDFILE"
+	[ -z "$PIDFILE"      ] || FLAGS+=("--pidfile" "$PIDFILE")
+	[ -z "$BACKGROUND"   ] || FLAGS+=("$BACKGROUND")
+	[ -z "$MAKE_PIDFILE" ] || FLAGS+=("$MAKE_PIDFILE")
 
 	# Announce the action.
-	[ -z "$ANNOUNCE" ] || msg_starting "$DISPNAME"
+	[ -z "$ANNOUNCE" ] ||
+		msg_starting "$DISPNAME"
 
 	# Actually start the daemon.
-	start-stop-daemon $FLAGS -- "$@"
+	start-stop-daemon "${FLAGS[@]}" -- "$@"
 	STATUS=$?
 
 	if [ $STATUS = 0 ]; then
@@ -173,13 +178,35 @@ start_daemon()
 	return $STATUS
 }
 
+guess_basename_dispname()
+{
+	[ -n "$CMDNAME" ] &&
+		BASENAME="${CMDNAME##*/}" ||
+		BASENAME="${NAME##*/}" ||
+		return 1
+
+	DISPNAME="${DISPNAME:-$BASENAME}"
+}
+
+guess_pidfile()
+{
+	# Try to guess the PID file if one isn't specified manually.
+	if [ -z "$PIDFILE" ]; then
+		PIDFILE="/var/run/$BASENAME.pid"
+		[ -f "$PIDFILE" ] || PIDFILE=
+	elif [ "$PIDFILE" = none ]; then
+		PIDFILE=
+	fi
+}
+
 stop_daemon()
 {
 	# Process options.
-	local ANNOUNCE=1 BASENAME='' CMDNAME='' DEFAULT=true DISPNAME='' EXPECT='' FLAGS='' LOCKFILE='' MESSAGE='' NAME='' PIDFILE='' RETRY='' SIGNAL='' STATUS='' WHICH=''
+	local FLAGS ANNOUNCE=1 BASENAME='' CMDNAME='' DEFAULT=true DISPNAME='' LOCKFILE='' MESSAGE='' NAME='' PIDFILE='' RETRY='' SIGNAL='' STATUS='' WHICH=''
 
 	# start-stop-daemon wants a signal number.
 	SIGNAL="$(/bin/kill -l TERM)" || SIGNAL=15
+
 	while [ $# -ge 1 ]; do
 		case "$1" in
 		--) shift
@@ -234,51 +261,44 @@ stop_daemon()
 		msg_usage "stop_daemon [options]... {program}..."
 		return 1
 	fi
-	WHICH="$(absolute "$NAME")" || return 1
-	[ -n "$CMDNAME" ] &&
-		BASENAME="${CMDNAME##*/}" ||
-		BASENAME="${NAME##*/}" || return 1
 
-	[ -n "$DISPNAME" ] || DISPNAME="$BASENAME"
+	WHICH="$(absolute "$NAME")" ||
+		return 1
 
 	[ "${RDLOG-}" != 'console' ] ||
 		ANNOUNCE=''
 
-	# Try to guess the PID file if one isn't specified manually.
-	if [ -z "$PIDFILE" ]; then
-		PIDFILE="/var/run/$BASENAME.pid"
-		[ -f "$PIDFILE" ] || PIDFILE=
-	elif [ "$PIDFILE" = none ]; then
-		PIDFILE=
-	fi
+	guess_basename_dispname
+	guess_pidfile
 
 	if [ -n "$CMDNAME" ] && [ -z "$PIDFILE" ]; then
 		echo "stop_daemon: --name is set but --pidfile is not set" >&2
 		return 1
 	fi
 
-	FLAGS="--stop -q"
-	[ -z "$CMDNAME" ] &&
-		FLAGS="$FLAGS --exec $WHICH" ||
-		FLAGS="$FLAGS --name $CMDNAME"
-	[ -z "$PIDFILE" ] || FLAGS="$FLAGS --pidfile $PIDFILE"
-#	[ -z "$RETRY" ] || FLAGS="$FLAGS --retry $RETRY"
+	FLAGS=("--stop" "-q")
 
-	if [ "$DEFAULT" = true ]; then
-		MESSAGE="$BASENAME shutdown"
-	else
-		MESSAGE="sending signal $SIGNAL to $BASENAME"
-	fi
+	[ -z "$CMDNAME" ] &&
+		FLAGS+=("--exec" "$WHICH") ||
+		FLAGS+=("--name" "$CMDNAME")
+
+	[ -z "$PIDFILE" ] ||
+		FLAGS+=("--pidfile" "$PIDFILE")
 
 	# Announce the action.
-	[ -z "$ANNOUNCE" ] || msg_stopping "$DISPNAME"
+	[ -z "$ANNOUNCE" ] ||
+		msg_stopping "$DISPNAME"
 
 	# Actually tell the daemon to stop.
-	start-stop-daemon $FLAGS --signal "$SIGNAL"
+	start-stop-daemon "${FLAGS[@]}" --signal "$SIGNAL"
 	STATUS=$?
 
+	[ "$DEFAULT" = true ] &&
+		MESSAGE="$BASENAME shutdown" ||
+		MESSAGE="sending signal $SIGNAL to $BASENAME"
+
 	if [ $STATUS = 0 ]; then
-		[ -z "$PIDFILE" ] || rm -f "$PIDFILE"
+		[ -z "$PIDFILE"  ] || rm -f "$PIDFILE"
 		[ -z "$LOCKFILE" ] || rm -f "$LOCKFILE"
 		[ "$BOOTUP" != verbose ] || echo -n " $DISPNAME "
 		success "$MESSAGE"
@@ -298,7 +318,7 @@ status()
 	fi
 
 	# Process options.
-	local BASENAME='' CMDNAME='' DISPNAME='' EXPECT='' FLAGS='' LOCKFILE='' PIDFILE='' WHICH=''
+	local FLAGS BASENAME='' CMDNAME='' DISPNAME='' LOCKFILE='' PIDFILE='' WHICH=''
 
 	while [ "$1" != "${1##-}" ]; do
 		case "$1" in
@@ -332,20 +352,12 @@ status()
 		msg_usage "status [options]... {program}"
 		return 1
 	fi
-	WHICH="$(absolute "$1")" || return 1
-	[ -n "$CMDNAME" ] &&
-		BASENAME="${CMDNAME##*/}" ||
-		BASENAME="${1##*/}" || return 1
 
-	[ -n "$DISPNAME" ] || DISPNAME="$BASENAME"
+	WHICH="$(absolute "$1")" ||
+		return 1
 
-	# Try to guess the PID file if one isn't specified manually.
-	if [ -z "$PIDFILE" ]; then
-		PIDFILE="/var/run/$BASENAME.pid"
-		test -f "$PIDFILE" || PIDFILE=
-	elif [ "$PIDFILE" = none ]; then
-		PIDFILE=
-	fi
+	guess_basename_dispname
+	guess_pidfile
 
 	if [ -n "$CMDNAME" ] && [ -z "$PIDFILE" ]; then
 		echo "status: --name is set but --pidfile is not set" >&2
@@ -353,14 +365,17 @@ status()
 	fi
 
 	# Actually determine the status.
-	FLAGS="--stop --test"
-	[ -z "$CMDNAME" ] &&
-		FLAGS="$FLAGS --exec $WHICH" ||
-		FLAGS="$FLAGS --name $CMDNAME"
-	[ -z "$PIDFILE" ] || FLAGS="$FLAGS --pidfile $PIDFILE"
+	FLAGS=("--stop" "--test")
+
+	[ -n "$CMDNAME" ] &&
+		FLAGS+=("--name" "$CMDNAME") ||
+		FLAGS+=("--exec" "$WHICH")
+
+	[ -z "$PIDFILE" ] ||
+		FLAGS+=("--pidfile" "$PIDFILE")
 
 	# Report it.
-	if start-stop-daemon $FLAGS >/dev/null; then
+	if start-stop-daemon "${FLAGS[@]}" >/dev/null; then
 		echo "$DISPNAME is running"
 		return 0
 	fi
@@ -370,8 +385,7 @@ status()
 		return 1
 	fi
 
-	[ -n "$LOCKFILE" ] || LOCKFILE="/var/lock/subsys/$BASENAME"
-	if [ -f "$LOCKFILE" ]; then
+	if [ -f "${LOCKFILE:-/var/lock/subsys/$BASENAME}" ]; then
 		echo "$DISPNAME is dead, but subsystem is locked"
 		return 2
 	fi
@@ -444,6 +458,13 @@ echo_passed()
 	return 1
 }
 
+msg_starting()        { echo_msg "Starting $1 service: "; }
+msg_stopping()        { echo_msg "Stopping $1 service: "; }
+msg_reloading()       { echo_msg "Reloading $1 service: "; }
+msg_already_running() { echo_msg "Service $1 is already running."; }
+msg_not_running()     { echo_msg "Service $1 is not running."; }
+msg_usage()           { printf "Usage: %s\n" "$*" >&2; }
+
 # Log that something succeeded
 success()
 {
@@ -508,35 +529,4 @@ action_shell()
 	rc=$?
 	[ $rc -eq 0 ] && success "$STRING" || failure "$STRING"
 	return $rc
-}
-
-msg_starting()
-{
-	echo_msg "Starting $1 service: "
-}
-
-msg_already_running()
-{
-	echo_msg "Service $1 is already running."
-}
-
-
-msg_stopping()
-{
-	echo_msg "Stopping $1 service: "
-}
-
-msg_not_running()
-{
-	echo_msg "Service $1 is not running."
-}
-
-msg_reloading()
-{
-	echo_msg "Reloading $1 service: "
-}
-
-msg_usage()
-{
-	printf "Usage: %s\n" "$*" >&2
 }
