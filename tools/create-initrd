@@ -4,6 +4,8 @@
 . shell-error
 . shell-quote
 
+declare -A DIRS FILES LOCALFILES FEATUREFILES
+
 FEATUREFILES=()
 LOCALFILES=()
 FILES=()
@@ -11,18 +13,6 @@ DIRS=()
 
 LIB_PATHS=()
 BIN_PATHS=()
-
-append_uniq()
-{
-	local arr i sz v
-	eval "sz=\${#$1[*]}"
-	for (( i=0; $i < $sz; i++ )); do
-		eval "v=\"\${$1[$i]}\""
-		[ "$v" != "$2" ] ||
-			return 0
-	done
-	eval "$1+=(\"\$2\")"
-}
 
 in_runtimedir()
 {
@@ -45,7 +35,7 @@ append_progs()
 			continue
 		if [ -z "${n##/*}" ]; then
 			message "WARNING: it doesn't make sense to search in PATH for a utility with absolute path: $n"
-			append_uniq FILES "$n"
+			FILES["$n"]=1
 			continue
 		elif [ -z "${n##*/*}" ]; then
 			message "WARNING: it doesn't make sense to search in PATH for a utility with subpath: $n"
@@ -71,11 +61,11 @@ append_progs()
 		# We put these utilities on a separate list because we need to
 		# remove a prefix from them.
 		if in_features_bindir "$f"; then
-			append_uniq FEATUREFILES "$f"
+			FEATUREFILES["$f"]=1
 			continue
 		fi
 
-		append_uniq FILES "$f"
+		FILES["$f"]=1
 	done
 }
 
@@ -124,7 +114,7 @@ append_libs()
 			continue
 
 		if [ -z "${n##/*}" ]; then
-			append_uniq FILES "$n"
+			FILES["$n"]=1
 			continue
 		elif [ -z "${n##*/*}" ]; then
 			message "WARNING: it doesn't make sense to search in PATH for a library with subpath: $n"
@@ -153,7 +143,7 @@ append_libs()
 			continue
 		fi
 
-		append_uniq FILES "$f"
+		FILES["$f"]=1
 
 	done
 }
@@ -166,26 +156,19 @@ for n in \
 	${LOCALBUILDDIR:+"${LOCALBUILDDIR-}$RUNTIMEDIR"} \
 	${PUT_FEATURE_DIRS-} $PUT_DIRS;
 do
-	append_uniq DIRS "$n"
+	DIRS["$n"]=1
 done
 
-FILES+=(
-	"$UDEVD"
-	"$UDEVADM"
-	/lib/udev/ata_id
-	/lib/udev/cdrom_id
-	/lib/udev/scsi_id
-)
-
 for n in \
-	/lib/udev/{edd_id,vol_id,path_id,usb_id,firmware} \
+	"$UDEVD" "$UDEVADM" \
+	/lib/udev/{ata_id,cdrom_id,scsi_id,edd_id,vol_id,path_id,usb_id,firmware} \
 	$(find-terminfo linux) \
 	/var/resolv \
 	"$KERNEL_MODULES_DIR"/modules.{builtin,order,builtin.modinfo} \
 	/etc/modprobe.conf;
 do
 	[ ! -e "$n" ] ||
-		append_uniq FILES "$n"
+		FILES["$n"]=1
 done
 
 append_progs \
@@ -210,18 +193,18 @@ while read -d: -r n; do
 			[ -z "${bin##$pattern}" ] ||
 				continue
 			if [ -n "$LOCALBUILDDIR" ] && [ -z "${bin##$LOCALBUILDDIR/*}" ]; then
-				append_uniq LOCALFILES "$bin"
+				LOCALFILES["$bin"]=1
 				continue
 			fi
 			[ -n "${bin##$RUNTIMEDIR/*}" ] ||
 				continue
-			append_uniq FILES "$bin"
+			FILES["$bin"]=1
 		done
 	done < <(set +f; shopt -s nullglob dotglob; printf '%s\n' "$n"/*)
 done <<<"$BUILDDIR_PATH:$BUSYBOX_PATH:$SYSTEM_PATH"
 
 for n in ${PUT_FEATURE_FILES-} $PUT_FILES; do
-	append_uniq FILES "$n"
+	FILES["$n"]=1
 done
 
 cd "$ROOTDIR"
@@ -288,16 +271,16 @@ if [ -h /bin/sh ]; then
 	ln_if_missing "$BASH" ".$f"
 fi
 
-for f in "${FEATUREFILES[@]}"; do
+for f in "${!FEATUREFILES[@]}"; do
 	n="${f#$LOCALBUILDDIR}"
 	n="${n#$BIN_FEATURESDIR/*/}"
 	p="${f%/$n}"
 	put-file -r "$p" . "$f"
 done
 
-printf '%s\n' "${DIRS[@]}"       |xargs -r put-tree .
-printf '%s\n' "${FILES[@]}"      |xargs -r put-file .
-printf '%s\n' "${LOCALFILES[@]}" |xargs -r put-file -r "$LOCALBUILDDIR" .
+printf '%s\n' "${!DIRS[@]}"       |xargs -r put-tree .
+printf '%s\n' "${!FILES[@]}"      |xargs -r put-file .
+printf '%s\n' "${!LOCALFILES[@]}" |xargs -r put-file -r "$LOCALBUILDDIR" .
 
 ln_if_missing "$UDEVD"   ./sbin/udevd
 ln_if_missing "$UDEVADM" ./sbin/udevadm
