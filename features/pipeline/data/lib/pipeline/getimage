@@ -14,7 +14,11 @@ if [ -n "${url##file://*}" ]; then
 		sleep 3
 	done
 else
-	cp -f -- "${url#file://}" "$datadir/image"
+	target="${url#file://}"
+
+	pipe_gpg_verify "getimage" "$target.asc" "$target"
+
+	cp -f -- "$target" "$datadir/image"
 fi
 modprobe -q 'devname:loop-control' ||:
 run mount -o ro,loop "$datadir/image" "$destdir"

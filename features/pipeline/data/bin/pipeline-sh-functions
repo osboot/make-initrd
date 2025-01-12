@@ -131,4 +131,47 @@ pipe_failed()
 	[ "$failed" -le "${PIPE_RETRY:-}" ]
 }
 
+PIPE_RETCODE_STOP=2
+pipe_fatal()
+{
+	message "$*"
+	exit $PIPE_RETCODE_STOP
+}
+
+in_comma_list()
+{
+	local var arg list
+
+	var="$1"; shift
+
+	list=()
+	readarray -t -d, list < <(printf '%s' "$1")
+
+	for arg in "${list[@]}"; do
+		[ "$var" != "$arg" ] || return 0
+	done
+	return 1
+}
+
+pipe_gpg_verify()
+{
+	local stepname signfile datafile gpg err
+
+	stepname="$1"; shift
+	signfile="$1"; shift
+	datafile="$1"; shift
+
+	in_comma_list "$stepname" "${PIPE_VERIFY_SIGN-}" ||
+		return 0
+
+	gpg="$(type -P gpg)" ||
+		pipe_fatal "gpg utility detected."
+
+	[ -f "$signfile" ] ||
+		pipe_fatal "unable to verify the signature because the signature file could not be found: $signfile"
+
+	err="$("$gpg" --verify --homedir /etc/initrd/gnupg "$signfile" "$datafile")" ||
+		pipe_fatal "$err"
+}
+
 fi # __pipeline_sh_functions

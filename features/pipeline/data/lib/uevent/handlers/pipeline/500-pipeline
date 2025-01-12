@@ -73,7 +73,7 @@ handler_step()
 		"$exe" || rc=$?
 
 		if [ "$rc" -ne 0 ]; then
-			if [ "$rc" -eq 2 ]; then
+			if [ "$rc" -eq "$PIPE_RETCODE_STOP" ]; then
 				message "step #$pipenum: $name: triggered pipeline stop."
 				return 0
 			fi
