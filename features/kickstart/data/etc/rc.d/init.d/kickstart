@@ -16,9 +16,9 @@
 
 . /.initrd/initenv
 
-[ -n "${KSFILE-}" ] || exit 0
+[ -z "${NOKSFILE-}" ] || exit 0
 
-[ -z "${KSFILE##/*}" ] ||
+[ -n "${KSFILE-}" ] && [ -z "${KSFILE##/*}" ] ||
 	KSFILE="/etc/ks.conf.d/$KSFILE"
 
 if [ -s "$KSFILE" ]; then

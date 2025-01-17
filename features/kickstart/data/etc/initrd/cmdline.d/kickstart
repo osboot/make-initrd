@@ -1,1 +1,2 @@
-register_parameter string KSFILE
+register_parameter string KSFILE default
+register_parameter bool NOKSFILE

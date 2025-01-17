@@ -3,6 +3,7 @@
 
 DIR="$WORKDIR/root"
 mkdir -p -- "$DIR/etc/ks.conf.d"
+:> "$DIR"/etc/ks.conf.d/none
 
 for ks in ${KICKSTART_CONFIGS-}; do
 	cp -f -- "$ks" "$DIR"/etc/ks.conf.d/

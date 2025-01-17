@@ -17,9 +17,14 @@
 
 . /.initrd/initenv
 
-[ -n "${KSFILE-}" ] || exit 0
+[ -z "${NOKSFILE-}" ] || exit 0
 
-. uevent-sh-functions
+[ -n "${KSFILE-}" ] && [ -z "${KSFILE##/*}" ] ||
+	KSFILE="/etc/ks.conf.d/$KSFILE"
 
-mkdir -p -- "$uevent_confdb/queue/pause/udev"
-mkdir -p -- "$uevent_confdb/queue/pause/md-raid-member"
+if [ -s "$KSFILE" ]; then
+	. uevent-sh-functions
+
+	mkdir -p -- "$uevent_confdb/queue/pause/udev"
+	mkdir -p -- "$uevent_confdb/queue/pause/md-raid-member"
+fi
