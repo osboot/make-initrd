@@ -20,16 +20,29 @@ cmdline. The sequence of steps is specified in the `pipeline=...` parameter.
 - `wait-resume` is waiting for the resume attempt to complete. This step is
   necessary to avoid race conditions between disk initialization for resume and
   pipeline.
+- `ping` allows to wait until the network address starts pinging.
 
 ## Boot parameters
 
-- `pipeline=name[,name1][,name2]` - the main parameter that determines the order
+- `pipeline=NAME[,NAME1][,NAME2]` - the main parameter that determines the order
   in which pipe elements are called.
-- `getimage` specifies an URL to fetch and mount.
-- `mountfs` specifies a file to mount.
-- `overlayfs` defines a list of elements to be combined.
-- `waitdev` describes the local device to wait. The format of this parameter is
-   the same as `root=`.
+- `getimage=URL` specifies an URL to fetch and mount. If a file from a local
+  directory is to be retrieved, the `file://` scheme must be used.
+- `mountfs=FILE` specifies a file to mount.
+- `mountfs-opts=MOUNT-OPTIONS` comma (`,`) separated mount options.
+- `overlayfs=LAYERS` defines a list of elements to be combined.
+- `waitdev=DEVSPEC` describes the local device to wait. The format of this
+  parameter is the same as `root=`.
+- `ping=[OPTIONS:][ADDRESS]` The comma (`,`) separated options include: `v4`,
+   `v6` - determines the ip version; `iter=NUMBER` specifies the number of
+   attempts to ping the address; `waitfor` if specified, the wait will be
+   forever (this is the default behavior). The address can be an ip address or a
+   hostname, or `%gateway`, which stands for the default gateway address.
+   The default ADDRESS is `%gateway`.
+- `pipe-retry=NUMBER` determines how many times a certain step can fail
+  (single parameter).
+- `pipe-verify-sign=NAME[,NAME1][,NAME2]` defines a list of steps where
+  signature verification should be enabled (single parameter).
 
 The separator between the elements is a comma (`,`).
 
