@@ -18,8 +18,9 @@ for i in "$SYSFS_PATH"/class/input/event*/device/properties; do
 
 	prop=
 	readline prop "$i"
+	prop=$(( 0x${prop:-0} ))
 
-	[ -n "$prop" ] && (($prop & $bitmask)) ||
+	(($prop & $bitmask)) ||
 		continue
 
 	p="$(readlink -e "$i")"
