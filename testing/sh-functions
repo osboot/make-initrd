@@ -72,7 +72,7 @@ pack_sysimage()
 	/sbin/mke2fs -t ext3 -L SYSIMAGE -d /image /host/$workdir/sysimage.img
 	EOF
 
-	run podman run --rm -ti \
+	run podman run --rm -i \
 		--mount="type=image,src=localhost/mi-$VENDOR:sysimage,dst=/image" \
 		--mount="type=tmpfs,destination=/image$builddir" \
 		--mount="type=bind,src=$topdir/.build/dest,dst=/image$builddir/.build/dest" \

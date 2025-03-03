@@ -74,7 +74,7 @@ for step in "$@"; do
 			fi
 			EOF
 
-			run podman run --rm -ti \
+			run podman run --rm -i \
 				--volume="$topdir:$builddir" \
 				"$IMAGE" "$builddir/$workdir/run.sh"
 
@@ -135,7 +135,7 @@ for step in "$@"; do
 
 			gh_group_start "adding make-initrd binaries"
 
-			run podman run --rm -ti \
+			run podman run --rm -i \
 				--mount="type=image,src=localhost/mi-$TESTNAME-$VENDOR:sysimage,dst=/image" \
 				--mount="type=tmpfs,destination=/image$builddir" \
 				--mount="type=bind,src=$topdir/.build/dest,dst=/image$builddir/.build/dest" \
@@ -187,7 +187,7 @@ for step in "$@"; do
 			cp -L /boot/initrd.img $builddir/$workdir/sshfsroot-initrd.img
 			EOF
 
-			run podman run --rm -ti \
+			run podman run --rm -i \
 				--volume="$topdir:$builddir" \
 				"$IMAGE" "$builddir/$workdir/run.sh"
 
@@ -242,7 +242,7 @@ for step in "$@"; do
 
 			run podman rm -i -f sshd
 
-			run podman run --rm -ti --name="sshd" \
+			run podman run --rm -i --name="sshd" \
 				--network=host \
 				--volume="$top_workdir/sysimage:/data/incoming" \
 				--volume="$topdir:$builddir" \

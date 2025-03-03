@@ -72,7 +72,7 @@ for step in "$@"; do
 			fi
 			EOF
 
-			run podman run --rm -ti \
+			run podman run --rm -i \
 				--volume="$topdir:$builddir" \
 				"$IMAGE" "$builddir/$workdir/run.sh"
 
@@ -150,7 +150,7 @@ for step in "$@"; do
 			cp -L /boot/initrd.img $builddir/$workdir/boot-ks-initrd.img
 			EOF
 
-			podman run --rm -ti \
+			podman run --rm -i \
 				--volume="$topdir:$builddir" \
 				"$IMAGE" "$builddir/$workdir/run.sh"
 
