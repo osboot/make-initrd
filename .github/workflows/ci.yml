@@ -30,6 +30,7 @@ jobs:
 
       - name: "Install Tools"
         run: |
+         sudo apt-get -qq -y update
          sudo apt-get -y -qq install \
           gcc make automake autoconf pkg-config udev scdoc \
           libkmod-dev libz-dev libbz2-dev liblzma-dev libzstd-dev libelf-dev libtirpc-dev libcrypt-dev
