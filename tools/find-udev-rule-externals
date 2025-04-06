@@ -10,6 +10,7 @@ readarray -t UDEV_BUILTINS <<< "$(
 		sed -nr -e 's/^[[:space:]]+([^[:space:]]+)[[:space:]]+.*$/\1/p' |
 		sort -u
 )"
+kernel="${kernel:-$(uname -r)}"
 
 FILES=()
 put_file()
@@ -28,6 +29,20 @@ is_builtin()
 		[ "$a" != "$1" ] || return 0
 	done
 	return 1
+}
+
+MODULES=()
+examine_builtin_kmod()
+{
+	[ "$#" -ge 3 ] ||
+		return 0
+	local a
+	for a in kmod load; do
+		[ "$a" = "$1" ] ||
+			return 0
+		shift
+	done
+	MODULES+=("$@")
 }
 
 parse_command()
@@ -82,8 +97,10 @@ parse_command()
 		run)
 			case "$hint" in
 				builtin)
-					! is_builtin "$cmd" ||
+					if is_builtin "$cmd"; then
+						examine_builtin_kmod "$@"
 						return 0
+					fi
 					;;
 			esac
 			;;
@@ -134,3 +151,14 @@ done < <(udev-rules -x "$1")
 for a in "${FILES[@]}"; do
 	printf '%s\n' "$a"
 done
+
+# Optional not fatal detection.
+if [ "${#MODULES[@]}" -gt 0 ]; then
+	printf '%s\n' "${MODULES[@]}" |
+	sort -u |
+	depinfo --input=- \
+		${USE_MODPROBE_BLACKLIST:+--use-blacklist} \
+		--set-version="$kernel" \
+		--no-prefix \
+		2>/dev/null ||:
+fi
