@@ -1,0 +1,45 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. guess-functions
+
+$TRACE_SOURCE "Processing ..."
+
+case "$ARCH" in
+	arm*|riscv*|aarch64)
+		;;
+	*)
+		exit 0
+		;;
+esac
+
+cur_kver="$(uname -r)"
+
+list_loaded_modules()
+{
+	[ -f "$PROCFS_PATH/modules" ] ||
+		return 0
+
+	cut -d\  -f1 "$PROCFS_PATH/modules" | xargs -r modinfo -F filename 2>/dev/null |
+		sed -r -n -e 's,/lib/modules/[^/]+/,,p'
+}
+
+list_builtin_modules()
+{
+	[ -f "/lib/modules/$cur_kver/modules.builtin.modinfo" ] ||
+		return 0
+
+	tr '\0' '\n' < "/lib/modules/$cur_kver/modules.builtin.modinfo" |
+		sed -r -n -e 's,^[^=]+\.file=(.*),kernel/\1.ko,p'
+}
+
+{
+	list_loaded_modules
+	list_builtin_modules
+} |
+	grep -E \
+		-e '^kernel/drivers/phy/' |
+while read -r mod; do
+	mod="${mod##*/}"
+	guess_module "${mod%.ko}"
+done
