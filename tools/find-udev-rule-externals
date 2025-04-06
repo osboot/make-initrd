@@ -45,6 +45,14 @@ examine_builtin_kmod()
 	MODULES+=("$@")
 }
 
+examine_external_kmod()
+{
+	[ "$#" -ge 1 ] && [ "$1" = "insmod" ] ||
+		return 0
+	shift
+	MODULES+=("$@")
+}
+
 parse_command()
 {
 	local rule hint cmd args arg path
@@ -101,6 +109,9 @@ parse_command()
 						examine_builtin_kmod "$@"
 						return 0
 					fi
+					;;
+				program)
+					examine_external_kmod "$@"
 					;;
 			esac
 			;;
