@@ -103,7 +103,7 @@ else
 
 	verbose "unpacking archive $__BUG_REPORT_ARCHIVE ..."
 	{
-		tar --strip-components=1 -xf "$__BUG_REPORT_ARCHIVE"
+		tar --strip-components=1 --no-same-owner -xf "$__BUG_REPORT_ARCHIVE"
 	} >&2
 	verbose "unpacked"
 
