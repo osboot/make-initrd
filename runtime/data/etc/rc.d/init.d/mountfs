@@ -81,7 +81,7 @@ UnmountFilesystems()
 	[ -n "${UMOUNT_ROOTMNT-}" ] || exclude+=("-e" "$rootmnt(/.*)?")
 
 	points=()
-	readarray -t points < <(findmnt -klno TARGET | grep -Evx "${exclude[@]}" | sort -d)
+	readarray -t points < <(findmnt -k -l -n -o TARGET | grep -Evx "${exclude[@]}" | sort -d)
 
 	sig=15; msg=''
 

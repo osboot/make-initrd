@@ -17,7 +17,7 @@ SourceIfNotEmpty /etc/$NAME/$NAME.conf
 start() {
 	local t n m
 
-	[ -n "$(findmnt -nko TARGET -t devpts 2>/dev/null)" ] ||
+	[ -n "$(findmnt -k -n -o TARGET -t devpts 2>/dev/null)" ] ||
 		mount -t devpts devpts /dev/pts
 
 	for t in rsa dss ecdsa; do

@@ -14,7 +14,7 @@ mntdir="$1"; shift
 . guess-functions
 
 options=()
-readarray -t -d, options < <(sys_findmnt -nko FS-OPTIONS --target "$mntdir")
+readarray -t -d, options < <(sys_findmnt -k -n -o FS-OPTIONS --target "$mntdir")
 
 for o in "${options[@]}"; do
 	[ -n "$o" ] && [ -z "${o##lowerdir=*}" ] ||
@@ -24,7 +24,7 @@ for o in "${options[@]}"; do
 	readarray -t -d: lowerdirs < <(printf '%s' "${o#lowerdir=}")
 
 	for d in "${lowerdirs[@]}"; do
-		device="$(sys_findmnt -nko SOURCE --target "$d")" && is_block_device "$device" ||
+		device="$(sys_findmnt -k -n -o SOURCE --target "$d")" && is_block_device "$device" ||
 			continue
 
 		if fstype="$(sys_blkid -o value -s TYPE -c /dev/null "$device")"; then
