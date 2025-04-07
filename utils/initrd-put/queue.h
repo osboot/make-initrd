@@ -3,6 +3,7 @@
 #define __INITRD_PUT_QUEUE_H__
 
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <stdbool.h>
 
 struct file {
