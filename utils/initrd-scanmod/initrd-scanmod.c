@@ -9,6 +9,7 @@
 #include <getopt.h>
 #include <ctype.h>
 #include <err.h>
+#include <libgen.h>
 
 #include "initrd-scanmod.h"
 #include "config.h"
