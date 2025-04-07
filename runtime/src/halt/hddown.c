@@ -17,6 +17,7 @@ const char *v_hddown = "@(#)hddown.c  1.02  22-Apr-2003  miquels@cistron.nl";
 #include <string.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <libgen.h>
 
 #include <sys/ioctl.h>
 #include <linux/hdreg.h>

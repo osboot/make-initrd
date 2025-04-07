@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <regex.h>
+#include <string.h>
 
 #include "config.h"
 #include "memory.h"
