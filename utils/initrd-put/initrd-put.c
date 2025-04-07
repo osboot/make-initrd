@@ -216,7 +216,7 @@ void enqueue_canonicalized_path(const char *name, bool add_recursively)
 	if (!IS_ABSOLUTE_FILE_NAME(name)) {
 		if (getcwd(rname, sizeof(rname)) == NULL)
 			err(EXIT_FAILURE, "unable to get current directory");
-		dest = rawmemchr(rname, '\0');
+		dest = rname + strlen(rname);
 	} else {
 		dest = rname;
 		*dest++ = '/';
