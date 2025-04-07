@@ -5,7 +5,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <errno.h>
-#include <error.h>
 #include <limits.h>
 
 #include "rd/memory.h"
