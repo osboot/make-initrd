@@ -282,6 +282,8 @@ printf '%s\n' "${!DIRS[@]}"       |xargs -r put-tree .
 printf '%s\n' "${!FILES[@]}"      |xargs -r put-file .
 printf '%s\n' "${!LOCALFILES[@]}" |xargs -r put-file -r "$LOCALBUILDDIR" .
 
+gen-ld-so-conf . > etc/ld.so.conf
+
 ln_if_missing "$UDEVD"   ./sbin/udevd
 ln_if_missing "$UDEVADM" ./sbin/udevadm
 
