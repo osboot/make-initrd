@@ -1,0 +1,43 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+root="$1"; shift
+[ -d "$root" ] || exit 1
+[ -s /etc/ld.so.conf ] || exit 0
+
+parse_glob() {
+	local g="$1"; shift
+	local f
+
+	for f in $g; do
+		if [ -s "$f" ]; then
+			parse_config "$f"
+		fi
+	done
+}
+
+parse_config() {
+	local f="$1"; shift
+	local dname="${f%/*}"
+	local w rest
+
+	while read -r w rest; do {
+		case "$w" in
+			'#'*|'') ;;
+			include)
+				if [ -z "${rest##/*}" ]; then
+					parse_glob "$rest"
+				else
+					parse_glob "$dname/$rest"
+				fi
+				;;
+			*)
+				if [ -z "$rest" ] && [ -d "$root$w" ]; then
+					printf '%s\n' "$w"
+				fi
+				;;
+		esac
+	} </dev/null; done < "$f"
+}
+
+parse_config /etc/ld.so.conf
