@@ -1,4 +1,4 @@
-# Feature: sbc
+# Feature: modules-sbc
 
 Feature adds modules required for bootloading on single-board computers.
 make-initrd on single board computers does not add required modules to
