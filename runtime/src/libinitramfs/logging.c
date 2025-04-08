@@ -143,10 +143,6 @@ void rd_log_setup_stderr(const char *logfile)
 	if (rdlog && !strcasecmp(rdlog, "console"))
 		logfile = "/dev/console";
 
-	FILE *cons = fopen(logfile, "w+");
-	if (!cons)
-		rd_fatal("open(%s): %m", logfile);
-
-	fclose(stderr);
-	stderr = cons;
+	if (!freopen(logfile, "w+", stderr))
+		rd_fatal("freopen(%s): %m", logfile);
 }
