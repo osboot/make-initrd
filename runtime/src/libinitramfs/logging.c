@@ -145,4 +145,6 @@ void rd_log_setup_stderr(const char *logfile)
 
 	if (!freopen(logfile, "w+", stderr))
 		rd_fatal("freopen(%s): %m", logfile);
+
+	setvbuf(stderr, NULL, _IONBF, 0);
 }
