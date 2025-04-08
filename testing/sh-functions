@@ -66,7 +66,7 @@ pack_sysimage()
 	#!/bin/bash -efux
 
 	bytes=\$(du -sb /image |cut -f1)
-	bytes=\$(( \$bytes + ( ( \$bytes * 30 ) / 100 ) ))
+	bytes=\$(( \$bytes * 2 ))
 
 	dd count=1 bs=\$bytes if=/dev/zero of=/host/$workdir/sysimage.img
 	/sbin/mke2fs -t ext3 -L SYSIMAGE -d /image /host/$workdir/sysimage.img

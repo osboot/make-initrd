@@ -1,0 +1,32 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+MAKE_INITRD_PACKAGES="app-alternatives/cpio app-arch/tar dev-build/make"
+MAKE_INITRD_PACKAGES+=" dev-libs/elfutils net-libs/libtirpc sys-apps/coreutils"
+MAKE_INITRD_PACKAGES+=" sys-apps/findutils sys-apps/grep sys-apps/kmod sys-apps/util-linux"
+MAKE_INITRD_PACKAGES+=" virtual/libcrypt:= virtual/udev app-arch/bzip2 app-arch/xz-utils"
+MAKE_INITRD_PACKAGES+=" app-text/scdoc sys-libs/zlib app-arch/zstd dev-libs/json-c"
+
+MAKE_INITRD_PACKAGES_DEVEL="$MAKE_INITRD_PACKAGES dev-build/autoconf dev-build/automake"
+MAKE_INITRD_PACKAGES_DEVEL+=" dev-util/intltool sys-devel/bison sys-devel/flex"
+MAKE_INITRD_PACKAGES_DEVEL+=" virtual/pkgconfig"
+
+KERNEL_PACKAGES="sys-kernel/gentoo-kernel-bin"
+
+INIT_PACKAGES="sys-apps/systemd"
+
+#ZFS_PACKAGES="sys-fs/zfs sys-fs/zfs-kmod"
+ZFS_PACKAGES=""
+
+SYSIMAGE_PACKAGES="$MAKE_INITRD_PACKAGES $INIT_PACKAGES"
+SYSIMAGE_PACKAGES+=" app-admin/pwgen sys-fs/mdadm sys-fs/lvm2 sys-fs/cryptsetup"
+SYSIMAGE_PACKAGES+=" sys-fs/btrfs-progs sys-fs/e2fsprogs sys-fs/xfsprogs sys-fs/dosfstools"
+SYSIMAGE_PACKAGES+=" sys-boot/grub"
+SYSIMAGE_PACKAGES+=" $ZFS_PACKAGES"
+
+KICKSTART_PACKAGES="$MAKE_INITRD_PACKAGES_DEVEL $INIT_PACKAGES"
+KICKSTART_PACKAGES+=" sys-fs/e2fsprogs sys-fs/btrfs-progs sys-fs/xfsprogs sys-fs/dosfstools"
+KICKSTART_PACKAGES+=" sys-fs/cryptsetup sys-fs/lvm2 sys-fs/mdadm sys-apps/util-linux"
+KICKSTART_PACKAGES+=" net-misc/rsync net-misc/wget app-arch/unzip app-arch/tar"
+KICKSTART_PACKAGES+=" app-arch/cpio app-admin/pwgen app-arch/zstd sys-fs/f2fs-tools"
+KICKSTART_PACKAGES+=" $ZFS_PACKAGES"
