@@ -12,9 +12,12 @@ readonly IMAGE=ubuntu:latest
 
 . "$topdir/testing/packages-$VENDOR"
 
-TESTNAME="$1"; shift
-
-eval $(sed -n -e 's/^# param //p' "$topdir/testing/$TESTNAME.cfg")
+if [ "$#" -gt 1 ]; then
+	TESTNAME="$1"; shift
+	eval $(sed -n -e 's/^# param //p' "$topdir/testing/$TESTNAME.cfg")
+else
+	TESTNAME=
+fi
 
 readonly builddir=/srv
 
@@ -25,20 +28,59 @@ readonly statusdir="$topdir/testing/status"
 readonly top_workdir="$topdir/$workdir"
 readonly top_logdir="$topdir/$logdir"
 
+apt_args="-y -qq"
+
 prepare_testsuite
+
+image_cleanup()
+{
+	printf '%s ||:; ' \
+	 "find /usr/share/license /usr/share/license-exception -delete" \
+	 "find /usr/share/locale/ -mindepth 3 -maxdepth 3 -type f -name '*.mo' -delete" \
+	 "find /usr/share/doc/ /usr/share/man/ /usr/share/info/ -mindepth 1 -delete" \
+	 "find /var/lib/apt/lists/ /var/cache/apt/ -type f -delete" \
+	 "find /usr/src/ -mindepth 1 -delete" \
+	 "find /lib/firmware $(find_ignore_firmware) -delete" \
+	 "find /lib/modules $(find_ignore_kmodules) -delete"
+	printf '\n'
+}
 
 for step in "$@"; do
 	case "$step" in
-		build-git)
+		create-images)
+			run podman image build --squash --force-rm \
+				--pull=missing \
+				-t "localhost/image-$VENDOR:sysimage" \
+				-f - <<-EOF
+			FROM $IMAGE
+			ENV DEBIAN_FRONTEND=noninteractive
+			RUN apt-get $apt_args update
+			RUN apt-get $apt_args install $KERNEL_PACKAGES
+			RUN apt-get $apt_args install $SYSIMAGE_PACKAGES
+			RUN apt-get $apt_args clean
+			RUN $(image_depmod)
+			RUN $(image_cleanup)
+			EOF
+
+			run podman image build --squash --force-rm \
+				--pull=never \
+				-t "localhost/image-$VENDOR:devel" \
+				-f - <<-EOF
+			FROM localhost/image-$VENDOR:sysimage
+			ENV DEBIAN_FRONTEND=noninteractive
+			RUN apt-get $apt_args update
+			RUN apt-get $apt_args install $KERNEL_PACKAGES
+			RUN apt-get $apt_args install $KICKSTART_PACKAGES
+			RUN apt-get $apt_args clean
+			RUN $(image_depmod)
+			RUN $(image_cleanup)
+			EOF
+			;;
+		build-sources)
 			gh_group_start "building from git tree"
 
 			cat_exec "$top_workdir/run.sh" <<-EOF
 			#!/bin/bash -efux
-
-			export DEBIAN_FRONTEND=noninteractive
-
-			apt-get -y -qq update
-			apt-get -y -qq install $MAKE_INITRD_PACKAGES_DEVEL
 
 			cd "$builddir"
 			rc=0
@@ -62,56 +104,25 @@ for step in "$@"; do
 				exit 1
 			fi
 			EOF
-			run podman run --rm -i \
-				--volume="$topdir:$builddir" \
-				"$IMAGE" "$builddir/$workdir/run.sh"
+
+			run podman run --rm -i --volume="$topdir:$builddir" \
+				"localhost/image-$VENDOR:devel" \
+				"$builddir/$workdir/run.sh"
 
 			gh_group_end
 			;;
 		build-sysimage)
-			[ -n "${SYSIMAGE_PACKAGES-}" ] ||
-				continue
-
-			if [ -z "$(podman images -an --format='1' -f reference=localhost/mi-$VENDOR:sysimage)" ]; then
-				gh_group_start "creating sysimage"
-
-				run podman image build \
-					-t "localhost/mi-$VENDOR:sysimage" \
-					--pull --squash --force-rm=true \
-					-f - <<-EOF
-				FROM $IMAGE
-				RUN \
-				 apt-get -y -qq update
-				RUN \
-				 DEBIAN_FRONTEND=noninteractive \
-				 apt-get -y -qq install $SYSIMAGE_PACKAGES $KERNEL_PACKAGES
-				RUN apt-get -y -qq clean
-				RUN \
-				 find /lib/modules $(sysimage_ignore_kmodules) -delete; \
-				 find /usr/share/locale/ -mindepth 3 -maxdepth 3 -type f -name '*.mo' -delete; \
-				 find /usr/share/doc/ /usr/share/man/ /usr/share/info/ -mindepth 1 -delete; \
-				 find /var/lib/apt/lists/ /var/cache/apt/ -type f -delete;
-				EOF
-
-				run podman image tag \
-					"localhost/mi-$VENDOR:sysimage" \
-					"localhost/mi-$VENDOR:sys"
-
-				gh_group_end
-			fi
-
 			gh_group_start "packing sysimage"
 			pack_sysimage
 			gh_group_end
 			;;
 		build-kickstart)
-			[ -n "${KICKSTART_PACKAGES-}" ] ||
-				continue
-
 			gh_group_start "creating kickstart image"
 
 			cat_exec "$top_workdir/run.sh" <<-EOF
 			#!/bin/bash -efux
+
+			kver="\$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' -quit)"
 
 			cat > /etc/initrd.mk <<EOF1
 			 AUTODETECT =
@@ -124,33 +135,21 @@ for step in "$@"; do
 			 PUT_PROGS += pwgen
 			EOF1
 
-			export DEBIAN_FRONTEND=noninteractive
-
-			apt-get -y -qq update
-			apt-get -y -qq install $KICKSTART_PACKAGES
-			apt-get -y -qq install $KERNEL_PACKAGES
-
 			export PATH="$builddir/.build/dest/usr/sbin:$builddir/.build/dest/usr/bin:\$PATH"
 
-			$builddir/.build/dest/usr/sbin/make-initrd \
-				-k \$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' -quit)
+			$builddir/.build/dest/usr/sbin/make-initrd -k "\$kver"
 
 			cp -L /boot/vmlinuz       $builddir/$workdir/boot-ks-vmlinuz
 			cp -L /boot/initrd-ks.img $builddir/$workdir/boot-ks-initrd.img
 			EOF
 
-			podman run --rm -i \
-				--volume="$topdir:$builddir" \
-				"$IMAGE" "$builddir/$workdir/run.sh"
+			podman run --rm -i --volume="$topdir:$builddir" \
+				"localhost/image-$VENDOR:devel" \
+				"$builddir/$workdir/run.sh"
 
 			gh_group_end
 			;;
-		build-tools)
-			;;
 		run-kickstart)
-			[ -f "$top_workdir/boot-ks-initrd.img" ] ||
-				continue
-
 			gh_group_start "creating qemu kickstart disks"
 
 			BOOT_PROG=
@@ -163,8 +162,6 @@ for step in "$@"; do
 			qemu_exec
 
 			gh_group_end
-			;;
-		run-services)
 			;;
 		run-boot)
 			gh_group_start "checking the ability to boot"

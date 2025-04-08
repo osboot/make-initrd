@@ -12,9 +12,12 @@ readonly IMAGE=fedora:latest
 
 . "$topdir/testing/packages-$VENDOR"
 
-TESTNAME="$1"; shift
-
-eval $(sed -n -e 's/^# param //p' "$topdir/testing/$TESTNAME.cfg")
+if [ "$#" -gt 1 ]; then
+	TESTNAME="$1"; shift
+	eval $(sed -n -e 's/^# param //p' "$topdir/testing/$TESTNAME.cfg")
+else
+	TESTNAME=
+fi
 
 readonly builddir=/srv
 
@@ -38,15 +41,56 @@ with_arch()
 	done
 }
 
+image_cleanup()
+{
+	printf '%s ||:; ' \
+	 "find /usr/share/locale/ -mindepth 3 -maxdepth 3 -type f -name '*.mo' -delete" \
+	 "find /usr/share/doc/ -mindepth 1 -delete" \
+	 "find /usr/share/groff/ -mindepth 1 -delete" \
+	 "find /usr/share/info/ -mindepth 1 -delete" \
+	 "find /usr/share/licenses/ -mindepth 1 -delete" \
+	 "find /usr/share/man/ -mindepth 1 -delete" \
+	 "find /var/cache/dnf/ -mindepth 1 -delete" \
+	 "find /var/lib/dnf/ -mindepth 1 -delete" \
+	 "find /var/log/anaconda/ -mindepth 1 -delete" \
+	 "find /usr/src/ -mindepth 1 -delete" \
+	 "find /lib/firmware $(find_ignore_firmware) -delete" \
+	 "find /lib/modules $(find_ignore_kmodules) -delete"
+	printf '\n'
+}
+
 for step in "$@"; do
 	case "$step" in
-		build-git)
+		create-images)
+			run podman image build --squash --force-rm \
+				--pull=missing \
+				-t "localhost/image-$VENDOR:sysimage" \
+				-f - <<-EOF
+			FROM $IMAGE
+			RUN dnf -y install $(with_arch $KERNEL_PACKAGES)
+			RUN dnf -y install $(with_arch $SYSIMAGE_PACKAGES)
+			RUN dnf -y clean all
+			RUN $(image_depmod)
+			RUN $(image_cleanup)
+			EOF
+
+			run podman image build --squash --force-rm \
+				--pull=never \
+				-t "localhost/image-$VENDOR:devel" \
+				-f - <<-EOF
+			FROM localhost/image-$VENDOR:sysimage
+			RUN dnf -y install $(with_arch $KERNEL_PACKAGES)
+			RUN dnf -y install $(with_arch $KICKSTART_PACKAGES)
+			RUN dnf -y clean all
+			RUN $(image_depmod)
+			RUN $(image_cleanup)
+			EOF
+			;;
+		build-sources)
 			gh_group_start "building from git tree"
 
 			cat_exec "$top_workdir/run.sh" <<-EOF
 			#!/bin/bash -efux
-
-			dnf -y install $(with_arch $MAKE_INITRD_PACKAGES_DEVEL)
 
 			cd "$builddir"
 			rc=0
@@ -70,65 +114,24 @@ for step in "$@"; do
 				exit 1
 			fi
 			EOF
-			run podman run --rm -i \
-				--volume="$topdir:$builddir" \
-				"$IMAGE" "$builddir/$workdir/run.sh"
+			run podman run --rm -i --volume="$topdir:$builddir" \
+				"localhost/image-$VENDOR:devel" \
+				"$builddir/$workdir/run.sh"
 
 			gh_group_end
 			;;
 		build-sysimage)
-			[ -n "${SYSIMAGE_PACKAGES-}" ] ||
-				continue
-
-			if [ -z "$(podman images -an --format='1' -f reference=localhost/mi-$VENDOR:sysimage)" ]; then
-				gh_group_start "creating sysimage"
-
-				run podman image build \
-					-t "localhost/mi-$VENDOR:sysimage" \
-					--pull --squash --force-rm=true \
-					-f - <<-EOF
-				FROM $IMAGE
-				RUN \
-				 dnf -y install $(with_arch $SYSIMAGE_PACKAGES $KERNEL_PACKAGES)
-				RUN \
-				 kver="\$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' -quit)"; \
-				 for i in vmlinuz System.map config; do \
-				  [ ! -e "/lib/modules/\$kver/\$i" ] || cp -a "/lib/modules/\$kver/\$i" "/boot/\$i-\$kver"; \
-				 done
-				RUN \
-				 find /lib/modules $(sysimage_ignore_kmodules) -delete; \
-				 find /usr/share/locale/ -mindepth 3 -maxdepth 3 -type f -name '*.mo' -delete; \
-				 for d in \
-				  /usr/share/doc/ \
-				  /usr/share/groff/ \
-				  /usr/share/info/ \
-				  /usr/share/licenses/ \
-				  /usr/share/man/ \
-				  /var/cache/dnf/ \
-				  /var/lib/dnf/ \
-				  /var/log/anaconda/ \
-				; do [ ! -d "\$d" ] || find "\$d" -mindepth 1 -delete ||:; done
-				EOF
-
-				run podman image tag \
-					"localhost/mi-$VENDOR:sysimage" \
-					"localhost/mi-$VENDOR:sys"
-
-				gh_group_end
-			fi
-
 			gh_group_start "packing sysimage"
 			pack_sysimage
 			gh_group_end
 			;;
 		build-kickstart)
-			[ -n "${KICKSTART_PACKAGES-}" ] ||
-				continue
-
 			gh_group_start "creating kickstart image"
 
 			cat_exec "$top_workdir/run.sh" <<-EOF
 			#!/bin/bash -efux
+
+			kver="\$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' -quit)"
 
 			cat > /etc/initrd.mk <<EOF1
 			 AUTODETECT =
@@ -140,11 +143,6 @@ for step in "$@"; do
 			 KICKSTART_CONFIGS = $builddir/$workdir/ks.cfg
 			 PUT_PROGS += pwgen
 			EOF1
-
-			dnf -y install $(with_arch $KICKSTART_PACKAGES)
-			dnf -y install $(with_arch $KERNEL_PACKAGES)
-
-			kver="\$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' -quit)"
 
 			for i in vmlinuz System.map config; do
 			    [ ! -e "/lib/modules/\$kver/\$i" ] || cp -a "/lib/modules/\$kver/\$i" "/boot/\$i-\$kver"
@@ -160,16 +158,12 @@ for step in "$@"; do
 
 			podman run --rm -i \
 				--volume="$topdir:$builddir" \
-				"$IMAGE" "$builddir/$workdir/run.sh"
+				"localhost/image-$VENDOR:devel" \
+				"$builddir/$workdir/run.sh"
 
 			gh_group_end
 			;;
-		build-tools)
-			;;
 		run-kickstart)
-			[ -f "$top_workdir/boot-ks-initrd.img" ] ||
-				continue
-
 			gh_group_start "creating qemu kickstart disks"
 
 			BOOT_PROG=
@@ -182,8 +176,6 @@ for step in "$@"; do
 			qemu_exec
 
 			gh_group_end
-			;;
-		run-services)
 			;;
 		run-boot)
 			gh_group_start "checking the ability to boot"

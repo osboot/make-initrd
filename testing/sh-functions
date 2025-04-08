@@ -73,7 +73,7 @@ pack_sysimage()
 	EOF
 
 	run podman run --rm -i \
-		--mount="type=image,src=localhost/mi-$VENDOR:sysimage,dst=/image" \
+		--mount="type=image,src=localhost/image-$VENDOR:sysimage,dst=/image" \
 		--mount="type=tmpfs,destination=/image$builddir" \
 		--mount="type=bind,src=$topdir/.build/dest,dst=/image$builddir/.build/dest" \
 		--mount="type=bind,src=$topdir/runtime,dst=/image$builddir/runtime" \
@@ -81,7 +81,7 @@ pack_sysimage()
 		--mount="type=bind,src=$topdir/guess,dst=/image$builddir/guess" \
 		--mount="type=bind,src=$topdir/tools,dst=/image$builddir/tools" \
 		--volume="$topdir:/host" \
-		"localhost/mi-$VENDOR:sys" "/host/$workdir/run.sh"
+		"localhost/image-$VENDOR:devel" "/host/$workdir/run.sh"
 }
 
 prepare_testsuite()
@@ -90,34 +90,29 @@ prepare_testsuite()
 		"$workdir" \
 		"$logdir" \
 		"$statusdir"
-	echo FAILED \
-		> "$statusdir/$VENDOR-$TESTNAME"
-	if [ -e "$topdir/testing/$TESTNAME.cfg" ]; then
+
+	if [ -n "${TESTNAME-}" ]; then
+		echo FAILED \
+			> "$statusdir/$VENDOR-$TESTNAME"
+
+		local ks_testcase ks_sysimage ks_initrd ks_done
+
+		ks_testcase="$topdir/testing/$TESTNAME.cfg"
+		ks_sysimage="$topdir/testing/ks-$VENDOR${VARIANT:+-$VARIANT}-sysimage.cfg"
+		ks_initrd="$topdir/testing/ks-$VENDOR${VARIANT:+-$VARIANT}-initrd.cfg"
+		ks_done="$topdir/testing/ks-$VENDOR${VARIANT:+-$VARIANT}-done.cfg"
+
+		[ -e "$ks_sysimage" ] || ks_sysimage="$topdir/testing/ks-sysimage.cfg"
+		[ -e "$ks_initrd"   ] || ks_sysimage="$topdir/testing/ks-initrd.cfg"
+		[ -e "$ks_done"     ] || ks_done="$topdir/testing/ks-done.cfg"
+
 		sed \
 			-e "s#@CMDLINE@#$BOOT_CMDLINE#g" \
 			\
-			"$topdir/testing/testing-$VENDOR${VARIANT:+-$VARIANT}-ks-sysimage.cfg" \
-			"$topdir/testing/$TESTNAME.cfg" \
-			"$topdir/testing/testing-$VENDOR${VARIANT:+-$VARIANT}-ks-initrd.cfg" \
-			"$topdir/testing/testing-$VENDOR${VARIANT:+-$VARIANT}-ks-done.cfg" \
+			"$ks_sysimage" "$ks_testcase" "$ks_initrd" "$ks_done" \
 			\
 			> "$workdir/ks.cfg"
 	fi
-
-	case "${SYSIMAGE_SIZE:-full}" in
-		mini) SYSIMAGE_PACKAGES="$SYSIMAGE_BASE_PACKAGES" ;;
-		full) SYSIMAGE_PACKAGES="$SYSIMAGE_BASE_PACKAGES $SYSIMAGE_EXTRA_PACKAGES" ;;
-	esac
-
-	if [ "${BOOTLOADER_TYPE-}" = "none" ]; then
-		BOOTLOADER_EFI_PACKAGES=""
-		BOOTLOADER_PC_PACKAGES=""
-	fi
-
-	case "${BOOT_BIOS:-pc}" in
-		efi) SYSIMAGE_PACKAGES+=" $BOOTLOADER_EFI_PACKAGES" ;;
-		pc)  SYSIMAGE_PACKAGES+=" $BOOTLOADER_PC_PACKAGES" ;;
-	esac
 }
 
 qemu_setup_cpu()
@@ -428,7 +423,22 @@ qemu_watchdog()
 	done
 }
 
-sysimage_ignore_kmodules()
+find_ignore_firmware()
+{
+	printf " '%s'" \
+		'(' \
+			-path '*/firmware/amdgpu/*' -o \
+			-path '*/firmware/intel/*' -o \
+			-path '*/firmware/iwlwifi-*' -o \
+			-path '*/firmware/mellanox/*' -o \
+			-path '*/firmware/mrvl/*' -o \
+			-path '*/firmware/nvidia/*' -o \
+			-path '*/firmware/qcom/*' -o \
+			-path '*/firmware/i915/*' \
+		')'
+}
+
+find_ignore_kmodules()
 {
 	printf " '%s'" \
 		'(' \
@@ -439,7 +449,6 @@ sysimage_ignore_kmodules()
 			-path '*/kernel/drivers/hwtracing/*' -o \
 			-path '*/kernel/drivers/i2c/*' -o \
 			-path '*/kernel/drivers/iio/*' -o \
-			-path '*/kernel/drivers/infiniband/*' -o \
 			-path '*/kernel/drivers/input/joystick/*' -o \
 			-path '*/kernel/drivers/input/misc/*' -o \
 			-path '*/kernel/drivers/input/touchscreen/*' -o \
@@ -457,4 +466,10 @@ sysimage_ignore_kmodules()
 			-path '*/kernel/drivers/xen/*' -o \
 			-path '*/kernel/sound/*' \
 		')'
+}
+
+image_depmod()
+{
+	printf '%s;\n' \
+		"find /lib/modules -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | xargs -rI '{}' -- depmod -a '{}'"
 }

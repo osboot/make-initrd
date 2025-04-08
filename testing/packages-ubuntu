@@ -11,17 +11,16 @@ MAKE_INITRD_PACKAGES_DEVEL+=" libjson-c-dev"
 
 KERNEL_PACKAGES="linux-generic"
 
-BOOTLOADER_EFI_PACKAGES="systemd-boot systemd-boot-efi"
-BOOTLOADER_PC_PACKAGES="grub-pc"
+INIT_PACKAGES="systemd"
+ZFS_PACKAGES="zfsutils-linux"
 
-SYSIMAGE_BASE_PACKAGES="$MAKE_INITRD_PACKAGES $KERNEL_PACKAGES systemd"
-SYSIMAGE_EXTRA_PACKAGES="pwgen mdadm lvm2 cryptsetup btrfs-progs e2fsprogs xfsprogs dosfstools"
+SYSIMAGE_PACKAGES="$MAKE_INITRD_PACKAGES $INIT_PACKAGES"
+SYSIMAGE_PACKAGES+=" pwgen mdadm lvm2 cryptsetup btrfs-progs e2fsprogs xfsprogs dosfstools"
+SYSIMAGE_PACKAGES+=" systemd-boot systemd-boot-efi grub-pc"
+SYSIMAGE_PACKAGES+=" $ZFS_PACKAGES"
 
-KICKSTART_PACKAGES="$MAKE_INITRD_PACKAGES"
+KICKSTART_PACKAGES="$MAKE_INITRD_PACKAGES_DEVEL $INIT_PACKAGES"
 KICKSTART_PACKAGES+=" e2fsprogs btrfs-progs xfsprogs dosfstools cryptsetup lvm2"
 KICKSTART_PACKAGES+=" mdadm util-linux rsync wget unzip tar cpio pwgen zstd lz4"
 KICKSTART_PACKAGES+=" eject fdisk f2fs-tools"
-
-SSH_SERVER_PACKAGES="openssh-server"
-
-ZFS_PACKAGES="zfsutils-linux"
+KICKSTART_PACKAGES+=" $ZFS_PACKAGES"

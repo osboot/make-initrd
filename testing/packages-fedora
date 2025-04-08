@@ -10,18 +10,13 @@ MAKE_INITRD_PACKAGES_DEVEL+=" libzstd-devel elfutils-libelf-devel libtirpc-devel
 MAKE_INITRD_PACKAGES_DEVEL+=" json-c-devel"
 
 KERNEL_PACKAGES="kernel kernel-modules"
+INIT_PACKAGES="systemd"
 
-BOOTLOADER_EFI_PACKAGES="systemd-boot-unsigned"
-BOOTLOADER_PC_PACKAGES="grub2-pc grub2-pc-modules"
+SYSIMAGE_PACKAGES="$MAKE_INITRD_PACKAGES $INIT_PACKAGES"
+SYSIMAGE_PACKAGES+=" pwgen mdadm lvm2 cryptsetup btrfs-progs e2fsprogs xfsprogs dosfstools"
+SYSIMAGE_PACKAGES+=" systemd-boot-unsigned grub2-pc grub2-pc-modules"
 
-SYSIMAGE_BASE_PACKAGES="$MAKE_INITRD_PACKAGES $KERNEL_PACKAGES systemd"
-SYSIMAGE_EXTRA_PACKAGES="pwgen mdadm lvm2 cryptsetup btrfs-progs e2fsprogs xfsprogs dosfstools"
-
-KICKSTART_PACKAGES="$MAKE_INITRD_PACKAGES"
+KICKSTART_PACKAGES="$MAKE_INITRD_PACKAGES_DEVEL $INIT_PACKAGES"
 KICKSTART_PACKAGES+=" e2fsprogs btrfs-progs xfsprogs dosfstools cryptsetup lvm2"
 KICKSTART_PACKAGES+=" mdadm util-linux rsync wget unzip tar cpio pwgen zstd lz4"
 KICKSTART_PACKAGES+=" f2fs-tools"
-
-SSH_SERVER_PACKAGES="openssh-server"
-
-ZFS_PACKAGES="unknown-package-for-altlinux"
