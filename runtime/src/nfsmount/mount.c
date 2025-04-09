@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <sys/mount.h>
 #include <sys/types.h>
 #include <sys/socket.h>

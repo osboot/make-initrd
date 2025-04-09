@@ -3,6 +3,9 @@
  * Copyright (C) 2022  Arseny Maslennikov <arseny@altlinux.org>
  * All rights reserved.
  */
+
+#include "config.h"
+
 #include <sys/types.h>
 #include <sys/wait.h>
 

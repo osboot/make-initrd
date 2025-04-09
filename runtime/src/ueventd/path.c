@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "config.h"
+
 #include <stdlib.h>
 #include <dirent.h>
 #include <fcntl.h>

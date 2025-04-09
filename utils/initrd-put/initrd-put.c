@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #define _GNU_SOURCE
 
+#include "config.h"
+
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -22,7 +24,6 @@
 #include <regex.h>
 #include <string.h>
 
-#include "config.h"
 #include "memory.h"
 #include "queue.h"
 #include "tree.h"

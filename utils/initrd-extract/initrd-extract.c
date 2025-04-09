@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #define _GNU_SOURCE
+
+#include "config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +19,6 @@
 #include "initrd-cpio.h"
 #include "initrd-decompress.h"
 #include "initrd-parse.h"
-#include "config.h"
 
 int opts = 0;
 
