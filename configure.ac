@@ -24,6 +24,8 @@ m4_ifndef([PKG_PROG_PKG_CONFIG],
     ./autogen.sh or autoreconf again. Make sure pkg-config is installed.])])
 PKG_PROG_PKG_CONFIG
 
+AC_SYS_LARGEFILE
+
 # Checks for header files.
 AC_FUNC_ALLOCA
 AC_CHECK_HEADERS([ \
