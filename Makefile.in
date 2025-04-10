@@ -134,7 +134,7 @@ CFLAGS = @CFLAGS@ \
 	-Wno-pointer-arith \
 	-Werror=shadow -Werror=missing-prototypes -Werror=implicit-function-declaration
 
-CPPFLAGS += @CPPFLAGS@ @DEFS@ -I$(CURDIR)
+CPPFLAGS += @CPPFLAGS@ @DEFS@ -I$(CURDIR) -I$(CURDIR)/include
 
 UDEVD		= @UDEVD@
 UDEVADM		= @UDEVADM@

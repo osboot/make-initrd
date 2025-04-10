@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <time.h>
 
+#include "temp_failure_retry.h"
 #include "rd/logging.h"
 
 int log_priority = LOG_INFO;

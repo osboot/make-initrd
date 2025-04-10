@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include "temp_failure_retry.h"
 #include "rd/logging.h"
 #include "ueventd.h"
 

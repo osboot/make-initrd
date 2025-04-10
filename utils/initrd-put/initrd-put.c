@@ -24,6 +24,7 @@
 #include <regex.h>
 #include <string.h>
 
+#include "temp_failure_retry.h"
 #include "memory.h"
 #include "queue.h"
 #include "tree.h"

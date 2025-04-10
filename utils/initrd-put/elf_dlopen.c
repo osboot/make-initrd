@@ -20,6 +20,7 @@
 #include <json-c/json.h>
 #include <json-c/json_visit.h>
 
+#include "temp_failure_retry.h"
 #include "memory.h"
 #include "elf_dlopen.h"
 
