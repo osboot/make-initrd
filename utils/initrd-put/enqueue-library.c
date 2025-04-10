@@ -22,6 +22,10 @@
 # define NT_FDO_PACKAGING_METADATA 0x407c0c0a
 #endif
 
+#ifndef ELF_NOTE_FDO
+# define ELF_NOTE_FDO "FDO"
+#endif
+
 extern int verbose;
 
 static bool is_dynamic_elf_file(const char *filename, int fd) __attribute__((__nonnull__ (1)));
