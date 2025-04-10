@@ -57,6 +57,8 @@ dest_data_sbindir := $(dest_runtimedir)/sbin
 dest_data_libdir  := $(dest_runtimedir)/$(libcdir)
 dest_featuredir   := $(dest_execdir)/$(FEATURESDIR)
 
+fts_LIBS := @fts_LIBS@
+
 HAVE_GZIP        := @HAVE_GZIP@
 HAVE_GZIP_LIBS   := @HAVE_GZIP_LIBS@
 HAVE_GZIP_CFLAGS := @HAVE_GZIP_CFLAGS@

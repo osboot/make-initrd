@@ -56,6 +56,16 @@ AC_CHECK_FUNCS([ \
 		strpbrk strrchr strstr strtol strtoul strtoull uname \
 		twalk_r tdestroy updwtmp])
 
+saved_LIBS="$LIBS"
+AC_SEARCH_LIBS([fts_close], [fts])
+LIBS="$saved_LIBS"
+case "$ac_cv_search_fts_close" in
+	no) AC_MSG_FAILURE([failed to find fts_close]) ;;
+	-l*) fts_LIBS="$ac_cv_search_fts_close" ;;
+	*) fts_LIBS= ;;
+esac
+AC_SUBST([fts_LIBS])
+
 AC_MSG_CHECKING([if in-tree build is required])
 AC_ARG_ENABLE(local-build,
 	[AS_HELP_STRING(--enable-local-build,
