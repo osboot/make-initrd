@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include "temp_failure_retry.h"
 #include "ueventd.h"
 
 pid_t waitpid_retry(pid_t pid, int *wstatus, int options)

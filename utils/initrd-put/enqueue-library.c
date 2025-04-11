@@ -17,7 +17,13 @@
 #include "enqueue.h"
 #include "elf_dlopen.h"
 
-#define _FDO_ELF_METADATA 0x407c0c0a
+#ifndef NT_FDO_PACKAGING_METADATA
+# define NT_FDO_PACKAGING_METADATA 0x407c0c0a
+#endif
+
+#ifndef ELF_NOTE_FDO
+# define ELF_NOTE_FDO "FDO"
+#endif
 
 extern int verbose;
 
@@ -116,7 +122,9 @@ int enqueue_elf_dlopen(const char *filename, int fd)
 
 		off = 0;
 		while ((next = gelf_getnote(data, off, &nhdr, &n_off, &d_off)) > 0) {
-			if (nhdr.n_type == _FDO_ELF_METADATA && nhdr.n_namesz == sizeof(ELF_NOTE_FDO) && !strcmp(data->d_buf + n_off, ELF_NOTE_FDO)) {
+			if (nhdr.n_type == NT_FDO_PACKAGING_METADATA &&
+			    nhdr.n_namesz == sizeof(ELF_NOTE_FDO) &&
+			    !strcmp(data->d_buf + n_off, ELF_NOTE_FDO)) {
 				library[0] = '\0';
 
 				process_json_metadata(filename, (char *)data->d_buf + d_off, library);

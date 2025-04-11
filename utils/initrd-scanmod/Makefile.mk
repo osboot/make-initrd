@@ -11,7 +11,7 @@ initrd_scanmod_SRCS = \
 	$(utils_srcdir)/initrd-scanmod/initrd-scanmod-walk.c \
 	$(NULL)
 
-initrd_scanmod_LIBS = $(HAVE_LIBKMOD_LIBS)
+initrd_scanmod_LIBS = $(fts_LIBS) $(HAVE_LIBKMOD_LIBS)
 
 PROGS += initrd_scanmod
 endif

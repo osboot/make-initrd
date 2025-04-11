@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <errno.h>
 #include <poll.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -141,6 +142,29 @@ done:
 	return (int) ret;
 }
 
+int bindanyprivport(int sd)
+{
+	struct sockaddr_in addr;
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+
+#define LOWPORT 512
+#define ENDPORT (IPPORT_RESERVED - 1)
+
+	for (short port = LOWPORT; port <= ENDPORT; ++port) {
+		addr.sin_port = htons(port);
+		if (bind(sd, (struct sockaddr *)&addr, sizeof(addr)) == 0) {
+			return 0;
+		}
+
+		if (errno != EADDRINUSE) {
+			return -1;
+		}
+	}
+
+	return -1;
+}
+
 struct client *tcp_client(uint32_t server, uint16_t port, uint32_t flags)
 {
 	struct client *clnt = malloc(sizeof(*clnt));
@@ -159,8 +183,8 @@ struct client *tcp_client(uint32_t server, uint16_t port, uint32_t flags)
 		goto bail;
 	}
 
-	if ((flags & CLI_RESVPORT) && bindresvport(sock, 0) == -1) {
-		perror("bindresvport");
+	if ((flags & CLI_RESVPORT) && bindanyprivport(sock) == -1) {
+		perror("bindanyprivport");
 		goto bail;
 	}
 
@@ -204,8 +228,8 @@ struct client *udp_client(uint32_t server, uint16_t port, uint32_t flags)
 		goto bail;
 	}
 
-	if ((flags & CLI_RESVPORT) && bindresvport(sock, 0) == -1) {
-		perror("bindresvport");
+	if ((flags & CLI_RESVPORT) && bindanyprivport(sock) == -1) {
+		perror("bindanyprivport");
 		goto bail;
 	} else {
 		struct sockaddr_in me;

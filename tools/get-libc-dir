@@ -5,4 +5,4 @@ libc="$(
 	ldd "$BASH" |
 		sed -n -e 's|[[:space:]]*libc\.so.*[[:space:]]=>[[:space:]]\(/.*\)[[:space:]](0x.*$|\1|p'
 )"
-printf '%s\n' "${libc%/libc.so*}"
+printf '%s\n' "${libc%/*}"

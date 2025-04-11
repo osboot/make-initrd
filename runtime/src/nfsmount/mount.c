@@ -305,8 +305,8 @@ int nfs_mount(const char *pathname, const char *hostname,
 		goto bail;
 	}
 
-	if (bindresvport(sock, 0) == -1) {
-		perror("bindresvport");
+	if (bindanyprivport(sock) == -1) {
+		perror("bindanyprivport");
 		goto bail;
 	}
 

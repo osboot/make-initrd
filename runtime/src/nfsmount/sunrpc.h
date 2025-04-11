@@ -99,6 +99,7 @@ struct client {
 
 #define CLI_RESVPORT	00000001
 
+int bindanyprivport(int sd);
 struct client *tcp_client(uint32_t server, uint16_t port, uint32_t flags);
 struct client *udp_client(uint32_t server, uint16_t port, uint32_t flags);
 void client_free(struct client *client);
