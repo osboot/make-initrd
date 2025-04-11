@@ -8,6 +8,8 @@ sysconfdir=/etc
 AC_SUBST([sysconfdir])
 
 AC_PROG_CC
+
+AC_USE_SYSTEM_EXTENSIONS
 AC_SYS_LARGEFILE
 
 # Checks for programs.
