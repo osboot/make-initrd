@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#define _GNU_SOURCE
+
+#include "config.h"
+
 #include <sys/utsname.h>
 
 #include <stdio.h>
@@ -12,7 +14,6 @@
 #include <libgen.h>
 
 #include "initrd-scanmod.h"
-#include "config.h"
 
 int verbose = 0;
 

@@ -7,6 +7,8 @@ AC_PREFIX_DEFAULT([/usr])
 sysconfdir=/etc
 AC_SUBST([sysconfdir])
 
+AC_USE_SYSTEM_EXTENSIONS
+
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_MAKE_SET
@@ -23,6 +25,8 @@ m4_ifndef([PKG_PROG_PKG_CONFIG],
     environment variable AL_OPTS="-I/other/macro/dir" before running
     ./autogen.sh or autoreconf again. Make sure pkg-config is installed.])])
 PKG_PROG_PKG_CONFIG
+
+AC_SYS_LARGEFILE
 
 # Checks for header files.
 AC_FUNC_ALLOCA

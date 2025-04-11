@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#define _GNU_SOURCE
+
+#include "config.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -18,8 +19,6 @@
 #include <libgen.h>
 #include <libkmod.h>
 #include <err.h>
-
-#include "config.h"
 
 enum alias_need {
 	ALIAS_OPTIONAL = 0,

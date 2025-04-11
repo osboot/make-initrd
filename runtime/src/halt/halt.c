@@ -31,6 +31,8 @@
  *		Copyright (C) 1991-2004 Miquel van Smoorenburg.
  */
 
+#include "config.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/param.h>

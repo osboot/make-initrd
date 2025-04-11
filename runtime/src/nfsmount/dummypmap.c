@@ -6,6 +6,8 @@
  * using RPC over UDP.
  */
 
+#include "config.h"
+
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <stdio.h>
