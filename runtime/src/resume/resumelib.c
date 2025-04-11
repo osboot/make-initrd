@@ -2,6 +2,8 @@
  * Handle resume from suspend-to-disk
  */
 
+#include "config.h"
+
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>

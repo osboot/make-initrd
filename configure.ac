@@ -7,8 +7,12 @@ AC_PREFIX_DEFAULT([/usr])
 sysconfdir=/etc
 AC_SUBST([sysconfdir])
 
-# Checks for programs.
 AC_PROG_CC
+
+AC_USE_SYSTEM_EXTENSIONS
+AC_SYS_LARGEFILE
+
+# Checks for programs.
 AC_PROG_MAKE_SET
 AC_PROG_MKDIR_P
 AC_PROG_LN_S

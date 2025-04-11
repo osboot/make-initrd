@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <ctype.h>
 #include <fcntl.h>
 #include <sys/stat.h>

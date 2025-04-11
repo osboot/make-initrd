@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "config.h"
+
 #include <sys/types.h>
 #include <sys/epoll.h>
 #include <sys/inotify.h>

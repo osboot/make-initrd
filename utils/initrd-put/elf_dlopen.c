@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
-#define _GNU_SOURCE
+
+#include "config.h"
 
 #include <sys/wait.h>
 #include <sys/prctl.h>
@@ -18,7 +19,6 @@
 #include <json-c/json.h>
 #include <json-c/json_visit.h>
 
-#include "config.h"
 #include "memory.h"
 #include "elf_dlopen.h"
 
