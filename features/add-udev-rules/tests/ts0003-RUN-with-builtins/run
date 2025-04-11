@@ -2,6 +2,7 @@
 
 cwd="${0%/*}"
 
+export UDEV_RULES_PRINT_MODULES=1
 export UDEVADM="xudevadm"
 export PATH="$cwd/bin:$PATH"
 

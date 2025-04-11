@@ -165,11 +165,16 @@ done
 
 # Optional not fatal detection.
 if [ "${#MODULES[@]}" -gt 0 ]; then
-	printf '%s\n' "${MODULES[@]}" |
-	sort -u |
-	depinfo --input=- \
-		${USE_MODPROBE_BLACKLIST:+--use-blacklist} \
-		--set-version="$kernel" \
-		--no-prefix \
-		2>/dev/null ||:
+	if [ -z "${UDEV_RULES_PRINT_MODULES-}" ]; then
+		printf '%s\n' "${MODULES[@]}" |
+			sort -u |
+			depinfo --input=- \
+				${USE_MODPROBE_BLACKLIST:+--use-blacklist} \
+				--set-version="$kernel" \
+				--no-prefix \
+				2>/dev/null ||:
+	else
+		printf '%s\n' "${MODULES[@]}" |
+			sort -u
+	fi
 fi
