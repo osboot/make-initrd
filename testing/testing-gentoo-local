@@ -53,6 +53,7 @@ image_cleanup()
 for step in "$@"; do
 	case "$step" in
 		create-images)
+			gh_group_start "create sysimage image"
 			run podman image build --squash --force-rm \
 				--pull=missing \
 				-t "localhost/image-$VENDOR:sysimage" \
@@ -83,7 +84,9 @@ for step in "$@"; do
 			 done
 			RUN mkdir -p /srv
 			EOF
+			gh_group_end
 
+			gh_group_start "create devel image"
 			run podman image build --squash --force-rm \
 				--pull=never \
 				-t "localhost/image-$VENDOR:devel" \
@@ -98,6 +101,7 @@ for step in "$@"; do
 			RUN $(image_cleanup)
 			RUN mkdir -p /srv
 			EOF
+			gh_group_end
 			;;
 		build-sources)
 			gh_group_start "building from git tree"

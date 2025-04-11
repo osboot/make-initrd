@@ -71,12 +71,12 @@ jobs:
          make check-unit
 
   e2e-images:
-    name: "prepare: ${{ matrix.name }}"
+    name: "prepare: ${{ matrix.vendor }}"
     runs-on: ubuntu-latest
     needs: [ verify ]
     strategy:
       matrix:
-        name: [
+        vendor: [
           "altlinux",
           "fedora",
           "gentoo",
@@ -84,37 +84,46 @@ jobs:
         ]
       fail-fast: true
     steps:
+      - name: "Get Date"
+        id: date
+        run: |
+          echo "date=$(date +'%Y-%V')" > "$GITHUB_OUTPUT"
+
+      - name: "Get Cache"
+        uses: actions/cache@v4
+        id: cache
+        with:
+          path: ~/.images/${{ matrix.vendor }}
+          key: vendor-${{ matrix.vendor }}-${{ steps.date.outputs.date }}
+
       - name: "Checkout Repository"
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
 
       - name: "Create images"
-        run: testing/testing-${{ matrix.name }}-local create-images
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: testing/testing-${{ matrix.vendor }}-local create-images
 
       - name: "Check image existence"
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          test -n "$(podman images -an --format='1' -f reference=localhost/image-${{ matrix.name }}:sysimage)"
-          test -n "$(podman images -an --format='1' -f reference=localhost/image-${{ matrix.name }}:devel)"
+          test -n "$(podman images -an --format='1' -f reference=localhost/image-${{ matrix.vendor }}:sysimage)"
+          test -n "$(podman images -an --format='1' -f reference=localhost/image-${{ matrix.vendor }}:devel)"
 
       - name: "Save podman images"
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          podman image save "localhost/image-${{ matrix.name }}:sysimage" | gzip -c > "/tmp/image-${{ matrix.name }}-sysimage.tar.gz"
-          podman image save "localhost/image-${{ matrix.name }}:devel"    | gzip -c > "/tmp/image-${{ matrix.name }}-devel.tar.gz"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: image-${{ matrix.name }}
-          path: /tmp/image-${{ matrix.name }}-*.tar.gz
-          overwrite: true
-          compression-level: 0
-          retention-days: 1
+          mkdir -p -- ~/.images/${{ matrix.vendor }}
+          podman image save "localhost/image-${{ matrix.vendor }}:sysimage" | gzip -c > ~/.images/${{ matrix.vendor }}/image-sysimage.tar.gz
+          podman image save "localhost/image-${{ matrix.vendor }}:devel"    | gzip -c > ~/.images/${{ matrix.vendor }}/image-devel.tar.gz
 
   e2e-local:
-    name: "check: ${{ matrix.name }} ${{ matrix.testcase }}"
+    name: "check: ${{ matrix.vendor }} ${{ matrix.testcase }}"
     needs: [ e2e-images ]
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        name: [
+        vendor: [
           "altlinux",
           "fedora",
           "gentoo",
@@ -146,17 +155,35 @@ jobs:
           "zfs-partition",
         ]
         exclude:
-          - name: fedora
+          - vendor: fedora
             testcase: zfs-partition
 
-          - name: altlinux
+          - vendor: altlinux
             testcase: zfs-partition
 
-          - name: gentoo
+          - vendor: gentoo
             testcase: zfs-partition
 
       fail-fast: false
     steps:
+      - name: "Get Date"
+        id: date
+        run: |
+          echo "date=$(date +'%Y-%V')" > "$GITHUB_OUTPUT"
+
+      - name: "Get Cache"
+        uses: actions/cache@v4
+        id: cache
+        with:
+          path: ~/.images/${{ matrix.vendor }}
+          key: vendor-${{ matrix.vendor }}-${{ steps.date.outputs.date }}
+          fail-on-cache-miss: true
+
+      - name: "Load podman images"
+        run: |
+          podman image load -i=$HOME/.images/${{ matrix.vendor }}/image-sysimage.tar.gz
+          podman image load -i=$HOME/.images/${{ matrix.vendor }}/image-devel.tar.gz
+
       - name: "Prepare Node"
         run: |
           for m in kvm kvm-amd kvm-intel; do sudo modprobe -v "$m" ||:; done
@@ -175,43 +202,33 @@ jobs:
           git submodule set-url external/busybox/upstream https://github.com/mirror/busybox
           git submodule update --init --recursive
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: image-${{ matrix.name }}
-          path: /tmp/artifacts
-
-      - name: "Load podman images"
-        run: |
-          podman image load -i="/tmp/artifacts/image-${{ matrix.name }}-sysimage.tar.gz"
-          podman image load -i="/tmp/artifacts/image-${{ matrix.name }}-devel.tar.gz"
-
       - name: "Build Sources"
-        run: testing/testing-${{ matrix.name }}-local test-root-${{ matrix.testcase }} build-sources
+        run: testing/testing-${{ matrix.vendor }}-local test-root-${{ matrix.testcase }} build-sources
 
       - name: "Build Sysimage"
-        run: testing/testing-${{ matrix.name }}-local test-root-${{ matrix.testcase }} build-sysimage
+        run: testing/testing-${{ matrix.vendor }}-local test-root-${{ matrix.testcase }} build-sysimage
 
       - name: "Build Kickstart"
-        run: testing/testing-${{ matrix.name }}-local test-root-${{ matrix.testcase }} build-kickstart
+        run: testing/testing-${{ matrix.vendor }}-local test-root-${{ matrix.testcase }} build-kickstart
 
       - name: "Run Kickstart"
         env:
           QEMU_TIMEOUT: 40m
           QEMU_MEMORY: 1G
           QEMU_DISK_FORMAT: qcow2
-        run: testing/testing-${{ matrix.name }}-local test-root-${{ matrix.testcase }} run-kickstart
+        run: testing/testing-${{ matrix.vendor }}-local test-root-${{ matrix.testcase }} run-kickstart
 
       - name: "Boot System"
         env:
           QEMU_TIMEOUT: 10m
           QEMU_MEMORY: 1G
           QEMU_DISK_FORMAT: qcow2
-        run: testing/testing-${{ matrix.name }}-local test-root-${{ matrix.testcase }} run-boot
+        run: testing/testing-${{ matrix.vendor }}-local test-root-${{ matrix.testcase }} run-boot
 
       - name: "Archive Metrics"
         uses: actions/upload-artifact@v4
         with:
-          name: "metrics-${{ matrix.name }}-local-${{ matrix.testcase }}"
+          name: "metrics-${{ matrix.vendor }}-local-${{ matrix.testcase }}"
           path: testing/status/artifact-*.txt
           if-no-files-found: ignore
           retention-days: 1
