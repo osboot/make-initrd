@@ -102,7 +102,7 @@ jobs:
 
       - name: "Create images"
         if: steps.cache.outputs.cache-hit != 'true'
-        run: testing/testing-${{ matrix.vendor }}-local create-images
+        run: testing/testing-${{ matrix.vendor }} create-images
 
       - name: "Check image existence"
         if: steps.cache.outputs.cache-hit != 'true'
@@ -203,32 +203,32 @@ jobs:
           git submodule update --init --recursive
 
       - name: "Build Sources"
-        run: testing/testing-${{ matrix.vendor }}-local test-root-${{ matrix.testcase }} build-sources
+        run: testing/testing-${{ matrix.vendor }} test-root-${{ matrix.testcase }} build-sources
 
       - name: "Build Sysimage"
-        run: testing/testing-${{ matrix.vendor }}-local test-root-${{ matrix.testcase }} build-sysimage
+        run: testing/testing-${{ matrix.vendor }} test-root-${{ matrix.testcase }} build-sysimage
 
       - name: "Build Kickstart"
-        run: testing/testing-${{ matrix.vendor }}-local test-root-${{ matrix.testcase }} build-kickstart
+        run: testing/testing-${{ matrix.vendor }} test-root-${{ matrix.testcase }} build-kickstart
 
       - name: "Run Kickstart"
         env:
           QEMU_TIMEOUT: 40m
           QEMU_MEMORY: 1G
           QEMU_DISK_FORMAT: qcow2
-        run: testing/testing-${{ matrix.vendor }}-local test-root-${{ matrix.testcase }} run-kickstart
+        run: testing/testing-${{ matrix.vendor }} test-root-${{ matrix.testcase }} run-kickstart
 
       - name: "Boot System"
         env:
           QEMU_TIMEOUT: 10m
           QEMU_MEMORY: 1G
           QEMU_DISK_FORMAT: qcow2
-        run: testing/testing-${{ matrix.vendor }}-local test-root-${{ matrix.testcase }} run-boot
+        run: testing/testing-${{ matrix.vendor }} test-root-${{ matrix.testcase }} run-boot
 
       - name: "Archive Metrics"
         uses: actions/upload-artifact@v4
         with:
-          name: "metrics-${{ matrix.vendor }}-local-${{ matrix.testcase }}"
+          name: "metrics-${{ matrix.vendor }}-${{ matrix.testcase }}"
           path: testing/status/artifact-*.txt
           if-no-files-found: ignore
           retention-days: 1
