@@ -80,6 +80,7 @@ jobs:
           "altlinux",
           "fedora",
           "gentoo",
+          "gentoo_musl",
           "ubuntu",
         ]
       fail-fast: true
@@ -127,6 +128,7 @@ jobs:
           "altlinux",
           "fedora",
           "gentoo",
+          "gentoo_musl",
           "ubuntu",
         ]
         testcase: [
@@ -164,7 +166,11 @@ jobs:
           - vendor: gentoo
             testcase: zfs-partition
 
+          - vendor: gentoo_musl
+            testcase: zfs-partition
+
       fail-fast: false
+
     steps:
       - name: "Get Date"
         id: date

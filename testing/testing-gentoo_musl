@@ -1,0 +1,218 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+topdir="$(readlink -ev "$0")"
+topdir="${topdir%/*/*}"
+
+. "$topdir/testing/sh-functions"
+
+readonly VENDOR=gentoo_musl
+readonly ARCH=x86_64
+readonly IMAGE=gentoo/stage3:musl
+
+. "$topdir/testing/packages-$VENDOR"
+
+#BOOT_CMDLINE+=" rw"
+
+if [ "$#" -gt 1 ]; then
+	TESTNAME="$1"; shift
+	eval $(sed -n -e 's/^# param //p' "$topdir/testing/$TESTNAME.cfg")
+else
+	TESTNAME=
+fi
+
+readonly builddir=/srv
+
+readonly workdir="testing/cache/$VENDOR/$TESTNAME"
+readonly logdir="testing/logs/$VENDOR/$TESTNAME"
+readonly statusdir="$topdir/testing/status"
+
+readonly top_workdir="$topdir/$workdir"
+readonly top_logdir="$topdir/$logdir"
+
+prepare_testsuite
+
+n=$(grep -c '^processor' /proc/cpuinfo 2>/dev/null || echo 1)
+n=$(( $n * 2 ))
+
+emerge_args="--quiet --ask=n --getbinpkg --buildpkg --autounmask-write --jobs=$n --newuse --update"
+
+image_cleanup()
+{
+	printf '%s ||:; ' \
+	 "find /usr/share/locale/ -mindepth 3 -maxdepth 3 -type f -name '*.mo' -delete" \
+	 "find /usr/share/doc/ -mindepth 1 -delete" \
+	 "find /usr/share/groff/ -mindepth 1 -delete" \
+	 "find /usr/share/info/ -mindepth 1 -delete" \
+	 "find /usr/share/man/ -mindepth 1 -delete" \
+	 "find /var/tmp/portage/ -mindepth 1 -delete" \
+	 "find /usr/src/ -mindepth 1 -delete" \
+	 "find /lib/firmware $(find_ignore_firmware) -delete" \
+	 "find /lib/modules $(find_ignore_kmodules) -delete"
+	printf '\n'
+}
+
+for step in "$@"; do
+	case "$step" in
+		create-images)
+			gh_group_start "create sysimage image"
+			run podman image build --squash --force-rm \
+				--pull=missing \
+				-t "localhost/image-$VENDOR:sysimage" \
+				-f - <<-EOF
+			FROM $IMAGE
+			ENV FEATURES="-ipc-sandbox -network-sandbox -pid-sandbox"
+			ENV USE="boot lvm -initramfs"
+			RUN getuto >/dev/null
+			RUN emerge-webrsync --quiet
+			RUN emerge $emerge_args $KERNEL_PACKAGES
+			RUN emerge $emerge_args $SYSIMAGE_PACKAGES
+			RUN emerge --depclean --with-bdeps=n --ask=n
+			RUN $(image_depmod)
+			RUN \
+			 find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' | while read -r kver; do \
+			  for i in vmlinuz System.map config; do \
+			    if [ -f "/lib/modules/\$kver/\$i" ]; then \
+			      cp -vL "/lib/modules/\$kver/\$i" "/lib/modules/\$kver/\$i.real"; \
+			      rm -v "/lib/modules/\$kver/\$i"; \
+			      mv -v "/lib/modules/\$kver/\$i.real" "/lib/modules/\$kver/\$i"; \
+			    fi; \
+			  done; \
+			 done;
+			RUN $(image_cleanup)
+			RUN \
+			 for i in \$(portageq pkgdir) \$(portageq distdir) \$(portageq get_repo_path / gentoo); do \
+			  find "\$i" -mindepth 1 -delete; \
+			 done
+			RUN mkdir -p /srv
+			EOF
+			gh_group_end
+
+			gh_group_start "create devel image"
+			run podman image build --squash --force-rm \
+				--pull=never \
+				-t "localhost/image-$VENDOR:devel" \
+				-f - <<-EOF
+			FROM localhost/image-$VENDOR:sysimage
+			ENV USE="boot lvm -initramfs"
+			RUN emerge-webrsync --quiet
+			RUN emerge $emerge_args $KERNEL_PACKAGES
+			RUN emerge $emerge_args $KICKSTART_PACKAGES
+			RUN emerge --depclean --with-bdeps=n --ask=n
+			RUN $(image_depmod)
+			RUN $(image_cleanup)
+			RUN mkdir -p /srv
+			EOF
+			gh_group_end
+			;;
+		build-sources)
+			gh_group_start "building from git tree"
+
+			cat_exec "$top_workdir/run.sh" <<-EOF
+			#!/bin/bash -efux
+
+			cd "$builddir"
+			rc=0
+
+			# Some busybox features are broken with musl.
+			# See https://wiki.musl-libc.org/building-busybox
+			#
+			sed -e 's/^CONFIG_FEATURE_VI_REGEX_SEARCH=y/# CONFIG_FEATURE_VI_REGEX_SEARCH is not set/' \
+				-i external/busybox/config
+
+			./autogen.sh
+			./configure \
+				--enable-local-build \
+				--with-runtimedir=/lib/initrd1 || rc=\$?
+
+			if [ "\$rc" != 0 ]; then
+				echo '========================================='
+				cat config.log
+				exit 1
+			fi
+
+			make || rc=\$?
+
+			if [ "\$rc" != 0 ]; then
+				echo '========================================='
+				cat config.log
+				exit 1
+			fi
+			EOF
+			run podman run --rm -i --volume="$topdir:$builddir" \
+				"localhost/image-$VENDOR:devel" \
+				"$builddir/$workdir/run.sh"
+
+			gh_group_end
+			;;
+		build-sysimage)
+			gh_group_start "packing sysimage"
+			pack_sysimage
+			gh_group_end
+			;;
+		build-kickstart)
+			gh_group_start "creating kickstart image"
+
+			cat_exec "$top_workdir/run.sh" <<-EOF
+			#!/bin/bash -efux
+
+			kver="\$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' -quit)"
+
+			cat > /etc/initrd.mk <<EOF1
+			 AUTODETECT =
+			 IMAGEFILE = /boot/initrd-ks.img
+			 DISABLE_FEATURES += ucode
+			 FEATURES = add-modules add-udev-rules kickstart qemu rdshell modules-virtio modules-blockdev
+			 MODULES_ADD += sd_mod
+			 MODULES_PRELOAD += virtio-blk virtio-scsi virtio-pci
+			 KICKSTART_CONFIGS = $builddir/$workdir/ks.cfg
+			 PUT_PROGS += pwgen
+			EOF1
+
+			for i in vmlinuz System.map config; do
+			    [ ! -e "/lib/modules/\$kver/\$i" ] || cp -vL "/lib/modules/\$kver/\$i" "/boot/\$i-\$kver"
+			done
+
+			export PATH="$builddir/.build/dest/usr/sbin:$builddir/.build/dest/usr/bin:\$PATH"
+
+			$builddir/.build/dest/usr/sbin/make-initrd -v -k \$kver
+
+			cp -vL /boot/vmlinuz-\$kver $builddir/$workdir/boot-ks-vmlinuz
+			cp -vL /boot/initrd-ks.img  $builddir/$workdir/boot-ks-initrd.img
+			EOF
+
+			podman run --rm -i \
+				--volume="$topdir:$builddir" \
+				"localhost/image-$VENDOR:devel" \
+				"$builddir/$workdir/run.sh"
+
+			gh_group_end
+			;;
+		run-kickstart)
+			gh_group_start "creating qemu kickstart disks"
+
+			BOOT_PROG=
+			BOOT_KERNEL="$top_workdir/boot-ks-vmlinuz"
+			BOOT_INITRD="$top_workdir/boot-ks-initrd.img"
+			BOOT_APPEND='console=ttyS0,115200n8 quiet rdlog=console ksfile=ks.cfg'
+
+			qemu_setup_cpu
+			qemu_setup_kickstart_disks
+			qemu_exec
+
+			gh_group_end
+			;;
+		run-boot)
+			gh_group_start "checking the ability to boot"
+
+			qemu_setup_cpu
+			qemu_setup_boot_disks
+			qemu_exec
+
+			gh_group_end
+			;;
+		*)
+			fatal "unknown step: $step"
+			;;
+	esac
+done
