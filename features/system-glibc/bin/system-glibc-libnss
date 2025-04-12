@@ -7,7 +7,7 @@ verbose "Copying files from libnss_files.so* ..."
 
 case "${1-}" in
 	files)
-		list_libs |
+		get-ldconfig --libs |
 			grep \
 				-e '/libnss_files\.so.*' \
 				-e '/libnss_dns\.so.*' ||:

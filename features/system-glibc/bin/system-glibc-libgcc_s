@@ -7,7 +7,7 @@ verbose "Copying files from libgcc_s.so* ..."
 
 case "${1-}" in
 	files)
-		list_libs |
+		get-ldconfig --libs |
 			grep -e '/libgcc_s\.so.*' ||:
 		;;
 	dirs)

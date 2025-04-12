@@ -1,0 +1,105 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. shell-error
+
+show_usage()
+{
+	cat <<-EOF
+	Usage: $PROG [options]
+
+	Options:
+	  --libs          Show list for libraries;
+	  --libdirs       Show library directories;
+	  -h, --help      Give this help list.
+
+	Report bugs to authors.
+
+	EOF
+	exit
+}
+
+detect_libc()
+{
+	local __libc
+
+	__libc="$(ldd "$SHELL" |sed -n -e 's|[[:space:]]*libc\.so.*[[:space:]]=>[[:space:]]\(/.*\)[[:space:]](0x.*$|\1|p')"
+
+	if [ -n "$__libc" ] && [ -z "${__libc##*/ld-musl-*}" ]; then
+		eval "$1=\"musl\""
+		return 0
+	fi
+
+	eval "$1=\"glibc\""
+}
+
+TEMP=`getopt -n "$PROG" -o "h" -l "libs,libdirs,help" -- "$@"` ||
+	show_usage
+eval set -- "$TEMP"
+
+list_libs=
+list_libdirs=
+
+while :; do
+	case "$1" in
+		--libs)
+			list_libs=1
+			;;
+		--libdirs)
+			list_libdirs=1
+			;;
+		-h|--help)
+			show_usage
+			;;
+		--) shift; break
+			;;
+		*) fatal "unrecognized option: $1"
+			;;
+	esac
+	shift
+done
+
+detect_libc libc
+
+if [ "$libc" = "glibc" ]; then
+	ldconfig=$(type -P ldconfig 2>/dev/null) ||
+		fatal "unable to find ldconfig"
+
+	[ -z "$list_libdirs" ] ||
+		"$ldconfig" -vNX 2>/dev/null | sed -n -e 's,^\(/[^:]\+\):.*,\1,p'
+
+	[ -z "$list_libs" ] ||
+		"$ldconfig" -p | sed -n -e 's,.* => ,,p'
+
+	exit
+fi
+
+if [ "$libc" = "musl" ]; then
+	arch="$(uname -m)"
+	sys_path=()
+
+	[ ! -f "/etc/ld-musl-$arch.path" ] ||
+		readarray -t sys_path < "/etc/ld-musl-$arch.path"
+
+	[ "${#sys_path[@]}" -gt 0 ] ||
+		sys_path=( "/lib" "/usr/local/lib" "/usr/lib" )
+
+	if [ -n "$list_libdirs" ]; then
+		printf '%s\n' "${sys_path[@]}"
+	fi
+
+	if [ -n "$list_libs" ]; then
+		for libdir in "${sys_path[@]}"; do
+			for lib in "$libdir"/*.so.* "$libdir"/*.so; do
+				[ ! -f "$lib" ] ||
+					printf '%s\n' "$lib"
+			done
+		done |
+			xargs -r file -L -- |
+			sed -r -n -e 's,^(/.*):[[:space:]]+ELF .* shared object.*,\1,p'
+	fi
+
+	exit
+fi
+
+fatal "unable to detect libc"

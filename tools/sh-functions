@@ -58,12 +58,6 @@ readline() {
 	eval "$1=\"\$__v\""
 }
 
-list_libs() {
-	local ldconfig
-	ldconfig="$(type -P ldconfig)" || return 0
-	$ldconfig -p | sed -n -e 's,.* => ,,p'
-}
-
 in_list() {
 	local value elememt
 

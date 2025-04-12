@@ -72,13 +72,7 @@ append_progs()
 get_lib_paths()
 {
 	LIB_PATHS=()
-
-	local l
-	while read -r l; do
-		if [[ "$l" =~ ^(/[^:]+): ]]; then
-			LIB_PATHS+=("${BASH_REMATCH[1]}")
-		fi
-	done < <(ldconfig -vNX 2>/dev/null)
+	readarray -t LIB_PATHS < <(get-ldconfig --libdirs)
 }
 
 get_bin_paths()
