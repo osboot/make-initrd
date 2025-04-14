@@ -1,13 +1,13 @@
 #!/bin/bash -eu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-. guess-functions
-
 devname="$1"; shift
 fstype="$1"; shift
 
 [ "$fstype" = 'btrfs' ] ||
 	exit 0
+
+. guess-functions
 
 uuid="$(sys_blkid -o value -s UUID -c /dev/null "$devname")"
 
