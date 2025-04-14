@@ -57,6 +57,7 @@ dest_data_sbindir := $(dest_runtimedir)/sbin
 dest_data_libdir  := $(dest_runtimedir)/$(libcdir)
 dest_featuredir   := $(dest_execdir)/$(FEATURESDIR)
 
+BUILD_OS := @build_os@
 fts_LIBS := @fts_LIBS@
 
 HAVE_GZIP        := @HAVE_GZIP@
@@ -366,14 +367,22 @@ ifeq ($(filter verify clean,$(MAKECMDGOALS)),)
 endif
 
 ifeq ($(USE_BUSYBOX),yes)
-$(OBJDIR)/external/busybox/.config: $(external_srcdir)/busybox/config
+BBCFG = $(OBJDIR)/external/busybox/.config
+BBCFG_SED_ARGS = -e "s,^CONFIG_PREFIX=.*,CONFIG_PREFIX=\"$(realpath $(dest_runtimedir))\","
+
+# Some busybox features are broken with musl.
+# See https://wiki.musl-libc.org/building-busybox
+ifeq ($(BUILD_OS),linux-musl)
+BBCFG_SED_ARGS += -e "s,^CONFIG_FEATURE_VI_REGEX_SEARCH=.*,\# CONFIG_FEATURE_VI_REGEX_SEARCH is not set,"
+endif
+
+$(BBCFG): $(external_srcdir)/busybox/config
 	$(Q)mkdir -p -- "$(OBJDIR)/external/busybox"
 	$(Q)mkdir -p -- $(dest_runtimedir)
-	$(call quiet_cmd,SED,$@,@SED@) \
-	 -e "s,^CONFIG_PREFIX=.*,CONFIG_PREFIX=\"`realpath $(dest_runtimedir)`\",g" < "$<" > "$@"
+	$(call quiet_cmd,SED,$@,@SED@) $(BBCFG_SED_ARGS) < "$<" > "$@"
 	$(Q)touch -r $< $@
 
-$(dest_data_bindir)/busybox: $(OBJDIR)/external/busybox/.config
+$(dest_data_bindir)/busybox: $(BBCFG)
 	$(Q)mkdir -p -- "$(OBJDIR)/external/busybox"
 	$(MAKE) -C "$(OBJDIR)/external/busybox" \
 		-f "$(external_srcdir)/busybox/upstream/Makefile" \
