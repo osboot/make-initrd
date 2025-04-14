@@ -23,7 +23,7 @@ is collected in one place.
 
 To build a initramfs, you have to install the following software packages:
 
-- [gnu make](http://www.gnu.org/software/make/) is used to generate an
+- [GNU make](http://www.gnu.org/software/make/) is used to generate an
   initramfs image. This is a small but very powerful utility.
 - [bash](https://www.gnu.org/software/bash/) is needed for all scripts in the
   project. This allows for increased portability from one distribution to
@@ -47,6 +47,14 @@ To build a initramfs, you have to install the following software packages:
   [zlib](https://zlib.net), [bzip2](https://www.sourceware.org/bzip2/),
   [xz](http://tukaani.org/xz/), [zstd](https://facebook.github.io/zstd/).
 - [scdoc](https://git.sr.ht/~sircmpwn/scdoc) is used to generate man-pages.
+
+## Support
+make-initrd aims to be highly portable, though it has only been tested on a
+limited number of systems.
+
+- Operating Systems: [ALT Linux](https://en.altlinux.org/), [Fedora](https://fedoraproject.org/),
+  [Gentoo](https://www.gentoo.org/), [Ubuntu](https://ubuntu.com/).
+- C Library: [GNU libc](https://www.gnu.org/software/libc/), [musl libc](https://musl.libc.org/).
 
 ## Build
 
