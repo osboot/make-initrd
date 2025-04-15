@@ -155,10 +155,9 @@ done
 
 for n in \
 	"$UDEVD" "$UDEVADM" \
-	/lib/udev/{ata_id,cdrom_id,scsi_id,edd_id,vol_id,path_id,usb_id,firmware} \
 	$(find-terminfo linux) \
-	/var/resolv \
 	$(find "$KERNEL_MODULES_DIR" -type f \( -name 'modules.*' -a \! -name 'modules.*.bin' \)) \
+	/var/resolv \
 	/etc/modprobe.conf;
 do
 	[ ! -e "$n" ] ||
