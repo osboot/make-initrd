@@ -88,6 +88,7 @@ MOUNTPOINTS		?= /
 DEVICES			?=
 DISABLE_FEATURES	?= systemd
 DISABLE_GUESS		?=
+RUNTIME_FEATURE		?= runtime
 
 ifdef VERBOSE
   verbose = -v
