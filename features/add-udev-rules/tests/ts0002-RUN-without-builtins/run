@@ -5,4 +5,4 @@ cwd="${0%/*}"
 export UDEVADM="true"
 export PATH="$cwd/bin:$PATH"
 
-tools/find-udev-rule-externals "$cwd/data.rules"
+features/add-udev-rules/bin/find-udev-rule-externals "$cwd/data.rules"

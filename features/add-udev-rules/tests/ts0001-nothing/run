@@ -4,4 +4,4 @@ export UDEVADM="true"
 
 cwd="${0%/*}"
 
-tools/find-udev-rule-externals "$cwd/data.rules"
+features/add-udev-rules/bin/find-udev-rule-externals "$cwd/data.rules"

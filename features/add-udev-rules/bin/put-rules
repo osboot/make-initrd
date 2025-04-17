@@ -5,6 +5,11 @@
 . shell-signal
 . sh-functions
 
+cwd="$(readlink -ev "$0")"
+cwd="${cwd%/*}"
+
+export PATH="$cwd:$PATH"
+
 tempdir=
 exit_handler()
 {
