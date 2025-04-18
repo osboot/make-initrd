@@ -40,6 +40,22 @@ guess_module() {
 	printf '%s\n' "$1" >> "$guessdir/guess:modules${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
 }
 
+guess_optional_modalias() {
+	$TRACE_ENTER "$@" || {
+		$TRACE_ENTER_RETCODE $?
+		return $?
+	}
+	printf '%s\n' "$1" >> "$guessdir/guess:opt-modalias${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
+}
+
+guess_optional_module() {
+	$TRACE_ENTER "$@" || {
+		$TRACE_ENTER_RETCODE $?
+		return $?
+	}
+	printf '%s\n' "$1" >> "$guessdir/guess:opt-modules${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
+}
+
 guess_feature() {
 	$TRACE_ENTER "$@" || {
 		$TRACE_ENTER_RETCODE $?

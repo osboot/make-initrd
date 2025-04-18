@@ -48,7 +48,7 @@ PHONY += pre-guess test-guess-actions
 
 pre-guess: check-for-root
 	@mkdir -m 755 -p -- $(GUESSDIR)
-	@for n in modules:rescue modules:add modalias:rescue modalias:add features; do \
+	@for n in modules:rescue modules:add modalias:rescue modalias:add opt-modules:add opt-modalias:add features; do \
 	   :>> "$(GUESSDIR)/guess:$$n"; \
 	done
 

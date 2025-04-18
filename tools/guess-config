@@ -96,8 +96,10 @@ if [ -n "${RESOLVE_MODALIAS-}" ]; then
 fi
 
 print_vars
-print_list RESCUE_MODULES modules:rescue
-print_list RESCUE_MODULES modalias:rescue
-print_list MODULES_ADD    modules:add
-print_list MODULES_ADD    modalias:add
-print_list FEATURES       features
+print_list RESCUE_MODULES  modules:rescue
+print_list RESCUE_MODULES  modalias:rescue
+print_list MODULES_ADD     modules:add
+print_list MODULES_ADD     modalias:add
+print_list MODULES_TRY_ADD opt-modules:add
+print_list MODULES_TRY_ADD opt-modalias:add
+print_list FEATURES        features
