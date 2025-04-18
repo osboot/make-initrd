@@ -16,6 +16,6 @@ PUT_FEATURE_FILES += $(UDEVD) $(UDEVADM)
 PUT_FEATURE_DIRS += $(FEATURESDIR)/runtime/data
 
 create: depmod-host
-	@$(VMSG) "Creating initrd image ..."
+	@$(VMSG) "Creating rootfs ..."
 	@mkdir -m 755 -p $(verbose) -- $(ROOTDIR)
-	@$(TOOLSDIR)/create-initrd
+	@$(TOOLSDIR)/create-rootfs
