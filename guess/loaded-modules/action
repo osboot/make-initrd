@@ -53,5 +53,5 @@ list_builtin_modules()
 		-e '^kernel/drivers/usb/phy/' |
 while read -r mod; do
 	mod="${mod##*/}"
-	guess_module "${mod%.ko}"
+	guess_optional_module "${mod%.ko}"
 done
