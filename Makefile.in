@@ -169,7 +169,6 @@ FEATURES_SUBDIRS = $(filter-out $(SKIP_FEATURES),$(notdir $(wildcard $(FEATURESD
 
 build: $(addprefix $(dest_projectdir)/,$(PROJECT_SUBDIRS))
 build: $(addprefix $(dest_projectdir)/features/,$(FEATURES_SUBDIRS))
-build: $(dest_projectdir)/data
 build: build-progs build-libs
 
 verify:
@@ -255,11 +254,6 @@ $(dest_man1dir)/%.1: Documentation/manpages/%.1.md
 build-manpages: build-progs $(addprefix $(dest_man1dir)/,$(MANPAGE_NAMES))
 build: build-manpages
 endif
-
-$(dest_projectdir)/data: features/runtime/data
-	$(Q)mkdir -p -- $(dir $@)
-	$(Q)rm -f -- "$@"
-	$(call quiet_cmd,SLINK,$@,ln) -sf -- "$<" "$@"
 
 $(dest_projectdir)/%: %
 	$(Q)mkdir -p -- $(dir $@)
@@ -430,9 +424,7 @@ install: build-progs build-manpages installdirs
 	$(Q)cp -at "$(DESTDIR)$(sbindir)" -- $(addprefix $(dest_sbindir)/,$(SBIN_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(sysconfdir)" -- $(addprefix $(dest_sysconfdir)/,$(SYSCONF_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(rulesdir)" -- $(addprefix $(dest_rulesdir)/,$(RULE_NAMES))
-	$(Q)cp -at "$(DESTDIR)$(projectdir)" -- \
-	    $(dest_projectdir)/data \
-	    $$(readlink -e $(addprefix $(dest_projectdir)/,$(PROJECT_SUBDIRS)))
+	$(Q)cp -at "$(DESTDIR)$(projectdir)" -- $(realpath $(addprefix $(dest_projectdir)/,$(PROJECT_SUBDIRS)))
 	$(Q)mkdir -p -- "$(DESTDIR)$(projectdir)/$(FEATURESDIR)"
 	$(Q)for n in $(FEATURES_SUBDIRS); do \
 		target="$(dest_projectdir)/$(FEATURESDIR)/$$n"; \
