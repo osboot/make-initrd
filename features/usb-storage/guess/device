@@ -1,8 +1,6 @@
 #!/bin/bash -efu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-. guess-functions
-
 if [ -s "$KERNEL_CONFIG" ]; then
 	grep -qs '^[[:space:]]*CONFIG_USB_LIBUSUAL=y' "$KERNEL_CONFIG" ||
 		exit 0
@@ -24,6 +22,8 @@ fi
 
 [ -n "$found" ] ||
 	exit 0
+
+. guess-functions
 
 guess_module ub
 guess_module usb-storage
