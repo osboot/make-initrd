@@ -154,7 +154,6 @@ do
 done
 
 for n in \
-	"$UDEVD" "$UDEVADM" \
 	$(find-terminfo linux) \
 	$(find "$KERNEL_MODULES_DIR" -type f \( -name 'modules.*' -a \! -name 'modules.*.bin' \)) \
 	/var/resolv \
@@ -164,11 +163,7 @@ do
 		FILES["$n"]=1
 done
 
-append_progs \
-	blkid cat chmod chroot cp depmod dmesg findmnt grep kill killall5 ln \
-	logger ls lsmod mkdir mknod mktemp modprobe mount mountpoint mv \
-	readlink rm rmdir setsid sh sleep start-stop-daemon switch_root \
-	touch umount which ${PUT_FEATURE_PROGS-} ${PUT_PROGS-}
+append_progs ${PUT_FEATURE_PROGS-} ${PUT_PROGS-}
 
 [ -z "${PUT_FEATURE_LIBS-}" ] ||
         append_libs required ${PUT_FEATURE_LIBS-}
@@ -182,7 +177,7 @@ while read -d: -r n; do
 	while read -r bin; do
 		[ -n "$bin" ] ||
 			continue
-		for pattern in '*/shell-*' ${PUT_FEATURE_PROGS_WILDCARD-}; do
+		for pattern in ${PUT_FEATURE_PROGS_WILDCARD-}; do
 			[ -z "${bin##$pattern}" ] ||
 				continue
 			if [ -n "$LOCALBUILDDIR" ] && [ -z "${bin##$LOCALBUILDDIR/*}" ]; then
@@ -277,13 +272,8 @@ printf '%s\n' "${!LOCALFILES[@]}" |xargs -r put-file -r "$LOCALBUILDDIR" .
 
 gen-ld-so-conf . > etc/ld.so.conf
 
-ln_if_missing "$UDEVD"   ./sbin/udevd
-ln_if_missing "$UDEVADM" ./sbin/udevadm
-
-for i in rc0 rc1 rc2 rc3 rc4 rc5 rc6 init; do
-	mkdir -p "./etc/rc.d/$i.d"
-	ln -s -f "rc.d/$i.d" "./etc/$i.d"
-done
+[ ! -f ".$UDEVD"   ] || ln_if_missing "$UDEVD"   ./sbin/udevd
+[ ! -f ".$UDEVADM" ] || ln_if_missing "$UDEVADM" ./sbin/udevadm
 
 for n in group gshadow passwd shadow fstab; do
 	touch "./etc/$n"

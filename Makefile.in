@@ -109,7 +109,6 @@ all: build
 	$(filter-out \
 		$(foreach skip,$(SKIP_FEATURES),$(FEATURESDIR)/$(skip)/src/Makefile.mk), \
 		$(wildcard $(utils_srcdir)/*/Makefile.mk) \
-		$(wildcard $(runtime_srcdir)/*/Makefile.mk) \
 		$(wildcard $(FEATURESDIR)/*/src/Makefile.mk))
 
 define VAR_c_CFLAGS =
@@ -166,11 +165,10 @@ build-libs: $(LIBS)
 build-progs: build-libs $(PROGS) $(SCRIPTS)
 
 PROJECT_SUBDIRS = guess tools
-FEATURES_SUBDIRS = $(filter-out $(SKIP_FEATURES),$(notdir $(wildcard $(FEATURESDIR)/*)))
+FEATURES_SUBDIRS = $(filter-out README.md $(SKIP_FEATURES),$(notdir $(wildcard $(FEATURESDIR)/*)))
 
 build: $(addprefix $(dest_projectdir)/,$(PROJECT_SUBDIRS))
-build: $(addprefix $(dest_projectdir)/features/,$(FEATURES_SUBDIRS))
-build: $(dest_projectdir)/data
+build: $(addprefix $(dest_projectdir)/features/,README.md $(FEATURES_SUBDIRS))
 build: build-progs build-libs
 
 verify:
@@ -187,7 +185,7 @@ verify:
 	    }; \
 	done; exit $$rc; \
 
-verify: SHELLCHECK_DIRS = runtime/data features guess tools $(utils_srcdir)
+verify: SHELLCHECK_DIRS = features guess tools $(utils_srcdir)
 verify: SHELLCHECK_EXCLUDE = SC1003,SC1090,SC1091,SC2004,SC2006,SC2015,SC2034,SC2086,SC2154,SC2295,SC2317
 
 UNITTEST_DIRS = $(sort \
@@ -200,8 +198,7 @@ check-unit: $(UNITTEST_DIRS)
 check-services:
 	@rc=0; \
 	for svc in \
-	   `find runtime/data/ -executable -path '*/etc/rc.d/init.d/*' |sort` \
-	   `find features/ -path '*/etc/rc.d/init.d/*' |sort`; \
+	   `find features/ -executable -path '*/etc/rc.d/init.d/*' |sort`; \
 	do \
 	   ret=0; \
 	   errors=`tools/sort-services --json "$$svc" 2>&1 >/dev/null` || ret=1; \
@@ -257,11 +254,6 @@ $(dest_man1dir)/%.1: Documentation/manpages/%.1.md
 build-manpages: build-progs $(addprefix $(dest_man1dir)/,$(MANPAGE_NAMES))
 build: build-manpages
 endif
-
-$(dest_projectdir)/data: runtime/data
-	$(Q)mkdir -p -- $(dir $@)
-	$(Q)rm -f -- "$@"
-	$(call quiet_cmd,SLINK,$@,ln) -sf -- "$(CURDIR)/$<" "$@"
 
 $(dest_projectdir)/%: %
 	$(Q)mkdir -p -- $(dir $@)
@@ -388,6 +380,7 @@ $(dest_data_bindir)/busybox: $(BBCFG)
 		-f "$(external_srcdir)/busybox/upstream/Makefile" \
 		KBUILD_SRC="$(external_srcdir)/busybox/upstream"
 	$(MAKE) -C "$(OBJDIR)/external/busybox" busybox.links
+	$(Q)mkdir -p -- "$(dest_data_bindir)" "$(dest_data_sbindir)" "$(dest_data_libdir)"
 	$(Q)cp -a -- "$(OBJDIR)/external/busybox/busybox" "$@"
 	$(Q)while read -r busybox_link; do \
 	 ln -srf -- "$@" "$(dest_runtimedir)$$busybox_link"; \
@@ -431,25 +424,17 @@ install: build-progs build-manpages installdirs
 	$(Q)cp -at "$(DESTDIR)$(sbindir)" -- $(addprefix $(dest_sbindir)/,$(SBIN_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(sysconfdir)" -- $(addprefix $(dest_sysconfdir)/,$(SYSCONF_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(rulesdir)" -- $(addprefix $(dest_rulesdir)/,$(RULE_NAMES))
-	$(Q)cp -at "$(DESTDIR)$(projectdir)" -- \
-	    $$(readlink -e $(dest_projectdir)/data) \
-	    $$(readlink -e $(addprefix $(dest_projectdir)/,$(PROJECT_SUBDIRS)))
-	$(Q)mkdir -p -- "$(DESTDIR)$(projectdir)/$(FEATURESDIR)"
+	$(Q)cp -at "$(DESTDIR)$(projectdir)" -- $(realpath $(addprefix $(dest_projectdir)/,$(PROJECT_SUBDIRS)))
+	$(Q)mkdir -p -- $(addprefix $(DESTDIR)$(projectdir)/$(FEATURESDIR)/,$(FEATURES_SUBDIRS))
 	$(Q)for n in $(FEATURES_SUBDIRS); do \
-		target="$(dest_projectdir)/$(FEATURESDIR)/$$n"; \
-		dest="$(DESTDIR)$(projectdir)/$(FEATURESDIR)/$$n"; \
-	        if [ -d "$$target" ]; then \
-	            mkdir -p -- "$$dest"; \
-	            find "$$target/" -mindepth 1 -maxdepth 1 \
-	                '(' \
-	                        '!' -name 'src' -a \
-	                        '!' -name 'tests'  \
-	                ')' \
-	                -exec cp -at "$$dest" -- '{}' '+'; \
-	        else \
-	            cp -aL -- "$$target" "$$dest"; \
-	        fi; \
-	    done;
+	   find "$(dest_projectdir)/$(FEATURESDIR)/$$n/" -mindepth 1 -maxdepth 1 \
+	     '(' \
+	        '!' -name 'src' -a \
+	        '!' -name 'tests'  \
+	     ')' \
+	     -exec cp -at "$(DESTDIR)$(projectdir)/$(FEATURESDIR)/$$n" -- '{}' '+'; \
+	done
+	$(Q)cp -at "$(DESTDIR)$(projectdir)/$(FEATURESDIR)" -- $(realpath $(dest_projectdir)/$(FEATURESDIR)/README.md)
 	$(Q)cp -at "$(DESTDIR)$(execdir)/$(FEATURESDIR)" -- $(wildcard $(dest_execdir)/$(FEATURESDIR)/*)
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/bin" -- $(addprefix $(dest_data_bindir)/,$(RUNTIME_BIN_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/sbin" -- $(addprefix $(dest_data_sbindir)/,$(RUNTIME_SBIN_NAMES))

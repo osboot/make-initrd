@@ -9,17 +9,14 @@ IGNORE_DEPMOD := 1
 # converted to create a UEFI image.
 INSTALL_TARGET_SUFFIX := $(if $(UKI),-uki-disabled)
 
-PHONY += create pack install genimage
+PHONY += pack install genimage
 PHONY += install$(INSTALL_TARGET_SUFFIX)
 
-create: depmod-host
-	@$(VMSG) "Creating initrd image ..."
-	@mkdir -m 755 -p $(verbose) -- $(ROOTDIR)
-	@$(TOOLSDIR)/create-initrd
-
 pack: create
-	@$(VMSG) "Sorting sysvinit services ..."
-	@$(TOOLSDIR)/sort-services --rcdir="$(ROOTDIR)/etc/rc.d" "$(ROOTDIR)/etc/rc.d/init.d"
+	@if [ -d "$(ROOTDIR)/etc/rc.d/init.d" ]; then \
+	    $(VMSG) "Sorting sysvinit services ..."; \
+	    $(TOOLSDIR)/sort-services --rcdir="$(ROOTDIR)/etc/rc.d" "$(ROOTDIR)/etc/rc.d/init.d"; \
+	fi
 	@$(VMSG) "Packing image to archive ..."
 	@$(TOOLSDIR)/pack-image
 
@@ -55,4 +52,4 @@ $(info ALL ACTIVE FEATURES   : $(ALL_ACTIVE_FEATURES))
 endif
 
 # Load requested features
-$(call include-features-once,$(sort $(ALL_ACTIVE_FEATURES)))
+$(call include-features-once,$(RUNTIME_FEATURE) $(sort $(ALL_ACTIVE_FEATURES)))
