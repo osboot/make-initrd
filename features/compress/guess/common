@@ -3,12 +3,12 @@
 
 . guess-functions
 
-if [ ! -f "$imagefile" ]; then
+if [ ! -f "${IMAGEFILE-}" ]; then
 	guess_feature compress
 	exit 0
 fi
 
-init="$(initrd-ls -nC "$imagefile" |grep ' \./init$' |tail -1)"
+init="$(initrd-ls -nC "$IMAGEFILE" |grep ' \./init$' |tail -1)"
 
 for method in gzip bzip2 xz lzma lzo lz4 zstd; do
 	if [ -z "${init##* $method *}" ]; then

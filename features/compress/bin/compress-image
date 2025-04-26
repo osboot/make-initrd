@@ -4,7 +4,7 @@
 . sh-functions
 . shell-error
 
-case "$compress_method" in
+case "${COMPRESS-}" in
 	gzip|gz)   set -- gzip --best  ;;
 	bzip2|bz2) set -- bzip2 --best ;;
 	lz4)       set -- lz4 --best   ;;
@@ -13,7 +13,7 @@ case "$compress_method" in
 	xz)        set -- xz --best --check=crc32 -T0 ;;
 	zstd)      set -- zstd -19 -T0 ;;
 	'')        exit 0              ;;
-	*) fatal "Unknown compress method: $compress_method"
+	*) fatal "Unknown compress method: $COMPRESS"
 esac
 
 "$@" < "$outfile" > "$outfile.x"

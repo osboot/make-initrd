@@ -14,18 +14,16 @@ export workdir="${WORKDIR:?Work directory required}"
 export rootdir="${ROOTDIR:?Root directory required}"
 export guessdir="${GUESSDIR:?Autodetect directory required}"
 export reportdir="${REPORTDIR:?Bug report directory required}"
-export imagefile="${IMAGEFILE-}"
-export modules_ignore=" ${MODULES_IGNORE-} "
-
-export compress_method="${COMPRESS-}"
 export outfile="$workdir/initrd.img"
-export kernel="${KERNEL:?}"
-export kernel_modules_dir="${KERNEL_MODULES_DIR:?}"
 
-kernel_major="${kernel%%.*}"
-kernel_minor="${kernel#*.}"
+: ${KERNEL:?kernel version required}
+
+kernel_major="${KERNEL%%.*}"
+
+kernel_minor="${KERNEL#*.}"
 kernel_minor="${kernel_minor%%.*}"
-kernel_patch="${kernel#*.*.}"
+
+kernel_patch="${KERNEL#*.*.}"
 kernel_patch="${kernel_patch%%[!0-9]*}"
 
 export kernel_major kernel_minor kernel_patch
@@ -34,11 +32,13 @@ if [ -z "${kernel_major##*[!0-9]*}" ] ||
    [ -z "${kernel_minor##*[!0-9]*}" ] ||
    [ -z "${kernel_patch##*[!0-9]*}" ]
 then
-	fatal "Invalid kernel version \"$kernel\""
+	fatal "Invalid kernel version \"$KERNEL\""
 fi
 
-[ -d "$kernel_modules_dir" ] ||
-	fatal "Directory \"$kernel_modules_dir\" doesn't exist or not accessible."
+: ${KERNEL_MODULES_DIR:?kernel modules directory required}
+
+[ -d "$KERNEL_MODULES_DIR" ] ||
+	fatal "Directory \"$KERNEL_MODULES_DIR\" doesn't exist or not accessible."
 
 get_majmin() {
 	local v devnode
@@ -164,7 +164,7 @@ if [ -n "${MAKE_INITRD_TRACE-}" ]; then
 
 		kmodules=()
 		while read -r m; do
-			kmodules+=("${m##/lib/modules/$kernel/}")
+			kmodules+=("${m##/lib/modules/$KERNEL/}")
 		done < "$kmodules_list"
 
 		__trace_print $TRACE_KIND_RESOLVE_MODALIAS \

@@ -10,7 +10,7 @@ readarray -t UDEV_BUILTINS <<< "$(
 		sed -nr -e 's/^[[:space:]]+([^[:space:]]+)[[:space:]]+.*$/\1/p' |
 		sort -u
 )"
-kernel="${kernel:-$(uname -r)}"
+KERNEL="${KERNEL:-$(uname -r)}"
 
 FILES=()
 put_file()
@@ -170,7 +170,7 @@ if [ "${#MODULES[@]}" -gt 0 ]; then
 			sort -u |
 			depinfo --input=- \
 				${USE_MODPROBE_BLACKLIST:+--use-blacklist} \
-				--set-version="$kernel" \
+				--set-version="$KERNEL" \
 				--no-prefix \
 				2>/dev/null ||:
 	else

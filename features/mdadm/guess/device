@@ -24,7 +24,7 @@ fi
 
 if [ -n "${RESOLVE_MODALIAS-}" ]; then
 	depinfo \
-			--set-version="$kernel" \
+			--set-version="$KERNEL" \
 			--no-builtin \
 			--no-prefix \
 			--no-firmware \

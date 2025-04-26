@@ -81,7 +81,7 @@ if [ -n "${RESOLVE_MODALIAS-}" ]; then
 		depinfo \
 				--input="$m" \
 				${USE_MODPROBE_BLACKLIST:+--use-blacklist} \
-				--set-version="$kernel" \
+				--set-version="$KERNEL" \
 				--no-deps \
 				--no-prefix \
 				--no-firmware \

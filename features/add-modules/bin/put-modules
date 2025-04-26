@@ -58,9 +58,9 @@ find_modules()
 			continue
 		fi
 
-		if [ -n "${kernel_modules_dir-}" ]; then
+		if [ -n "$KERNEL_MODULES_DIR" ]; then
 			[ -f "$tempdir/kmodules" ] ||
-				find "$kernel_modules_dir" \
+				find "$KERNEL_MODULES_DIR" \
 					-type f \
 					-a \( -name '*.ko' -o -name '*.ko.*' \) \
 					> "$tempdir/kmodules"
@@ -106,7 +106,7 @@ get_depinfo()
 	sort -u "$1" |
 		depinfo --input=- \
 			${USE_MODPROBE_BLACKLIST:+--use-blacklist} \
-			--set-version="$kernel" || rc=$?
+			--set-version="$KERNEL" || rc=$?
 	:> "$1"
 	return $rc
 }
@@ -150,7 +150,7 @@ fi
 
 if [ -n "${MODULES_PATTERN_SETS_FILES-}" ]; then
 	printf '%s\n' ${MODULES_PATTERN_SETS_FILES-} |
-		xargs -r initrd-scanmod --set-version="$kernel" \
+		xargs -r initrd-scanmod --set-version="$KERNEL" \
 		>> "$tempdir/mods.required"
 fi
 

@@ -10,5 +10,5 @@ f="$SYSFS_PATH"/class/graphics/fb0/device/modalias
 modalias=
 readline modalias "$f"
 
-depinfo --set-version="$kernel" --no-prefix --no-firmware "$modalias" 2>/dev/null |
+depinfo --set-version="$KERNEL" --no-prefix --no-firmware "$modalias" 2>/dev/null |
 	sort -u

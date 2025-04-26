@@ -6,7 +6,7 @@
 kmodules_list="$1"
 shift
 
-LIBCRC32C="$(depinfo --set-version="$kernel" -D "libcrc32c" 2>/dev/null |cut -f1 -d\ )"
+LIBCRC32C="$(depinfo --set-version="$KERNEL" -D "libcrc32c" 2>/dev/null |cut -f1 -d\ )"
 
 case "$LIBCRC32C" in
 	builtin) pattern='^(ext4|xfs|btrfs)[[:space:]]' ;;
@@ -20,7 +20,7 @@ grep -E -qs -e "$pattern" "$kmodules_list" ||
 # CRC32c (Castagnoli) calculations wrapper for lib/crc32c
 printf '%s\n' crc32c
 
-grep -E -e '^alias crc32c ' "$kernel_modules_dir"/modules.alias |
+grep -E -e '^alias crc32c ' "$KERNEL_MODULES_DIR"/modules.alias |
 while read -r prefix alias module; do
 	printf '%s\n' "$module"
 done

@@ -11,13 +11,13 @@ modname="${PROG##add-deps-}"
 grep -E -qs '^'"$modname"'[[:space:]]' "$kmodules_list" ||
 	exit 0
 
-depinfo --set-version="$kernel" -D "$modname" 2>/dev/null |
+depinfo --set-version="$KERNEL" -D "$modname" 2>/dev/null |
 	grep -E -qs '^module ' ||
 	exit 0
 
 printf '%s\n' crc32c crc32-generic
 
-grep -E '^alias crc32c? ' "$kernel_modules_dir"/modules.alias |
+grep -E '^alias crc32c? ' "$KERNEL_MODULES_DIR"/modules.alias |
 while read -r prefix alias module; do
 	printf '%s\n' "$module"
 done
