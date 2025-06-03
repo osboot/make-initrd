@@ -18,6 +18,22 @@
 [ -z "${RD_DEPMOD-}" ] ||
 	depmod -a
 
+if [ "${RD_DRIVER_BLACKLIST:-0}" != 0 ]; then
+	i=0
+	while [ $i -lt ${RD_DRIVER_BLACKLIST:-0} ]; do
+		eval "MODS=\"\$RD_DRIVER_BLACKLIST$i\""
+
+		modnames=()
+		readarray -t -d, modnames <<<"$MODS,"
+
+		for modname in "${modnames[@]}"; do
+			[ -n "$modname" ] && [ "$modname" != $'\n' ] ||
+				continue
+			printf 'blacklist %s\n' "$modname"
+		done >> /etc/modprobe.d/initramfs-blacklist.conf
+	done
+fi
+
 [ -n "${RD_PRELOAD_MODULES-}" ] ||
 	exit 0
 

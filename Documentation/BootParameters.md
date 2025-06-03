@@ -13,6 +13,8 @@ The following parameters can be passed via kernel command line.
 - `debug` shows more messages.
 - `quiet` tries to be more quiet.
 - `rd-preload-modules` enables/disables loading a static list of modules before udev service.
+- `rd.driver.blacklist=<comma-separated list>` specifies the list of kernel
+  module names that should be added to blacklist before loading any kernel modules.
 
 Parameters responsible for mounting the root file system:
 
