@@ -23,3 +23,4 @@ register_parameter string ROOTFLAGS
 register_parameter string ROOTFSTYPE
 register_parameter string STOP
 register_array string RD_DRIVER_BLACKLIST
+register_array string RD_DRIVER_PRE

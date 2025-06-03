@@ -15,6 +15,8 @@ The following parameters can be passed via kernel command line.
 - `rd-preload-modules` enables/disables loading a static list of modules before udev service.
 - `rd.driver.blacklist=<comma-separated list>` specifies the list of kernel
   module names that should be added to blacklist before loading any kernel modules.
+- `rd.driver.pre=<comma-separated list>` specifies the list of kernel module
+  names that should be preloaded.
 
 Parameters responsible for mounting the root file system:
 

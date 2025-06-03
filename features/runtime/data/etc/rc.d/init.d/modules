@@ -42,6 +42,25 @@ fi
 preload_modules()
 {
 	local check conf modname rc=0
+
+	if [ "${RD_DRIVER_PRE:-0}" != 0 ]; then
+		local i modnames MODS
+
+		i=0
+		while [ $i -lt ${RD_DRIVER_PRE:-0} ]; do
+			eval "MODS=\"\$RD_DRIVER_PRE$i\""
+
+			modnames=()
+			readarray -t -d, modnames <<<"$MODS,"
+
+			for modname in "${modnames[@]}"; do
+				[ -n "$modname" ] && [ "$modname" != $'\n' ] ||
+					continue
+				modprobe "$modname" || rc=1
+			done
+		done
+	fi 2>"/var/log/preload-modules.log"
+
 	for conf in /etc/modules-load.d/*.conf /run/modules-load.d/*.conf /lib/modules-load.d/*.conf /etc/initrd/modules-preudev; do
 		# shellcheck disable=SC2162
 		[ ! -e "$conf" ] ||
@@ -53,7 +72,7 @@ preload_modules()
 				continue
 			modprobe "$modname" $args || rc=1
 		done < "$conf"
-	done 2>"/var/log/preload-modules.log"
+	done 2>>"/var/log/preload-modules.log"
 	return $rc
 }
 
