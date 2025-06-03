@@ -1,5 +1,5 @@
 #ifndef LIBFOO_H
-#define LIBFOO
+#define LIBFOO_H
 
 int libfoo_init(void);
 
