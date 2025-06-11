@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+.PHONY: packimage pack-image post-pack-image pre-pack post-pack
+
+packimage: pre-pack pack-image post-pack-image
+
+pack-image: pre-pack
+	@$(VMSG) "Packing image to archive ..."
+	@$(TOOLSDIR)/pack-image
+
+post-pack-image: pack-image post-pack
+	@:
+
+pre-pack::
+	@if [ -d "$(ROOTDIR)/etc/rc.d/init.d" ]; then \
+	    $(VMSG) "Sorting sysvinit services ..."; \
+	    $(TOOLSDIR)/sort-services --rcdir="$(ROOTDIR)/etc/rc.d" "$(ROOTDIR)/etc/rc.d/init.d"; \
+	fi
+
+# Load requested features
+$(call include-features-once,$(RUNTIME_FEATURE) $(sort $(ALL_ACTIVE_FEATURES)))
+
+pre-pack::
+	@$(VMSG) "Actions before packing are done"
+
+post-pack::
+	@$(VMSG) "Actions after packing are done"

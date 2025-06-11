@@ -47,6 +47,10 @@ ifneq ($(call in-goals,genimage),)
 include @projectdir@/mk/genimage.mk
 endif
 
+ifneq ($(call in-goals,packimage),)
+include @projectdir@/mk/packimage.mk
+endif
+
 ifneq ($(call in-goals,process-config),)
 STARTUP_TIME   = $(shell date +'%s')
 WORKDIR_SUFFIX = $(basename $(notdir $(INITRD_CONFIG)))

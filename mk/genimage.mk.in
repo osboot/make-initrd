@@ -13,12 +13,7 @@ PHONY += pack install genimage
 PHONY += install$(INSTALL_TARGET_SUFFIX)
 
 pack: create
-	@if [ -d "$(ROOTDIR)/etc/rc.d/init.d" ]; then \
-	    $(VMSG) "Sorting sysvinit services ..."; \
-	    $(TOOLSDIR)/sort-services --rcdir="$(ROOTDIR)/etc/rc.d" "$(ROOTDIR)/etc/rc.d/init.d"; \
-	fi
-	@$(VMSG) "Packing image to archive ..."
-	@$(TOOLSDIR)/pack-image
+	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/main.mk packimage
 
 install$(INSTALL_TARGET_SUFFIX): pack
 	@$(VMSG) "Installing image ..."
