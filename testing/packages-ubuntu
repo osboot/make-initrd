@@ -1,7 +1,8 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-MAKE_INITRD_PACKAGES="make udev libelf1 libkmod2 zlib1g libbz2-1.0 libzstd1 liblzma5 libjson-c5"
+MAKE_INITRD_PACKAGES="make udev libelf1 libkmod2 zlib1g libbz2-1.0 libzstd1"
+MAKE_INITRD_PACKAGES+=" liblzma5 libjson-c5 squashfs-tools"
 
 MAKE_INITRD_PACKAGES_DEVEL="$MAKE_INITRD_PACKAGES bison flex bzip2"
 MAKE_INITRD_PACKAGES_DEVEL+=" gcc make automake autoconf pkg-config udev scdoc"

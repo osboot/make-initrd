@@ -148,6 +148,7 @@ jobs:
           "partition",
           "partition+usr",
           "pipeline",
+          "initramfs-on-squashfs",
           "raid1",
           "raid1+raid5",
           "raid1-degraded",
