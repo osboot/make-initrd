@@ -368,6 +368,11 @@ ifeq ($(BUILD_OS),linux-musl)
 BBCFG_SED_ARGS += -e "s,^CONFIG_FEATURE_VI_REGEX_SEARCH=.*,\# CONFIG_FEATURE_VI_REGEX_SEARCH is not set,"
 endif
 
+# We want to have this functionality in busybox, but we don't want symlinks to
+# exist because links won't allow us to install other implementations of these
+# utilities.
+BB_SYMLINK_DISABLE = ash insmod mount
+
 $(BBCFG): $(external_srcdir)/busybox/config
 	$(Q)mkdir -p -- "$(OBJDIR)/external/busybox"
 	$(Q)mkdir -p -- $(dest_runtimedir)
@@ -383,6 +388,7 @@ $(dest_data_bindir)/busybox: $(BBCFG)
 	$(Q)mkdir -p -- "$(dest_data_bindir)" "$(dest_data_sbindir)" "$(dest_data_libdir)"
 	$(Q)cp -a -- "$(OBJDIR)/external/busybox/busybox" "$@"
 	$(Q)while read -r busybox_link; do \
+	 for ign in $(BB_SYMLINK_DISABLE); do [ -n "$${busybox_link##*/$$ign}" ] || continue 2; done; \
 	 ln -srf -- "$@" "$(dest_runtimedir)$$busybox_link"; \
 	done < "$(OBJDIR)/external/busybox/busybox.links"
 
