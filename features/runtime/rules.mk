@@ -5,7 +5,7 @@ PHONY += create
 PUT_FEATURE_PROGS += \
 	blkid cat chmod chroot cp depmod dmesg findmnt grep kill killall5 ln \
 	logger ls lsmod mkdir mknod mktemp modprobe mount mountpoint mv \
-	readlink rm rmdir setsid sh sleep start-stop-daemon switch_root \
+	readlink rm rmdir setsid sh sleep start-stop-daemon \
 	touch umount which
 
 PUT_FEATURE_PROGS_WILDCARD = \
