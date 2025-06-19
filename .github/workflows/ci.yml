@@ -148,6 +148,7 @@ jobs:
           "partition",
           "partition+usr",
           "pipeline",
+          "initramfs-on-erofs",
           "initramfs-on-squashfs",
           "raid1",
           "raid1+raid5",
@@ -164,8 +165,17 @@ jobs:
           - vendor: altlinux
             testcase: zfs-partition
 
+          - vendor: altlinux
+            testcase: initramfs-on-erofs
+
+          - vendor: gentoo
+            testcase: initramfs-on-erofs
+
           - vendor: gentoo
             testcase: zfs-partition
+
+          - vendor: gentoo_musl
+            testcase: initramfs-on-erofs
 
           - vendor: gentoo_musl
             testcase: zfs-partition

@@ -3,7 +3,7 @@
 
 MAKE_INITRD_PACKAGES="make findutils udev elfutils-libelf kmod-libs zlib-ng"
 MAKE_INITRD_PACKAGES+=" bzip2-libs libzstd xz-libs libxcrypt-compat json-c"
-MAKE_INITRD_PACKAGES+=" squashfs-tools"
+MAKE_INITRD_PACKAGES+=" squashfs-tools erofs-utils"
 
 MAKE_INITRD_PACKAGES_DEVEL="$MAKE_INITRD_PACKAGES"
 MAKE_INITRD_PACKAGES_DEVEL+=" gcc make automake autoconf bison flex gawk"
