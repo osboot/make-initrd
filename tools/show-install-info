@@ -3,20 +3,34 @@
 
 timestamp="$(msg-timestamp)"
 
+compressed_fs=
 KERNEL_MODULES=()
+TOP_KERNEL_MODULES=()
 root_size=0
 image_size=0
 
-readarray -t KERNEL_MODULES < <(
-	find "$ROOTDIR/lib/modules/$KERNEL" -type f \( -name '*.ko'  -o -name '*.ko.*' \) -printf '%f\n' 2>/dev/null |
+list_kmodules()
+{
+	find "$1/lib/modules/$KERNEL" -type f \( -name '*.ko'  -o -name '*.ko.*' \) -printf '%f\n' 2>/dev/null |
 		sed -e 's#\.ko\(\.[^\.]\+\)\?$##' |
 		sort -u
-)
+}
+
+if [ -n "${RUNTIME_COMPRESSED_FS-}" ] && [ -f "$WORKDIR/$RUNTIME_COMPRESSED_FS" ]; then
+	read -r compressed_fs < "$WORKDIR/$RUNTIME_COMPRESSED_FS"
+
+	readarray -t TOP_KERNEL_MODULES < <(list_kmodules "$ROOTDIR")
+	readarray -t KERNEL_MODULES     < <(list_kmodules "$ROOTDIR.$RUNTIME_COMPRESSED_FS")
+else
+	readarray -t KERNEL_MODULES     < <(list_kmodules "$ROOTDIR")
+fi
 
 read -r root_size  _ < <(du -sh "$ROOTDIR") ||:
 read -r image_size _ < <(du -sh "$1") ||:
 
 printf '%s Used features: %s\n'  "$timestamp" "$USED_FEATURES"
-printf '%s Packed modules: %s\n' "$timestamp" "${KERNEL_MODULES[*]}"
+printf '%s Packed modules%s: %s\n' "$timestamp" "${compressed_fs:+ inside $compressed_fs}" "${KERNEL_MODULES[*]}"
+[ -z "$compressed_fs" ] ||
+printf '%s Top packed modules: %s\n' "$timestamp" "${TOP_KERNEL_MODULES[*]}"
 printf '%s Unpacked size: %s\n'  "$timestamp" "$root_size"
 printf '%s Image size: %s\n'     "$timestamp" "$image_size"

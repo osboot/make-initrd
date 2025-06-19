@@ -7,7 +7,9 @@ mkdir "$rootdir"/overlay
 
 find -P "$rootdir" -type f -execdir touch -c -m --date="1970-01-01 00:00:00 +0000" '{}' '+'
 
-mv -- "$rootdir" "$rootdir.raw"
+suffix="$RUNTIME_COMPRESSED_FS"
+
+mv -- "$rootdir" "$rootdir.$suffix"
 mkdir -- "$rootdir"
 
 base_layer="${RUNTIME_BASE_LAYER-}"
@@ -25,7 +27,7 @@ case "$base_layer" in
 		kmodule_requires="${RUNTIME_LAYER_SQUASHFS_MODULES-}"
 		layerfs=squashfs
 
-		mksquashfs "$rootdir.raw" "$rootdir"/initramfs.img -quiet -no-progress -no-xattrs \
+		mksquashfs "$rootdir.$suffix" "$rootdir"/initramfs.img -quiet -no-progress -no-xattrs \
 			${RUNTIME_LAYER_SQUASHFS_ARGS-} \
 			${RUNTIME_LAYER_SQUASHFS_COMPRESS:+-comp "$RUNTIME_LAYER_SQUASHFS_COMPRESS"} \
 			-all-root \
@@ -50,12 +52,14 @@ case "$base_layer" in
 			${RUNTIME_LAYER_EROFS_ARGS=} \
 			${RUNTIME_LAYER_EROFS_COMPRESS:+-z "$RUNTIME_LAYER_EROFS_COMPRESS"} \
 			--all-root \
-			"$rootdir"/initramfs.img "$rootdir.raw"
+			"$rootdir"/initramfs.img "$rootdir.$suffix"
 		;;
 	*)
 		fatal "unknown base layer: $base_layer"
 		;;
 esac
+
+printf '%s\n' "$base_layer" > "$WORKDIR"/compressed-fs
 
 mkdir -p -- \
 	"$rootdir"/bin \
@@ -68,7 +72,7 @@ mkdir -p -- \
 ln -s -- ../bin  "$rootdir"/usr/bin
 ln -s -- ../sbin "$rootdir"/usr/bin
 
-put-file -r "$rootdir.raw" "$rootdir" "$rootdir.raw"/bin/busybox
+put-file -r "$rootdir.$suffix" "$rootdir" "$rootdir.$suffix"/bin/busybox
 
 cat > "$rootdir"/init <<EOF
 #!/bin/busybox ash
@@ -93,5 +97,3 @@ cat >> "$rootdir"/init <<EOF
 exec /bin/busybox switch_root /root /init
 EOF
 chmod +x "$rootdir"/init
-
-rm -rf -- "$rootdir.raw"
