@@ -61,6 +61,7 @@ for step in "$@"; do
 			FROM $IMAGE
 			ENV FEATURES="-ipc-sandbox -network-sandbox -pid-sandbox"
 			ENV USE="boot lvm -initramfs"
+			ENV ACCEPT_KEYWORDS="~amd64"
 			RUN getuto >/dev/null
 			RUN emerge-webrsync --quiet
 			RUN emerge $emerge_args $KERNEL_PACKAGES

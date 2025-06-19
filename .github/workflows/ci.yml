@@ -169,9 +169,6 @@ jobs:
             testcase: initramfs-on-erofs
 
           - vendor: gentoo
-            testcase: initramfs-on-erofs
-
-          - vendor: gentoo
             testcase: zfs-partition
 
           - vendor: gentoo_musl
