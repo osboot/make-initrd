@@ -1,0 +1,34 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. guess-functions
+
+$TRACE_SOURCE "Processing ..."
+
+dt_dir=
+
+for dir in ${DEVICETREE_PATH-} "$PROCFS_PATH"/device-tree "$SYSFS_PATH"/firmware/devicetree/base; do
+	if [ -e "$dir" ] && [ -f "$dir"/compatible ]; then
+		dt_dir="$dir"
+		break
+	fi
+done
+
+[ -n "$dt_dir" ] ||
+	exit 0
+
+find "$dt_dir/" -name compatible |
+while read -r dt_compatible; do
+	tr '\0' '\n' < "$dt_compatible" |
+	while read -r compat; do
+		printf 'of:N*T*C%sC*\n' "${compat//[ 	]/_}"
+	done
+done |
+	sort -u |
+	depinfo ${KERNEL:+-k "$KERNEL"} --no-prefix --input=- 2>/dev/null |
+	sed -r -n -e 's,^.*/lib/modules/[^/]+/,,p' |
+	filter_device_tree_modules |
+while read -r mod; do
+	mod="${mod##*/}"
+	guess_optional_module "${mod%.ko}"
+done
