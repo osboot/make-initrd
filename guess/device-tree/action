@@ -1,0 +1,29 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. guess-functions
+
+$TRACE_SOURCE "Processing ..."
+
+# Check Device Tree and Open Firmware support.
+[ -d "$SYSFS_PATH"/firmware/devicetree ] ||
+	exit 0
+
+# Do the search in reverse order. Searching for modalias files will show us
+# nodes that have kernel modules (uevents are much more than a node with
+# modalias), among them we look for those that have OF_NAME in uevent (mandatory
+# for open firemware) and for these nodes we look for real kernel modules.
+#
+# shellcheck disable=SC2016
+find "$SYSFS_PATH"/devices/ -type f -name modalias -printf '%h/uevent\0' |
+	xargs -r0 grep -l '^OF_NAME=' 2>/dev/null |
+	sed -e 's,/uevent$,/modalias,' |
+	xargs -r sed -e '${ s/$/\n/ }' |
+	depinfo ${KERNEL:+-k "$KERNEL"} --no-prefix --input=- 2>/dev/null |
+	sort -u |
+	sed -r -n -e 's,^.*/lib/modules/[^/]+/,,p' |
+	filter_device_tree_modules |
+while read -r mod; do
+	mod="${mod##*/}"
+	guess_optional_module "${mod%.ko}"
+done

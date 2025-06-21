@@ -189,4 +189,23 @@ is_active_feature()
 	return 1
 }
 
+filter_device_tree_modules()
+{
+	grep -E \
+		-e '^kernel/drivers/bus/' \
+		-e '^kernel/drivers/clk/' \
+		-e '^kernel/drivers/dma/' \
+		-e '^kernel/drivers/i2c/' \
+		-e '^kernel/drivers/mfd/' \
+		-e '^kernel/drivers/mmc/' \
+		-e '^kernel/drivers/nvmem/' \
+		-e '^kernel/drivers/phy/' \
+		-e '^kernel/drivers/power/supply/' \
+		-e '^kernel/drivers/regulator/' \
+		-e '^kernel/drivers/reset/' \
+		-e '^kernel/drivers/soc/' \
+		-e '^kernel/drivers/usb/phy/' \
+	#
+}
+
 fi #__included_make_initrd_guess_functions
