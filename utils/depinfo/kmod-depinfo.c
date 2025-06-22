@@ -15,6 +15,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include <fnmatch.h>
 #include <libgen.h>
 #include <libkmod.h>
@@ -627,9 +628,25 @@ read_names(struct kmod_ctx *ctx, const char *file)
 	ssize_t nread;
 
 	while ((nread = getline(&line, &len, stream)) != -1) {
-		if (line[nread - 1] == '\n')
-			line[nread - 1] = '\0';
-		if (process_name(ctx, line) < 0)
+		char *arg, *end;
+
+		arg = line;
+		end = arg + (nread - 1);
+
+		for (; arg < end; ++arg) {
+			if (!isspace(*arg))
+				break;
+		}
+		for (; end >= arg; --end) {
+			if (!isspace(*end))
+				break;
+			*end = '\0';
+		}
+
+		if (!strlen(arg))
+			continue;
+
+		if (process_name(ctx, arg) < 0)
 			ret = -1;
 	}
 
