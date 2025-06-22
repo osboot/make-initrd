@@ -1,0 +1,117 @@
+on:
+  workflow_call:
+    inputs:
+      vendor:
+        required: true
+        type: string
+      exclude:
+        required: false
+        type: string
+        default: '[]'
+jobs:
+  image:
+    uses: ./.github/workflows/image.yml
+    with:
+      vendor: ${{ inputs.vendor }}
+  test:
+    runs-on: ubuntu-latest
+    needs:
+      - image
+    strategy:
+      matrix:
+        testcase:
+          - btrfs-subvol
+          - efi-partition
+          - efi-reqpartition
+          - f2fs-partition
+          - luks
+          - luks+crypttab+noparam
+          - luks+lukskey-noparam
+          - luks+lukskey-plain
+          - luks+lukskey-raw
+          - luks-over-lvm
+          - luks-over-raid1
+          - lvm
+          - lvm+luks
+          - partition
+          - partition+usr
+          - pipeline
+          - initramfs-on-erofs
+          - initramfs-on-squashfs
+          - raid1
+          - raid1+raid5
+          - raid1-degraded
+          - raid5
+          - sdcard
+          - xfs-partition
+          - zfs-partition
+        exclude: ${{ fromJson(inputs.exclude) }}
+      fail-fast: false
+    steps:
+      - name: "Get Date"
+        id: date
+        run: |
+          echo "date=$(date +'%Y-%V')" > "$GITHUB_OUTPUT"
+
+      - name: "Get Cache"
+        uses: actions/cache@v4
+        id: cache
+        with:
+          path: ~/.images/${{ inputs.vendor }}
+          key: vendor-${{ inputs.vendor }}-${{ steps.date.outputs.date }}
+          fail-on-cache-miss: true
+
+      - name: "Load podman images"
+        run: |
+          podman image load -i=$HOME/.images/${{ inputs.vendor }}/image-sysimage.tar.gz
+          podman image load -i=$HOME/.images/${{ inputs.vendor }}/image-devel.tar.gz
+
+      - name: "Prepare Node"
+        run: |
+          for m in kvm kvm-amd kvm-intel; do sudo modprobe -v "$m" ||:; done
+          test -c /dev/kvm && sudo chmod -v 666 /dev/kvm ||:
+
+      - name: "Install Packages"
+        run: |
+          sudo apt-get -qq -y update
+          sudo apt-get -qq -y install git expect qemu-kvm ovmf
+
+      - name: "Checkout Repository"
+        uses: actions/checkout@v4
+
+      - name: "Checkout Submodules"
+        run: |
+          git submodule set-url external/busybox/upstream https://github.com/mirror/busybox
+          git submodule update --init --recursive
+
+      - name: "Build Sources"
+        run: testing/testing-${{ inputs.vendor }} test-root-${{ matrix.testcase }} build-sources
+
+      - name: "Build Sysimage"
+        run: testing/testing-${{ inputs.vendor }} test-root-${{ matrix.testcase }} build-sysimage
+
+      - name: "Build Kickstart"
+        run: testing/testing-${{ inputs.vendor }} test-root-${{ matrix.testcase }} build-kickstart
+
+      - name: "Run Kickstart"
+        env:
+          QEMU_TIMEOUT: 40m
+          QEMU_MEMORY: 1G
+          QEMU_DISK_FORMAT: qcow2
+        run: testing/testing-${{ inputs.vendor }} test-root-${{ matrix.testcase }} run-kickstart
+
+      - name: "Boot System"
+        env:
+          QEMU_TIMEOUT: 10m
+          QEMU_MEMORY: 1G
+          QEMU_DISK_FORMAT: qcow2
+        run: testing/testing-${{ inputs.vendor }} test-root-${{ matrix.testcase }} run-boot
+
+      - name: "Archive Metrics"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "metrics-${{ inputs.vendor }}-${{ matrix.testcase }}"
+          path: testing/status/artifact-*.txt
+          if-no-files-found: ignore
+          retention-days: 1
+

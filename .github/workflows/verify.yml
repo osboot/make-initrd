@@ -1,0 +1,65 @@
+on:
+  workflow_call:
+    inputs:
+      vendor:
+        required: false
+        type: string
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v4
+
+      - name: "Checkout Submodules"
+        run: |
+          git submodule set-url external/busybox/upstream https://github.com/mirror/busybox
+          git submodule update --init --recursive
+
+      - name: "Setup host"
+        run: |
+         sudo sysctl -w kernel.unprivileged_userns_clone=1 ||:
+         sudo sysctl -w kernel.apparmor_restrict_unprivileged_unconfined=0 ||:
+         sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 ||:
+
+      - name: "Install Tools"
+        run: |
+         sudo apt-get -qq -y update
+         sudo apt-get -y -qq install \
+          gcc make automake autoconf pkg-config udev scdoc \
+          libkmod-dev libz-dev libbz2-dev liblzma-dev libzstd-dev libelf-dev libtirpc-dev libcrypt-dev
+         sudo apt-get -y -qq install astyle
+         sudo apt-get -y -qq install shellcheck
+
+      - name: "Configure"
+        run: |
+         ./autogen.sh
+         ./configure --enable-local-build
+
+      - name: "Build Sources"
+        run: |
+         make
+
+      - name: "Prepare Gittree"
+        run: |
+         git config --global user.email "ci@example.com"
+         git config --global user.name "GitHubCI commiter"
+         git commit -a -m 'CI: update git tree'
+
+      - name: "Indent-c"
+        run: |
+         make indent-c && git diff --exit-code
+
+      - name: "ShellCheck"
+        run: |
+         make verify
+
+      - name: "Check services"
+        run: |
+         export PATH="$PWD/external/libshell/upstream:$PATH"
+         make check-services
+
+      - name: "Unit Tests"
+        run: |
+         export PATH="$PWD/external/libshell/upstream:$PATH"
+         make check-unit

@@ -1,0 +1,42 @@
+on:
+  workflow_call:
+    inputs:
+      vendor:
+        required: true
+        type: string
+jobs:
+  cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Get Date"
+        id: date
+        run: |
+          echo "date=$(date +'%Y-%V')" > "$GITHUB_OUTPUT"
+
+      - name: "Get Cache"
+        uses: actions/cache@v4
+        id: cache
+        with:
+          path: ~/.images/${{ inputs.vendor }}
+          key: vendor-${{ inputs.vendor }}-${{ steps.date.outputs.date }}
+
+      - name: "Checkout Repository"
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+
+      - name: "Create images"
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: testing/testing-${{ inputs.vendor }} create-images
+
+      - name: "Check image existence"
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          test -n "$(podman images -an --format='1' -f reference=localhost/image-${{ inputs.vendor }}:sysimage)"
+          test -n "$(podman images -an --format='1' -f reference=localhost/image-${{ inputs.vendor }}:devel)"
+
+      - name: "Save podman images"
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p -- ~/.images/${{ inputs.vendor }}
+          podman image save "localhost/image-${{ inputs.vendor }}:sysimage" | gzip -c > ~/.images/${{ inputs.vendor }}/image-sysimage.tar.gz
+          podman image save "localhost/image-${{ inputs.vendor }}:devel"    | gzip -c > ~/.images/${{ inputs.vendor }}/image-devel.tar.gz

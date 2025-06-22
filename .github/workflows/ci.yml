@@ -11,255 +11,55 @@ on:
     - cron: "0 0 * * MON"
 jobs:
   verify:
-    name: "Verify"
-    runs-on: ubuntu-24.04
-    steps:
-      - name: "Checkout Repository"
-        uses: actions/checkout@v4
-
-      - name: "Checkout Submodules"
-        run: |
-          git submodule set-url external/busybox/upstream https://github.com/mirror/busybox
-          git submodule update --init --recursive
-
-      - name: "Setup host"
-        run: |
-         sudo sysctl -w kernel.unprivileged_userns_clone=1 ||:
-         sudo sysctl -w kernel.apparmor_restrict_unprivileged_unconfined=0 ||:
-         sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 ||:
-
-      - name: "Install Tools"
-        run: |
-         sudo apt-get -qq -y update
-         sudo apt-get -y -qq install \
-          gcc make automake autoconf pkg-config udev scdoc \
-          libkmod-dev libz-dev libbz2-dev liblzma-dev libzstd-dev libelf-dev libtirpc-dev libcrypt-dev
-         sudo apt-get -y -qq install astyle
-         sudo apt-get -y -qq install shellcheck
-
-      - name: "Configure"
-        run: |
-         ./autogen.sh
-         ./configure --enable-local-build
-
-      - name: "Build Sources"
-        run: |
-         make
-
-      - name: "Prepare Gittree"
-        run: |
-         git config --global user.email "ci@example.com"
-         git config --global user.name "GitHubCI commiter"
-         git commit -a -m 'CI: update git tree'
-
-      - name: "Indent-c"
-        run: |
-         make indent-c && git diff --exit-code
-
-      - name: "ShellCheck"
-        run: |
-         make verify
-
-      - name: "Check services"
-        run: |
-         export PATH="$PWD/external/libshell/upstream:$PATH"
-         make check-services
-
-      - name: "Unit Tests"
-        run: |
-         export PATH="$PWD/external/libshell/upstream:$PATH"
-         make check-unit
-
-  e2e-images:
-    name: "prepare: ${{ matrix.vendor }}"
-    runs-on: ubuntu-latest
-    needs: [ verify ]
-    strategy:
-      matrix:
-        vendor: [
-          "altlinux",
-          "fedora",
-          "gentoo",
-          "gentoo_musl",
-          "ubuntu",
-        ]
-      fail-fast: true
-    steps:
-      - name: "Get Date"
-        id: date
-        run: |
-          echo "date=$(date +'%Y-%V')" > "$GITHUB_OUTPUT"
-
-      - name: "Get Cache"
-        uses: actions/cache@v4
-        id: cache
-        with:
-          path: ~/.images/${{ matrix.vendor }}
-          key: vendor-${{ matrix.vendor }}-${{ steps.date.outputs.date }}
-
-      - name: "Checkout Repository"
-        if: steps.cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v4
-
-      - name: "Create images"
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: testing/testing-${{ matrix.vendor }} create-images
-
-      - name: "Check image existence"
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          test -n "$(podman images -an --format='1' -f reference=localhost/image-${{ matrix.vendor }}:sysimage)"
-          test -n "$(podman images -an --format='1' -f reference=localhost/image-${{ matrix.vendor }}:devel)"
-
-      - name: "Save podman images"
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p -- ~/.images/${{ matrix.vendor }}
-          podman image save "localhost/image-${{ matrix.vendor }}:sysimage" | gzip -c > ~/.images/${{ matrix.vendor }}/image-sysimage.tar.gz
-          podman image save "localhost/image-${{ matrix.vendor }}:devel"    | gzip -c > ~/.images/${{ matrix.vendor }}/image-devel.tar.gz
-
-  e2e-local:
-    name: "check: ${{ matrix.vendor }} ${{ matrix.testcase }}"
-    needs: [ e2e-images ]
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        vendor: [
-          "altlinux",
-          "fedora",
-          "gentoo",
-          "gentoo_musl",
-          "ubuntu",
-        ]
-        testcase: [
-          "btrfs-subvol",
-          "efi-partition",
-          "efi-reqpartition",
-          "f2fs-partition",
-          "luks",
-          "luks+crypttab+noparam",
-          "luks+lukskey-noparam",
-          "luks+lukskey-plain",
-          "luks+lukskey-raw",
-          "luks-over-lvm",
-          "luks-over-raid1",
-          "lvm",
-          "lvm+luks",
-          "partition",
-          "partition+usr",
-          "pipeline",
-          "initramfs-on-erofs",
-          "initramfs-on-squashfs",
-          "raid1",
-          "raid1+raid5",
-          "raid1-degraded",
-          "raid5",
-          "sdcard",
-          "xfs-partition",
-          "zfs-partition",
-        ]
-        exclude:
-          - vendor: fedora
-            testcase: zfs-partition
-
-          - vendor: altlinux
-            testcase: zfs-partition
-
-          - vendor: altlinux
-            testcase: initramfs-on-erofs
-
-          - vendor: gentoo
-            testcase: zfs-partition
-
-          - vendor: gentoo_musl
-            testcase: initramfs-on-erofs
-
-          - vendor: gentoo_musl
-            testcase: zfs-partition
-
-      fail-fast: false
-
-    steps:
-      - name: "Get Date"
-        id: date
-        run: |
-          echo "date=$(date +'%Y-%V')" > "$GITHUB_OUTPUT"
-
-      - name: "Get Cache"
-        uses: actions/cache@v4
-        id: cache
-        with:
-          path: ~/.images/${{ matrix.vendor }}
-          key: vendor-${{ matrix.vendor }}-${{ steps.date.outputs.date }}
-          fail-on-cache-miss: true
-
-      - name: "Load podman images"
-        run: |
-          podman image load -i=$HOME/.images/${{ matrix.vendor }}/image-sysimage.tar.gz
-          podman image load -i=$HOME/.images/${{ matrix.vendor }}/image-devel.tar.gz
-
-      - name: "Prepare Node"
-        run: |
-          for m in kvm kvm-amd kvm-intel; do sudo modprobe -v "$m" ||:; done
-          test -c /dev/kvm && sudo chmod -v 666 /dev/kvm ||:
-
-      - name: "Install Packages"
-        run: |
-          sudo apt-get -qq -y update
-          sudo apt-get -qq -y install git expect qemu-kvm ovmf
-
-      - name: "Checkout Repository"
-        uses: actions/checkout@v4
-
-      - name: "Checkout Submodules"
-        run: |
-          git submodule set-url external/busybox/upstream https://github.com/mirror/busybox
-          git submodule update --init --recursive
-
-      - name: "Build Sources"
-        run: testing/testing-${{ matrix.vendor }} test-root-${{ matrix.testcase }} build-sources
-
-      - name: "Build Sysimage"
-        run: testing/testing-${{ matrix.vendor }} test-root-${{ matrix.testcase }} build-sysimage
-
-      - name: "Build Kickstart"
-        run: testing/testing-${{ matrix.vendor }} test-root-${{ matrix.testcase }} build-kickstart
-
-      - name: "Run Kickstart"
-        env:
-          QEMU_TIMEOUT: 40m
-          QEMU_MEMORY: 1G
-          QEMU_DISK_FORMAT: qcow2
-        run: testing/testing-${{ matrix.vendor }} test-root-${{ matrix.testcase }} run-kickstart
-
-      - name: "Boot System"
-        env:
-          QEMU_TIMEOUT: 10m
-          QEMU_MEMORY: 1G
-          QEMU_DISK_FORMAT: qcow2
-        run: testing/testing-${{ matrix.vendor }} test-root-${{ matrix.testcase }} run-boot
-
-      - name: "Archive Metrics"
-        uses: actions/upload-artifact@v4
-        with:
-          name: "metrics-${{ matrix.vendor }}-${{ matrix.testcase }}"
-          path: testing/status/artifact-*.txt
-          if-no-files-found: ignore
-          retention-days: 1
-
+    uses: ./.github/workflows/verify.yml
+  altlinux:
+    needs:
+      - verify
+    uses: ./.github/workflows/testcases.yml
+    with:
+      vendor: altlinux
+      exclude: '[{"testcase": "zfs-partition"}, {"testcase": "initramfs-on-erofs"}]'
+  fedora:
+    needs:
+      - verify
+    uses: ./.github/workflows/testcases.yml
+    with:
+      vendor: fedora
+      exclude: '[{"testcase": "zfs-partition"}]'
+  ubuntu:
+    needs:
+      - verify
+    uses: ./.github/workflows/testcases.yml
+    with:
+      vendor: ubuntu
+  gentoo:
+    needs:
+      - verify
+    uses: ./.github/workflows/testcases.yml
+    with:
+      vendor: gentoo
+      exclude: '[{"testcase": "zfs-partition"}]'
+  gentoo_musl:
+    needs:
+      - verify
+    uses: ./.github/workflows/testcases.yml
+    with:
+      vendor: gentoo_musl
+      exclude: '[{"testcase": "zfs-partition"}, {"testcase": "initramfs-on-erofs"}]'
   metrics:
-    name: "Metrics"
-    needs: [ e2e-local ]
+    needs:
+      - altlinux
+      - fedora
+      - ubuntu
+      - gentoo
+      - gentoo_musl
     runs-on: ubuntu-latest
     if: success() || failure()
     steps:
-      - name: "Checkout Repository"
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: "Download Metrics"
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: "Summarize"
-        run: testing/generate-metrics artifacts > "$GITHUB_STEP_SUMMARY"
+      - run: testing/generate-metrics artifacts > "$GITHUB_STEP_SUMMARY"
