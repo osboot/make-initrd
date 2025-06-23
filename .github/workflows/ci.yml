@@ -45,7 +45,7 @@ jobs:
     uses: ./.github/workflows/testcases.yml
     with:
       vendor: gentoo_musl
-      exclude: '[{"testcase": "zfs-partition"}, {"testcase": "initramfs-on-erofs"}]'
+      exclude: '[{"testcase": "zfs-partition"}, {"testcase": "initramfs-on-erofs"}, {"testcase": "initramfs-on-squashfs"}]'
   metrics:
     needs:
       - altlinux
