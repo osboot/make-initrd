@@ -6,7 +6,7 @@ MAKE_INITRD_PACKAGES+=" dev-libs/elfutils net-libs/libtirpc sys-apps/coreutils"
 MAKE_INITRD_PACKAGES+=" sys-apps/findutils sys-apps/grep sys-apps/kmod sys-apps/util-linux"
 MAKE_INITRD_PACKAGES+=" virtual/libcrypt:= virtual/udev app-arch/bzip2 app-arch/xz-utils"
 MAKE_INITRD_PACKAGES+=" app-text/scdoc sys-libs/zlib app-arch/zstd dev-libs/json-c"
-MAKE_INITRD_PACKAGES+=" app-arch/lz4 sys-fs/squashfs-tools"
+MAKE_INITRD_PACKAGES+=" app-arch/lz4"
 
 MAKE_INITRD_PACKAGES_DEVEL="$MAKE_INITRD_PACKAGES dev-build/autoconf dev-build/automake"
 MAKE_INITRD_PACKAGES_DEVEL+=" dev-util/intltool sys-devel/bison sys-devel/flex"
