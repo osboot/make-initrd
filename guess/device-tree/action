@@ -9,6 +9,13 @@ $TRACE_SOURCE "Processing ..."
 [ -d "$SYSFS_PATH"/firmware/devicetree ] ||
 	exit 0
 
+GUESS_DT_NAMES="${GUESS_DT_NAMES-}"
+GUESS_DT_COMPATIBLES="${GUESS_DT_COMPATIBLES-}"
+
+filters=0
+[ -z "$GUESS_DT_NAMES"       ] || filters=$(( $filters + 1 ))
+[ -z "$GUESS_DT_COMPATIBLES" ] || filters=$(( $filters + 1 ))
+
 # Do the search in reverse order. Searching for modalias files will show us
 # nodes that have kernel modules (uevents are much more than a node with
 # modalias), among them we look for those that have OF_NAME in uevent (mandatory
@@ -17,7 +24,50 @@ $TRACE_SOURCE "Processing ..."
 # shellcheck disable=SC2016
 find "$SYSFS_PATH"/devices/ -type f -name modalias -printf '%h/uevent\0' |
 	xargs -r0 grep -l '^OF_NAME=' 2>/dev/null |
-	sed -e 's,/uevent$,/modalias,' |
+while read -r uevent; do
+	modialias_file="${uevent%/uevent}/modalias"
+
+	if [ "$filters" -eq 0 ]; then
+		printf '%s\n' "$modalias_file"
+		continue
+	fi
+
+	match=0
+
+	eof=
+	while [ -z "$eof" ]; do
+		pair=
+		read -r pair || eof=1
+
+		case "$pair" in
+			OF_NAME=*)
+				value="${pair#*=}"
+				[ -n "$value" ] || continue
+
+				for reqval in $GUESS_DT_NAMES; do
+					if [ "$value" = "$reqval" ]; then
+						match=$(( $match + 1 ))
+						break
+					fi
+				done
+				;;
+			OF_COMPATIBLE_[0-9]*=*)
+				value="${pair#*=}"
+				[ -n "$value" ] || continue
+
+				for reqval in $GUESS_DT_COMPATIBLES; do
+					if [ -z "${value##$reqval}" ]; then
+						match=$(( $match + 1 ))
+						break
+					fi
+				done
+				;;
+		esac
+	done < "$uevent"
+
+	[ "$match" -lt "$filters" ] ||
+		printf '%s\n' "$modalias_file"
+done |
 	xargs -r sed -e '${ s/$/\n/ }' |
 	depinfo ${KERNEL:+-k "$KERNEL"} --no-prefix --input=- 2>/dev/null |
 	sort -u |
