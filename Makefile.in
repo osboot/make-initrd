@@ -450,6 +450,7 @@ ifneq ($(SCDOC),)
 endif
 ifeq ($(USE_BUSYBOX),yes)
 	$(Q)while read -r busybox_link; do \
+	 for ign in $(BB_SYMLINK_DISABLE); do [ -n "$${busybox_link##*/$$ign}" ] || continue 2; done; \
 	 ln -srf -- "$(DESTDIR)$(runtimedir)/bin/busybox" "$(DESTDIR)$(runtimedir)$$busybox_link"; \
 	done < $(OBJDIR)/external/busybox/busybox.links
 endif
