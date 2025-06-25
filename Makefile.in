@@ -371,7 +371,7 @@ endif
 # We want to have this functionality in busybox, but we don't want symlinks to
 # exist because links won't allow us to install other implementations of these
 # utilities.
-BB_SYMLINK_DISABLE = ash insmod mount
+BB_SYMLINK_DISABLE = ash insmod losetup mount
 
 $(BBCFG): $(external_srcdir)/busybox/config
 	$(Q)mkdir -p -- "$(OBJDIR)/external/busybox"
