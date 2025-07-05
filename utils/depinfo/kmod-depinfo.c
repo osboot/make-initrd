@@ -27,11 +27,12 @@ enum alias_need {
 };
 
 enum show_flags {
-	SHOW_DEPS     = (1 << 1),
-	SHOW_MODULES  = (1 << 2),
-	SHOW_FIRMWARE = (1 << 3),
-	SHOW_PREFIX   = (1 << 4),
-	SHOW_BUILTIN  = (1 << 5),
+	SHOW_DEPS             = (1 << 1),
+	SHOW_MODULES          = (1 << 2),
+	SHOW_FIRMWARE         = (1 << 3),
+	SHOW_PREFIX           = (1 << 4),
+	SHOW_BUILTIN          = (1 << 5),
+	SHOW_MISSING_FIRMWARE = (1 << 6),
 };
 
 static int show_tree = 0;
@@ -364,6 +365,9 @@ again:
 			break;
 		begin = end + 1;
 	}
+
+	if (opts & SHOW_MISSING_FIRMWARE && !found)
+		show_with_prefix(show_tree, "missing-firmware", firmware);
 }
 
 static int
@@ -384,7 +388,6 @@ __process_depends(struct kmod_ctx *ctx, const char *depends, const char *delim, 
 	free(s);
 	return ret;
 }
-
 
 static int
 process_depends(struct kmod_ctx *ctx, const char *depends)
@@ -653,6 +656,7 @@ read_names(struct kmod_ctx *ctx, const char *file)
 static const char cmdopts_s[]        = "k:b:f:i:tDMFPBVh";
 static const struct option cmdopts[] = {
 	{ "use-blacklist", no_argument, 0, 1, },
+	{ "missing-firmware", no_argument, 0, 2 },
 	{ "tree", no_argument, 0, 't' },
 	{ "no-deps", no_argument, 0, 'D' },
 	{ "no-modules", no_argument, 0, 'M' },
@@ -687,7 +691,8 @@ print_help(const char *progname)
 	       "   -b, --base-dir=DIR          Use DIR as filesystem root for /lib/modules;\n"
 	       "   -f, --firmware-dir=DIR      Use DIR as colon-separated list of firmware directories\n"
 	       "                               (default: %s);\n"
-	       "       --use-blacklist         Apply blacklist commands in the configuration files.\n"
+	       "       --use-blacklist         Apply blacklist commands in the configuration files;\n"
+	       "       --missing-firmware      Show firmware that could not be found;\n"
 	       "   -i, --input=FILE            Read names from FILE;\n"
 	       "   -V, --version               Show version of program and exit;\n"
 	       "   -h, --help                  Show this text and exit.\n"
@@ -724,6 +729,9 @@ main(int argc, char **argv)
 		switch (c) {
 			case 1:
 				use_blacklist = 1;
+				break;
+			case 2:
+				opts |= SHOW_MISSING_FIRMWARE;
 				break;
 			case 'D':
 				opts ^= SHOW_DEPS;
