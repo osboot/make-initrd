@@ -311,6 +311,21 @@ free_modules(void)
 }
 
 static void
+show_with_prefix(int depth, const char *keyword, const char *value)
+{
+	if (--depth > 0) {
+		while (depth--)
+			printf("   ");
+		printf("\\_ ");
+	}
+
+	if (opts & SHOW_PREFIX)
+		printf("%s ", keyword);
+
+	printf("%s\n", value);
+}
+
+static void
 process_firmware(const char *firmware)
 {
 	char firmware_buf[MAXPATHLEN];
@@ -323,17 +338,7 @@ process_firmware(const char *firmware)
 			snprintf(firmware_buf, sizeof(firmware_buf), "%s/%s/%s%s", token, kversion, firmware, suffixes[n]);
 again:
 			if (!access(firmware_buf, F_OK)) {
-				int i = show_tree;
-
-				if (--i > 0) {
-					while (i--)
-						printf("   ");
-					printf("\\_ ");
-				}
-
-				if (opts & SHOW_PREFIX)
-					printf("firmware ");
-				printf("%s\n", firmware_buf);
+				show_with_prefix(show_tree, "firmware", firmware_buf);
 				break;
 			}
 
@@ -417,18 +422,7 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 	}
 
 	if (opts & SHOW_MODULES) {
-		int i = show_tree;
-
-		if (--i > 0) {
-			while (i--)
-				printf("   ");
-			printf("\\_ ");
-		}
-
-		if (opts & SHOW_PREFIX)
-			printf("module ");
-
-		printf("%s\n", kmod_module_get_path(mod));
+		show_with_prefix(show_tree, "module", kmod_module_get_path(mod));
 
 		if (show_tree)
 			show_tree++;
@@ -492,17 +486,7 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req)
 		char *name = is_kernel_builtin_match(alias);
 
 		if (name != NULL && opts & SHOW_BUILTIN) {
-			int i = show_tree;
-
-			if (--i > 0) {
-				while (i--)
-					printf("   ");
-				printf("\\_ ");
-			}
-
-			if (opts & SHOW_PREFIX)
-				printf("builtin ");
-			printf("%s\n", name);
+			show_with_prefix(show_tree, "builtin", name);
 			return 0;
 		}
 	}
@@ -552,12 +536,7 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req)
 		if (opts & SHOW_BUILTIN) {
 			kmod_list_foreach(l, list) {
 				mod = kmod_module_get_module(l);
-
-				if (opts & SHOW_PREFIX)
-					printf("builtin ");
-
-				printf("%s\n", kmod_module_get_name(mod));
-
+				show_with_prefix(show_tree, "builtin", kmod_module_get_name(mod));
 				kmod_module_unref(mod);
 			}
 			goto end;
