@@ -329,29 +329,41 @@ static void
 process_firmware(const char *firmware)
 {
 	char firmware_buf[MAXPATHLEN];
-	char *s, *str, *token, *saveptr = NULL;
-	s = str = strdup(firmware_dir);
+	const char *begin = firmware_dir;
+	int found = 0;
 
-	while ((token = strtok_r(str, ":", &saveptr)) != NULL) {
-		for (int n = 0; suffixes[n]; n++) {
-			int retry = 0;
-			snprintf(firmware_buf, sizeof(firmware_buf), "%s/%s/%s%s", token, kversion, firmware, suffixes[n]);
+	while (*begin && !found) {
+		const char *end = strchr(begin, ':');
+		size_t len = end ? (size_t) (end - begin) : strlen(begin);
+
+		if (len > 0 && len < sizeof(firmware_buf)) {
+			strncpy(firmware_buf, begin, len);
+			firmware_buf[len] = '\0';
+
+			for (int n = 0; suffixes[n] && !found; n++) {
+				int retry = 0;
+
+				snprintf(firmware_buf + len, sizeof(firmware_buf) - len,
+				         "/%s/%s%s", kversion, firmware, suffixes[n]);
 again:
-			if (!access(firmware_buf, F_OK)) {
-				show_with_prefix(show_tree, "firmware", firmware_buf);
-				break;
-			}
-
-			if (!retry) {
-				retry = 1;
-				snprintf(firmware_buf, sizeof(firmware_buf), "%s/%s%s", token, firmware, suffixes[n]);
-				goto again;
+				found = !access(firmware_buf, F_OK);
+				if (found) {
+					show_with_prefix(show_tree, "firmware", firmware_buf);
+					break;
+				}
+				if (!retry) {
+					snprintf(firmware_buf + len, sizeof(firmware_buf) - len,
+					         "/%s%s", firmware, suffixes[n]);
+					retry = 1;
+					goto again;
+				}
 			}
 		}
 
-		str = NULL;
+		if (!end)
+			break;
+		begin = end + 1;
 	}
-	free(s);
 }
 
 static int
