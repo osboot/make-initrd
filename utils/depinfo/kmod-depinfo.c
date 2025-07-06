@@ -198,6 +198,7 @@ read_kernel_builtin(char *module_dir, const char *modinfo)
 
 	if (fstat(fd, &st) < 0) {
 		warn("fstat: %s", filename);
+		close(fd);
 		return -1;
 	}
 
@@ -206,6 +207,7 @@ read_kernel_builtin(char *module_dir, const char *modinfo)
 	addr = mmap(NULL, (size_t) st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
 	if (addr == MAP_FAILED) {
 		warn("mmap: %s", filename);
+		close(fd);
 		return -1;
 	}
 
