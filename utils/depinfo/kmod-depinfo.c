@@ -39,7 +39,7 @@ static int show_tree = 0;
 static int opts      = SHOW_DEPS | SHOW_MODULES | SHOW_FIRMWARE | SHOW_PREFIX | SHOW_BUILTIN;
 
 static const char *kversion = NULL;
-static const char *suffixes[] = { "", ".xz", NULL };
+static const char *suffixes[] = { "", ".zst", ".xz", ".bz2", ".gz", NULL };
 
 static char *firmware_dir;
 static char firmware_defaultdir[] = "/lib/firmware/updates:/lib/firmware";
