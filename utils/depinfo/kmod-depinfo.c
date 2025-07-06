@@ -137,18 +137,20 @@ append_kernel_builtin_alias(char *name, char *alias)
 			continue;
 		}
 
+		char **aliases;
 		unsigned int i = 0;
 
 		if (next->aliases != NULL) {
 			while (next->aliases[i]) i++;
-			next->aliases = realloc(next->aliases, sizeof(char *) * (i + 2));
+			aliases = realloc(next->aliases, sizeof(char *) * (i + 2));
 		} else {
-			next->aliases = calloc(2, sizeof(char *));
+			aliases = calloc(2, sizeof(char *));
 		}
 
-		if (next->aliases == NULL)
+		if (aliases == NULL)
 			errx(EXIT_FAILURE, "memory allocation failed");
 
+		next->aliases = aliases;
 		next->aliases[i] = strdup(alias);
 
 		if (next->aliases[i] == NULL)
@@ -265,6 +267,7 @@ ignore:
 static int
 tracked_module(struct kmod_module *mod)
 {
+	char **new;
 	const char *path = kmod_module_get_path(mod);
 
 	if (modules) {
@@ -278,14 +281,15 @@ tracked_module(struct kmod_module *mod)
 		}
 	}
 
-	modules = realloc(modules, (n_modules + 2) * sizeof(void *));
+	new = realloc(modules, (n_modules + 2) * sizeof(void *));
 
-	if (!modules) {
+	if (!new) {
 		warn("realloc: allocating %lu bytes", (n_modules + 2) * sizeof(void *));
 		return -1;
 	}
 
-	modules[n_modules]     = strdup(path);
+	modules = new;
+	modules[n_modules] = strdup(path);
 	modules[n_modules + 1] = NULL;
 
 	if (!(modules[n_modules])) {
