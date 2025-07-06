@@ -28,7 +28,6 @@ jobs:
          sudo apt-get -y -qq install \
           gcc make automake autoconf pkg-config udev scdoc \
           libkmod-dev libz-dev libbz2-dev liblzma-dev libzstd-dev libelf-dev libtirpc-dev libcrypt-dev
-         sudo apt-get -y -qq install astyle
          sudo apt-get -y -qq install shellcheck
 
       - name: "Configure"
@@ -45,10 +44,6 @@ jobs:
          git config --global user.email "ci@example.com"
          git config --global user.name "GitHubCI commiter"
          git commit -a -m 'CI: update git tree'
-
-      - name: "Indent-c"
-        run: |
-         make indent-c && git diff --exit-code
 
       - name: "ShellCheck"
         run: |

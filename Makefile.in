@@ -211,11 +211,6 @@ check-services:
 
 check: check-unit
 
-.PHONY: indent-c
-indent-c:
-	@find . \! -path './external/*' -name '*.[ch]' \
-	    -exec astyle -n --quiet --options=.astylerc '{}' '+'
-
 .PHONY: wiki
 wiki:
 	$(Q)utils/make-wiki.sh

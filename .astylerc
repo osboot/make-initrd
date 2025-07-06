@@ -1,9 +1,0 @@
-lineend=linux
-style=linux
-indent=tab=8
-indent-switches
-indent-cases
-min-conditional-indent=0
-max-instatement-indent=120
-align-pointer=name
-max-code-length=130
