@@ -799,9 +799,6 @@ main(int argc, char **argv)
 	if (!from_file && optind >= argc)
 		errx(EXIT_FAILURE, "ERROR: Missing module or filename.");
 
-	if (!(opts & SHOW_MODULES) && !(opts & SHOW_FIRMWARE))
-		errx(EXIT_FAILURE, "ERROR: Options --no-modules and --no-firmware are mutually exclusive.");
-
 	if (!firmware_dir)
 		firmware_dir = firmware_defaultdir;
 
