@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <ctype.h>
+#include <glob.h>
 #include <fnmatch.h>
 #include <libgen.h>
 #include <libkmod.h>
@@ -326,48 +327,73 @@ show_with_prefix(int depth, const char *keyword, const char *value)
 	printf("%s\n", value);
 }
 
-static void
-process_firmware(const char *firmware)
+static int
+expand_pattern(const char *keyword, const char *pattern)
 {
-	char firmware_buf[MAXPATHLEN];
-	const char *begin = firmware_dir;
-	int found = 0;
+	size_t i;
+	glob_t globbuf;
 
-	while (*begin && !found) {
-		const char *end = strchr(begin, ':');
-		size_t len = end ? (size_t) (end - begin) : strlen(begin);
+	if (!access(pattern, F_OK)) {
+		show_with_prefix(show_tree, keyword, pattern);
+		return 1;
+	}
 
-		if (len > 0 && len < sizeof(firmware_buf)) {
-			strncpy(firmware_buf, begin, len);
-			firmware_buf[len] = '\0';
+	glob(pattern, 0, NULL, &globbuf);
 
-			for (int n = 0; suffixes[n] && !found; n++) {
-				int retry = 0;
+	for (i = 0; i < globbuf.gl_pathc; i++)
+		show_with_prefix(show_tree, keyword, globbuf.gl_pathv[i]);
 
-				snprintf(firmware_buf + len, sizeof(firmware_buf) - len,
-				         "/%s/%s%s", kversion, firmware, suffixes[n]);
-again:
-				found = !access(firmware_buf, F_OK);
-				if (found) {
-					show_with_prefix(show_tree, "firmware", firmware_buf);
-					break;
-				}
-				if (!retry) {
-					snprintf(firmware_buf + len, sizeof(firmware_buf) - len,
-					         "/%s%s", firmware, suffixes[n]);
-					retry = 1;
-					goto again;
-				}
-			}
-		}
+	globfree(&globbuf);
 
-		if (!end)
+	return globbuf.gl_pathc > 0;
+}
+
+static int
+process_firmware_pattern(const char *basedir, size_t baselen, const char *pattern)
+{
+	char path[MAXPATHLEN];
+	int n, found = 0;
+
+	if (baselen >= sizeof(path)) {
+		warnx("firmware path is too long: %s", basedir);
+		return -1;
+	}
+
+	strncpy(path, basedir, baselen);
+
+	for (n = 0; suffixes[n]; n++) {
+		snprintf(path + baselen, sizeof(path) - baselen, "/%s/%s%s", kversion, pattern, suffixes[n]);
+		if ((found = expand_pattern("firmware", path)))
 			break;
-		begin = end + 1;
+
+		snprintf(path + baselen, sizeof(path) - baselen, "/%s%s", pattern, suffixes[n]);
+		if ((found = expand_pattern("firmware", path)))
+			break;
 	}
 
 	if (opts & SHOW_MISSING_FIRMWARE && !found)
-		show_with_prefix(show_tree, "missing-firmware", firmware);
+		show_with_prefix(show_tree, "missing-firmware", pattern);
+
+	return found;
+}
+
+static void
+process_firmware(const char *pattern)
+{
+	const char *begin = firmware_dir;
+
+	while (*begin) {
+		const char *end = strchr(begin, ':');
+		size_t len = end ? (size_t) (end - begin) : strlen(begin);
+
+		if (len > 0 && process_firmware_pattern(begin, len, pattern))
+			return;
+
+		if (!end)
+			break;
+
+		begin = end + 1;
+	}
 }
 
 static int
