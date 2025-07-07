@@ -5,29 +5,9 @@
 
 cd "$rootdir"
 
-# shellcheck disable=SC2185
-find -O2 . -mindepth 1 \
-	   \( -type f -a -printf 'file %p %p %#m 0 0\n'  \) \
-	-o \( -type l -a -printf 'slink %p %l %#m 0 0\n' \) \
-	-o \( -type d -a -printf 'dir %p %#m 0 0\n'      \) \
-	-o \( -type p -a -printf 'pipe %p %#m 0 0\n'     \) \
-	-o \( -type s -a -printf 'sock %p %#m 0 0\n'     \) \
-	> "$workdir"/initcpio
-
-printf >> "$workdir"/initcpio 'nod ./dev/%s\n' \
-	"ram     0644 0 0 b 1 1" \
-	"null    0666 0 0 c 1 3" \
-	"zero    0666 0 0 c 1 5" \
-	"full    0666 0 0 c 1 7" \
-	"random  0666 0 0 c 1 8" \
-	"systty  0666 0 0 c 4 0" \
-	"tty0    0666 0 0 c 4 0" \
-	"tty1    0666 0 0 c 4 1" \
-	"tty     0666 0 0 c 5 0" \
-	"console 0600 0 0 c 5 1" \
-	"ptmx    0666 0 0 c 5 2"
-
 find -P . -type f -execdir touch -c -m --date="1970-01-01 00:00:00 +0000" '{}' '+'
 
-sort "$workdir"/initcpio |
-	gen_init_cpio -t 0 - > "$outfile"
+# shellcheck disable=SC2185
+find -O2 . -mindepth 1 -print0 |
+	sort -z |
+	cpio --null --quiet --create --format=newc --reproducible > "$outfile"

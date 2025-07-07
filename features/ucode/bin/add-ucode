@@ -108,12 +108,9 @@ if [ -d "$workdir/ucode" ]; then
 	find . -type f -execdir touch -c -m --date="1970-01-01 00:00:00 +0000" '{}' '+'
 
 	# shellcheck disable=SC2185
-	find -O2 . -mindepth 1 \
-		   \( -type f -a -printf 'file %P %p %#m 0 0\n'  \) \
-		-o \( -type l -a -printf 'slink %P %l %#m 0 0\n' \) \
-		-o \( -type d -a -printf 'dir %P %#m 0 0\n'      \) |
-		sort |
-		gen_init_cpio -t 0 - > "$workdir"/ucode.cpio
+	find -O2 . -mindepth 1 -print0 |
+		sort -z |
+		cpio --null --quiet --create --format=newc --reproducible > "$workdir"/ucode.cpio
 
 	rm -rf -- "$workdir/ucode"
 fi
