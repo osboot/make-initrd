@@ -28,7 +28,13 @@ in_features_bindir()
 
 append_progs()
 {
-	local n f path found
+	local n f path found args
+
+	[ -n "$1" ] ||
+		return 0
+
+	quote_shell_args args "$1"
+	eval "set -- $args"
 
 	for n; do
 		[ -n "$n" ] ||
@@ -98,10 +104,16 @@ get_bin_paths()
 
 append_libs()
 {
-	local n fn optional
+	local n fn optional args
 
 	optional="$1"
 	shift
+
+	[ -n "$1" ] ||
+		return 0
+
+	quote_shell_args args "$1"
+	eval "set -- $args"
 
 	for n; do
 		[ -n "$n" ] ||
@@ -145,10 +157,13 @@ append_libs()
 get_bin_paths
 get_lib_paths
 
+quote_shell_args args "${PUT_FEATURE_DIRS-} $PUT_DIRS"
+eval "set -- $args"
+
 for n in \
 	"$RUNTIMEDIR" "$BASEDATADIR" \
 	${LOCALBUILDDIR:+"${LOCALBUILDDIR-}$RUNTIMEDIR"} \
-	${PUT_FEATURE_DIRS-} $PUT_DIRS;
+	"$@";
 do
 	DIRS["$n"]=1
 done
@@ -163,37 +178,43 @@ do
 		FILES["$n"]=1
 done
 
-append_progs ${PUT_FEATURE_PROGS-} ${PUT_PROGS-}
+append_progs "${PUT_FEATURE_PROGS-}${PUT_PROGS:+ $PUT_PROGS}"
+append_libs required "${PUT_FEATURE_LIBS-}"
+append_libs optional "${PUT_FEATURE_OPTIONAL_LIBS-}"
 
-[ -z "${PUT_FEATURE_LIBS-}" ] ||
-        append_libs required ${PUT_FEATURE_LIBS-}
+if [ -n "${PUT_FEATURE_PROGS_WILDCARD-}" ]; then
+	quote_shell_args args "$PUT_FEATURE_PROGS_WILDCARD"
+	eval "set -- $args"
 
-[ -z "${PUT_FEATURE_OPTIONAL_LIBS-}" ] ||
-        append_libs optional ${PUT_FEATURE_OPTIONAL_LIBS-}
-
-while read -d: -r n; do
-	[ -n "$n" ] && [ -d "$n" ] ||
-		continue
-	while read -r bin; do
-		[ -n "$bin" ] ||
+	while read -d: -r n; do
+		[ -n "$n" ] && [ -d "$n" ] ||
 			continue
-		for pattern in ${PUT_FEATURE_PROGS_WILDCARD-}; do
-			[ -z "${bin##$pattern}" ] ||
+		while read -r bin; do
+			[ -n "$bin" ] ||
 				continue
-			if [ -n "$LOCALBUILDDIR" ] && [ -z "${bin##$LOCALBUILDDIR/*}" ]; then
-				LOCALFILES["$bin"]=1
-				continue
-			fi
-			[ -n "${bin##$RUNTIMEDIR/*}" ] ||
-				continue
-			FILES["$bin"]=1
-		done
-	done < <(set +f; shopt -s nullglob dotglob; printf '%s\n' "$n"/*)
-done <<<"$BUILDDIR_PATH:$BUSYBOX_PATH:$SYSTEM_PATH"
+			for pattern in "$@"; do
+				[ -z "${bin##$pattern}" ] ||
+					continue
+				if [ -n "$LOCALBUILDDIR" ] && [ -z "${bin##$LOCALBUILDDIR/*}" ]; then
+					LOCALFILES["$bin"]=1
+					continue
+				fi
+				[ -n "${bin##$RUNTIMEDIR/*}" ] ||
+					continue
+				FILES["$bin"]=1
+			done
+		done < <(set +f; shopt -s nullglob dotglob; printf '%s\n' "$n"/*)
+	done <<<"$BUILDDIR_PATH:$BUSYBOX_PATH:$SYSTEM_PATH"
+fi
 
-for n in ${PUT_FEATURE_FILES-} $PUT_FILES; do
-	FILES["$n"]=1
-done
+if [ -n "${PUT_FEATURE_FILES-}" ] || [ -n "${PUT_FILES-}" ]; then
+	quote_shell_args args "${PUT_FEATURE_FILES-} ${PUT_FILES-}"
+	eval "set -- $args"
+
+	for n in "$@"; do
+		FILES["$n"]=1
+	done
+fi
 
 cd "$ROOTDIR"
 
@@ -266,9 +287,9 @@ for f in "${!FEATUREFILES[@]}"; do
 	put-file -r "$p" . "$f"
 done
 
-printf '%s\n' "${!DIRS[@]}"       |xargs -r put-tree .
-printf '%s\n' "${!FILES[@]}"      |xargs -r put-file .
-printf '%s\n' "${!LOCALFILES[@]}" |xargs -r put-file -r "$LOCALBUILDDIR" .
+[ "${#DIRS[@]}"       -eq 0 ] || printf '%s\0' "${!DIRS[@]}"       |xargs -0 put-tree .
+[ "${#FILES[@]}"      -eq 0 ] || printf '%s\0' "${!FILES[@]}"      |xargs -0 put-file .
+[ "${#LOCALFILES[@]}" -eq 0 ] || printf '%s\0' "${!LOCALFILES[@]}" |xargs -0 put-file -r "$LOCALBUILDDIR" .
 
 gen-ld-so-conf . > etc/ld.so.conf
 
