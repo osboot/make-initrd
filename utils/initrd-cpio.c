@@ -23,6 +23,9 @@
 #define CPIO_FORMAT_OLDASCII "070707"
 #define CPIO_FORMAT_LENGTH 6
 
+#define CPIO_HDR_FIELD_SIZE 8
+#define CPIO_HDR_N_FIELDS 13
+
 #define MINORBITS 20
 #define MINORMASK ((1U << MINORBITS) - 1)
 
@@ -44,16 +47,22 @@ new_encode_dev(dev_t dev)
 static int
 parse_header(const unsigned char *s, struct cpio_header *h)
 {
-	unsigned long parsed[12];
-	char buf[9];
+	unsigned long parsed[CPIO_HDR_N_FIELDS];
+	char hexbuf[CPIO_HDR_FIELD_SIZE + 1];
 	int i;
 
-	buf[8] = '\0';
-	for (i = 0, s += 6; i < 12; i++, s += 8) {
-		memcpy(buf, s, 8);
-		parsed[i] = strtoul(buf, NULL, 16);
+	hexbuf[CPIO_HDR_FIELD_SIZE] = '\0';
+
+	s += CPIO_FORMAT_LENGTH;
+	i = 0;
+
+	while (i < CPIO_HDR_N_FIELDS) {
+		memcpy(hexbuf, s, CPIO_HDR_FIELD_SIZE);
+		parsed[i] = strtoul(hexbuf, NULL, 16);
+
+		s += CPIO_HDR_FIELD_SIZE;
+		i++;
 	}
-	s += 8;
 
 	h->ino      = parsed[0];
 	h->mode     = (mode_t) parsed[1];
@@ -97,8 +106,8 @@ read_cpio(struct cpio *a)
 		h = e->data;
 
 		parse_header(a->raw + offset, h);
-		offset += CPIO_HEADER_SIZE;
 
+		offset += CPIO_HEADER_SIZE;
 		offset += N_ALIGN(h->name_len) + h->body_len;
 		offset = (offset + 3) & ~3UL;
 
@@ -118,7 +127,7 @@ static unsigned long
 push_hdr(const char *s, unsigned long offset, FILE *output)
 {
 	fputs(s, output);
-	offset += 110;
+	offset += CPIO_HEADER_SIZE;
 	return offset;
 }
 
@@ -132,7 +141,7 @@ push_rest(const char *name, unsigned long offset, FILE *output)
 	fputc(0, output);
 	offset += name_len;
 
-	tmp_ofs = name_len + 110;
+	tmp_ofs = CPIO_HEADER_SIZE + name_len;
 	while (tmp_ofs & 3) {
 		fputc(0, output);
 		offset++;
