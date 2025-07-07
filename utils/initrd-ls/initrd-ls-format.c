@@ -149,7 +149,7 @@ show_header(struct cpio_header *h)
 	free(fmt);
 
 	if (S_ISLNK(h->mode)) {
-		fprintf(stdout, " -> %s", h->body);
+		fprintf(stdout, " -> %.*s", (int) h->body_len, h->body);
 	}
 
 	putchar('\n');
