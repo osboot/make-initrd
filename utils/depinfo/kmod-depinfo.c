@@ -22,6 +22,8 @@
 #include <libkmod.h>
 #include <err.h>
 
+#include "temp_failure_retry.h"
+
 enum alias_need {
 	ALIAS_OPTIONAL = 0,
 	ALIAS_REQUIRED = 1,
@@ -42,8 +44,11 @@ static int opts      = SHOW_DEPS | SHOW_MODULES | SHOW_FIRMWARE | SHOW_PREFIX | 
 static const char *kversion = NULL;
 static const char *suffixes[] = { "", ".zst", ".xz", ".bz2", ".gz", NULL };
 
+#define SYS_FIRMWARE_CLASS_PATH "/sys/module/firmware_class/parameters/path"
+
 static char *firmware_dir;
 static char firmware_defaultdir[] = "/lib/firmware/updates:/lib/firmware";
+static char firmware_class_path[PATH_MAX + 1] = { 0 };
 
 static char **modules   = NULL;
 static size_t n_modules = 0;
@@ -387,6 +392,10 @@ static void
 process_firmware(const char *pattern)
 {
 	const char *begin = firmware_dir;
+
+	if (*firmware_class_path &&
+	    process_firmware_pattern(firmware_class_path, strlen(firmware_class_path), pattern))
+		return;
 
 	while (*begin) {
 		const char *end = strchr(begin, ':');
@@ -815,6 +824,21 @@ main(int argc, char **argv)
 		if (uname(&u) < 0)
 			err(EXIT_FAILURE, "ERROR: uname()");
 		kversion = u.release;
+	}
+
+	if (!access(SYS_FIRMWARE_CLASS_PATH, F_OK)) {
+		int fd = open(SYS_FIRMWARE_CLASS_PATH, O_RDONLY | O_CLOEXEC);
+		if (fd != -1) {
+			ssize_t len = TEMP_FAILURE_RETRY(read(fd, firmware_class_path, PATH_MAX));
+			close(fd);
+
+			if (len > 0) {
+				firmware_class_path[len] = '\0';
+
+				while (len > 0 && firmware_class_path[len - 1] == '\n')
+					firmware_class_path[--len] = '\0';
+			}
+		}
 	}
 
 	snprintf(module_dir, sizeof(module_dir), "%s/lib/modules/%s", base_dir, kversion);
