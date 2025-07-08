@@ -106,6 +106,7 @@ get_depinfo()
 	sort -u "$1" |
 		depinfo --input=- \
 			${USE_MODPROBE_BLACKLIST:+--use-blacklist} \
+			--missing-firmware \
 			--set-version="$KERNEL" || rc=$?
 	:> "$1"
 	return $rc
@@ -155,12 +156,15 @@ if [ -n "${MODULES_PATTERN_SETS_FILES-}" ]; then
 fi
 
 :> "$tempdir/firmwares"
+:> "$tempdir/missing-firmwares"
 
 while [ -s "$tempdir/mods.required" ] || [ -s "$tempdir/mods.optional" ]; do
 	{
 		get_depinfo "$tempdir/mods.optional" 2>/dev/null ||:
 		get_depinfo "$tempdir/mods.required"
 	} > "$tempdir/depinfo"
+
+	module=
 
 	while read -r keyword path; do
 		modname="${path##*/}"
@@ -174,10 +178,14 @@ while [ -s "$tempdir/mods.required" ] || [ -s "$tempdir/mods.optional" ]; do
 				verbose "Builtin module \"$modname\""
 				;;
 			module)
+				module="$modname"
 				printf '%s\t%s\n' "$modname" "$path"
 				;;
 			firmware)
 				printf 'none\t%s\n' "$path" >> "$tempdir/firmwares"
+				;;
+			missing-firmware)
+				printf '%s\t%s\n' "$module" "$path" >> "$tempdir/missing-firmwares"
 				;;
 		esac
 	done < "$tempdir/depinfo" > "$tempdir/more-modules"
@@ -197,6 +205,20 @@ cut -f2- -- "$tempdir/firmwares" "$tempdir/modules" |
 	sort -u |
 	tr '\n' '\0' |
 	xargs -r0 put-file "$rootdir"
+
+if [ -s "$tempdir/missing-firmwares" ]; then
+	if [ -n "${verbose-}" ]; then
+		sort "$tempdir/missing-firmwares" |
+		while read -r modname fwpath; do
+			message "WARNING: Possible missing firmware \`$fwpath' for kernel module '$modname'"
+		done
+	else
+		n_mods="$(cut -f1 "$tempdir/missing-firmwares" | sort -u | wc -l)"
+		n_fw="$(cut -f2-  "$tempdir/missing-firmwares" | sort -u | wc -l)"
+
+		message "WARNING: Possible missing firmware counters: $n_fw file(s), $n_mods module(s)."
+	fi
+fi
 
 load_modules preudev  ${MODULES_PRELOAD-}
 load_modules postudev ${MODULES_LOAD-}
