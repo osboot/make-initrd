@@ -3,6 +3,7 @@
 
 . shell-error
 . shell-quote
+. sh-functions
 
 declare -A DIRS FILES LOCALFILES FEATUREFILES
 
@@ -233,7 +234,7 @@ mkdir_save_symlinks()
 		fi
 
 		if [ ! -h "/$dir" ]; then
-			mkdir $verbose -p -- "./$dir"
+			mkdir -p -- "./$dir"
 		else
 			follow_dir=".$(readlink -f "/$dir")"
 			mkdir_save_symlinks "$follow_dir"
@@ -261,7 +262,7 @@ mkfifo ./.initrd/rdshell
 
 ln_if_missing()
 {
-	[ -h "$2" ] || [ -e "$2" ] || ln $verbose -s -- "$1" "$2"
+	[ -h "$2" ] || [ -e "$2" ] || ln $verbose3 -s -- "$1" "$2"
 }
 
 [ -n "$BASH" ] ||
@@ -319,10 +320,10 @@ done
 
 for d in lib etc; do
 	if [ -d "/$d/modprobe.d" ]; then
-		verbose "Copying files from $d/modprobe.d ..."
+		verbose1 "Copying files from $d/modprobe.d ..."
 		find -L "/$d/modprobe.d" \
 				-name '*.conf' \
-			-exec cp -aLt ./etc/modprobe.d -- '{}' '+'
+			-exec cp $verbose3 -aLt ./etc/modprobe.d -- '{}' '+'
 	fi
 done
 

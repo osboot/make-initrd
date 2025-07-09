@@ -175,7 +175,7 @@ while [ -s "$tempdir/mods.required" ] || [ -s "$tempdir/mods.optional" ]; do
 
 		case "$keyword" in
 			builtin)
-				verbose "Builtin module \"$modname\""
+				verbose1 "Builtin module \"$modname\""
 				;;
 			module)
 				module="$modname"
@@ -207,7 +207,7 @@ cut -f2- -- "$tempdir/firmwares" "$tempdir/modules" |
 	xargs -r0 put-file "$rootdir"
 
 if [ -s "$tempdir/missing-firmwares" ]; then
-	if [ -n "${verbose-}" ]; then
+	if [ -n "${verbose2-}" ]; then
 		sort "$tempdir/missing-firmwares" |
 		while read -r modname fwpath; do
 			message "WARNING: Possible missing firmware \`$fwpath' for kernel module '$modname'"

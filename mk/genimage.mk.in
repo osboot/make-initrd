@@ -28,7 +28,7 @@ install$(INSTALL_TARGET_SUFFIX): pack
 	fi >&2
 	@$(TOOLSDIR)/show-install-info "$(WORKDIR)/initrd.img"
 	@chmod 600 -- "$(WORKDIR)/initrd.img"
-	@mv -f $(verbose) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"
+	@mv -f $(verbose3) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"
 	@echo "$(IMAGEFILE)" >> "$(TEMPDIR)/images"
 
 genimage: install

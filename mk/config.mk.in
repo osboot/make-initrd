@@ -91,17 +91,37 @@ DISABLE_GUESS		?=
 RUNTIME_FEATURE		?= runtime
 
 ifdef VERBOSE
-  verbose = -v
+  verbose0 := $(VERBOSE)
   Q =
   V = @
 else
+  verbose0 := 0
   Q = @
   V = @\#
 endif
 
+ifeq "$(__VERBOSE_LEVELS)" ""
+  __VERBOSE_LEVELS := 1
+
+  ifeq ($(intcmp 1,2,TRUE),TRUE)
+    define __verbose-lt
+      $(if $(filter __verbose-lt,$(0)),$(intcmp $(1),$(2),TRUE))
+    endef
+  else
+    define __verbose-lt
+      $(if $(filter __verbose-lt,$(0)),$(shell test $(1) -lt $(2) && echo TRUE))
+    endef
+  endif
+  $(foreach i, 1 2 3 ,$(if $(strip $(call __verbose-lt,$(verbose0),$(i))), \
+      $(eval verbose$(i) :=    ), \
+      $(eval verbose$(i) := -v )))
+endif
+
+verbose := $(verbose1)
+
 MSG   = echo "$$(msg-timestamp)"
 MSG_N = echo -n "$$(msg-timestamp)"
-VMSG := test -z "$(verbose)" || $(MSG)
+VMSG := test -z "$(VERBOSE)" || $(MSG)
 
 include @projectdir@/mk/functions.mk
 

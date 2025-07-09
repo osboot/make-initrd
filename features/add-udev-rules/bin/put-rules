@@ -24,20 +24,20 @@ copy_rule()
 	local name="${rule##*/}"
 
 	if [ -e "$tempdir/etc/udev/rules.d/$name" ] && ! cmp -s "$rule" "$tempdir/etc/udev/rules.d/$name"; then
-		verbose "WARNING: Found two udev rules with the same name but different content: $rule"
+		verbose1 "WARNING: Found two udev rules with the same name but different content: $rule"
 		return
 	fi
 
 	udev-rules -Wall -Wno-dup-match -Werror "$rule" ||
 		return 1
 
-	cp $verbose -aL -- "$rule" "$tempdir/etc/udev/rules.d/$name"
+	cp $verbose3 -aL -- "$rule" "$tempdir/etc/udev/rules.d/$name"
 }
 
 tempdir="${TEMPDIR:-/tmp}/modules"
 mkdir -p -- "$tempdir/etc/udev/rules.d"
 
-verbose "Copying udev rules ..."
+verbose1 "Copying udev rules ..."
 
 rules_dirs=()
 for d in "/lib/udev/initramfs-rules.d" "/lib/udev/rules.d" "/etc/udev/rules.d"; do

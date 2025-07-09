@@ -115,7 +115,7 @@ fi
 pe_file_format "$uefi_stub" ||
 	fatal "wrong file format: $uefi_stub"
 
-verbose "UEFI stub file: $uefi_stub"
+verbose1 "UEFI stub file: $uefi_stub"
 
 get_offset_value offset "$uefi_stub"
 
@@ -143,7 +143,7 @@ update_section_offset
 	fatal "can't find a kernel image to create a UEFI executable. Please specify the kernel image manually by specifying the UKI_VMLINUZ variable."
 
 add_section ".linux" "$linux"
-verbose "Kernel image: $linux"
+verbose1 "Kernel image: $linux"
 
 #
 # Section with the initrd.
@@ -155,7 +155,7 @@ garbage+=( "$initrd" )
 # Section with the kernel version information.
 #
 add_text_section ".uname" "$KERNEL"
-verbose "UEFI kernel uname: $KERNEL"
+verbose1 "UEFI kernel uname: $KERNEL"
 
 #
 # Section with OS release information, i.e. the contents of the os-release(5)
@@ -210,7 +210,7 @@ fi
 
 if [ "${#cmdline[@]}" -gt 0 ]; then
 	add_text_section ".cmdline" "${cmdline[*]}"
-	verbose "UEFI kernel cmdline: ${cmdline[*]}"
+	verbose1 "UEFI kernel cmdline: ${cmdline[*]}"
 fi
 
 #
@@ -227,7 +227,7 @@ add_text_section ".sbat" "$sbat"
 #
 if [ -n "${UKI_SPLASH_FILE-}" ] && [ -s "$UKI_SPLASH_FILE" ]; then
 	add_section ".splash" "$UKI_SPLASH_FILE"
-	verbose "UEFI splash image: $UKI_SPLASH_FILE"
+	verbose1 "UEFI splash image: $UKI_SPLASH_FILE"
 fi
 
 #
@@ -236,9 +236,11 @@ fi
 uefi_stub_file="$workdir/stub.efi"
 garbage+=( "$uefi_stub_file" )
 
-cp $verbose -f -- "$uefi_stub" "$uefi_stub_file"
+cp $verbose3 -f -- "$uefi_stub" "$uefi_stub_file"
 objcopy --remove-section ".sbat" "$uefi_stub_file" >/dev/null 2>&1
-objcopy $verbose "${args[@]}" "$uefi_stub_file" "$outfile"
+objcopy $verbose3 "${args[@]}" "$uefi_stub_file" "$outfile"
+
+verbose1 "Created UEFI image file: $outfile"
 
 #
 # Remove temporary files.

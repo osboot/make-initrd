@@ -72,8 +72,8 @@ process-config: $(INITRD_CONFIG)
 
 guess-config: check-for-root guess
 	@cat $(GUESSDIR)/guessed.mk >&4
-	$Qrm -rf -- "$(GUESSDIR)"
-	$Qrmdir -- "$(WORKDIR)"
+	@rm $(verbose3) -rf -- "$(GUESSDIR)"
+	@rmdir $(verbose3) -- "$(WORKDIR)"
 
 guess-modules: check-for-root guess
 	@for f in $(GUESSDIR)/guess:modules* $(GUESSDIR)/guess:modalias*; do \

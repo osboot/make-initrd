@@ -7,9 +7,6 @@ __included_make_initrd_sh_functions=1
 . shell-error
 . wrapper-functions
 
-# shellcheck disable=SC2153
-export verbose="${VERBOSE:+-v}"
-
 export workdir="${WORKDIR:?Work directory required}"
 export rootdir="${ROOTDIR:?Root directory required}"
 export guessdir="${GUESSDIR:?Autodetect directory required}"
@@ -39,6 +36,10 @@ fi
 
 [ -d "$KERNEL_MODULES_DIR" ] ||
 	fatal "Directory \"$KERNEL_MODULES_DIR\" doesn't exist or not accessible."
+
+verbose1() { [ -z "${verbose1-}" ] || message "$@"; }
+verbose2() { [ -z "${verbose2-}" ] || message "$@"; }
+verbose3() { [ -z "${verbose3-}" ] || message "$@"; }
 
 get_majmin() {
 	local v devnode

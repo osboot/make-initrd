@@ -2,7 +2,7 @@
 PHONY += guess-ucode
 
 guess-ucode:
-	$V echo "Processing $@ ..."
+	@$(VMSG) "Processing $@ ..."
 	@ GUESS_SUFFIX=add:$@ \
 	    $(DETECTDIR)/ucode/action
 

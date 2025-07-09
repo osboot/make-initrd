@@ -17,5 +17,5 @@ PUT_FEATURE_DIRS += $(FEATURESDIR)/runtime/data
 
 create: depmod-host
 	@$(VMSG) "Creating rootfs ..."
-	@mkdir -m 755 -p $(verbose) -- $(ROOTDIR)
+	@mkdir -m 755 -p $(verbose3) -- $(ROOTDIR)
 	@$(TOOLSDIR)/create-rootfs

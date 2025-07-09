@@ -53,7 +53,7 @@ print_list() {
 		[ "$type" = 'features' ] ||
 			guess_feature add-modules
 
-		if [ -n "${verbose-}" ]; then
+		if [ -n "${verbose1-}" ]; then
 			{
 				printf 'Module "%s" propose %s:\n' "$name" "$type"
 				sort -u "$m" | modules_fmt

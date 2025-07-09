@@ -9,6 +9,6 @@ shift
 for tree in "$@"; do
 	[ -d "$tree" ] || continue
 	tree=$(readlink -ev "$tree")
-	verbose "Copying '$tree' recursively ..."
+	verbose1 "Copying '$tree' recursively ..."
 	put-file -r "$tree" "$destdir" "$tree"
 done

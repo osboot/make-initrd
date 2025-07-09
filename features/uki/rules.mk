@@ -23,7 +23,7 @@ install: pack-uki
 	@$(TOOLSDIR)/show-install-info "$(UKI_EFI_INTERNAL_IMAGE)"
 	@mkdir -p -- `dirname "$(UKI_IMAGEFILE)"`
 	@chmod 600 -- "$(UKI_EFI_INTERNAL_IMAGE)"
-	@mv -f $(verbose) -- "$(UKI_EFI_INTERNAL_IMAGE)" "$(UKI_IMAGEFILE)"
+	@mv -f $(verbose3) -- "$(UKI_EFI_INTERNAL_IMAGE)" "$(UKI_IMAGEFILE)"
 	@echo "$(UKI_IMAGEFILE)" >> "$(TEMPDIR)/images"
 
 IMAGEFILE = $(UKI_IMAGEFILE)

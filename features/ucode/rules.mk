@@ -6,7 +6,7 @@ ucode: $(call if-active-feature,compress)
 	@$(FEATURESDIR)/ucode/bin/add-ucode
 	@if [ -s "$(WORKDIR)/ucode.cpio" ]; then \
 		cat "$(WORKDIR)/initrd.img" >> "$(WORKDIR)/ucode.cpio"; \
-		mv -f $(verbose) -- "$(WORKDIR)/ucode.cpio" "$(WORKDIR)/initrd.img"; \
+		mv -f $(verbose3) -- "$(WORKDIR)/ucode.cpio" "$(WORKDIR)/initrd.img"; \
 	fi
 
 install: ucode

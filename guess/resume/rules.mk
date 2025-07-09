@@ -2,7 +2,7 @@
 PHONY += guess-resume
 
 guess-resume:
-	$V echo "Processing $@ ..."
+	@$(VMSG) "Processing $@ ..."
 	@ GUESS_SUFFIX=add:$@ \
 	    $(DETECTDIR)/resume/action
 

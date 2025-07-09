@@ -2,7 +2,7 @@
 PHONY += guess-keyboard
 
 guess-keyboard:
-	$V echo "Processing $@ ..."
+	@$(VMSG) "Processing $@ ..."
 	@ GUESS_SUFFIX=rescue:$@ \
 	    $(DETECTDIR)/keyboard/action
 

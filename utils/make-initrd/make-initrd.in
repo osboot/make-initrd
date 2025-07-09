@@ -135,7 +135,7 @@ while :; do
 			show_help
 			;;
 		-v|--verbose)
-			VERBOSE=1
+			VERBOSE=$(( ${VERBOSE:-0} + 1 ))
 			;;
 		-V|--version)
 			print_version

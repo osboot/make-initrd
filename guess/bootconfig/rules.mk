@@ -2,7 +2,7 @@
 PHONY += guess-bootconfig
 
 guess-bootconfig:
-	$V echo "Processing $@ ..."
+	@$(VMSG) "Processing $@ ..."
 	@ GUESS_SUFFIX=add:$@ \
 	    $(DETECTDIR)/bootconfig/action
 

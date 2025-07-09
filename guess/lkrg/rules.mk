@@ -2,7 +2,7 @@
 PHONY += guess-lkrg
 
 guess-lkrg:
-	$V echo "Processing $@ ..."
+	@$(VMSG) "Processing $@ ..."
 	@ GUESS_SUFFIX=add:$@ \
 	    $(DETECTDIR)/lkrg/action
 

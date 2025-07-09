@@ -2,7 +2,7 @@
 PHONY += guess-root
 
 guess-root:
-	$V echo "Processing $@ ..."
+	@$(VMSG) "Processing $@ ..."
 	@ GUESS_SUFFIX=add:$@ \
 	    $(DETECTDIR)/root/action
 

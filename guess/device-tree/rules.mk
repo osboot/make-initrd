@@ -2,7 +2,7 @@
 PHONY += guess-device-tree
 
 guess-device-tree:
-	$V echo "Processing $@ ..."
+	@$(VMSG) "Processing $@ ..."
 	@ GUESS_SUFFIX=add:$@ \
 	    $(DETECTDIR)/device-tree/action
 

@@ -2,7 +2,7 @@
 PHONY += guess-touchscreen
 
 guess-touchscreen:
-	$V echo "Processing $@ ..."
+	@$(VMSG) "Processing $@ ..."
 	@ GUESS_SUFFIX=rescue:$@ \
 	    $(DETECTDIR)/touchscreen/action
 

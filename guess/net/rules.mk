@@ -2,7 +2,7 @@
 PHONY += guess-net
 
 guess-net:
-	$V echo "Processing $@ ..."
+	@$(VMSG) "Processing $@ ..."
 	@ GUESS_SUFFIX=add:$@ \
 	    $(DETECTDIR)/net/action
 

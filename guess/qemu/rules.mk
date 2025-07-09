@@ -2,7 +2,7 @@
 PHONY += guess-qemu
 
 guess-qemu:
-	$V echo "Processing $@ ..."
+	@$(VMSG) "Processing $@ ..."
 	@ GUESS_SUFFIX=add:$@ \
 	    $(DETECTDIR)/qemu/action
 

@@ -180,7 +180,7 @@ system_findmnt()
 fi	# MAKE_INITRD_BUG_REPORT
 
 [ "${MOUNTPOINTS-}" == "/" ] ||
-	echo "Warning: Using MOUNTPOINTS variable for guess module is deprecated. Use GUESS_MOUNTPOINTS instead" 1>&2
+	echo "WARNING: Using MOUNTPOINTS variable for guess module is deprecated. Use GUESS_MOUNTPOINTS instead" 1>&2
 
 MORE_MOUNTPOINTS="/"
 
@@ -200,7 +200,7 @@ for dir in ${MOUNTPOINTS-} ${GUESS_MOUNTPOINTS-} $MORE_MOUNTPOINTS; do
 	! in_list "$dir" "${pass[@]}" ||
 		continue
 
-	verbose "Processing mount point \`$dir' ..."
+	verbose1 "Processing mount point \`$dir' ..."
 
 	[ "${MAKE_INITRD_BUG_REPORT-}" = 1 ] &&
 		_findmnt='report_findmnt' ||

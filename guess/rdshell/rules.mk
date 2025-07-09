@@ -2,7 +2,7 @@
 PHONY += guess-rdshell
 
 guess-rdshell:
-	$V echo "Processing $@ ..."
+	@$(VMSG) "Processing $@ ..."
 	@ GUESS_SUFFIX=add:$@ \
 	    $(DETECTDIR)/rdshell/action
 

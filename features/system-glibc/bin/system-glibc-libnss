@@ -3,7 +3,7 @@
 
 . sh-functions
 
-verbose "Copying files from libnss_files.so* ..."
+verbose1 "Copying files from libnss_files.so* ..."
 
 case "${1-}" in
 	files)

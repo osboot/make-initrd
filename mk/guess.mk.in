@@ -57,9 +57,8 @@ test-guess-actions: pre-guess
 	@for exe in $(TEST_GUESS_ACTIONS); do echo "RUN: $$exe"; "$$exe"; done
 
 guess: pre-guess
-	$V printf '============================================================\n\n' >&2
+	@$(VMSG) "Collection of guessed parameters ..."
 	@$(TOOLSDIR)/guess-config > $(GUESSDIR)/guessed.mk
-	$V printf '============================================================\n\n' >&2
 	@$(VMSG) "Guessing config ..."
 	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/main.mk guess PASSED_GUESS_MODULES+="$(GUESS_MODULES)"
 
