@@ -139,7 +139,7 @@ for step in "$@"; do
 
 			export PATH="$builddir/.build/dest/usr/sbin:$builddir/.build/dest/usr/bin:\$PATH"
 
-			$builddir/.build/dest/usr/sbin/make-initrd -v -k "\$kver"
+			$builddir/.build/dest/usr/sbin/make-initrd -vv -k "\$kver"
 
 			cp -L /boot/vmlinuz    $builddir/$workdir/boot-ks-vmlinuz
 			cp -L /boot/initrd.img $builddir/$workdir/boot-ks-initrd.img
