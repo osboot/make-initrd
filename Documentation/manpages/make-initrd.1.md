@@ -68,7 +68,8 @@ Without options, the program generates images for all the configuration files.
 	set kernel version (default: currently running kernel).
 
 *-v, --verbose*
-	print a message for each action.
+	print a message for each action. The option can be specified more than once.
+	Each time the option is specified, the detail of the messages increases.
 
 *-V, --version*
 	Show version of program and exit.
