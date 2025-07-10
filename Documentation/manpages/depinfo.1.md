@@ -45,6 +45,9 @@ path to firmware.
 *--use-blacklist*
 	Apply blacklist commands in the configuration files.
 
+*--missing-firmware*
+Show firmware that could not be found.
+
 *-i, --input=*_FILE_
 	Read names from _FILE_.
 
@@ -107,6 +110,20 @@ module /lib/modules/5.11.0-rc6/kernel/lib/libcrc32c.ko.xz
 builtin crc32c_generic
 module /lib/modules/5.11.0-rc6/kernel/lib/raid6/raid6_pq.ko.xz
 module /lib/modules/5.11.0-rc6/kernel/crypto/xor.ko.xz
+```
+
+To find out what firmware could not be found for the kernel modules:
+```
+# depinfo --missing-firmware rtlwifi
+module /lib/modules/6.15.5-gentoo-dist/kernel/drivers/net/wireless/realtek/rtlwifi/rtlwifi.ko
+   \\_ module /lib/modules/6.15.5-gentoo-dist/kernel/net/wireless/cfg80211.ko
+      \\_ missing-firmware regulatory.db
+      \\_ missing-firmware regulatory.db
+      \\_ missing-firmware regulatory.db.p7s
+      \\_ missing-firmware regulatory.db.p7s
+      \\_ module /lib/modules/6.15.5-gentoo-dist/kernel/net/rfkill/rfkill.ko
+   \\_ module /lib/modules/6.15.5-gentoo-dist/kernel/net/mac80211/mac80211.ko
+      \\_ module /lib/modules/6.15.5-gentoo-dist/kernel/lib/crypto/libarc4.ko
 ```
 
 # AUTHOR
