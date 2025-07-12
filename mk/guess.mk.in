@@ -73,6 +73,15 @@ ifneq "$(unknown_features)" ''
 $(info WARNING: Unknown features are specified in the config: $(unknown_features))
 endif
 
+PHONY += depmod-host
+
+depmod-host: check-for-root
+	@:
+ifeq ($(IGNORE_DEPMOD),)
+	@$(VMSG) "Generating module dependencies on host ..."
+	@depmod -a $(if $(KERNEL_SYSTEM_MAP),-F "$(KERNEL_SYSTEM_MAP)") "$(KERNEL)"
+endif
+
 guess: depmod-host
 	@$(VMSG) "Guessing is complete"
 

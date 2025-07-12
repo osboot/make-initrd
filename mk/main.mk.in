@@ -21,7 +21,7 @@ endif
 endif # MAKELEVEL = 0
 
 PHONY += all guess-config guess-modules feature-info bug-report
-PHONY += check-for-root depmod-host process-config test-guess
+PHONY += check-for-root process-config test-guess
 
 include @projectdir@/mk/config.mk
 
@@ -29,14 +29,6 @@ check-for-root:
 	@if [ -z "$$IGNORE_PRIV_CHECKS" ] && [ "$$(id -u)" != 0 ]; then \
 	    echo "Only root can do that"; \
 	    exit 1; \
-	fi
-
-depmod-host: check-for-root
-	@if [ -z "$$IGNORE_DEPMOD" ]; then \
-	   $(MSG) "Generating module dependencies on host ..."; \
-	   system_map_file="$(KERNEL_SYSTEM_MAP)"; \
-	   [ -e "$$system_map_file" ] || system_map_file=""; \
-	   depmod -a $${system_map_file:+-F "$$system_map_file"} "$(KERNEL)"; \
 	fi
 
 ifneq ($(call in-goals,guess guess-config guess-modules test-guess-actions),)
