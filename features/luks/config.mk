@@ -12,6 +12,6 @@ ifdef $(call if_kernel_version_greater_or_equal,5.4.0)
 LUKS_BLOCKCIPHERS += essiv
 endif
 
-ifeq "$(LUKS_CRYPTTAB)" ""
+ifeq ($(LUKS_CRYPTTAB),)
 LUKS_CRYPTTAB = $(wildcard /etc/crypttab)
 endif

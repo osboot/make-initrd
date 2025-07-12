@@ -2,7 +2,7 @@
 
 AUTODETECT ?= all
 
-ifeq "$(MAKECMDGOALS)" 'guess-modules'
+ifeq ($(MAKECMDGOALS),guess-modules)
 AUTODETECT := root device
 endif
 
@@ -33,7 +33,7 @@ endif
 
 PHONY += guess
 
-ifneq "$(GUESS_MODULES)" ''
+ifneq ($(GUESS_MODULES),)
 
 GUESS_DEVICE_SCRIPTS = $(call wildcard-features,guess/device)
 GUESS_FSTYPE_SCRIPTS = $(call wildcard-features,guess/fstype)
@@ -69,7 +69,7 @@ unknown_features = \
 		$(notdir $(wildcard $(FEATURESDIR)/*)), \
 		$(sort $(FEATURES)))
 
-ifneq "$(unknown_features)" ''
+ifneq ($(unknown_features),)
 $(info WARNING: Unknown features are specified in the config: $(unknown_features))
 endif
 

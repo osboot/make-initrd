@@ -44,7 +44,7 @@ MULTIPATH_RULES   = \
 	*-multipath.rules \
 	$(MULTIPATH_SG3_RULES)
 
-ifeq "$(MULTIPATH_PLUGINS_DIRS)" ""
+ifeq ($(MULTIPATH_PLUGINS_DIRS),)
 MULTIPATH_PLUGINS_DIRS = $(foreach d,$(LIB_DIRS),$(wildcard $(d)/multipath))
 endif
 

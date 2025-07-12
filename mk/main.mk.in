@@ -7,15 +7,15 @@
 PHONY =
 TESTING_PUBLIC_GOALS =
 
-ifneq "$(MAKE_INITRD_TESTING)" ""
+ifneq ($(MAKE_INITRD_TESTING),)
 TESTING_PUBLIC_GOALS += test-guess
 endif
 
-ifeq "$(MAKELEVEL)" '0'
+ifeq ($(MAKELEVEL),0)
 public-goals  := all guess-config guess-modules feature-info bug-report $(TESTING_PUBLIC_GOALS)
 private-goals := $(filter-out $(public-goals),$(MAKECMDGOALS))
 
-ifneq "$(private-goals)" ''
+ifneq ($(private-goals),)
 $(error You MUST NOT call private goals directly: $(private-goals))
 endif
 endif # MAKELEVEL = 0

@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-ifeq "$(GDB_PROG)" ''
+ifeq ($(GDB_PROG),)
 GDB_PROG = gdb
 endif
 
-ifneq '$(shell ldd "$(shell which $(GDB_PROG))" | grep libpython)' ''
+ifneq ($(shell ldd "$(shell which $(GDB_PROG))" | grep libpython),)
 GDB_PYTHON_PATHS := $(shell $(GDB_PROG) -q --ex 'python print(" ".join(sys.path))' --ex 'quit')
 GDB_PYTHON_PATHS := $(filter-out %/dist-packages %/site-packages,$(GDB_PYTHON_PATHS))
 endif

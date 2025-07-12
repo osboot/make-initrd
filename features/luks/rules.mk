@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 LUKS_CRYPTTAB_DATA =
 
-ifneq "$(LUKS_CRYPTTAB)" ""
+ifneq ($(LUKS_CRYPTTAB),)
 LUKS_CRYPTTAB_DATA := $(shell $(call shell-export-vars) $(FEATURESDIR)/luks/bin/get-data)
 endif
 

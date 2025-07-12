@@ -7,11 +7,11 @@ VERSION = @PACKAGE_VERSION@
 # It is created once when the make-initrd starts.
 TEMPDIR		?=
 
-ifeq "$(TEMPDIR)" ''
+ifeq ($(TEMPDIR),)
 $(error TEMPDIR is empty. You SHOULD NOT use config.mk directly.)
 endif
 
-ifeq "$(TOPDIR)" ""
+ifeq ($(TOPDIR),)
 TOPDIR := $(CURDIR)
 endif
 
@@ -65,7 +65,7 @@ PATH = $(TOOLSDIR)$(BUILDDIR_PATH):$(SYSTEM_PATH):$(CURRENT_PATH)
 INITRD_CONFIG		?=
 INITRD_CONFIG_LIST	?= $(wildcard $(SYSCONFDIR)/initrd.mk $(SYSCONFDIR)/initrd.mk.d/*.mk)
 
-ifeq "$(INITRD_CONFIG_LIST)" ''
+ifeq ($(INITRD_CONFIG_LIST),)
 $(info WARNING: No configuration files found. \
 	Create an '$(SYSCONFDIR)/initrd.mk' file \
 	or use the --config=FILE option)
@@ -100,7 +100,7 @@ else
   V = @\#
 endif
 
-ifeq "$(__VERBOSE_LEVELS)" ""
+ifeq ($(__VERBOSE_LEVELS),)
   __VERBOSE_LEVELS := 1
 
   ifeq ($(intcmp 1,2,TRUE),TRUE)
@@ -125,7 +125,7 @@ VMSG := test -z "$(VERBOSE)" || $(MSG)
 
 include @projectdir@/mk/functions.mk
 
-ifneq "$(MAKELEVEL)" '0'
+ifneq ($(MAKELEVEL),0)
 
 # User defaults
 FEATURES		?=
@@ -161,17 +161,17 @@ PUT_FEATURE_LIBS =
 
 feature-configs = $(call wildcard-features,config.mk)
 
-ifeq "$(feature-configs)" ''
+ifeq ($(feature-configs),)
 $(error Unable to find feature configs. Something goes wrong.)
 endif
 
 # Load extra configs
 include $(feature-configs)
 
-ifeq "$(__CHECKED_KERNEL_CONFIG)" ""
+ifeq ($(__CHECKED_KERNEL_CONFIG),)
 __CHECKED_KERNEL_CONFIG := 1
 
-ifeq "$(wildcard $(KERNEL_CONFIG))" ""
+ifeq ($(wildcard $(KERNEL_CONFIG)),)
 $(info WARNING: Kernel config not found. Some checks will not work. \
 	Specify `KERNEL_CONFIG' as a env variable or in the initrd.mk.)
 endif
