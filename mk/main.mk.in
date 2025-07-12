@@ -25,11 +25,18 @@ PHONY += check-for-root process-config test-guess
 
 include @projectdir@/mk/config.mk
 
-check-for-root:
-	@if [ -z "$$IGNORE_PRIV_CHECKS" ] && [ "$$(id -u)" != 0 ]; then \
-	    echo "Only root can do that"; \
-	    exit 1; \
-	fi
+check-for-root::
+	@:
+
+ifeq ($(IGNORE_PRIV_CHECKS),)
+IGNORE_PRIV_CHECKS := 1
+
+check-for-root::
+	@[ "$$(id -u)" = 0 ] || { \
+	  echo "Only root can do that"; \
+	  exit 1; \
+	}
+endif
 
 ifneq ($(call in-goals,guess guess-config guess-modules test-guess-actions),)
 include @projectdir@/mk/guess.mk
