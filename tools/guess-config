@@ -14,13 +14,20 @@ modules_fmt() {
 		fmt -u -w60
 }
 
-print_vars() {
-	f="$guessdir/guess:variables"
+file_is_not_empty() {
+	local m
+	while [ "$#" -gt 0 ]; do
+		[ ! -s "$1" ] || return 0
+		shift
+	done
+	return 1
+}
 
-	[ "$(cat "$f":* 2>/dev/null |wc -l)" != "0" ] ||
+print_vars() {
+	file_is_not_empty "$guessdir/guess:variables":* ||
 		return 0
 
-	for m in "$f":*; do
+	for m in "$guessdir/guess:variables":*; do
 		[ -s "$m" ] ||
 			continue
 		n="${m##*:}"
@@ -35,14 +42,12 @@ print_vars() {
 }
 
 print_list() {
-	f="$guessdir/guess:$2"
-
-	[ "$(cat "$f"* |wc -l)" != "0" ] ||
+	file_is_not_empty "$guessdir/guess:$2":* "$guessdir/guess:$2" ||
 		return 0
 
 	printf '%s += \\\n' "$1"
 
-	for m in "$f:"* "$f"; do
+	for m in "$guessdir/guess:$2":* "$guessdir/guess:$2"; do
 		[ -s "$m" ] ||
 			continue
 
