@@ -2,31 +2,43 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 . sh-functions
-. "$SYSFS_PATH/dev/block/$1/uevent"
 
-[ -n "${DEVNAME-}" ] ||
-	fatal "unable to find device name in \`$SYSFS_PATH/dev/block/$1/uevent'"
+DIR="$WORKDIR/root"
 
-MD_UUID=
-MD_CONTAINER=
-# shellcheck disable=SC2046
-eval $(mdadm --detail --export "/dev/$DEVNAME")
+if [ "${1-}" = dirs ]; then
+	mkdir -p -- "$DIR/etc/initrd/md"
+	printf '%s\n' "$DIR"
+fi
 
-[ -z "$MD_CONTAINER" ] || eval "$(mdadm --detail --export "$MD_CONTAINER")"
+for majmin in ${GENERATE_UDEV_RULES_FOR_MD_DEVICE-}; do
+	DEVNAME=
 
-[ -n "$MD_UUID" ] ||
-	fatal "UUID not found for /dev/$DEVNAME"
+	. "$SYSFS_PATH/dev/block/$majmin/uevent"
 
-uuid="${MD_UUID//:}"
+	[ -n "${DEVNAME-}" ] ||
+		fatal "unable to find device name in \`$SYSFS_PATH/dev/block/$majmin/uevent'"
 
-mkdir -p -- "$WORKDIR/root/etc/initrd/md"
-:> "$WORKDIR/root/etc/initrd/md/$uuid"
+	MD_UUID=
+	MD_CONTAINER=
 
-rules="$WORKDIR/root/etc/udev/rules.d/64-md-raid-assembly-$uuid.rules"
+	# shellcheck disable=SC2046
+	eval "$(mdadm --detail --export "/dev/$DEVNAME")"
 
-mkdir -p -- "${rules%/*}"
+	[ -z "$MD_CONTAINER" ] || eval "$(mdadm --detail --export "$MD_CONTAINER")"
 
-cat > "$rules" <<EOF
+	[ -n "$MD_UUID" ] ||
+		fatal "UUID not found for /dev/$DEVNAME"
+
+	uuid="${MD_UUID//:}"
+
+	if [ "${1-}" = dirs ]; then
+		:> "$DIR/etc/initrd/md/$uuid"
+		continue
+	fi
+
+	rules="$TEMPDIR/64-md-raid-assembly-$uuid.rules"
+
+	cat > "$rules" <<EOF
 SUBSYSTEM!="block", GOTO="md_inc_end"
 ENV{ID_FS_TYPE}=="linux_raid_member", GOTO="md_inc"
 
@@ -54,5 +66,5 @@ ACTION=="remove", ENV{ID_PATH}!="?*", RUN+="/sbin/mdadm -If \$name"
 
 LABEL="md_inc_end"
 EOF
-
-printf '%s\n' "$rules" "$WORKDIR/root/etc/initrd/md/$uuid"
+	printf '%s\n' "$rules"
+done
