@@ -142,6 +142,8 @@ parse_command()
 	verbose "command not found: $cmd"
 }
 
+verbose "processing udev rules: $1"
+
 while IFS=$'\t' read -r file rule attr cmd; do
 	[ -n "$cmd" ] ||
 		continue
