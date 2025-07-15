@@ -1,0 +1,8 @@
++ echo one
++ :
+VAR1 = one
+VAR2 = 
+*** run sub-make
+VAR1 = one
+VAR2 = 
+rc=0

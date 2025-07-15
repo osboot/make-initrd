@@ -1,0 +1,33 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+cat >"$cwd/Makefile" <<EOF
+.EXPORT_ALL_VARIABLES:
+
+include $PWD/.build/dest/usr/share/make-initrd/mk/functions.mk
+
+TOPDIR = $PWD
+FEATURESDIR = $cwd
+
+\$(call assign-shell-once,VAR1,set -x; echo one)
+\$(call assign-shell-once,VAR1,set -x; echo two)
+\$(call assign-shell-once,VAR1,set -x; echo tree)
+
+\$(call assign-shell-once,VAR2,set -x; :;)
+\$(call assign-shell-once,VAR2,set -x; echo one)
+\$(call assign-shell-once,VAR2,set -x; echo two)
+
+\$(info VAR1 = \$(VAR1))
+\$(info VAR2 = \$(VAR2))
+
+all:
+	@:
+
+sub-run:
+	@echo "*** run sub-make"
+	@\$(MAKE) \$(MFLAGS) -C "$cwd" all
+EOF
+
+make --no-print-directory -C "$cwd" sub-run
+rm -f -- "$cwd/Makefile"

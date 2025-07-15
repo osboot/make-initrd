@@ -255,4 +255,17 @@ $(if $(filter shell-export-vars,$(0)),\
 $(foreach v,$(shell echo '$(.VARIABLES)' | tr ' ' '\n' | grep '^[A-Z][A-Za-z0-9_]*$$'),export $(v)='$(subst ','\'',$($(v)))';))
 endef
 
+# $(call assign-shell-once,<varname>,<shell-code>)
+#
+# The function executes the shell code only once and saves the result to a
+# variable. This function differs from the standard shell function in that it
+# does not re-execute the shell code when make is subexecuted.
+#
+define assign-shell-once
+$(if $(filter assign-shell-once,$(0)),
+	$(if $(filter $(1),$(ASSIGNED_VARIABLES)),,\
+		$(eval ASSIGNED_VARIABLES += $(1))\
+		$(eval $(1) := $(shell $(call shell-export-vars) $(2)))))
+endef
+
 endif # __included-functions-mk
