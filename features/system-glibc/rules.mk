@@ -1,41 +1,42 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 ifeq ($(INITRD_NO_LIBNSS),)
-SYSTEM_GLIBC_LIBNSS_BIN   := $(FEATURESDIR)/system-glibc/bin/system-glibc-libnss
-
-$(call assign-shell-once,SYSTEM_GLIBC_LIBNSS_FILES,$(SYSTEM_GLIBC_LIBNSS_BIN) files)
-$(call assign-shell-once,SYSTEM_GLIBC_LIBNSS_DIRS, $(SYSTEM_GLIBC_LIBNSS_BIN) dirs)
-
+$(call assign-shell-once,SYSTEM_GLIBC_LIBNSS_FILES,$(FEATURESDIR)/system-glibc/bin/system-glibc-libnss)
 PUT_FEATURE_FILES += $(SYSTEM_GLIBC_LIBNSS_FILES)
-PUT_FEATURE_DIRS  += $(SYSTEM_GLIBC_LIBNSS_DIRS)
+
+system-glibc-libnss: create
+	@$(VMSG) "Adding libnss data..."
+	@mkdir -p -- "$(ROOTDIR)"/etc
+	@printf > "$(ROOTDIR)"/etc/nsswitch.conf '%s\n' \
+	  "passwd:    files" \
+	  "group:     files" \
+	  "shadow:    files" \
+	  "hosts:     files dns" \
+	  "networks:  files" \
+	  "rpc:       files" \
+	  "services:  files" \
+	  "protocols: files"
+
+pack: system-glibc-libnss
 endif
 
 ifeq ($(INITRD_NO_LIBGCC_S),)
-SYSTEM_GLIBC_LIBGCC_S_BIN   := $(FEATURESDIR)/system-glibc/bin/system-glibc-libgcc_s
-
-$(call assign-shell-once,SYSTEM_GLIBC_LIBGCC_S_FILES,$(SYSTEM_GLIBC_LIBGCC_S_BIN) files)
-$(call assign-shell-once,SYSTEM_GLIBC_LIBGCC_S_DIRS, $(SYSTEM_GLIBC_LIBGCC_S_BIN) dirs)
-
+$(call assign-shell-once,SYSTEM_GLIBC_LIBGCC_S_FILES,$(FEATURESDIR)/system-glibc/bin/system-glibc-libgcc_s)
 PUT_FEATURE_FILES += $(SYSTEM_GLIBC_LIBGCC_S_FILES)
-PUT_FEATURE_DIRS  += $(SYSTEM_GLIBC_LIBGCC_S_DIRS)
 endif
 
 ifeq ($(INITRD_NO_PWGR),)
-SYSTEM_GLIBC_PWGR_BIN   := $(FEATURESDIR)/system-glibc/bin/system-glibc-pwgr
+system-glibc-pwgr: create
+	@$(VMSG) "Adding users and groups..."
+	@$(FEATURESDIR)/system-glibc/bin/system-glibc-pwgr
 
-$(call assign-shell-once,SYSTEM_GLIBC_PWGR_FILES,$(SYSTEM_GLIBC_PWGR_BIN) files)
-$(call assign-shell-once,SYSTEM_GLIBC_PWGR_DIRS, $(SYSTEM_GLIBC_PWGR_BIN) dirs)
-
-PUT_FEATURE_FILES += $(SYSTEM_GLIBC_PWGR_FILES)
-PUT_FEATURE_DIRS  += $(SYSTEM_GLIBC_PWGR_DIRS)
+pack: system-glibc-pwgr
 endif
 
 ifeq ($(INITRD_NO_NETWORK),)
-SYSTEM_GLIBC_NETWORK_BIN   := $(FEATURESDIR)/system-glibc/bin/system-glibc-network
+system-glibc-network: create
+	@$(VMSG) "Adding libc network data..."
+	@$(FEATURESDIR)/system-glibc/bin/system-glibc-network
 
-$(call assign-shell-once,SYSTEM_GLIBC_NETWORK_FILES,$(SYSTEM_GLIBC_NETWORK_BIN) files)
-$(call assign-shell-once,SYSTEM_GLIBC_NETWORK_DIRS, $(SYSTEM_GLIBC_NETWORK_BIN) dirs)
-
-PUT_FEATURE_FILES += $(SYSTEM_GLIBC_NETWORK_FILES)
-PUT_FEATURE_DIRS  += $(SYSTEM_GLIBC_NETWORK_DIRS)
+pack: system-glibc-network
 endif

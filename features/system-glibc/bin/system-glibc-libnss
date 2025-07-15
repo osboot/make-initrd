@@ -3,30 +3,9 @@
 
 . sh-functions
 
-verbose1 "Copying files from libnss_files.so* ..."
+verbose1 "Searching files from libnss_files.so* ..."
 
-case "${1-}" in
-	files)
-		get-ldconfig --libs |
-			grep \
-				-e '/libnss_files\.so.*' \
-				-e '/libnss_dns\.so.*' ||:
-		;;
-	dirs)
-		DIR="$WORKDIR/root"
-
-		mkdir -p -- "$DIR"/etc
-		cat >"$DIR"/etc/nsswitch.conf <<-EOF
-			passwd:    files
-			group:     files
-			shadow:    files
-			hosts:     files dns
-			networks:  files
-			rpc:       files
-			services:  files
-			protocols: files
-		EOF
-
-		printf '%s\n' "$DIR"
-		;;
-esac
+get-ldconfig --libs |
+	grep \
+		-e '/libnss_files\.so.*' \
+		-e '/libnss_dns\.so.*' ||:

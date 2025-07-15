@@ -3,13 +3,7 @@
 
 . sh-functions
 
-verbose1 "Copying files from libgcc_s.so* ..."
+verbose1 "Searching files from libgcc_s.so* ..."
 
-case "${1-}" in
-	files)
-		get-ldconfig --libs |
-			grep -e '/libgcc_s\.so.*' ||:
-		;;
-	dirs)
-		;;
-esac
+get-ldconfig --libs |
+	grep -e '/libgcc_s\.so.*' ||:

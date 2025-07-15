@@ -3,14 +3,15 @@
 
 . sh-functions
 
-DIR="$WORKDIR/root"
+DIR="$ROOTDIR"
 
 if [ "${1-}" = dirs ]; then
-	mkdir -p -- "$DIR/etc/initrd/md"
-	printf '%s\n' "$DIR"
+	mkdir ${verbose2-} -p -- "$DIR/etc/initrd/md"
 fi
 
 for majmin in ${GENERATE_UDEV_RULES_FOR_MD_DEVICE-}; do
+	verbose2 "Processing MD device $majmin..."
+
 	DEVNAME=
 
 	. "$SYSFS_PATH/dev/block/$majmin/uevent"
@@ -32,6 +33,7 @@ for majmin in ${GENERATE_UDEV_RULES_FOR_MD_DEVICE-}; do
 	uuid="${MD_UUID//:}"
 
 	if [ "${1-}" = dirs ]; then
+		verbose2 "Creating: /etc/initrd/md/$uuid"
 		:> "$DIR/etc/initrd/md/$uuid"
 		continue
 	fi
@@ -66,5 +68,6 @@ ACTION=="remove", ENV{ID_PATH}!="?*", RUN+="/sbin/mdadm -If \$name"
 
 LABEL="md_inc_end"
 EOF
+	verbose2 "Adding udev rules: $rules"
 	printf '%s\n' "$rules"
 done

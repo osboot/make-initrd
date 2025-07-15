@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-$(call assgin-shell-once,FSCK_RUNTIME_FILES,$(FEATURESDIR)/fsck/bin/find-files)
+$(call assign-shell-once,FSCK_RUNTIME_FILES,$(FEATURESDIR)/fsck/bin/find-files)
 
 PUT_FEATURE_DIRS  += $(FSCK_DATADIR)
 PUT_FEATURE_FILES += $(FSCK_FILES) $(FSCK_RUNTIME_FILES)

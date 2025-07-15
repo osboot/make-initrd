@@ -1,7 +1,8 @@
 #!/bin/bash -efu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-DIR="$WORKDIR/root"
+DIR="$ROOTDIR"
+
 mkdir -p -- "$DIR/etc/zfs"
 
 zfs_files=()
@@ -19,5 +20,3 @@ fi
 
 [ "${#zfs_files[@]}" -eq 0 ] ||
 	cp -- "${zfs_files[@]}" "$DIR"/etc/zfs/
-
-printf '%s\n' "$DIR"

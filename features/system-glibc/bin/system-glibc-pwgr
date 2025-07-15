@@ -1,47 +1,37 @@
 #!/bin/bash -efu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-. sh-functions
+DIR="$ROOTDIR"
 
-case "${1-}" in
-	files)
-		;;
-	dirs)
-		DIR="$WORKDIR/root"
+mkdir -p -- "$DIR"/etc
 
-		mkdir -p -- "$DIR"/etc
+if [ -r /etc/login.defs ]; then
+	printf -v min_uid '%d' "$(sed -ne 's#^[[:space:]]*UID_MIN[[:space:]]\+##p' /etc/login.defs | tail -1)"
+	printf -v min_gid '%d' "$(sed -ne 's#^[[:space:]]*GID_MIN[[:space:]]\+##p' /etc/login.defs | tail -1)"
+fi
 
-		if [ -r /etc/login.defs ]; then
-			printf -v min_uid '%d' "$(sed -ne 's#^[[:space:]]*UID_MIN[[:space:]]\+##p' /etc/login.defs | tail -1)"
-			printf -v min_gid '%d' "$(sed -ne 's#^[[:space:]]*GID_MIN[[:space:]]\+##p' /etc/login.defs | tail -1)"
-		fi
+[ "${min_uid:-0}" -gt 0 ] || min_uid=500
+[ "${min_gid:-0}" -gt 0 ] || min_gid=500
 
-		[ "${min_uid:-0}" -gt 0 ] || min_uid=500
-		[ "${min_gid:-0}" -gt 0 ] || min_gid=500
+while IFS=: read -r name pass gid dummy; do
+	[ -n "$name" ] && [ "$gid" -lt "$min_gid" ] ||
+		continue
+	printf '%s\n' "$name:x:$gid:$dummy" >> "$DIR"/etc/group
+	printf '%s\n' "$name:x::$dummy" >> "$DIR"/etc/gshadow
+done < /etc/group
 
-		while IFS=: read -r name pass gid dummy; do
-			[ -n "$name" ] && [ "$gid" -lt "$min_gid" ] ||
-				continue
-			printf '%s\n' "$name:x:$gid:$dummy" >> "$DIR"/etc/group
-			printf '%s\n' "$name:x::$dummy" >> "$DIR"/etc/gshadow
-		done < /etc/group
+for n in passwd shadow; do
+	touch "$DIR/etc/$n"
+	sed -i -e '/^root:/d' "$DIR/etc/$n"
+done
 
-		for n in passwd shadow; do
-			touch "$DIR/etc/$n"
-			sed -i -e '/^root:/d' "$DIR/etc/$n"
-		done
-
-		while IFS=: read -r name pass uid gid dummy; do
-			[ -n "$name" ] && [ "$uid" -lt "$min_uid" ] ||
-				continue
-			{
-				[ "$name" = "root" ] &&
-					printf '%s\n' "root:x:$uid:$gid::/home/root:/bin/sh" ||
-					printf '%s\n' "$name:x:$uid:$gid:$dummy"
-			} >> "$DIR"/etc/passwd
-			printf '%s\n' "$name:*:13957::::::" >> "$DIR"/etc/shadow
-		done < /etc/passwd
-
-		printf '%s\n' "$DIR"
-		;;
-esac
+while IFS=: read -r name pass uid gid dummy; do
+	[ -n "$name" ] && [ "$uid" -lt "$min_uid" ] ||
+		continue
+	{
+		[ "$name" = "root" ] &&
+			printf '%s\n' "root:x:$uid:$gid::/home/root:/bin/sh" ||
+			printf '%s\n' "$name:x:$uid:$gid:$dummy"
+	} >> "$DIR"/etc/passwd
+	printf '%s\n' "$name:*:13957::::::" >> "$DIR"/etc/shadow
+done < /etc/passwd

@@ -6,30 +6,22 @@
 export LIBMOUNT_FSTAB="${FSTAB:-$SYSCONFDIR/fstab}"
 export LIBMOUNT_MTAB="${PROC_MOUNTS:-$PROCFS_PATH/mounts}"
 
-case "${1-}" in
-	files)
-		;;
-	dirs)
-		DIR="$WORKDIR/root"
+DIR="$ROOTDIR"
 
-		mkdir -p -- "$DIR"/etc
+mkdir -p -- "$DIR"/etc
 
-		for d in ${MOUNTPOINTS-}; do
-			out="$(sys_findmnt -n -o TARGET,FSTYPE,OPTIONS --target "$d")" ||
-				continue
+for d in ${MOUNTPOINTS-}; do
+	out="$(sys_findmnt -n -o TARGET,FSTYPE,OPTIONS --target "$d")" ||
+		continue
 
-			src="$(sys_findmnt -n -o UUID --target "$d")"
-			prefix='UUID='
+	src="$(sys_findmnt -n -o UUID --target "$d")"
+	prefix='UUID='
 
-			[ -n "$src" ] || { src="$(sys_findmnt -n -o LABEL  --target "$d")"; prefix='LABEL='; }
-			[ -n "$src" ] || { src="$(sys_findmnt -n -o SOURCE --target "$d")"; prefix=''; }
-			[ -n "$src" ] || continue
+	[ -n "$src" ] || { src="$(sys_findmnt -n -o LABEL  --target "$d")"; prefix='LABEL='; }
+	[ -n "$src" ] || { src="$(sys_findmnt -n -o SOURCE --target "$d")"; prefix=''; }
+	[ -n "$src" ] || continue
 
-			printf '%s%s %s 0 0\n' "$prefix" "$src" "$out"
-		done >"$DIR"/etc/fstab
+	printf '%s%s %s 0 0\n' "$prefix" "$src" "$out"
+done >"$DIR"/etc/fstab
 
-		sort -uo "$DIR"/etc/fstab "$DIR"/etc/fstab
-
-		printf '%s\n' "$DIR"
-		;;
-esac
+sort -uo "$DIR"/etc/fstab "$DIR"/etc/fstab

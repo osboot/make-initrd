@@ -1,7 +1,8 @@
 #!/bin/bash -efu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-DIR="$WORKDIR/root"
+DIR="$ROOTDIR"
+
 mkdir -p -- "$DIR/home/root/.ssh"
 chmod 700 -- "$DIR/home/root/.ssh"
 
@@ -20,5 +21,3 @@ done
 
 [ -z "${SSHFS_CONFIG-}" ] ||
 	cp -- "$SSHFS_CONFIG" "$DIR/home/root/.ssh/config"
-
-printf '%s\n' "$DIR"

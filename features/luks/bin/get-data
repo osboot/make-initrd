@@ -7,7 +7,7 @@
 . shell-error
 . "$FEATURESDIR"/luks/data/bin/crypttab-sh-functions
 
-DIR="$WORKDIR/root"
+DIR="$ROOTDIR"
 unsupported=()
 
 join_by()
@@ -110,5 +110,3 @@ shell_foreach_crypttab "$LUKS_CRYPTTAB" crypttab_entry ||:
 if [ "${#unsupported[@]}" -gt 0 ]; then
 	message "luks: $(join_by , "${unsupported[@]}") from crypttab is not supported."
 fi
-
-printf '%s\n' "$DIR"

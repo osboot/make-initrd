@@ -1,11 +1,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-LUKS_CRYPTTAB_DATA =
-
-ifneq ($(LUKS_CRYPTTAB),)
-$(call assgin-shell-once,LUKS_CRYPTTAB_DATA,$(FEATURESDIR)/luks/bin/get-data)
-endif
 
 MODULES_LOAD += $(LUKS_MODULES)
 
-PUT_FEATURE_DIRS  += $(LUKS_DATADIR) $(LUKS_CRYPTTAB_DATA)
+PUT_FEATURE_DIRS  += $(LUKS_DATADIR)
 PUT_FEATURE_PROGS += $(CRYPTSETUP_BIN)
+
+ifneq ($(LUKS_CRYPTTAB),)
+luks-crypttab: create
+	@$(VMSG) "Adding LUKS crypttab..."
+	@$(FEATURESDIR)/luks/bin/get-data
+
+pack: luks-crypttab
+endif

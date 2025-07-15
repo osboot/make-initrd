@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 PLYMOUTH_DIRS := $(foreach d,$(LIB_DIRS),$(wildcard $(d)/plymouth))
 
-$(call assgin-shell-once,PLYMOUTH_PACK_MODULES, $(FEATURESDIR)/plymouth/bin/get-modules)
-$(call assgin-shell-once,PLYMOUTH_PACK_THEME,   $(FEATURESDIR)/plymouth/bin/get-theme-files "$(PLYMOUTH_THEME)
-$(call assgin-shell-once,PLYMOUTH_PACK_DEFFONT, fc-match -f '%{file}\n' 'DejaVuSans' ||:)
+$(call assign-shell-once,PLYMOUTH_PACK_MODULES, $(FEATURESDIR)/plymouth/bin/get-modules)
+$(call assign-shell-once,PLYMOUTH_PACK_THEME,   $(FEATURESDIR)/plymouth/bin/get-theme-files "$(PLYMOUTH_THEME)
+$(call assign-shell-once,PLYMOUTH_PACK_DEFFONT, fc-match -f '%{file}\n' 'DejaVuSans' ||:)
 
 PLYMOUTH_PACK_FONT := $(or $(PLYMOUTH_FONT),$(PLYMOUTH_PACK_DEFFONT))
 
