@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 PLYMOUTH_DIRS := $(foreach d,$(LIB_DIRS),$(wildcard $(d)/plymouth))
 
-PLYMOUTH_PACK_MODULES := $(shell $(call shell-export-vars) $(FEATURESDIR)/plymouth/bin/get-modules)
-PLYMOUTH_PACK_FONT    := $(or $(PLYMOUTH_FONT),$(shell fc-match -f '%{file}\n' 'DejaVuSans' ||:))
-PLYMOUTH_PACK_THEME   := $(shell $(call shell-export-vars) $(FEATURESDIR)/plymouth/bin/get-theme-files "$(PLYMOUTH_THEME)")
+$(call assgin-shell-once,PLYMOUTH_PACK_MODULES, $(FEATURESDIR)/plymouth/bin/get-modules)
+$(call assgin-shell-once,PLYMOUTH_PACK_THEME,   $(FEATURESDIR)/plymouth/bin/get-theme-files "$(PLYMOUTH_THEME)
+$(call assgin-shell-once,PLYMOUTH_PACK_DEFFONT, fc-match -f '%{file}\n' 'DejaVuSans' ||:)
+
+PLYMOUTH_PACK_FONT := $(or $(PLYMOUTH_FONT),$(PLYMOUTH_PACK_DEFFONT))
 
 PLYMOUTH_EXCLUDE_MODULES   ?=
 PLYMOUTH_EXCLUDE_RENDERERS ?= %/x11.so

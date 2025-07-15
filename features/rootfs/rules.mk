@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-ROOTFS_DIRS := $(shell $(call shell-export-vars) $(FEATURESDIR)/rootfs/bin/create-fstab dirs)
+
+$(call assgin-shell-once,ROOTFS_DIRS,$(FEATURESDIR)/rootfs/bin/create-fstab dirs)
+
 PUT_FEATURE_DIR += $(ROOTFS_DIRS)
 
 $(call set-sysconfig,init,QUIET,$(RUNTIME_QUIET))

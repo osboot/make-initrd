@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-ZFS_DATA := $(shell $(call shell-export-vars) $(FEATURESDIR)/zfs/bin/get-data)
+
+$(call assgin-shell-once,ZFS_DATA,$(FEATURESDIR)/zfs/bin/get-data)
 
 MODULES_PRELOAD += $(ZFS_PRELOAD)
 

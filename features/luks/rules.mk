@@ -2,7 +2,7 @@
 LUKS_CRYPTTAB_DATA =
 
 ifneq ($(LUKS_CRYPTTAB),)
-LUKS_CRYPTTAB_DATA := $(shell $(call shell-export-vars) $(FEATURESDIR)/luks/bin/get-data)
+$(call assgin-shell-once,LUKS_CRYPTTAB_DATA,$(FEATURESDIR)/luks/bin/get-data)
 endif
 
 MODULES_LOAD += $(LUKS_MODULES)

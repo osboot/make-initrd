@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-KICKSTART_DIRS := $(shell $(call shell-export-vars) $(FEATURESDIR)/kickstart/bin/get-ks-configs)
+
+$(call assgin-shell-once,KICKSTART_DIRS,$(FEATURESDIR)/kickstart/bin/get-ks-configs)
 
 FAT_MODULES = fs-vfat /fs/nls/
 ZFS_MODULES = zfs
