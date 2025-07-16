@@ -1,13 +1,37 @@
 #!/bin/bash -efu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+read_root_entry()
+{
+	local retval arr name dummy
+
+	retval="$1"; shift
+
+	arr=()
+	while IFS=: read -r name dummy; do
+		[ -n "$name" ] && [ "$name" = root ] ||
+			continue
+		arr=( "$name" "$dummy" )
+	done
+
+	eval "$retval=(\"\${arr[@]}\")"
+}
+
+query_login_defs()
+{
+	sed -n \
+		-e '/^[[:space:]]*'"$1"'[[:space:]]\+/h' \
+		-e '${ g; s/^[[:space:]]*'"$1"'[[:space:]]\+//; p; }' \
+		/etc/login.defs
+}
+
 DIR="$ROOTDIR"
 
 mkdir -p -- "$DIR"/etc
 
 if [ -r /etc/login.defs ]; then
-	printf -v min_uid '%d' "$(sed -ne 's#^[[:space:]]*UID_MIN[[:space:]]\+##p' /etc/login.defs | tail -1)"
-	printf -v min_gid '%d' "$(sed -ne 's#^[[:space:]]*GID_MIN[[:space:]]\+##p' /etc/login.defs | tail -1)"
+	printf -v min_uid '%d' "$(query_login_defs UID_MIN)"
+	printf -v min_gid '%d' "$(query_login_defs GID_MIN)"
 fi
 
 [ "${min_uid:-0}" -gt 0 ] || min_uid=500
@@ -20,18 +44,27 @@ while IFS=: read -r name pass gid dummy; do
 	printf '%s\n' "$name:x::$dummy" >> "$DIR"/etc/gshadow
 done < /etc/group
 
+root_passwd=()
+root_shadow=()
+
+[ ! -f "$DIR"/etc/passwd ] || read_root_entry root_passwd < "$DIR"/etc/passwd
+[ ! -f "$DIR"/etc/shadow ] || read_root_entry root_shadow < "$DIR"/etc/shadow
+
+[ "${#root_passwd[@]}" -ne 0 ] || root_passwd=("root" "x:0:0:/home/root:/bin/sh")
+[ "${#root_shadow[@]}" -ne 0 ] || root_shadow=("root" "*:13957::::::")
+
 for n in passwd shadow; do
-	touch "$DIR/etc/$n"
-	sed -i -e '/^root:/d' "$DIR/etc/$n"
+	:> "$DIR/etc/$n"
 done
 
 while IFS=: read -r name pass uid gid dummy; do
 	[ -n "$name" ] && [ "$uid" -lt "$min_uid" ] ||
 		continue
-	{
-		[ "$name" = "root" ] &&
-			printf '%s\n' "root:x:$uid:$gid::/home/root:/bin/sh" ||
-			printf '%s\n' "$name:x:$uid:$gid:$dummy"
-	} >> "$DIR"/etc/passwd
-	printf '%s\n' "$name:*:13957::::::" >> "$DIR"/etc/shadow
+	if [ "$name" = "root" ]; then
+		printf '%s\n' "${root_passwd[0]}:${root_passwd[1]}" >> "$DIR"/etc/passwd
+		printf '%s\n' "${root_shadow[0]}:${root_shadow[1]}" >> "$DIR"/etc/shadow
+	else
+		printf '%s\n' "$name:x:$uid:$gid:$dummy" >> "$DIR"/etc/passwd
+		printf '%s\n' "$name:*:13957::::::"      >> "$DIR"/etc/shadow
+	fi
 done < /etc/passwd
