@@ -12,6 +12,7 @@ features/mdadm
  `- README.md
  `- config.mk
  `- rules.mk
+ `- pack.mk
  `- data/
 ```
 
@@ -77,3 +78,9 @@ PUT_FEATURE_PROGS += $(MDADM_PROGS)
 
 All binary utilities will be copied along with a libraries with which they are
 linked.
+
+### pack.mk
+
+This file contains the targets and variables used to package the generated
+image. The `pre-pack` and `post-pack` targets are used to perform any actions
+before or after the image is packed.

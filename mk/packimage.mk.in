@@ -18,7 +18,7 @@ pre-pack::
 	fi
 
 # Load requested features
-$(call include-features-once,$(RUNTIME_FEATURE) $(sort $(ALL_ACTIVE_FEATURES)))
+$(call include-features-pack,$(RUNTIME_FEATURE) $(sort $(ALL_ACTIVE_FEATURES)))
 
 pre-pack::
 	@$(VMSG) "Actions before packing are done"

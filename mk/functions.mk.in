@@ -220,6 +220,14 @@ $(strip $(if $(filter include-features-once,$(0)),$(if $(1),\
 		$(call include-feature,$(n),$(wildcard $(filter-out $(MAKEFILE_LIST),$(n:%=$(FEATURESDIR)/%/rules.mk))))))))
 endef
 
+# $(call include-features-pack,<feature-list>)
+define include-features-pack
+$(strip $(if $(filter include-features-pack,$(0)),$(if $(1),\
+	$(foreach n,$(1),\
+		$(foreach pack,$(wildcard $(filter-out $(MAKEFILE_LIST),$(n:%=$(FEATURESDIR)/%/pack.mk))),\
+			$(eval include $(pack)))))))
+endef
+
 define _word-position
 $(strip $(if $(filter _word-position,$(0)),\
 	$(if $(filter $(strip $(1)),$(word 1,$(3))),$(words $(3)),$(if $(filter 1,$(words $(2))),,$(call _word-position,$(1), $(wordlist 2,$(words $(2)),$(2)), $(firstword $(2)) $(3))))))
