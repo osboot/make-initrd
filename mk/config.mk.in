@@ -119,8 +119,8 @@ endif
 
 verbose := $(verbose1)
 
-MSG   = echo "$$(msg-timestamp)"
-MSG_N = echo -n "$$(msg-timestamp)"
+MSG   = msg-timestamp
+MSG_N = msg-timestamp -n
 VMSG := test -z "$(VERBOSE)" || $(MSG)
 
 include @projectdir@/mk/functions.mk

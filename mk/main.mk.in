@@ -51,7 +51,7 @@ include @projectdir@/mk/packimage.mk
 endif
 
 ifneq ($(call in-goals,process-config),)
-STARTUP_TIME   = $(shell date +'%s')
+STARTUP_TIME   = $(shell date -u +'%s%N')
 WORKDIR_SUFFIX = $(basename $(notdir $(INITRD_CONFIG)))
 endif
 

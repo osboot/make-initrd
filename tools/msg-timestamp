@@ -1,4 +1,38 @@
 #!/bin/bash -efu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-echo "[$(date -u -d "@$(($(date +'%s') - ${STARTUP_TIME:-0}))" +"%T")]"
+export LANG=C
+export LC_ALL=C
+
+newline="
+"
+if [ "${1-}" = "-n" ]; then
+	shift
+	newline=""
+fi
+
+if [ "${STARTUP_TIME:-0}" -gt 0 ]; then
+	us="${EPOCHREALTIME-}"
+
+	[ -n "$us" ] &&
+		us=$(( ${us//./} )) ||
+		us=$(( $(date -u %s%N) / 1000 ))
+
+	us=$(( $us - ($STARTUP_TIME / 1000) ))
+
+	m=( 3600000000 60000000 1000000 1000  0  )
+	s=( h          m        s       ms    us )
+
+	for (( i = 0; $i < ${#m[@]}; i++ )) do
+		if [ $us -gt ${m[$i]} ]; then
+			[ ${m[$i]} -ne 0 ] &&
+				v=$(($us / ${m[$i]})).$(($us / (${m[$i]} / 100) % 100)) ||
+				v=$us
+			printf -v duration '%g%s' "$v" "${s[$i]}" ||:
+			printf '[ %8s ] ' "$duration"
+			break
+		fi
+	done
+fi
+
+printf '%s' "$*" "$newline"
