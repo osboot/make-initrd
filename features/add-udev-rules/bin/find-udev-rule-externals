@@ -3,6 +3,7 @@
 
 . shell-error
 . shell-quote
+. sh-functions
 
 UDEV_BUILTINS=()
 readarray -t UDEV_BUILTINS <<< "$(
