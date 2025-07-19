@@ -193,7 +193,7 @@ UNITTEST_DIRS = $(sort \
 				$(wildcard $(1)/tests $(1)/*/tests)))
 
 check-unit: $(UNITTEST_DIRS)
-	@testing/tests/run $?
+	@env PATH="$(CURDIR)/tools:$$PATH" testing/tests/run $?
 
 check-services:
 	@rc=0; \

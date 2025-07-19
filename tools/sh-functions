@@ -15,6 +15,11 @@ export outfile="$workdir/initrd.img"
 
 : ${KERNEL:?kernel version required}
 
+message()  { msg-timestamp "$PROG: $*" >&2; }
+verbose1() { [ -z "${verbose1-}" ] || message "$@"; }
+verbose2() { [ -z "${verbose2-}" ] || message "$@"; }
+verbose3() { [ -z "${verbose3-}" ] || message "$@"; }
+
 kernel_major="${KERNEL%%.*}"
 
 kernel_minor="${KERNEL#*.}"
@@ -36,10 +41,6 @@ fi
 
 [ -d "$KERNEL_MODULES_DIR" ] ||
 	fatal "Directory \"$KERNEL_MODULES_DIR\" doesn't exist or not accessible."
-
-verbose1() { [ -z "${verbose1-}" ] || message "$@"; }
-verbose2() { [ -z "${verbose2-}" ] || message "$@"; }
-verbose3() { [ -z "${verbose3-}" ] || message "$@"; }
 
 get_majmin() {
 	local v devnode
