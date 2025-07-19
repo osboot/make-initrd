@@ -1,0 +1,52 @@
+_make_initrd()
+{
+	local cur prev words cword
+	_init_completion || return
+
+	local subcommands="guess-modules guess-config bug-report feature-info uki"
+	local opts="
+	-D --no-depmod
+	-N --no-checks
+	-c --config=
+	-b --bootdir=
+	-k --kernel=
+	-v --verbose
+	-V --version
+	-h --help
+	"
+
+	case "${prev}" in
+		-c|--config)
+			_filedir
+			return 0
+			;;
+		-b|--bootdir)
+			_filedir -d
+			return 0
+			;;
+		-k|--kernel)
+			local kernels=$(find /lib/modules -mindepth 1 -maxdepth 1 -type d -printf '%f ')
+			COMPREPLY=( $(compgen -W "$kernels" -- "$cur") )
+			return 0
+			;;
+		feature-info)
+			local features=$(make-initrd feature-info 2>/dev/null)
+			COMPREPLY=( $(compgen -W "$features" -- "$cur") )
+			return 0
+			;;
+		guess-modules)
+			local devices=$(lsblk -ndo NAME 2>/dev/null | sed 's|^|/dev/|')
+			local mounts=$(findmnt -nl -o TARGET)
+			COMPREPLY=( $(compgen -W "$devices $mounts" -- "$cur") )
+			__ltrim_colon_completions "$cur"
+			return 0
+			;;
+	esac
+
+	if [[ ${COMP_CWORD} -eq 1 ]]; then
+		COMPREPLY=( $(compgen -W "$subcommands $opts" -- "$cur") )
+	else
+		COMPREPLY+=( $(compgen -W "$opts" -- "$cur") )
+	fi
+}
+complete -F _make_initrd make-initrd

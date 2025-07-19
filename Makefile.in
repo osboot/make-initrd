@@ -26,6 +26,7 @@ projectdir  = @projectdir@
 rulesdir    = ${projectdir}/mk
 
 libcdir := $(shell $(CURDIR)/tools/get-libc-dir)
+completionsdir := $(shell pkg-config --variable=completionsdir bash-completion 2>/dev/null ||:)
 
 runtime_srcdir = runtime/src
 utils_srcdir = utils
@@ -418,7 +419,8 @@ installdirs:
 	 $(DESTDIR)$(execdir)/$(FEATURESDIR) \
 	 $(DESTDIR)$(runtimedir)/bin \
 	 $(DESTDIR)$(runtimedir)/sbin \
-	 $(DESTDIR)$(runtimedir)/$(libcdir)
+	 $(DESTDIR)$(runtimedir)/$(libcdir) \
+	 $(DESTDIR)$(completionsdir)
 
 install: build-progs build-manpages installdirs
 	$(Q)cp -at "$(DESTDIR)$(bindir)" -- $(addprefix $(dest_bindir)/,$(BIN_NAMES))
@@ -440,6 +442,8 @@ install: build-progs build-manpages installdirs
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/bin" -- $(addprefix $(dest_data_bindir)/,$(RUNTIME_BIN_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/sbin" -- $(addprefix $(dest_data_sbindir)/,$(RUNTIME_SBIN_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/$(libcdir)" -- $(dest_data_libdir)/lib*
+	$(Q)[ -z "$(completionsdir)" ] || \
+	    cp -at "$(DESTDIR)$(completionsdir)" -- $(wildcard contrib/bash-completion/*)
 ifneq ($(SCDOC),)
 	$(Q)cp -at "$(DESTDIR)$(man1dir)" -- $(addprefix $(dest_man1dir)/,$(MANPAGE_NAMES))
 endif
@@ -454,4 +458,6 @@ uninstall:
 	$(Q)rm -f -- $(addprefix $(DESTDIR)$(bindir)/,$(BIN_NAMES))
 	$(Q)rm -f -- $(addprefix $(DESTDIR)$(sbindir)/,$(SBIN_NAMES))
 	$(Q)rm -f -- $(addprefix $(DESTDIR)$(man1dir)/,$(MANPAGE_NAMES))
+	$(Q)[ -z "$(completionsdir)" ] || \
+	    rm -f -- $(addprefix $(DESTDIR)$(completionsdir)/,$(notdir $(wildcard contrib/bash-completion/*)))
 	$(Q)rm -rf -- $(DESTDIR)$(rulesdir) $(DESTDIR)$(projectdir) $(DESTDIR)$(execdir) $(DESTDIR)$(runtimedir)

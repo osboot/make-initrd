@@ -1,0 +1,43 @@
+_depinfo()
+{
+	local cur prev opts
+	_init_completion || return
+
+	opts="
+	-t --tree
+	-D --no-deps
+	-P --no-prefix
+	-M --no-modules
+	-F --no-firmware
+	-B --no-builtin
+	-k --set-version=
+	-b --base-dir=
+	-f --firmware-dir=
+	--use-blacklist
+	--missing-firmware
+	-i --input=
+	-V --version
+	-h --help
+	"
+
+	case "$prev" in
+		-k|--set-version)
+			local kernels=$(find /lib/modules -mindepth 1 -maxdepth 1 -type d -printf '%f ')
+			COMPREPLY=( $(compgen -W "$kernels" -- "$cur") )
+			return 0
+			;;
+		-b|--base-dir|-f|--firmware-dir)
+			COMPREPLY=( $(compgen -d -- "$cur") )
+			return 0
+			;;
+		-i|--input)
+			COMPREPLY=( $(compgen -f -- "$cur") )
+			return 0
+			;;
+	esac
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+	fi
+}
+complete -F _depinfo depinfo

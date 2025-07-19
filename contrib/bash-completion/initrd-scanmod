@@ -1,0 +1,30 @@
+_initrd_scanmod()
+{
+	local cur prev opts
+	_init_completion || return
+
+	opts="
+	-k --set-version=
+	-b --base-dir=
+	-v --verbose
+	-V --version
+	-h --help
+	"
+
+	case "$prev" in
+		-k|--set-version)
+			local kernels=$(find /lib/modules -mindepth 1 -maxdepth 1 -type d -printf '%f ')
+			COMPREPLY=( $(compgen -W "$kernels" -- "$cur") )
+			return 0
+			;;
+		-b|--base-dir)
+			COMPREPLY=( $(compgen -d -- "$cur") )
+			return 0
+			;;
+	esac
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+	fi
+}
+complete -F _initrd_scanmod initrd-scanmod

@@ -1,0 +1,17 @@
+_initrd_extract()
+{
+	local cur prev opts
+	_init_completion || return
+
+	opts="
+	-a --archive=
+	-o --output=
+	-V --version
+	-h --help
+	"
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+	fi
+}
+complete -F _initrd_extract initrd-extract

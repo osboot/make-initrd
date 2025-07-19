@@ -1,0 +1,19 @@
+_initrd_ls()
+{
+	local cur prev opts
+	_init_completion || return
+
+	opts="
+	--no-mtime
+	-b --brief
+	-n --name
+	-C --compression
+	-V --version
+	-h --help
+	"
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+	fi
+}
+complete -F _initrd_ls initrd-ls
