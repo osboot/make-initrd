@@ -2,10 +2,16 @@
 
 INITRD_CONFIG = /dev/null
 
-PHONY += show-eature-info $(INITRD_CONFIG)
+PHONY += show-feature-info $(INITRD_CONFIG)
 
 include @projectdir@/mk/config.mk
+
+ifneq ($(FEATURE_NAMES),)
 $(call show-feature-dependency,$(FEATURE_NAMES))
+else
+$(foreach n,$(wildcard $(FEATURESDIR)/*/rules.mk),\
+	$(info $(n:$(FEATURESDIR)/%/rules.mk=%)))
+endif
 
 show-feature-info:
 	@:
