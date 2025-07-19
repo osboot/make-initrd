@@ -5,7 +5,6 @@
 
 PROCFS_PATH="${PROCFS_PATH:-/proc}"
 SYSFS_PATH="${SYSFS_PATH:-/sys}"
-reportdir="$workdir/report"
 
 c=/
 progress()
@@ -25,25 +24,25 @@ copy()
 	find -P "$@" -regextype egrep \! -type d |
 	while read -r filename; do
 		progress "$c"
-		mkdir -p -- "$reportdir/${filename%/*}"
+		mkdir -p -- "$REPORTDIR/${filename%/*}"
 		cp -d --preserve=all -- \
-			"$filename" "$reportdir/${filename%/*}"/ 2>/dev/null ||:
+			"$filename" "$REPORTDIR/${filename%/*}"/ 2>/dev/null ||:
 	done
 	find -P "$@" -type d -empty -exec mkdir -p -- '{}' '+' ||:
 }
 
 progress "$c"
 mkdir -p -- \
-	"$reportdir"/boot \
-	"$reportdir"/etc \
-	"$reportdir"/"$SYSFS_PATH" \
-	"$reportdir"/"$PROCFS_PATH/self" \
+	"$REPORTDIR"/boot \
+	"$REPORTDIR"/etc \
+	"$REPORTDIR"/"$SYSFS_PATH" \
+	"$REPORTDIR"/"$PROCFS_PATH/self" \
 #
 
 if [ -f "${KERNEL_CONFIG-}" ]; then
 	cp -a \
 		"$KERNEL_CONFIG" \
-		"$reportdir"/boot/
+		"$REPORTDIR"/boot/
 	progress "$c"
 fi
 
@@ -55,27 +54,27 @@ if [ -n "$kver" ]; then
 	done
 fi
 
-mkdir -p -- "$reportdir"/dev
-LANG=C find /dev -xdev -a \! -type d -exec ls -lad '{}' '+' >"$reportdir"/dev/list
+mkdir -p -- "$REPORTDIR"/dev
+LANG=C find /dev -xdev -a \! -type d -exec ls -lad '{}' '+' >"$REPORTDIR"/dev/list
 progress "$c"
 
 (
 	export LANG=C;
 	find /dev -xdev -a \! -type d -exec stat -L -c '%A %t %T %n' '{}' '+' 2>/dev/null |
 		grep -e '^[cb]' |
-		sort >"$reportdir"/dev/devlist
+		sort >"$REPORTDIR"/dev/devlist
 ) ||
-	rm -f -- "$reportdir"/dev/devlist
+	rm -f -- "$REPORTDIR"/dev/devlist
 progress "$c"
 
 blkid -c /dev/null --no-encoding --output export |
 	sed -r -e 's/^([^=]+)=/\1\t/' \
 	       -e '${ s/^.*/&\n/ }' \
-	       >"$reportdir"/etc/blkid.out1
+	       >"$REPORTDIR"/etc/blkid.out1
 findmnt -v --direction forward --pairs --output-all  |
 	sed -r -e 's/" /"\n/g' -e 's/$/\n/' |
 	sed -r -e 's/^([^=]+)="(.*)"$/\1\t\2/' \
-	       >"$reportdir"/etc/findmnt.out1
+	       >"$REPORTDIR"/etc/findmnt.out1
 progress "$c"
 
 copy \
@@ -105,7 +104,7 @@ copy \
 #
 
 [ -z "${VERSION-}" ] ||
-	printf '%s\n' "$VERSION" > "$reportdir"/.version
+	printf '%s\n' "$VERSION" > "$REPORTDIR"/.version
 progress "done"
 echo
 
@@ -126,7 +125,7 @@ fi
 
 outfile="$PWD/make-initrd-bugreport-$(date +"%Y%m%d").tar$suffix"
 
-cd "$workdir"
+cd "$WORKDIR"
 tar -cf - report | "$compress" "${compargs[@]}" >"$outfile"
 
 printf '\nPlease submit %s to authors\n\n' "$outfile"

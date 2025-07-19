@@ -60,7 +60,7 @@ detect()
 
 detect
 
-if [ ! -s "$guessdir/guess:modalias${GUESS_SUFFIX:+:$GUESS_SUFFIX}" ]; then
+if [ ! -s "$GUESSDIR/guess:modalias${GUESS_SUFFIX:+:$GUESS_SUFFIX}" ]; then
 	[ -n "${KEYBOARD_DEFAULT_MODULES-}" ] ||
 		exit 0
 	printf '%s\n' ${KEYBOARD_DEFAULT_MODULES-} |

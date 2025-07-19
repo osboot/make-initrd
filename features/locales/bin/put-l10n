@@ -31,4 +31,4 @@ for textdomain; do
 		fi
 	done
 done |
-	xargs -r put-file "$rootdir"
+	xargs -r put-file "$ROOTDIR"

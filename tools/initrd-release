@@ -6,7 +6,7 @@
 
 . sh-functions
 
-cd "$rootdir"
+cd "$ROOTDIR"
 
 readonly version="${VERSION:-0}"
 VERSION=
