@@ -25,4 +25,4 @@ while read -r s; do
 done < <(locale -a -v |grep ^locale:)
 
 printf '%s\n' "${locales[@]}" |
-	xargs -r put-file "$rootdir"
+	xargs -r put-file "$ROOTDIR"

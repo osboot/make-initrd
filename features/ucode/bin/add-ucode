@@ -58,10 +58,10 @@ prep_amd_ucode()
 		return 0
 	fi
 
-	mkdir "$workdir"/ucode ||
+	mkdir "$WORKDIR"/ucode ||
 		return
-	mkdir -p -- "$workdir"/ucode/kernel/x86/microcode
-	cp ${VERBOSE:+-v} -- "$fw_file" "$workdir"/ucode/kernel/x86/microcode/"$cpu_vendor".bin
+	mkdir -p -- "$WORKDIR"/ucode/kernel/x86/microcode
+	cp ${VERBOSE:+-v} -- "$fw_file" "$WORKDIR"/ucode/kernel/x86/microcode/"$cpu_vendor".bin
 }
 
 prep_intel_ucode()
@@ -78,12 +78,12 @@ prep_intel_ucode()
 			"$IUCODE_BIN" \
 					--quiet \
 					$iucode_scan_system \
-					--write-earlyfw="$workdir"/ucode.cpio \
+					--write-earlyfw="$WORKDIR"/ucode.cpio \
 					"$fw_path"/intel-ucode
-			[ -f "$workdir"/ucode.cpio ] ||
+			[ -f "$WORKDIR"/ucode.cpio ] ||
 				continue
-			mkdir "$workdir"/ucode &&
-				cpio -D "$workdir"/ucode --quiet -id < "$workdir"/ucode.cpio
+			mkdir "$WORKDIR"/ucode &&
+				cpio -D "$WORKDIR"/ucode --quiet -id < "$WORKDIR"/ucode.cpio
 			return
 		fi
 	done
@@ -102,15 +102,15 @@ rc=$?
 [ "$rc" -eq 0 ] ||
 	exit $rc
 
-if [ -d "$workdir/ucode" ]; then
-	cd "$workdir/ucode"
+if [ -d "$WORKDIR/ucode" ]; then
+	cd "$WORKDIR/ucode"
 
 	find . -type f -execdir touch -c -m --date="1970-01-01 00:00:00 +0000" '{}' '+'
 
 	# shellcheck disable=SC2185
 	find -O2 . -mindepth 1 -print0 |
 		sort -z |
-		cpio --null --quiet --create --format=newc --reproducible > "$workdir"/ucode.cpio
+		cpio --null --quiet --create --format=newc --reproducible > "$WORKDIR"/ucode.cpio
 
-	rm -rf -- "$workdir/ucode"
+	rm -rf -- "$WORKDIR/ucode"
 fi

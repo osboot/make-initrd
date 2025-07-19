@@ -43,6 +43,7 @@ DATADIR		:= @datadir@
 LIBDIR		:= @libdir@
 SYSFS_PATH	?= /sys
 PROCFS_PATH	?= /proc
+OUTFILE		:= $(WORKDIR)/initrd.img
 
 BIN_FEATURESDIR := @execdir@/features
 

@@ -16,5 +16,5 @@ case "${COMPRESS-}" in
 	*) fatal "Unknown compress method: $COMPRESS"
 esac
 
-"$@" < "$outfile" > "$outfile.x"
-mv -f -- "$outfile.x" "$outfile"
+"$@" < "$OUTFILE" > "$OUTFILE.x"
+mv -f -- "$OUTFILE.x" "$OUTFILE"

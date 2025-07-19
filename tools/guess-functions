@@ -29,7 +29,7 @@ guess_modalias() {
 		$TRACE_ENTER_RETCODE $?
 		return $?
 	}
-	printf '%s\n' "$1" >> "$guessdir/guess:modalias${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
+	printf '%s\n' "$1" >> "$GUESSDIR/guess:modalias${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
 }
 
 guess_module() {
@@ -37,7 +37,7 @@ guess_module() {
 		$TRACE_ENTER_RETCODE $?
 		return $?
 	}
-	printf '%s\n' "$1" >> "$guessdir/guess:modules${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
+	printf '%s\n' "$1" >> "$GUESSDIR/guess:modules${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
 }
 
 guess_optional_modalias() {
@@ -45,7 +45,7 @@ guess_optional_modalias() {
 		$TRACE_ENTER_RETCODE $?
 		return $?
 	}
-	printf '%s\n' "$1" >> "$guessdir/guess:opt-modalias${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
+	printf '%s\n' "$1" >> "$GUESSDIR/guess:opt-modalias${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
 }
 
 guess_optional_module() {
@@ -53,7 +53,7 @@ guess_optional_module() {
 		$TRACE_ENTER_RETCODE $?
 		return $?
 	}
-	printf '%s\n' "$1" >> "$guessdir/guess:opt-modules${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
+	printf '%s\n' "$1" >> "$GUESSDIR/guess:opt-modules${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
 }
 
 guess_feature() {
@@ -61,7 +61,7 @@ guess_feature() {
 		$TRACE_ENTER_RETCODE $?
 		return $?
 	}
-	printf '%s\n' "$1" >> "$guessdir/guess:features${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
+	printf '%s\n' "$1" >> "$GUESSDIR/guess:features${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
 }
 
 guess_variable() {
@@ -76,7 +76,7 @@ guess_variable() {
 	local var="$1"
 	shift
 
-	printf '%s\n' "$@" >> "$guessdir/guess:variables:$var"
+	printf '%s\n' "$@" >> "$GUESSDIR/guess:variables:$var"
 }
 
 guess_fstype() {

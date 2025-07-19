@@ -85,7 +85,7 @@ load_modules()
 	modules_file="/etc/initrd/modules-$1"
 	shift
 
-	mkdir -p -- "$rootdir/etc/initrd"
+	mkdir -p -- "$ROOTDIR/etc/initrd"
 
 	for n; do
 		m="${n##*/}"
@@ -93,9 +93,9 @@ load_modules()
 		! in_blacklist "$m" ||
 			continue
 		printf '%s\n' "$n"
-	done >> "$rootdir/$modules_file"
+	done >> "$ROOTDIR/$modules_file"
 
-	sort -uo "$rootdir/$modules_file" "$rootdir/$modules_file"
+	sort -uo "$ROOTDIR/$modules_file" "$ROOTDIR/$modules_file"
 }
 
 get_depinfo()
@@ -204,7 +204,7 @@ done > "$tempdir/modules"
 cut -f2- -- "$tempdir/firmwares" "$tempdir/modules" |
 	sort -u |
 	tr '\n' '\0' |
-	xargs -r0 put-file "$rootdir"
+	xargs -r0 put-file "$ROOTDIR"
 
 if [ -s "$tempdir/missing-firmwares" ]; then
 	if [ -n "${verbose2-}" ]; then

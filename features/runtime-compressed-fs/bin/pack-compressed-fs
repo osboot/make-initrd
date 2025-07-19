@@ -3,14 +3,14 @@
 
 . sh-functions
 
-mkdir "$rootdir"/overlay
+mkdir "$ROOTDIR"/overlay
 
-find -P "$rootdir" -type f -execdir touch -c -m --date="1970-01-01 00:00:00 +0000" '{}' '+'
+find -P "$ROOTDIR" -type f -execdir touch -c -m --date="1970-01-01 00:00:00 +0000" '{}' '+'
 
 suffix="$RUNTIME_COMPRESSED_FS"
 
-mv -- "$rootdir" "$rootdir.$suffix"
-mkdir -- "$rootdir"
+mv -- "$ROOTDIR" "$ROOTDIR.$suffix"
+mkdir -- "$ROOTDIR"
 
 base_layer="${RUNTIME_BASE_LAYER-}"
 
@@ -27,7 +27,7 @@ case "$base_layer" in
 		kmodule_requires="${RUNTIME_LAYER_SQUASHFS_MODULES-}"
 		layerfs=squashfs
 
-		mksquashfs "$rootdir.$suffix" "$rootdir"/initramfs.img -quiet -no-progress -no-xattrs \
+		mksquashfs "$ROOTDIR.$suffix" "$ROOTDIR"/initramfs.img -quiet -no-progress -no-xattrs \
 			${RUNTIME_LAYER_SQUASHFS_ARGS-} \
 			${RUNTIME_LAYER_SQUASHFS_COMPRESS:+-comp "$RUNTIME_LAYER_SQUASHFS_COMPRESS"} \
 			-all-root \
@@ -52,7 +52,7 @@ case "$base_layer" in
 			${RUNTIME_LAYER_EROFS_ARGS=} \
 			${RUNTIME_LAYER_EROFS_COMPRESS:+-z "$RUNTIME_LAYER_EROFS_COMPRESS"} \
 			--all-root \
-			"$rootdir"/initramfs.img "$rootdir.$suffix"
+			"$ROOTDIR"/initramfs.img "$ROOTDIR.$suffix"
 		;;
 	*)
 		fatal "unknown base layer: $base_layer"
@@ -62,19 +62,19 @@ esac
 printf '%s\n' "$base_layer" > "$WORKDIR"/compressed-fs
 
 mkdir -p -- \
-	"$rootdir"/bin \
-	"$rootdir"/dev \
-	"$rootdir"/root \
-	"$rootdir"/overlay \
-	"$rootdir"/usr \
+	"$ROOTDIR"/bin \
+	"$ROOTDIR"/dev \
+	"$ROOTDIR"/root \
+	"$ROOTDIR"/overlay \
+	"$ROOTDIR"/usr \
 #
 
-ln -s -- ../bin  "$rootdir"/usr/bin
-ln -s -- ../sbin "$rootdir"/usr/bin
+ln -s -- ../bin  "$ROOTDIR"/usr/bin
+ln -s -- ../sbin "$ROOTDIR"/usr/bin
 
-put-file -r "$rootdir.$suffix" "$rootdir" "$rootdir.$suffix"/bin/busybox
+put-file -r "$ROOTDIR.$suffix" "$ROOTDIR" "$ROOTDIR.$suffix"/bin/busybox
 
-cat > "$rootdir"/init <<EOF
+cat > "$ROOTDIR"/init <<EOF
 #!/bin/busybox ash
 EOF
 
@@ -82,13 +82,13 @@ if [ -n "$kmodule_requires" ]; then
 	depinfo --set-version="$KERNEL" --no-prefix --no-builtin \
 		$kmodule_requires | tac |
 	while read -r modname; do
-		mkdir -p -- "$rootdir/${modname%/*}"
-		cp -- "$modname" "$rootdir/$modname"
+		mkdir -p -- "$ROOTDIR/${modname%/*}"
+		cp -- "$modname" "$ROOTDIR/$modname"
 		printf '/bin/busybox insmod %s\n' "$modname"
-	done >> "$rootdir/init"
+	done >> "$ROOTDIR/init"
 fi
 
-cat >> "$rootdir"/init <<EOF
+cat >> "$ROOTDIR"/init <<EOF
 /bin/busybox mount -t ramfs ramfs /overlay
 /bin/busybox mkdir /overlay/root /overlay/upper /overlay/work
 /bin/busybox mount -t $layerfs -o loop /initramfs.img /overlay/root
@@ -96,4 +96,4 @@ cat >> "$rootdir"/init <<EOF
 /bin/busybox mount --move /overlay /root/overlay
 exec /bin/busybox switch_root /root /init
 EOF
-chmod +x "$rootdir"/init
+chmod +x "$ROOTDIR"/init

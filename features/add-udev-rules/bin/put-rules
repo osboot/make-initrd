@@ -63,6 +63,6 @@ done
 find "$tempdir/etc/udev/rules.d" -name '*.rules' |
 while read -r rule; do
 	find-udev-rule-externals "$rule" |
-		xargs -r put-file "$rootdir"
+		xargs -r put-file "$ROOTDIR"
 done
-put-tree "$rootdir" "$tempdir"
+put-tree "$ROOTDIR" "$tempdir"

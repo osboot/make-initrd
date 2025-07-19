@@ -24,10 +24,10 @@ file_is_not_empty() {
 }
 
 print_vars() {
-	file_is_not_empty "$guessdir/guess:variables":* ||
+	file_is_not_empty "$GUESSDIR/guess:variables":* ||
 		return 0
 
-	for m in "$guessdir/guess:variables":*; do
+	for m in "$GUESSDIR/guess:variables":*; do
 		[ -s "$m" ] ||
 			continue
 		n="${m##*:}"
@@ -42,12 +42,12 @@ print_vars() {
 }
 
 print_list() {
-	file_is_not_empty "$guessdir/guess:$2":* "$guessdir/guess:$2" ||
+	file_is_not_empty "$GUESSDIR/guess:$2":* "$GUESSDIR/guess:$2" ||
 		return 0
 
 	printf '%s += \\\n' "$1"
 
-	for m in "$guessdir/guess:$2":* "$guessdir/guess:$2"; do
+	for m in "$GUESSDIR/guess:$2":* "$GUESSDIR/guess:$2"; do
 		[ -s "$m" ] ||
 			continue
 
@@ -75,7 +75,7 @@ print_list() {
 }
 
 if [ -n "${RESOLVE_MODALIAS-}" ]; then
-	for m in "$guessdir"/guess:modalias*; do
+	for m in "$GUESSDIR"/guess:modalias*; do
 		[ -s "$m" ] ||
 			continue
 
@@ -92,9 +92,9 @@ if [ -n "${RESOLVE_MODALIAS-}" ]; then
 				--no-firmware \
 				--no-builtin \
 			2>/dev/null |
-			sort -u >> "$guessdir/guess:modules$suffix"
+			sort -u >> "$GUESSDIR/guess:modules$suffix"
 
-		$TRACE_RESOLVE_MODALIAS "$m" "$guessdir/guess:modules$suffix"
+		$TRACE_RESOLVE_MODALIAS "$m" "$GUESSDIR/guess:modules$suffix"
 
 		rm -f "$m"
 	done

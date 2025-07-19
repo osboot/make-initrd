@@ -9,10 +9,10 @@ PROCFS_PATH="${PROCFS_PATH:-/proc}"
 ARCH="${ARCH:-$(uname -m)}"
 KERNEL="${KERNEL:-$(uname -r)}"
 
-outfile="${UKI_EFI_INTERNAL_IMAGE:-$workdir/linux.efi}"
+outfile="${UKI_EFI_INTERNAL_IMAGE:-$WORKDIR/linux.efi}"
 uefi_stub="${UKI_UEFI_STUB-}"
 linux="${UKI_VMLINUZ-}"
-initrd="$workdir/initrd.img"
+initrd="${OUTFILE-}"
 
 garbage=()
 
@@ -85,10 +85,10 @@ add_text_section()
 {
 	local section="$1"; shift
 
-	printf >"$workdir/uefi${section}.txt" '%s\0' "$*"
+	printf >"$WORKDIR/uefi${section}.txt" '%s\0' "$*"
 
-	add_section "$section" "$workdir/uefi${section}.txt"
-	garbage+=( "$workdir/uefi${section}.txt" )
+	add_section "$section" "$WORKDIR/uefi${section}.txt"
+	garbage+=( "$WORKDIR/uefi${section}.txt" )
 }
 
 if [ -z "$uefi_stub" ]; then
@@ -233,7 +233,7 @@ fi
 #
 # Creating UEFI image file.
 #
-uefi_stub_file="$workdir/stub.efi"
+uefi_stub_file="$WORKDIR/stub.efi"
 garbage+=( "$uefi_stub_file" )
 
 cp $verbose3 -f -- "$uefi_stub" "$uefi_stub_file"

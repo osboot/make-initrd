@@ -7,40 +7,34 @@ __included_make_initrd_sh_functions=1
 . shell-error
 . wrapper-functions
 
-export workdir="${WORKDIR:?Work directory required}"
-export rootdir="${ROOTDIR:?Root directory required}"
-export guessdir="${GUESSDIR:?Autodetect directory required}"
-export reportdir="${REPORTDIR:?Bug report directory required}"
-export outfile="$workdir/initrd.img"
-
-: ${KERNEL:?kernel version required}
-
 message()  { msg-timestamp "$PROG: $*" >&2; }
 verbose1() { [ -z "${verbose1-}" ] || message "$@"; }
 verbose2() { [ -z "${verbose2-}" ] || message "$@"; }
 verbose3() { [ -z "${verbose3-}" ] || message "$@"; }
 
-kernel_major="${KERNEL%%.*}"
+if [ -n "${KERNEL-}" ]; then
+	kernel_major="${KERNEL%%.*}"
 
-kernel_minor="${KERNEL#*.}"
-kernel_minor="${kernel_minor%%.*}"
+	kernel_minor="${KERNEL#*.}"
+	kernel_minor="${kernel_minor%%.*}"
 
-kernel_patch="${KERNEL#*.*.}"
-kernel_patch="${kernel_patch%%[!0-9]*}"
+	kernel_patch="${KERNEL#*.*.}"
+	kernel_patch="${kernel_patch%%[!0-9]*}"
 
-export kernel_major kernel_minor kernel_patch
+	export kernel_major kernel_minor kernel_patch
 
-if [ -z "${kernel_major##*[!0-9]*}" ] ||
-   [ -z "${kernel_minor##*[!0-9]*}" ] ||
-   [ -z "${kernel_patch##*[!0-9]*}" ]
-then
-	fatal "Invalid kernel version \"$KERNEL\""
+	if [ -z "${kernel_major##*[!0-9]*}" ] ||
+	   [ -z "${kernel_minor##*[!0-9]*}" ] ||
+	   [ -z "${kernel_patch##*[!0-9]*}" ]
+	then
+		fatal "Invalid kernel version \"$KERNEL\""
+	fi
 fi
 
-: ${KERNEL_MODULES_DIR:?kernel modules directory required}
-
-[ -d "$KERNEL_MODULES_DIR" ] ||
-	fatal "Directory \"$KERNEL_MODULES_DIR\" doesn't exist or not accessible."
+if [ -n "${KERNEL_MODULES_DIR-}" ]; then
+	[ -d "$KERNEL_MODULES_DIR" ] ||
+		fatal "Directory \"$KERNEL_MODULES_DIR\" doesn't exist or not accessible."
+fi
 
 get_majmin() {
 	local v devnode
