@@ -72,7 +72,7 @@ TRACE_SOURCE=:
 TRACE_RESOLVE_MODALIAS=:
 TRACE_RUN=
 
-if [ -n "${MAKE_INITRD_TRACE-}" ]; then
+if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 	MAKE_INITRD_TRACE_PIDS=${MAKE_INITRD_TRACE_PIDS-1}
 
 	TRACE_KIND_ENTER=0
@@ -140,6 +140,9 @@ if [ -n "${MAKE_INITRD_TRACE-}" ]; then
 
 		__is_traceable "$src" ${MAKE_INITRD_TRACE_SRC_PATTERNS-} ||
 			return 0
+
+		[ -z "${MAKE_INITRD_TRACE_TIMESTAMP-}" ] ||
+			msg-timestamp -n >&2
 
 		printf >&2 \
 			'TRACE %-'${TRACE_KINDS_LEN}'s:%s source=%s: %s: %s\n' \
