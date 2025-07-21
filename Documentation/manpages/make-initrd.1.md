@@ -52,6 +52,10 @@ Without options, the program generates images for all the configuration files.
 	Creates an UEFI executable with the kernel, cmdline and initramfs combined.
 
 # OPTIONS
+*--latest-kernel*
+	create an initramfs image for the highest kernel version that can be found,
+	cnot the currently running kernel.
+
 *-D, --no-depmod*
 	don’t recreate a list of module dependencies.
 

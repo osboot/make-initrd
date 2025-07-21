@@ -64,6 +64,9 @@ show_help() {
 	               initramfs combined;
 
 	Options:
+	   --latest-kernel        create an initramfs image for the highest kernel
+	                          version that can be found, not the currently
+	                          running kernel;
 	   -D, --no-depmod        don't recreate a list of module dependencies;
 	   -N, --no-checks        don't check /dev, /proc and the kernel
 	                          modules directory;
@@ -110,12 +113,25 @@ check_noexec() {
 	return $rc
 }
 
-TEMP=`getopt -n "$PROG" -o 'b:,c:,k:,D,N,h,v,V' -l 'bootdir:,config:,kernel:,no-depmod,no-checks,help,verbose,version' -- "$@"` ||
+latest_kernel()
+{
+	find /lib/modules/ -mindepth 2 -maxdepth 2 -type d -name kernel -printf '%h\n' |
+		xargs -r basename |
+		sort --version-sort |
+		tail -1
+}
+
+TEMP=`getopt -n "$PROG" -o 'b:,c:,k:,D,N,h,v,V' -l 'bootdir:,config:,kernel:,latest-kernel,no-depmod,no-checks,help,verbose,version' -- "$@"` ||
 	show_usage
 eval set -- "$TEMP"
 
 while :; do
 	case "$1" in
+		--latest-kernel)
+			KERNEL="$(latest_kernel)"
+			[ -n "$KERNEL" ] ||
+				fatal "Unable to find latest kernel"
+			;;
 		-b|--bootdir) shift
 			BOOTDIR="$(opt_check_dir --bootdir "$1")"
 			;;

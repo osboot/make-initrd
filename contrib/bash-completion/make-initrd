@@ -5,6 +5,7 @@ _make_initrd()
 
 	local subcommands="guess-modules guess-config bug-report feature-info uki"
 	local opts="
+	--latest-kernel
 	-D --no-depmod
 	-N --no-checks
 	-c --config=
