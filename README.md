@@ -1,5 +1,7 @@
 # make-initrd
 
+<img src="Documentation/logo-big.png" alt="make-initrd logo" width="200" align="right">
+
 make-initrd is a new, uevent-driven initramfs infrastructure based around udev.
 
 The make-initrd is intended for creating initramfs images. The project consists
