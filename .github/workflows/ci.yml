@@ -7,6 +7,7 @@ on:
       - "patchset/**"
     paths-ignore:
       - "**.md"
+      - "**.png"
   schedule:
     - cron: "0 0 * * MON"
 jobs:
