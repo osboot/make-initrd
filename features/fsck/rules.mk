@@ -11,5 +11,5 @@ VENDOR := $(shell sed -n -e 's/^ID=//p' /etc/os-release)
 endif
 
 ifeq ($(VENDOR),altlinux)
-$(call set-sysconfig,fsck,FSCK_ARGS,-py)
+$(call set-sysconfig,fsck,FSCK_ARGS,-p -y)
 endif
