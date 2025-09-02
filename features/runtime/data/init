@@ -12,6 +12,27 @@ export PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin
 # Create storage for init environment
 :> /.initrd/initenv
 
+# Check and create the necessary device files
+[ -d /dev ] ||
+	mkdir /dev
+while read -r d_name d_type d_maj d_min; do
+	[ -e "/dev/$d_name" ] ||
+		mknod "/dev/$d_name" "$d_type" "$d_maj" "$d_min"
+done <<EOF
+ram     b 1 1
+null    c 1 3
+zero    c 1 5
+full    c 1 7
+random  c 1 8
+kmsg    c 1 11
+systty  c 4 0
+tty0    c 4 0
+tty1    c 4 1
+tty     c 5 0
+console c 5 1
+ptmx    c 5 2
+EOF
+
 # Backward compatibility
 x=/sbin/init-bin
 [ ! -x "$x" ] || exec "$x"
