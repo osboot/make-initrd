@@ -4,10 +4,27 @@
 
 check_parameter MOUNTFS
 param="$(get_parameter MOUNTFS)"
+
+lastver=
+
+case "$param" in
+	lastver:*)
+		param="${param#lastver:}"
+		lastver=1
+		;;
+esac
+
 target="$(resolve_target "$param")"
 
 [ -n "$target" ] ||
 	fatal "unable to resolve: $param"
+
+if [ -n "$lastver" ]; then
+	real_target="$(set +f; printf '%s\n' $target | sort -V | tail -1)"
+	[ -e "$real_target" ] ||
+		fatal "unable to expand pattern: $target"
+	target="$real_target"
+fi
 
 opts="$(get_parameter MOUNTFS_OPTS)"
 
