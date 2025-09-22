@@ -25,7 +25,7 @@ filters=0
 find "$SYSFS_PATH"/devices/ -type f -name modalias -printf '%h/uevent\0' |
 	xargs -r0 grep -l '^OF_NAME=' 2>/dev/null |
 while read -r uevent; do
-	modialias_file="${uevent%/uevent}/modalias"
+	modalias_file="${uevent%/uevent}/modalias"
 
 	if [ "$filters" -eq 0 ]; then
 		printf '%s\n' "$modalias_file"
