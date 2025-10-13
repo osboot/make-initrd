@@ -197,7 +197,7 @@ while [ -s "$tempdir/mods.required" ] || [ -s "$tempdir/mods.optional" ]; do
 	cat "$tempdir/more-modules"
 
 	find -L "$KMODDEPSDIR" -type f -executable \
-		-exec '{}' "$tempdir/more-modules" ';' > "$tempdir/mods.required"
+		-exec '{}' "$tempdir/more-modules" ';' > "$tempdir/mods.optional"
 
 done > "$tempdir/modules"
 
