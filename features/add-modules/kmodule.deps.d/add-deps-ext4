@@ -15,7 +15,19 @@ depinfo --set-version="$KERNEL" -D "$modname" 2>/dev/null |
 	grep -E -qs '^module ' ||
 	exit 0
 
-printf '%s\n' crc32c crc32-generic
+printf '%s\n' crc32c
+
+if [ -n "${KERNEL-}" ]; then
+	if [ "$kernel_major" -eq 6 ] && [ "$kernel_minor" -le 15 ]; then
+		kernel_6_15_or_less=1
+	elif [ "$kernel_major" -lt 6 ]; then
+		kernel_6_15_or_less=1
+	else
+		kernel_6_15_or_less=
+	fi
+	[ -z "$kernel_6_15_or_less" ] ||
+		printf '%s\n' crc32-generic
+fi
 
 grep -E '^alias crc32c? ' "$KERNEL_MODULES_DIR"/modules.alias |
 while read -r prefix alias module; do
