@@ -1,4 +1,4 @@
-#!/bin/bash -efu
+#!/bin/bash -eu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 . sh-functions
@@ -9,12 +9,26 @@ if [ "${1-}" = dirs ]; then
 	mkdir ${verbose2-} -p -- "$DIR/etc/initrd/md"
 fi
 
+if [ -z "${GENERATE_UDEV_RULES_FOR_MD_DEVICE-}" ]; then
+	verbose2 "No preferred RAID devices. Generating rules for all raid devices..."
+
+	GENERATE_UDEV_RULES_FOR_MD_DEVICE=
+
+	# If the variable is not specified, we generate rules for all
+	# raid devices.
+	for path in /dev/dev/block/*/md; do
+		if [ -d "$path" ]; then
+			majmin="${path%/md}"
+			majmin="${majmin##*/}"
+			GENERATE_UDEV_RULES_FOR_MD_DEVICE="$GENERATE_UDEV_RULES_FOR_MD_DEVICE $majmin"
+		fi
+	done
+fi
+
 for majmin in ${GENERATE_UDEV_RULES_FOR_MD_DEVICE-}; do
 	verbose2 "Processing MD device $majmin..."
 
-	DEVNAME=
-
-	. "$SYSFS_PATH/dev/block/$majmin/uevent"
+	DEVNAME="$(sed -n -e 's,^DEVNAME=,,p' "$SYSFS_PATH/dev/block/$majmin/uevent")"
 
 	[ -n "${DEVNAME-}" ] ||
 		fatal "unable to find device name in \`$SYSFS_PATH/dev/block/$majmin/uevent'"

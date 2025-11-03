@@ -41,8 +41,8 @@ fi
 
 guess_feature mdadm
 
-MAJOR=
-MINOR=
-. "$SYSFS_PATH$1"/uevent
+majmin=
+readline majmin "$SYSFS_PATH$1/dev"
 
-guess_variable GENERATE_UDEV_RULES_FOR_MD_DEVICE "$MAJOR:$MINOR"
+[ -z "$majmin" ] ||
+	guess_variable GENERATE_UDEV_RULES_FOR_MD_DEVICE "$majmin"
