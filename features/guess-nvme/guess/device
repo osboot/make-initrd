@@ -1,0 +1,22 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[ -e "$SYSFS_PATH$1"/subsystype ] ||
+	exit 0
+
+. guess-functions
+
+subsystype=
+readline subsystype "$SYSFS_PATH$1"/subsystype
+
+if [ "$subsystype" = "nvm" ]; then
+	for syspath in \
+		"$SYSFS_PATH$1"/nvme[0-9] \
+		"$SYSFS_PATH$1"/nvme[0-9][0-9] \
+		"$SYSFS_PATH$1"/nvme[0-9][0-9][0-9] \
+		;
+	do
+		[ ! -L "$syspath" ] ||
+			guess_device "${syspath#$SYSFS_PATH}"
+	done
+fi
