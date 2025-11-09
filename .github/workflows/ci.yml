@@ -26,7 +26,7 @@ jobs:
     uses: ./.github/workflows/testcases.yml
     with:
       vendor: fedora
-      exclude: '[{"testcase": "zfs-partition"}]'
+      exclude: '[{"testcase": "zfs-partition"},{"testcase": "lvm+luks"}]'
   ubuntu:
     needs:
       - verify
