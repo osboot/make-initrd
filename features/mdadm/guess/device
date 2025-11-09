@@ -1,4 +1,4 @@
-#!/bin/bash -efu
+#!/bin/bash -eu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 [ -d "$SYSFS_PATH$1"/md ] ||
@@ -21,6 +21,21 @@ if [ "${metadata_ver:0:9}" = 'external:' ]; then
 	readline container_ver "${SYSFS_PATH}/class/block${container_ver%/*}/md/metadata_version"
 	[ "$container_ver" = 'external:imsm' ] && mod_names+=(efivarfs)
 fi
+
+#
+# As component devices are added to an md array, they appear in the ``md``
+# directory as new directories named::
+#
+#      dev-XXX
+#
+# where ``XXX`` is a name that the kernel knows for the device, e.g. hdb1.
+#
+# https://web.git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/Documentation/admin-guide/md.rst:470
+#
+for d in "$SYSFS_PATH$1"/md/dev-*; do
+	[ ! -e "$d/block" ] ||
+		guess_device "${d#$SYSFS_PATH}/block"
+done
 
 if [ -n "${RESOLVE_MODALIAS-}" ]; then
 	depinfo \
