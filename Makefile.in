@@ -187,7 +187,7 @@ verify:
 	done; exit $$rc; \
 
 verify: SHELLCHECK_DIRS = features guess tools $(utils_srcdir)
-verify: SHELLCHECK_EXCLUDE = SC1003,SC1090,SC1091,SC2004,SC2006,SC2015,SC2034,SC2086,SC2154,SC2295,SC2317
+verify: SHELLCHECK_EXCLUDE = SC1003,SC1090,SC1091,SC2004,SC2006,SC2015,SC2034,SC2086,SC2154,SC2295,SC2317,SC2329
 
 UNITTEST_DIRS = $(sort \
 			$(foreach 1, guess features runtime mk utils testing, \
