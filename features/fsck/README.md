@@ -7,3 +7,7 @@ appear that cannot be fixed, a shell will be opened for repair.
 ## Boot parameters
 
 - `no-fsck`, `fastboot` disables fsck execution.
+
+## Parameters
+
+- **FSCK_ARGS** -- Specifies fsck arguments. By default `-p`.

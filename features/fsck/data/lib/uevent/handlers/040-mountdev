@@ -5,7 +5,6 @@
 . shell-locks
 . shell-source
 
-FSCK_ARGS="-p"
 source_if_exists /etc/sysconfig/fsck
 
 . /etc/init.d/functions
@@ -30,7 +29,7 @@ handler()
 
 	rootdelay_pause
 
-	action "Checking filesystem [$MOUNTDEV]:" fsck -t noloop,noswap -T "$MOUNTDEV" -- $FSCK_ARGS ||
+	action "Checking filesystem [$MOUNTDEV]:" fsck -t noloop,noswap -T "$MOUNTDEV" -- ${FSCK_ARGS-} ||
 		rc=$?
 
 	if [ "$rc" = 0 ] || [ "$rc" = 1 ]; then
