@@ -8,12 +8,14 @@ Features are located in the `features` directory.
 Let's assume the feature name is `mdadm`. In this case, the directory structure
 will be:
 ```
-features/mdadm
+features/<NAME>
  `- README.md
  `- config.mk
  `- rules.mk
  `- pack.mk
  `- data/
+ `- tests/
+ `- guess/
 ```
 
 * README.md - this file contains the documentation of the feature that describes
@@ -24,7 +26,9 @@ features/mdadm
 * rules.mk - this file will be used if the `mdadm` feature is used. In this file
   that the real actions should be described.
 * data/ - this directory contains a piece of initramfs image that you want to
-  put into the image "as is".
+  put into the image "as is" (Optional).
+* tests/ - the directory contains unit tests for the feature (Optional).
+* guess/ - the directory contains a part of the guess subsystem (Optional).
 
 ### config.mk
 
