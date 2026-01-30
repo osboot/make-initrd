@@ -13,4 +13,4 @@ if [ -z "$bootconfig" ] && ! bootconfig="$(type -P bootconfig)"; then
 	exit 0
 fi
 
-$bootconfig -a "$BOOT_CONFIG" "$WORKDIR/initrd.img"
+$bootconfig -a "$BOOT_CONFIG" "$OUTFILE"

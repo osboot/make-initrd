@@ -26,9 +26,13 @@ install$(INSTALL_TARGET_SUFFIX): pack
 	    echo ""; \
 	    exit 1; \
 	fi >&2
-	@$(TOOLSDIR)/show-install-info "$(WORKDIR)/initrd.img"
-	@chmod 600 -- "$(WORKDIR)/initrd.img"
-	@mv -f $(verbose3) -- "$(WORKDIR)/initrd.img" "$(IMAGEFILE)"
+	@if [ -f "$(FIRSTCPIO)" ]; then \
+	    cat "$(FIRSTCPIO)" "$(OUTFILE)" > "$(OUTFILE)".x; \
+	    mv -f -- "$(OUTFILE)".x "$(OUTFILE)"; \
+	fi
+	@$(TOOLSDIR)/show-install-info "$(OUTFILE)"
+	@chmod 600 -- "$(OUTFILE)"
+	@mv -f $(verbose3) -- "$(OUTFILE)" "$(IMAGEFILE)"
 	@echo "$(IMAGEFILE)" >> "$(TEMPDIR)/images"
 
 genimage: install

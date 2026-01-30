@@ -6,6 +6,10 @@ PUT_FEATURE_PROGS += $(UKI_PROGS)
 UKI_EFI_INTERNAL_IMAGE := $(WORKDIR)/linux.efi
 
 pack-uki: pack $(call if-active-feature,ucode compress bootconfig)
+	@if [ -f "$(FIRSTCPIO)" ]; then \
+	    cat "$(FIRSTCPIO)" "$(OUTFILE)" > "$(OUTFILE)".x; \
+	    mv -f -- "$(OUTFILE)".x "$(OUTFILE)"; \
+	fi
 	@$(VMSG) "Packing UKI image ..."
 	@$(FEATURESDIR)/uki/bin/pack-uki
 

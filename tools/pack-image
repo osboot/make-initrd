@@ -3,11 +3,21 @@
 
 . sh-functions
 
-cd "$ROOTDIR"
+pack_cpio()
+{
+	cd "$1"
 
-find -P . -type f -execdir touch -c -m --date="1970-01-01 00:00:00 +0000" '{}' '+'
+	find -P . -type f -execdir touch -c -m --date="1970-01-01 00:00:00 +0000" '{}' '+'
 
-# shellcheck disable=SC2185
-find -O2 . -mindepth 1 -print0 |
-	sort -z |
-	cpio --null --quiet --create --format=newc --reproducible > "$OUTFILE"
+	# shellcheck disable=SC2185
+	find -O2 . -mindepth 1 -print0 |
+		sort -z |
+		cpio --null --quiet --create --format=newc --reproducible
+
+	cd - >/dev/null
+}
+
+[ ! -d "$FIRSTCPIODIR" ] ||
+	pack_cpio "$FIRSTCPIODIR" > "$FIRSTCPIO"
+
+pack_cpio "$ROOTDIR" > "$OUTFILE"

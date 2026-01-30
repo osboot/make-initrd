@@ -20,6 +20,9 @@ endif
 WORKDIR_SUFFIX	?= work
 WORKDIR		 = $(TEMPDIR)/$(KERNEL).$(WORKDIR_SUFFIX)
 
+# This is a special service cpio for updating firmware.
+FIRSTCPIODIR	= $(WORKDIR)/firstcpio
+
 # This is the root directory of the image.
 ROOTDIR		 = $(WORKDIR)/img
 
@@ -43,6 +46,7 @@ DATADIR		:= @datadir@
 LIBDIR		:= @libdir@
 SYSFS_PATH	?= /sys
 PROCFS_PATH	?= /proc
+FIRSTCPIO	:= $(WORKDIR)/first.cpio
 OUTFILE		:= $(WORKDIR)/initrd.img
 
 BIN_FEATURESDIR := @execdir@/features
