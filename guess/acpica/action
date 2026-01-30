@@ -1,0 +1,12 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. guess-functions
+
+$TRACE_SOURCE "Processing ..."
+
+[ -f "$KERNEL_CONFIG" ] &&
+grep -E -qs "^CONFIG_ACPI_TABLE_UPGRADE=y" "$KERNEL_CONFIG" ||
+	exit 0
+
+guess_feature "acpica"
