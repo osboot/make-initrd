@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 MAKE_INITRD_PACKAGES="app-alternatives/cpio app-arch/tar dev-build/make"
-MAKE_INITRD_PACKAGES+=" dev-libs/elfutils net-libs/libtirpc sys-apps/coreutils"
+MAKE_INITRD_PACKAGES+=" dev-libs/elfutils net-libs/libtirpc" # sys-apps/coreutils
 MAKE_INITRD_PACKAGES+=" sys-apps/findutils sys-apps/grep sys-apps/kmod sys-apps/util-linux"
 MAKE_INITRD_PACKAGES+=" virtual/libcrypt:= virtual/udev app-arch/bzip2 app-arch/xz-utils"
 MAKE_INITRD_PACKAGES+=" app-text/scdoc sys-libs/zlib app-arch/zstd dev-libs/json-c"
