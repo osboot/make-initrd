@@ -1,6 +1,10 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+. shell-source
+
+source_if_exists /etc/sysconfig/luks-nuker
+
 if [ -z "${__dialog_sh_functions-}" ]; then
 __dialog_sh_functions=1
 
@@ -103,6 +107,8 @@ dialog_ask_pass()
 	{
 		printf '#!/bin/bash\n'
 		printf 'exec '
+		! type -P luks-nuker >/dev/null ||
+			printf 'luks-nuker %b | ' "${LUKS_NUKER_ARGS-} --redirect"
 		printf ' %q' "$@"
 	} > "$cmdwrapper"
 	chmod +x "$cmdwrapper"
