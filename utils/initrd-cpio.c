@@ -118,7 +118,8 @@ read_cpio(struct cpio *a)
 		if (offset > a->size)
 			errx(EXIT_FAILURE, "cpio entry exceeds archive size");
 
-		if (h->name && !memcmp(h->name, CPIO_TRAILER, strlen(CPIO_TRAILER))) {
+		if (h->name && h->name_len >= strlen(CPIO_TRAILER) + 1 &&
+		    !memcmp(h->name, CPIO_TRAILER, strlen(CPIO_TRAILER))) {
 			list_shift(&a->headers);
 			while (offset % 512) {
 				offset++;
