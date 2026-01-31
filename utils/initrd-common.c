@@ -18,7 +18,7 @@ list_append(struct list_tail **head, size_t size)
 	e->data = NULL;
 
 	if (size > 0) {
-		if ((e->data = malloc(size)) == NULL)
+		if ((e->data = calloc(1, size)) == NULL)
 			goto err;
 	}
 
@@ -54,17 +54,23 @@ list_shift(struct list_tail **head)
 		l = l->next;
 	}
 
-	if (l) {
+	if (!l)
+		return;
+
+	/* single-element list */
+	if (p == l) {
 		if (l->data)
 			free(l->data);
 		free(l);
+		*head = NULL;
+		return;
 	}
 
-	if (p)
-		p->next = NULL;
-
-	if (p == l)
-		*head = NULL;
+	/* multi-element list */
+	if (l->data)
+		free(l->data);
+	free(l);
+	p->next = NULL;
 }
 
 void
