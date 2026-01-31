@@ -112,9 +112,11 @@ stream:
 
 bootconfig:
 	hdr = (uint32_t *)(data - 8);
-	size = le32toh(hdr[0]);
-	//csum = le32toh(hdr[1]);
 
+	uint32_t size_le;
+	memcpy(&size_le, &hdr[0], sizeof(size_le));
+
+	size = le32toh(size_le);
 	data = ((void *)hdr) - size;
 
 	if (size > arv->size)
