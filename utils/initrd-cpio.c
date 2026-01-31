@@ -111,7 +111,14 @@ read_cpio(struct cpio *a)
 
 		parse_header(a->raw + offset, h);
 
+		if (h->name_len == 0)
+			errx(EXIT_FAILURE, "invalid cpio name length");
+
 		offset += CPIO_HEADER_SIZE;
+
+		if (offset + N_ALIGN(h->name_len) + h->body_len > a->size)
+			errx(EXIT_FAILURE, "cpio entry exceeds archive size");
+
 		offset += N_ALIGN(h->name_len) + h->body_len;
 		offset = (offset + 3) & ~3UL;
 
