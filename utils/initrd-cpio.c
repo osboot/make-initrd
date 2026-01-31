@@ -134,7 +134,7 @@ read_cpio(struct cpio *a)
 static unsigned long
 push_hdr(const char *s, unsigned long offset, FILE *output)
 {
-	fputs(s, output);
+	fwrite(s, 1, CPIO_HEADER_SIZE, output);
 	offset += CPIO_HEADER_SIZE;
 	return offset;
 }
@@ -145,7 +145,7 @@ push_rest(const char *name, unsigned long offset, FILE *output)
 	size_t name_len = strlen(name) + 1;
 	size_t tmp_ofs;
 
-	fputs(name, output);
+	fwrite(name, 1, name_len - 1, output);
 	fputc(0, output);
 	offset += name_len;
 
@@ -163,7 +163,7 @@ push_string(const char *name, unsigned long offset, FILE *output)
 {
 	size_t name_len = strlen(name) + 1;
 
-	fputs(name, output);
+	fwrite(name, 1, name_len - 1, output);
 	fputc(0, output);
 	offset += name_len;
 	return offset;
@@ -184,7 +184,8 @@ write_cpio(struct cpio_header *data, unsigned long offset, FILE *output)
 {
 	char s[256];
 
-	sprintf(s, "%s%08lX%08X%08lX%08lX%08lX%08lX"
+	snprintf(s, sizeof(s),
+	        "%s%08lX%08X%08lX%08lX%08lX%08lX"
 	        "%08lX%08lX%08lX%08lX%08lX%08lX%08X",
 	        CPIO_FORMAT_NEWASCII, /* magic */
 	        data->ino,            /* ino */
