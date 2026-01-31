@@ -51,7 +51,7 @@ gunzip(unsigned char *in, unsigned long in_size,
 		have = CHUNK - strm.avail_out;
 
 		*out_size += have;
-		*out = realloc(*out, sizeof(unsigned char *) * (*out_size));
+		*out = realloc(*out, *out_size);
 
 		if (*out == NULL)
 			err(EXIT_FAILURE, "ERROR: %s: %d: realloc", __FILE__, __LINE__);
