@@ -103,6 +103,10 @@ read_cpio(struct cpio *a)
 		e = list_append(&a->headers, sizeof(struct cpio_header));
 		if (e == NULL)
 			err(EXIT_FAILURE, "unable to add element to list");
+
+		if (offset + CPIO_HEADER_SIZE > a->size)
+			errx(EXIT_FAILURE, "cpio header exceeds archive size");
+
 		h = e->data;
 
 		parse_header(a->raw + offset, h);
@@ -110,6 +114,9 @@ read_cpio(struct cpio *a)
 		offset += CPIO_HEADER_SIZE;
 		offset += N_ALIGN(h->name_len) + h->body_len;
 		offset = (offset + 3) & ~3UL;
+
+		if (offset > a->size)
+			errx(EXIT_FAILURE, "cpio entry exceeds archive size");
 
 		if (h->name && !memcmp(h->name, CPIO_TRAILER, strlen(CPIO_TRAILER))) {
 			list_shift(&a->headers);
