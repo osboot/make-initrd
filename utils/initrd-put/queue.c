@@ -37,8 +37,17 @@ struct file *enqueue_item(const char *str, ssize_t len)
 	if (exclude_match_nr) {
 		char buf[PATH_MAX + 1];
 
-		strncpy(buf, str, (len <= 0 ? PATH_MAX : (size_t) len));
-		buf[(len <= 0 ? PATH_MAX : len) + 1]  = 0;
+		if (len > 0) {
+			size_t n = (size_t) len;
+
+			if (n > PATH_MAX)
+				n = PATH_MAX;
+
+			memcpy(buf, str, n);
+			buf[n] = '\0';
+		} else {
+			strlcpy(buf, str, sizeof(buf));
+		}
 
 		for (size_t i = 0; i < exclude_match_nr; i++) {
 			if (!regexec(&exclude_match[i], buf, 0, NULL, 0)) {
