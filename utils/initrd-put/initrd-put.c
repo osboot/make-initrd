@@ -118,11 +118,11 @@ int mksock(const char *path)
 	int ret = -1;
 
 	errno = EINVAL;
-	if (strlen(path) < sizeof(sun)) {
+	if (strlen(path) < sizeof(sun.sun_path)) {
 		int fd = -1;
 
 		sun.sun_family = AF_UNIX;
-		strcpy(sun.sun_path, path);
+		strlcpy(sun.sun_path, path, sizeof(sun.sun_path));
 
 		if ((fd = socket(PF_UNIX, SOCK_STREAM, 0)) >= 0 &&
 		    !bind(fd, (struct sockaddr *) &sun, sizeof(sun))) {
@@ -498,7 +498,10 @@ void install_file(struct file *p)
 			break;
 	}
 
-	strncpy(install_path + destdir_len, p->dst, sizeof(install_path) - destdir_len - 1);
+	size_t avail = sizeof(install_path) - destdir_len;
+
+	if (strlcpy(install_path + destdir_len, p->dst, avail) >= avail)
+		errx(EXIT_FAILURE, "destination path too long: %s", p->dst);
 
 	errno = 0;
 	if (force && (S_IFDIR != (p->stat.st_mode & S_IFMT)) &&
@@ -691,7 +694,10 @@ fallback_readwrite:
 
 void apply_permissions(struct file *p)
 {
-	strncpy(install_path + destdir_len, p->dst, sizeof(install_path) - destdir_len - 1);
+	size_t avail = sizeof(install_path) - destdir_len;
+
+	if (strlcpy(install_path + destdir_len, p->dst, avail) >= avail)
+		errx(EXIT_FAILURE, "destination path too long: %s", p->dst);
 
 	errno = 0;
 	if (lchown(install_path, p->stat.st_uid, p->stat.st_gid) < 0) {
@@ -833,8 +839,10 @@ int main(int argc, char **argv)
 		enqueue_canonicalized_path(argv[i], true);
 	}
 
-	strncpy(install_path, destdir, sizeof(install_path) - 1);
-	install_path[destdir_len] = 0;
+	size_t avail = sizeof(install_path);
+
+	if (strlcpy(install_path, destdir, avail) >= avail)
+		errx(EXIT_FAILURE, "destination path too long: %s", destdir);
 
 	for (struct file *queue = get_queue(NULL); queue; queue = get_queue(NULL)) {
 		while (queue != NULL) {
@@ -853,8 +861,10 @@ int main(int argc, char **argv)
 
 			if (!force) {
 				struct stat st;
+				avail = sizeof(install_path) - destdir_len;
 
-				strncpy(install_path + destdir_len, queue->dst, sizeof(install_path) - destdir_len - 1);
+				if (strlcpy(install_path + destdir_len, queue->dst, avail) >= avail)
+					errx(EXIT_FAILURE, "destination path too long: %s", queue->dst);
 
 				errno = 0;
 				if (lstat(install_path, &st) < 0) {
