@@ -17,7 +17,7 @@ handler() {
 
 	# get sshfs root from dhcp
 	[ "$SSHFSROOT" != 'auto' ] ||
-		SSHFSROOT="$(cat "$net_autoconfdir/ifaces/$INTERFACE/rootpath)")"
+		SSHFSROOT="$(cat "$net_autoconfdir/ifaces/$INTERFACE/rootpath")"
 
 	set -- -o ssh_command=/bin/sshfs-client
 
