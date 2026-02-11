@@ -10,7 +10,7 @@ message_time=1
 handler() {
 	# get nfs root from dhcp
 	if [ "$NFSROOT" = 'auto' ]; then
-		NFSROOT="$(cat "$net_autoconfdir/ifaces/$INTERFACE/rootpath)")"
+		NFSROOT="$(cat "$net_autoconfdir/ifaces/$INTERFACE/rootpath")"
 	else
 	# nfsroot=[<server-ip>:]<root-dir>[,<nfs-options>]
 		[ "${NFSROOT#*,}" = "$NFSROOT" ] || NFSOPTS="${NFSROOT#*,}"
