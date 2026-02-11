@@ -93,7 +93,7 @@ liveimg()
 				ret=1
 			;;
 		*.zip)
-			unzip -d "$ks_rootdir" "$arhive" ||
+			unzip -d "$ks_rootdir" "$archive" ||
 				ret=1
 			;;
 		*.cpio)

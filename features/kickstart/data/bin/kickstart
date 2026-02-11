@@ -205,7 +205,7 @@ ks_valid_block_device()
 		local GENHD_FL_NO_PART_v5_17=$(( 0x0200 ))
 		local GENHD_FL_NO_PART_v6_3=$((  0x0004 ))
 
-		readline attr "$f/capability"
+		readline attr "$syspath/capability"
 
 		# If one of the NO_PART flags is set, part scanning is
 		# definitely off.
