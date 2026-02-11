@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <err.h>
+#include <limits.h>
 
 #include <zstd.h>
 
@@ -26,14 +27,15 @@ unzstd(unsigned char *in, unsigned long in_size,
        unsigned char **out, unsigned long *out_size,
        unsigned long long *inread)
 {
-	void *buff_in, *buff_out;
+	int ret = DECOMP_FAIL;
+	void *buff_in = NULL, *buff_out = NULL;
 	size_t to_read, pos = 0;
 
 	ZSTD_DStream *dstream = ZSTD_createDStream();
 
 	if (!dstream) {
 		warnx("ERROR: %s: %d: ZSTD_createDStream", __FILE__, __LINE__);
-		return DECOMP_FAIL;
+		goto out;
 	}
 
 	to_read  = ZSTD_DStreamInSize();
@@ -59,25 +61,35 @@ unzstd(unsigned char *in, unsigned long in_size,
 			if (ZSTD_isError(to_read)) {
 				warnx("ERROR: %s: %d: ZSTD_decompressStream: %s",
 				      __FILE__, __LINE__, ZSTD_getErrorName(to_read));
-
-				ZSTD_freeDStream(dstream);
-				free(buff_in);
-				free(buff_out);
-
-				return DECOMP_FAIL;
+				goto out;
 			}
 
-			*out = realloc(*out, *out_size + output.pos);
+			if (output.pos > (size_t) ULONG_MAX ||
+			    *out_size > ULONG_MAX - (unsigned long) output.pos) {
+				warnx("ERROR: %s: %d: output too large", __FILE__, __LINE__);
+				goto out;
+			}
+
+			unsigned long new_size = *out_size + (unsigned long) output.pos;
+			void *new_out = realloc(*out, new_size);
+
+			if (!new_out) {
+				warn("ERROR: %s: %d: realloc", __FILE__, __LINE__);
+				goto out;
+			}
+
+			*out = new_out;
 			memcpy(*out + *out_size, buff_out, output.pos);
-			*out_size += output.pos;
+			*out_size = new_size;
 		}
 	}
 
 	*inread = in_size;
-
-	ZSTD_freeDStream(dstream);
+	ret = DECOMP_OK;
+out:
+	if (dstream)
+		ZSTD_freeDStream(dstream);
 	free(buff_in);
 	free(buff_out);
-
-	return DECOMP_OK;
+	return ret;
 }
