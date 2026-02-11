@@ -39,7 +39,7 @@ done < /etc/fstab > /etc/fstab."$$"
 
 mv /etc/fstab."$$" /etc/fstab
 
-if [ -n "$moount_event_needed" ]; then
+if [ -n "$mount_event_needed" ]; then
 	. /etc/init.d/functions
 	action 'Sending low level mount event:' /lib/uevent/filters/mountdev
 fi
