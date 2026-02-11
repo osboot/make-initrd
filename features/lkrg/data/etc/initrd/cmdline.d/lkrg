@@ -1,2 +1,2 @@
-register_parameter bool NOLKGR
-register_parameter bool NOEARLYLKGR
+register_parameter bool NOLKRG
+register_parameter bool NOEARLYLKRG
