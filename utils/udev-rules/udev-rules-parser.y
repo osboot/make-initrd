@@ -754,8 +754,13 @@ int rules_readdir(const char *dir, struct rules_state *state)
 		if ((len <= 6) || strcmp(ent->d_name + (len - 6), ".rules"))
 			continue;
 
-		if (sprintf(filename, "%s/%s", dir, ent->d_name) < 0) {
-			warn("sprintf");
+		int n = snprintf(filename, sizeof(filename), "%s/%s", dir, ent->d_name);
+		if (n < 0) {
+			warn("snprintf");
+			continue;
+		}
+		if ((size_t) n >= sizeof(filename)) {
+			warnx("path too long: %s/%s", dir, ent->d_name);
 			continue;
 		}
 
