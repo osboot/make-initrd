@@ -89,7 +89,7 @@ void dequeue_item(struct file *ptr)
 	if (ptr->next)
 		ptr->next->prev = ptr->prev;
 	if (inqueue == ptr)
-		inqueue = NULL;
+		inqueue = ptr->next;
 	queue_nr--;
 }
 
