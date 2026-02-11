@@ -9,6 +9,9 @@
 #include <limits.h>
 #include <ctype.h>
 #include <err.h>
+#include <errno.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #include <gelf.h>
 
@@ -16,6 +19,7 @@
 #include "tree.h"
 #include "enqueue.h"
 #include "elf_dlopen.h"
+#include "temp_failure_retry.h"
 
 #ifndef NT_FDO_DLOPEN_METADATA
 # define NT_FDO_DLOPEN_METADATA 0x407c0c0a
@@ -30,6 +34,76 @@ extern int verbose;
 static bool is_dynamic_elf_file(const char *filename, int fd) __attribute__((__nonnull__ (1)));
 static int enqueue_elf_dlopen(const char *filename, int fd) __attribute__((__nonnull__ (1)));
 static int enqueue_shared_libraries(const char *filename) __attribute__((__nonnull__ (1)));
+static FILE *pipe_command(char *const argv[], pid_t *pid_out);
+static int pipe_command_close(FILE *stream, pid_t pid);
+
+static FILE *pipe_command(char *const argv[], pid_t *pid_out)
+{
+	int pipefd[2];
+	pid_t pid;
+	FILE *stream;
+
+	if (!pid_out) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	if (pipe(pipefd) < 0)
+		return NULL;
+
+	pid = fork();
+	if (pid < 0) {
+		close(pipefd[0]);
+		close(pipefd[1]);
+		return NULL;
+	}
+
+	if (pid == 0) {
+		close(pipefd[0]);
+
+		if (dup2(pipefd[1], STDOUT_FILENO) < 0 ||
+		    dup2(pipefd[1], STDERR_FILENO) < 0)
+			_exit(EXIT_FAILURE);
+
+		if (pipefd[1] > STDERR_FILENO)
+			close(pipefd[1]);
+
+		execvp(argv[0], argv);
+		_exit(EXIT_FAILURE);
+	}
+
+	close(pipefd[1]);
+
+	stream = fdopen(pipefd[0], "r");
+	if (!stream) {
+		close(pipefd[0]);
+		(void) TEMP_FAILURE_RETRY(waitpid(pid, NULL, 0));
+		return NULL;
+	}
+
+	*pid_out = pid;
+
+	return stream;
+}
+
+static int pipe_command_close(FILE *stream, pid_t pid)
+{
+	int status;
+	int ret = 0;
+
+	if (pid <= 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (fclose(stream) != 0)
+		ret = -1;
+
+	if (TEMP_FAILURE_RETRY(waitpid(pid, &status, 0)) < 0)
+		ret = -1;
+
+	return ret;
+}
 
 
 bool is_dynamic_elf_file(const char *filename, int fd)
@@ -143,17 +217,17 @@ err:
 
 int enqueue_shared_libraries(const char *filename)
 {
+	int ret = 0;
+	pid_t pid = -1;
 	FILE *pfd;
 	char *line = NULL;
 	size_t len = 0;
 	ssize_t n;
-	char command[PATH_MAX + 10];
+	char *const argv[] = { "ldd", "--", (char *) filename, NULL };
 
-	snprintf(command, sizeof(command), "ldd %s 2>&1", filename);
-
-	pfd = popen(command, "r");
+	pfd = pipe_command(argv, &pid);
 	if (!pfd) {
-		warn("popen(ldd): %s", filename);
+		warn("pipe_command(ldd): %s", filename);
 		return -1;
 	}
 
@@ -193,9 +267,13 @@ int enqueue_shared_libraries(const char *filename)
 	}
 
 	free(line);
-	pclose(pfd);
 
-	return 0;
+	if (pipe_command_close(pfd, pid) < 0) {
+		warn("pipe_command_close(ldd): %s", filename);
+		ret = -1;
+	}
+
+	return ret;
 }
 
 void init_elf_library(void)
