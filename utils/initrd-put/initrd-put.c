@@ -399,7 +399,7 @@ void enqueue_path(struct file *p)
 
 	if (S_IFLNK == (p->stat.st_mode & S_IFMT)) {
 		char symlink[PATH_MAX + 1];
-		ssize_t linklen = readlink(p->src, symlink, sizeof(symlink));
+		ssize_t linklen = readlink(p->src, symlink, sizeof(symlink) - 1);
 
 		if (linklen >= 0) {
 			symlink[linklen] = 0;
