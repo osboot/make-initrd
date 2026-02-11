@@ -25,7 +25,7 @@ static void signal_unhandled_events(struct watch *queue)   __attribute__((nonnul
 void event_handler(struct watch *queue, char *path)
 {
 	char *argv[] = { handler_file, path, NULL };
-	pid_t pid = vfork();
+	pid_t pid = fork();
 
 	if (pid < 0) {
 		rd_err("fork: %m");
