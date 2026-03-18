@@ -20,6 +20,8 @@ jobs:
     strategy:
       matrix:
         testcase:
+          - btrfs-raid1
+          - btrfs-raid1-degraded
           - btrfs-subvol
           - efi-partition
           - efi-reqpartition

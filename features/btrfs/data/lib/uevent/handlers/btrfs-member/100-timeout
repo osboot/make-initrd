@@ -1,0 +1,128 @@
+#!/bin/bash -eu
+
+. shell-error
+. initrd-sh-functions
+. uevent-sh-functions
+. /.initrd/initenv
+
+PROG="${QUEUE:--}: session=${SESSION:-0}: $PROG"
+message_time=1
+
+pidfile="/var/run/$PROG.pid"
+tsfile=/.initrd/btrfs-member-timeout
+delay="${BTRFS_MEMBER_DELAY-}"
+
+for e in "$1"/btrfs-member.*; do
+	done_event "$e" ||:
+done
+
+[ -n "$delay" ] && [ "$delay" -gt 0 ] ||
+	exit 0
+
+now="$(timestamp boottime raw)"
+now="${now%.*}"
+echo "$(($now + $delay))" > "$tsfile"
+
+[ ! -e "$pidfile" ] ||
+	exit 0
+
+btrfs_fstab_entries()
+{
+	local fsdev fsdir fstype fsopts freq passno uuid
+
+	while read -r fsdev fsdir fstype fsopts freq passno; do
+		[ -n "$fsdev" ] || continue
+		case "$fstype" in
+			btrfs|auto) ;;
+			*) continue ;;
+		esac
+
+		case "$fsdev" in
+			UUID=*)
+				uuid="${fsdev#UUID=}"
+				printf '%s %s\n' "$fsdev" "$uuid"
+				;;
+			LABEL=*)
+				uuid="$(blkid -l -o value -s UUID -t "$fsdev" 2>/dev/null)" ||:
+				[ -z "$uuid" ] || printf '%s %s\n' "$fsdev" "$uuid"
+				;;
+		esac
+	done < /etc/fstab
+}
+
+check_btrfs_arrays()
+{
+	local fsdev uuid show total missing need_wait=
+
+	while read -r fsdev uuid; do
+		show="$(btrfs filesystem show "$uuid" 2>/dev/null)" ||
+			continue
+
+		total="$(printf '%s\n' "$show" |
+			sed -n 's/.*Total devices \([0-9]\+\).*/\1/p')"
+
+		[ -n "$total" ] && [ "$total" -gt 1 ] ||
+			continue
+
+		missing="$(printf '%s\n' "$show" | grep -c 'missing' ||:)"
+
+		if [ "${missing:-0}" -gt 0 ]; then
+			need_wait=1
+		fi
+	done < <(btrfs_fstab_entries | sort -u -k2,2)
+
+	[ -n "$need_wait" ]
+}
+
+# No multi-device btrfs in fstab, or all devices already present.
+check_btrfs_arrays ||
+	exit 0
+
+(
+	while :; do
+		now="$(timestamp boottime raw)"
+		now="${now%.*}"
+
+		ts=
+		readline ts "$tsfile"
+
+		[ "$ts" -ge "$now" ] ||
+			break
+		sleep 1
+	done
+
+	# Run a full device scan to resolve any per-device scan race conditions.
+	btrfs device scan ||:
+
+	changed=
+	while read -r fsdev uuid; do
+		show="$(btrfs filesystem show "$uuid" 2>/dev/null)" ||
+			continue
+
+		total="$(printf '%s\n' "$show" |
+			sed -n 's/.*Total devices \([0-9]\+\).*/\1/p')"
+
+		[ -n "$total" ] && [ "$total" -gt 1 ] ||
+			continue
+
+		missing="$(printf '%s\n' "$show" | grep -c 'missing' ||:)"
+
+		if [ "${missing:-0}" -gt 0 ]; then
+			message "btrfs $uuid: $missing of $total device(s) missing, adding degraded mount option"
+
+			# shellcheck disable=SC2016
+			fsdev_escaped="$(printf '%s\n' "$fsdev" | sed 's/[[\.*^$()+?{|]/\\&/g')"
+			if ! grep -qE "^${fsdev_escaped}[[:space:]].*degraded" /etc/fstab; then
+				sed -i "/^${fsdev_escaped}[[:space:]]/s/\(auto\|btrfs\)\([[:space:]]\+\)/btrfs\2degraded,/" /etc/fstab
+				changed=1
+			fi
+		else
+			message "btrfs $uuid: all $total devices present"
+		fi
+	done < <(btrfs_fstab_entries | sort -u -k2,2)
+
+	[ -z "$changed" ] ||
+		rootdelay_reset_timer
+) &
+
+echo "$!" > "$pidfile"

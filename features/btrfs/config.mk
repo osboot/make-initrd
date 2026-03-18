@@ -5,3 +5,6 @@ BTRFS_UDEV_RULES := $(wildcard $(FEATURESDIR)/btrfs/rules.d/*.rules)
 BTRFS_PROGS   = btrfs
 BTRFS_PRELOAD = btrfs
 BTRFS_MODULES = crc32c
+
+BTRFS_DATADIR = \
+	$(FEATURESDIR)/btrfs/data
