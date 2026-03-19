@@ -1,0 +1,9 @@
+#!/bin/bash -efu
+
+. /.initrd/initenv
+. uevent-sh-functions
+
+mkdir -p "$filterdir/btrfs-member/.tmp"
+
+event="$(make_event btrfs-member)"
+release_event btrfs-member "$event"
