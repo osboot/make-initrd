@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 MAKE_INITRD_PACKAGES="app-alternatives/cpio app-arch/tar dev-build/make"
-MAKE_INITRD_PACKAGES+=" dev-libs/elfutils net-libs/libtirpc" # sys-apps/coreutils
+MAKE_INITRD_PACKAGES+=" dev-libs/elfutils net-libs/libtirpc sys-apps/coreutils sys-apps/shadow"
 MAKE_INITRD_PACKAGES+=" sys-apps/findutils sys-apps/grep sys-apps/kmod sys-apps/util-linux"
 MAKE_INITRD_PACKAGES+=" virtual/libcrypt:= virtual/udev app-arch/bzip2 app-arch/xz-utils"
 MAKE_INITRD_PACKAGES+=" app-text/scdoc sys-libs/zlib app-arch/zstd dev-libs/json-c"
@@ -22,7 +22,7 @@ ZFS_PACKAGES=""
 SYSIMAGE_PACKAGES="$MAKE_INITRD_PACKAGES $INIT_PACKAGES"
 SYSIMAGE_PACKAGES+=" app-admin/pwgen sys-fs/mdadm sys-fs/lvm2 sys-fs/cryptsetup"
 SYSIMAGE_PACKAGES+=" sys-fs/btrfs-progs sys-fs/e2fsprogs sys-fs/xfsprogs sys-fs/dosfstools"
-SYSIMAGE_PACKAGES+=" sys-boot/grub"
+SYSIMAGE_PACKAGES+=" sys-boot/grub dev-perl/File-ShareDir-Install"
 SYSIMAGE_PACKAGES+=" $ZFS_PACKAGES"
 
 KICKSTART_PACKAGES="$MAKE_INITRD_PACKAGES_DEVEL $INIT_PACKAGES"

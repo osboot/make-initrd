@@ -110,7 +110,7 @@ jobs:
         run: testing/testing-${{ inputs.vendor }} test-root-${{ matrix.testcase }} run-boot
 
       - name: "Archive Metrics"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: "metrics-${{ inputs.vendor }}-${{ matrix.testcase }}"
           path: testing/status/artifact-*.txt
