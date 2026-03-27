@@ -349,6 +349,17 @@ handler() {
 		message "The keyfile was not found for partition: $LUKS_ROOT"
 		rc=1
 	fi
+	if command -v clevis >/dev/null 2>&1; then
+		message "Сlevis detected."
+		message "Attempting to decrypt the partition using clevis luks..."
+		if [ "$rc" -ne 0 ] && shell_var_is_no "$luks_headless"; then
+			clevis luks unlock -d "$LUKS_ROOT" -n "$luks_volume"
+			rc="$?"
+		fi
+		if [ "$rc" -ne 0 ]; then
+			message "clevis could not decrypt!"
+		fi
+	fi
 
 	if [ "$rc" -ne 0 ] && shell_var_is_no "$luks_headless"; then
 		if shell_var_is_yes "$luks_empty_password"; then
