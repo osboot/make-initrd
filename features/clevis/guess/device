@@ -1,0 +1,30 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[ -d "$SYSFS_PATH$1"/dm ] || exit 0
+command -v clevis >/dev/null 2>&1 || exit 0
+
+. guess-functions
+
+uuid=
+readline uuid "$SYSFS_PATH$1"/dm/uuid
+
+[ -n "$uuid" ] || exit 0
+
+# CRYPT-LUKS1-00000000000000000000000000000000-name
+# CRYPT-LUKS2-00000000000000000000000000000000-name
+if [[ "$uuid" =~ CRYPT-[^-]+-([0-9A-Fa-f]{32})-.* ]]; then
+	raw_uuid="${BASH_REMATCH[1]}"
+else
+	exit 0
+fi
+
+dashed_uuid="${raw_uuid:0:8}-${raw_uuid:8:4}-${raw_uuid:12:4}-${raw_uuid:16:4}-${raw_uuid:20:12}"
+dev="$(findfs UUID="$dashed_uuid")" || exit 0
+dev="$(readlink -ef "$dev" 2>/dev/null || true)"
+
+[ -b "$dev" ] || exit 0
+
+clevis luks list -d "$dev" >/dev/null 2>&1 || exit 0
+
+guess_feature clevis
