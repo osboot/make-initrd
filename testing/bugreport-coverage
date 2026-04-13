@@ -184,12 +184,33 @@ def print_aggregate(title: str, data: dict[str, list[str]]) -> None:
         print(f"      reports: {joined}")
 
 
-def main() -> int:
-    root = repo_root()
-    reports_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else root / ".bugreports"
+def parse_args(argv: list[str]) -> tuple[str, list[Path]]:
+    mode = "directory"
+    args = list(argv)
+
+    if args and args[0] == "--files":
+        mode = "files"
+        args.pop(0)
+        if args and args[0] == "--":
+            args.pop(0)
+
+    if mode == "files":
+        if not args:
+            print("--files requires at least one bugreport path", file=sys.stderr)
+            raise SystemExit(1)
+        return mode, [Path(arg) for arg in args]
+
+    reports_dir = Path(args[0]) if args else repo_root() / ".bugreports"
     if not reports_dir.is_dir():
         print(f"{reports_dir}: not a directory", file=sys.stderr)
-        return 1
+        raise SystemExit(1)
+    return mode, sorted(reports_dir.iterdir())
+
+
+def main() -> int:
+    root = repo_root()
+    mode, report_paths = parse_args(sys.argv[1:])
+    reports_label = "files" if mode == "files" else str(Path(sys.argv[1]) if len(sys.argv) > 1 else root / ".bugreports")
 
     aggregate_sources: dict[str, list[str]] = defaultdict(list)
     aggregate_functions: dict[str, list[str]] = defaultdict(list)
@@ -198,9 +219,9 @@ def main() -> int:
     skipped_reports: list[tuple[str, str]] = []
     failed_reports: list[tuple[str, int, list[str]]] = []
 
-    print(f"Bugreport coverage summary for {reports_dir}\n")
+    print(f"Bugreport coverage summary for {reports_label}\n")
 
-    for src in sorted(reports_dir.iterdir()):
+    for src in report_paths:
         with tempfile.TemporaryDirectory() as tmp:
             tmpdir = Path(tmp)
             extracted = tmpdir / "input"
