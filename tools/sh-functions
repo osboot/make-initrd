@@ -144,8 +144,50 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 		__is_traceable "$src" ${MAKE_INITRD_TRACE_EXECUTE_PATTERNS-}
 	}
 
+	__trace_normalize_source() {
+		local src="$1"
+
+		src="${src#${PROJECTDIR}/}"
+		src="${src#${TOPDIR}/}"
+
+		printf '%s\n' "$src"
+	}
+
+	__trace_get_source() {
+		local i src policy trace_lib
+
+		policy="${MAKE_INITRD_TRACE_SOURCE_POLICY:-top}"
+		trace_lib="${BASH_SOURCE[0]}"
+
+		case "$policy" in
+			top)
+				for (( i=${#BASH_SOURCE[@]} - 1; i >= 0; i-- )); do
+					src="${BASH_SOURCE[$i]}"
+					[ -n "$src" ] || continue
+					[ "$src" != "$trace_lib" ] || continue
+					__trace_normalize_source "$src"
+					return 0
+				done
+				;;
+			current)
+				for (( i=1; i < ${#BASH_SOURCE[@]}; i++ )); do
+					src="${BASH_SOURCE[$i]}"
+					[ -n "$src" ] || continue
+					[ "$src" != "$trace_lib" ] || continue
+					__trace_normalize_source "$src"
+					return 0
+				done
+				;;
+			*)
+				fatal "Unsupported trace source policy: $policy"
+				;;
+		esac
+
+		__trace_normalize_source "${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}"
+	}
+
 	__trace_debug_filtered() {
-		local n reason depth src funcs entity format payload text_payload
+		local reason depth src funcs entity format payload text_payload
 
 		[ -z "${MAKE_INITRD_TRACE_DEBUG_FILTERS-}" ] &&
 			return 0
@@ -156,10 +198,7 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 		entity="$1"; shift
 		format="${MAKE_INITRD_TRACE_FORMAT:-text}"
 		payload="$*"
-
-		n="$(( ${#BASH_SOURCE[@]} - 1 ))"
-		src="${BASH_SOURCE[$n]#${PROJECTDIR}/}"
-		src="${BASH_SOURCE[$n]#${TOPDIR}/}"
+		src="$(__trace_get_source)"
 
 		[ -z "${MAKE_INITRD_TRACE_TIMESTAMP-}" ] ||
 			msg-timestamp -n >&2
@@ -193,7 +232,7 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 	}
 
 	__trace_print() {
-		local n kind depth src funcs entity format payload text_payload
+		local kind depth src funcs entity format payload text_payload
 
 		kind="$1"; shift
 		depth="$1"; shift
@@ -201,10 +240,7 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 		entity="$1"; shift
 		format="${MAKE_INITRD_TRACE_FORMAT:-text}"
 		payload="$*"
-
-		n="$(( ${#BASH_SOURCE[@]} - 1 ))"
-		src="${BASH_SOURCE[$n]#${PROJECTDIR}/}"
-		src="${BASH_SOURCE[$n]#${TOPDIR}/}"
+		src="$(__trace_get_source)"
 
 		local GLOBIGNORE='.*:*'
 
@@ -256,11 +292,9 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 	}
 
 	trace_source() {
-		local n src
+		local src
 
-		n="$(( ${#BASH_SOURCE[@]} - 1 ))"
-		src="${BASH_SOURCE[$n]#${PROJECTDIR}/}"
-		src="${BASH_SOURCE[$n]#${TOPDIR}/}"
+		src="$(__trace_get_source)"
 
 		if ! __trace_source_enabled "$src"; then
 			__trace_debug_filtered "execute-patterns" \
