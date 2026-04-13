@@ -93,6 +93,7 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 	TRACE_KIND_RUN=1
 	TRACE_KIND_SOURCE=2
 	TRACE_KIND_RESOLVE_MODALIAS=3
+	TRACE_KIND_FILTERED=4
 
 	TRACE_KINDS=()
 	TRACE_KINDS_LEN=0
@@ -101,6 +102,7 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 	TRACE_KINDS[$TRACE_KIND_RUN]="run"
 	TRACE_KINDS[$TRACE_KIND_SOURCE]="execute"
 	TRACE_KINDS[$TRACE_KIND_RESOLVE_MODALIAS]="modules"
+	TRACE_KINDS[$TRACE_KIND_FILTERED]="filtered"
 
 	for i in "${TRACE_KINDS[@]}"; do
 		[ $TRACE_KINDS_LEN -ge ${#i} ] ||
@@ -142,6 +144,54 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 		__is_traceable "$src" ${MAKE_INITRD_TRACE_EXECUTE_PATTERNS-}
 	}
 
+	__trace_debug_filtered() {
+		local n reason depth src funcs entity format payload text_payload
+
+		[ -z "${MAKE_INITRD_TRACE_DEBUG_FILTERS-}" ] &&
+			return 0
+
+		reason="$1"; shift
+		depth="$1"; shift
+		funcs="$1"; shift
+		entity="$1"; shift
+		format="${MAKE_INITRD_TRACE_FORMAT:-text}"
+		payload="$*"
+
+		n="$(( ${#BASH_SOURCE[@]} - 1 ))"
+		src="${BASH_SOURCE[$n]#${PROJECTDIR}/}"
+		src="${BASH_SOURCE[$n]#${TOPDIR}/}"
+
+		[ -z "${MAKE_INITRD_TRACE_TIMESTAMP-}" ] ||
+			msg-timestamp -n >&2
+
+		case "$format" in
+			tsv)
+				printf >&2 \
+					'TRACE\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+					"${TRACE_KINDS[$TRACE_KIND_FILTERED]}" \
+					"${MAKE_INITRD_TRACE_PIDS:+$BASHPID}" \
+					"$depth" \
+					"$src" \
+					"$funcs" \
+					"$entity" \
+					"$reason${payload:+: $payload}"
+				;;
+			text|'')
+				text_payload="$reason"
+				[ -z "$entity" ] || text_payload="$text_payload: $entity"
+				[ -z "$payload" ] || text_payload="$text_payload $payload"
+				printf >&2 \
+					'TRACE %-'${TRACE_KINDS_LEN}'s:%s source=%s: %s: %s\n' \
+					"${TRACE_KINDS[$TRACE_KIND_FILTERED]}" \
+					"${MAKE_INITRD_TRACE_PIDS:+ pid=$BASHPID:}" \
+					"$src" "$funcs" "$text_payload"
+				;;
+			*)
+				fatal "Unsupported trace format: $format"
+				;;
+		esac
+	}
+
 	__trace_print() {
 		local n kind depth src funcs entity format payload text_payload
 
@@ -158,11 +208,17 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 
 		local GLOBIGNORE='.*:*'
 
-		__trace_source_enabled "$src" ||
+		if ! __trace_source_enabled "$src"; then
+			__trace_debug_filtered "execute-patterns" \
+				"$depth" "$funcs" "$entity" "$payload"
 			return 0
+		fi
 
-		__is_traceable "$src" ${MAKE_INITRD_TRACE_SRC_PATTERNS-} ||
+		if ! __is_traceable "$src" ${MAKE_INITRD_TRACE_SRC_PATTERNS-}; then
+			__trace_debug_filtered "source-patterns" \
+				"$depth" "$funcs" "$entity" "$payload"
 			return 0
+		fi
 
 		[ -z "${MAKE_INITRD_TRACE_TIMESTAMP-}" ] ||
 			msg-timestamp -n >&2
@@ -206,8 +262,11 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 		src="${BASH_SOURCE[$n]#${PROJECTDIR}/}"
 		src="${BASH_SOURCE[$n]#${TOPDIR}/}"
 
-		__trace_source_enabled "$src" ||
+		if ! __trace_source_enabled "$src"; then
+			__trace_debug_filtered "execute-patterns" \
+				0 "main" "" "$*"
 			return 0
+		fi
 
 		__trace_print $TRACE_KIND_SOURCE \
 			0 "main" "" "$*"
@@ -235,8 +294,11 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 
 		local GLOBIGNORE='.*:*'
 
-		__is_traceable "$func" ${MAKE_INITRD_TRACE_FUNC_PATTERNS-} ||
+		if ! __is_traceable "$func" ${MAKE_INITRD_TRACE_FUNC_PATTERNS-}; then
+			__trace_debug_filtered "function-patterns" \
+				"${#TRACE_FUNCNAMES[@]}" "${TRACE_FUNCNAMES[*]} $func" "$func" "$*"
 			return 0
+		fi
 
 		__trace_print $TRACE_KIND_ENTER \
 			"${#TRACE_FUNCNAMES[@]}" "${TRACE_FUNCNAMES[*]} $func" "$func" "$*"
@@ -266,6 +328,11 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 		if __is_traceable "$cmdname" ${MAKE_INITRD_TRACE_RUN_PATTERNS-}; then
 			GLOBIGNORE="$prev_GLOBIGNORE"
 			__trace_print $TRACE_KIND_RUN \
+				"$(( ${#TRACE_FUNCNAMES[@]} - 1 ))" \
+				"${TRACE_FUNCNAMES[*]}" "$cmdname" "$*"
+		elif [ -n "${MAKE_INITRD_TRACE_DEBUG_FILTERS-}" ]; then
+			GLOBIGNORE="$prev_GLOBIGNORE"
+			__trace_debug_filtered "run-patterns" \
 				"$(( ${#TRACE_FUNCNAMES[@]} - 1 ))" \
 				"${TRACE_FUNCNAMES[*]}" "$cmdname" "$*"
 		fi

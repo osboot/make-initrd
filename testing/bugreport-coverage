@@ -127,7 +127,9 @@ def trace_sources(output: str) -> list[str]:
         fields = line.split("\t", 7)
         if len(fields) != 8:
             continue
-        _, _kind, _pid, _depth, source, _funcs, _entity, _details = fields
+        _, kind, _pid, _depth, source, _funcs, _entity, _details = fields
+        if kind == "filtered":
+            continue
         found.add(source)
     return sorted(found)
 
