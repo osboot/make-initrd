@@ -11,9 +11,9 @@ export LIBMOUNT_MTAB="${PROC_MOUNTS:-$PROCFS_PATH/mounts}"
 
 if [ "${MAKE_INITRD_BUG_REPORT-}" = 1 ]; then
 
-BLKID_OUT="/etc/blkid.out"
-LIST_FILE="/dev/list"
-DEVLIST_FILE="/dev/devlist"
+BLKID_OUT="${BLKID_OUT:-/etc/blkid.out}"
+LIST_FILE="${LIST_FILE:-/dev/list}"
+DEVLIST_FILE="${DEVLIST_FILE:-/dev/devlist}"
 
 unquote()
 {
@@ -184,7 +184,7 @@ fi	# MAKE_INITRD_BUG_REPORT
 
 MORE_MOUNTPOINTS="/"
 
-if mountpoint -q /usr; then
+if [ "$(sys_findmnt -n -o TARGET -T /usr 2>/dev/null ||:)" = /usr ]; then
 	MORE_MOUNTPOINTS+=" /usr"
 fi
 

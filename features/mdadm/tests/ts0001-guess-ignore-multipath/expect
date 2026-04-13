@@ -1,4 +1,3 @@
-mi-bug-report: WARNING: There are no modules in the directory: /lib/modules/6.6.41-un-def-alt0.p11.1/kernel
 RUN: guess/root/action
 TRACE function: source=features/mdadm/guess/device: main guess_variable: MDADM_EXTRA_PROGS mdmon
 TRACE function: source=features/mdadm/guess/device: main guess_device: /devices/virtual/block/md126/md/dev-nvme0n1/block

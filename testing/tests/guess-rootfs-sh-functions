@@ -1,0 +1,55 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+guess_rootfs_setup()
+{
+	local archive="$1"
+
+	GUESS_ROOTFS_WORKDIR="$(mktemp -d)"
+	trap 'rm -rf -- "$GUESS_ROOTFS_WORKDIR"' EXIT
+
+	mkdir -p -- "$GUESS_ROOTFS_WORKDIR/root"
+	tar --strip-components=1 --no-same-owner -xf "$archive" -C "$GUESS_ROOTFS_WORKDIR/root"
+
+	guess_rootfs_setup_dir \
+		"$GUESS_ROOTFS_WORKDIR/root" \
+		"$GUESS_ROOTFS_WORKDIR/modules"
+}
+
+guess_rootfs_setup_dir()
+{
+	local rootdir="$1"
+	local modulesdir="${2:-$rootdir/lib/modules}"
+
+	mkdir -p -- "$modulesdir/kernel" "$rootdir/etc"
+	[ -f "$rootdir/etc/initrd.mk" ] ||
+		printf 'AUTODETECT = all\n' > "$rootdir/etc/initrd.mk"
+
+	export PATH="$PWD/.build/dest/usr/bin:$PWD/.build/dest/usr/sbin:$PATH"
+
+	export MAKE_INITRD_BUG_REPORT=2
+	export MAKE_INITRD_TESTING=1
+	export PROCFS_PATH="$rootdir/proc"
+	export SYSFS_PATH="$rootdir/sys"
+	export FSTAB="$rootdir/etc/fstab"
+	export INITRD_CONFIG_LIST="$rootdir/etc/initrd.mk"
+	export FINDMNT_STATE_FILE="$rootdir/etc/findmnt.out1"
+	export BLKID_STATE_FILE="$rootdir/etc/blkid.out1"
+	export DEVLIST_FILE="$rootdir/dev/devlist"
+	export KERNEL_MODULES_DIR="$modulesdir"
+}
+
+guess_rootfs_run_test()
+{
+	local make_initrd_args=()
+
+	guess_rootfs_setup "$1"
+	shift
+
+	[ "$#" -eq 0 ] || make_initrd_args=("$@")
+
+	.build/dest/usr/sbin/make-initrd \
+		--no-checks --no-depmod \
+		"${make_initrd_args[@]}" \
+		test-guess
+}

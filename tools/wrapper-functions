@@ -8,6 +8,7 @@ __included_make_initrd_sh_wrapper_functions=1
 
 FINDMNT_STATE_FILE="${FINDMNT_STATE_FILE:-/etc/findmnt.out1}"
 BLKID_STATE_FILE="${BLKID_STATE_FILE:-/etc/blkid.out1}"
+DEVLIST_FILE="${DEVLIST_FILE:-/dev/devlist}"
 
 __fake_find_mountpoint()
 {
@@ -277,7 +278,7 @@ sys_blkid()
 is_block_device()
 {
 	if [ -n "${MAKE_INITRD_BUG_REPORT-}" ]; then
-		grep -qs -e "^b.* $1\$" /dev/devlist
+		grep -qs -e "^b.* $1\$" "$DEVLIST_FILE"
 		return $?
 	fi
 	test -b "$1"

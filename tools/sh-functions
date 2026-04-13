@@ -39,6 +39,20 @@ fi
 get_majmin() {
 	local v devnode
 
+	if [ -n "${MAKE_INITRD_BUG_REPORT-}" ]; then
+		while read -r perm maj min dev; do
+			case "$perm" in
+				[bc]*)
+					[ "$1" = "$dev" ] ||
+						continue
+					printf '%d:%d\n' "0x$maj" "0x$min"
+					return 0
+					;;
+			esac
+		done < "${DEVLIST_FILE:-/dev/devlist}"
+		return 1
+	fi
+
 	devnode="$(readlink -ev "$1" 2>/dev/null)" ||
 		return 1
 
