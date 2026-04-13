@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -94,6 +93,7 @@ def run_replay(report_root: Path, kernel: str | None, modules_dir: Path) -> tupl
             "RESOLVE_MODALIAS": "",
             "KERNEL_CONFIG": "/dev/null",
             "MAKE_INITRD_TRACE": "1",
+            "MAKE_INITRD_TRACE_FORMAT": "tsv",
             "MAKE_INITRD_TRACE_PIDS": "",
             "MAKE_INITRD_TRACE_EXECUTE_PATTERNS": "guess/root/action",
             "MAKE_INITRD_TRACE_SRC_PATTERNS": "features/*/guess/* guess/root/action",
@@ -122,9 +122,12 @@ def run_replay(report_root: Path, kernel: str | None, modules_dir: Path) -> tupl
 def trace_sources(output: str) -> list[str]:
     found = set()
     for line in output.splitlines():
-        match = re.search(r"source=([^:]+):", line)
-        if match:
-            found.add(match.group(1))
+        if not line.startswith("TRACE\t"):
+            continue
+        fields = line.split("\t", 5)
+        if len(fields) < 5:
+            continue
+        found.add(fields[3])
     return sorted(found)
 
 

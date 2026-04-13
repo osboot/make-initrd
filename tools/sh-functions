@@ -134,10 +134,11 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 	}
 
 	__trace_print() {
-		local n kind src funcs
+		local n kind src funcs format
 
 		kind="$1"; shift
 		funcs="$1"; shift
+		format="${MAKE_INITRD_TRACE_FORMAT:-text}"
 
 		n="$(( ${#BASH_SOURCE[@]} - 1 ))"
 		src="${BASH_SOURCE[$n]#${PROJECTDIR}/}"
@@ -158,9 +159,25 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 		[ -z "${MAKE_INITRD_TRACE_TIMESTAMP-}" ] ||
 			msg-timestamp -n >&2
 
-		printf >&2 \
-			'TRACE %-'${TRACE_KINDS_LEN}'s:%s source=%s: %s: %s\n' \
-			"${TRACE_KINDS[$kind]}" "${MAKE_INITRD_TRACE_PIDS:+ pid=$BASHPID:}" "$src" "$funcs" "$*"
+		case "$format" in
+			tsv)
+				printf >&2 \
+					'TRACE\t%s\t%s\t%s\t%s\t%s\n' \
+					"${TRACE_KINDS[$kind]}" \
+					"${MAKE_INITRD_TRACE_PIDS:+$BASHPID}" \
+					"$src" \
+					"$funcs" \
+					"$*"
+				;;
+			text|'')
+				printf >&2 \
+					'TRACE %-'${TRACE_KINDS_LEN}'s:%s source=%s: %s: %s\n' \
+					"${TRACE_KINDS[$kind]}" "${MAKE_INITRD_TRACE_PIDS:+ pid=$BASHPID:}" "$src" "$funcs" "$*"
+				;;
+			*)
+				fatal "Unsupported trace format: $format"
+				;;
+		esac
 	}
 
 	trace_source() {
