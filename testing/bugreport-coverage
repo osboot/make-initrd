@@ -1,0 +1,217 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+from __future__ import annotations
+
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+from collections import defaultdict
+from pathlib import Path
+
+sys.stdout.reconfigure(line_buffering=True)
+
+
+REQUIRED_PATHS = (
+    "dev/devlist",
+    "dev/list",
+    "etc/blkid.out1",
+    "etc/findmnt.out1",
+    "etc/fstab",
+    "proc/filesystems",
+    "proc/mounts",
+    "sys",
+)
+
+
+def repo_root() -> Path:
+    return Path(__file__).resolve().parent.parent
+
+
+def find_report_root(base: Path) -> Path | None:
+    for candidate in (base / "report", base):
+        if all((candidate / rel).exists() for rel in REQUIRED_PATHS):
+            return candidate
+    return None
+
+
+def extract_report(src: Path, dst: Path) -> None:
+    if src.is_dir():
+        shutil.copytree(src, dst, dirs_exist_ok=True, symlinks=True)
+        return
+
+    try:
+        with tarfile.open(src, "r:*") as tar:
+            tar.extractall(dst, filter="data")
+            return
+    except tarfile.TarError:
+        pass
+
+    subprocess.run(["tar", "-xf", str(src), "-C", str(dst)], check=True)
+
+
+def pick_kernel_dir(root: Path) -> tuple[str | None, Path]:
+    modules_root = root / "lib" / "modules"
+    if modules_root.is_dir():
+        entries = sorted(p for p in modules_root.iterdir() if p.is_dir())
+        if entries:
+            return entries[0].name, entries[0]
+
+    empty_modules = root / ".coverage-empty-modules"
+    (empty_modules / "kernel").mkdir(parents=True, exist_ok=True)
+    return None, empty_modules
+
+
+def run_replay(report_root: Path, kernel: str | None, modules_dir: Path) -> tuple[int, str]:
+    root = repo_root()
+    env = os.environ.copy()
+
+    etc_dir = report_root / "etc"
+    etc_dir.mkdir(parents=True, exist_ok=True)
+    initrd_mk = etc_dir / "initrd.mk"
+    if not initrd_mk.exists():
+        initrd_mk.write_text("AUTODETECT = all\n", encoding="ascii")
+
+    env.update(
+        {
+            "PATH": f"{root}/.build/dest/usr/bin:{root}/.build/dest/usr/sbin:" + env.get("PATH", ""),
+            "MAKE_INITRD_BUG_REPORT": "2",
+            "MAKE_INITRD_TESTING": "1",
+            "PROCFS_PATH": str(report_root / "proc"),
+            "SYSFS_PATH": str(report_root / "sys"),
+            "FSTAB": str(report_root / "etc" / "fstab"),
+            "INITRD_CONFIG_LIST": str(initrd_mk),
+            "FINDMNT_STATE_FILE": str(report_root / "etc" / "findmnt.out1"),
+            "BLKID_STATE_FILE": str(report_root / "etc" / "blkid.out1"),
+            "DEVLIST_FILE": str(report_root / "dev" / "devlist"),
+            "KERNEL_MODULES_DIR": str(modules_dir),
+            "GUESS_SUFFIX": "add:guess-root",
+            "TEST_GUESS_ACTIONS": "guess/root/action guess-config",
+            "RESOLVE_MODALIAS": "",
+            "KERNEL_CONFIG": "/dev/null",
+            "MAKE_INITRD_TRACE": "1",
+            "MAKE_INITRD_TRACE_PIDS": "",
+            "MAKE_INITRD_TRACE_EXECUTE_PATTERNS": "guess/root/action",
+            "MAKE_INITRD_TRACE_SRC_PATTERNS": "features/*/guess/* guess/root/action",
+            "MAKE_INITRD_TRACE_RUN_PATTERNS": "*",
+        }
+    )
+
+    cmd = [str(root / ".build" / "dest" / "usr" / "sbin" / "make-initrd"), "--no-checks", "--no-depmod"]
+    if kernel:
+        cmd += ["-k", kernel]
+    cmd += ["test-guess"]
+
+    proc = subprocess.run(
+        cmd,
+        cwd=root,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    return proc.returncode, proc.stdout
+
+
+def trace_sources(output: str) -> list[str]:
+    found = set()
+    for line in output.splitlines():
+        match = re.search(r"source=([^:]+):", line)
+        if match:
+            found.add(match.group(1))
+    return sorted(found)
+
+
+def current_guess_sources(root: Path) -> list[str]:
+    found = set()
+
+    features_dir = root / "features"
+    if features_dir.is_dir():
+        for path in features_dir.glob("*/guess/*"):
+            if path.is_file():
+                found.add(str(path.relative_to(root)))
+
+    guess_dir = root / "guess"
+    if guess_dir.is_dir():
+        for path in guess_dir.glob("*/action"):
+            if path.is_file():
+                found.add(str(path.relative_to(root)))
+
+    return sorted(found)
+
+
+def main() -> int:
+    root = repo_root()
+    reports_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else root / ".bugreports"
+    if not reports_dir.is_dir():
+        print(f"{reports_dir}: not a directory", file=sys.stderr)
+        return 1
+
+    aggregate: dict[str, list[str]] = defaultdict(list)
+
+    print(f"Bugreport coverage summary for {reports_dir}\n")
+
+    for src in sorted(reports_dir.iterdir()):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmpdir = Path(tmp)
+            extracted = tmpdir / "input"
+            extracted.mkdir()
+
+            try:
+                extract_report(src, extracted)
+            except Exception:
+                print(f"SKIP {src.name}: unable to extract")
+                continue
+
+            report_root = find_report_root(extracted)
+            if report_root is None:
+                print(f"SKIP {src.name}: missing required replay files")
+                continue
+
+            kernel, modules_dir = pick_kernel_dir(report_root)
+            rc, output = run_replay(report_root, kernel, modules_dir)
+            if rc != 0:
+                print(f"FAIL {src.name}: replay exited with rc={rc}")
+                for line in output.splitlines()[:5]:
+                    print(f"  {line}")
+                continue
+
+            sources = trace_sources(output)
+            print(f"OK {src.name}")
+            print("  covered sources:")
+            for source in sources:
+                print(f"  {source}")
+                aggregate[source].append(src.name)
+            print()
+
+    print("Aggregate source coverage:")
+    if not aggregate:
+        print("  no supported bugreports")
+        return 0
+
+    for source, names in sorted(aggregate.items(), key=lambda item: (-len(item[1]), item[0])):
+        joined = ", ".join(names)
+        print(f"{len(names):5d}  {source}")
+        print(f"       {joined}")
+
+    print("\nUncovered guess sources:")
+    covered = set(aggregate)
+    uncovered = [source for source in current_guess_sources(root) if source not in covered]
+    if not uncovered:
+        print("  none")
+        return 0
+
+    for source in uncovered:
+        print(f"  {source}")
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
