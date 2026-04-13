@@ -1,0 +1,16 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+. "$cwd/../trace-sh-functions"
+
+trace_test_init "$0"
+export MAKE_INITRD_TRACE_RESULTS=1
+
+trace_source "Processing ..."
+
+trace_func() {
+	trace_enter arg1
+	trace_run /bin/sh -c 'exit 7'
+}
+
+trace_func ||:

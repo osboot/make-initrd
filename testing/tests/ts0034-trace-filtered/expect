@@ -1,0 +1,4 @@
+TRACE	filtered		0	testing/tests/ts0034-trace-filtered/run	main		execute-patterns: Processing ...
+TRACE	filtered		1	testing/tests/ts0034-trace-filtered/run	main trace_func	trace_func	execute-patterns: arg1
+TRACE	filtered		1	testing/tests/ts0034-trace-filtered/run	main trace_func	/bin/echo	run-patterns: hello
+rc=0

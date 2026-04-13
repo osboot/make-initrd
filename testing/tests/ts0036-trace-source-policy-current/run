@@ -1,0 +1,9 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+. "$cwd/../trace-sh-functions"
+
+trace_test_init "$0"
+export MAKE_INITRD_TRACE_SOURCE_POLICY=current
+
+. "$cwd/inner-source.sh"

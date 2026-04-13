@@ -1,0 +1,3 @@
+TRACE	execute		0	testing/tests/ts0036-trace-source-policy-current/inner-source.sh	main		Processing ...
+TRACE	function		1	testing/tests/ts0036-trace-source-policy-current/inner-source.sh	main trace_func	trace_func	arg1
+rc=0

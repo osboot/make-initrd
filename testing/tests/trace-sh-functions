@@ -1,0 +1,24 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+trace_test_init() {
+	local script script_dir topdir
+
+	script="$(readlink -ev "$1")"
+	script_dir="${script%/*}"
+	topdir="$(readlink -ev "$script_dir/../../..")"
+
+	export TOPDIR="$topdir"
+	export PROJECTDIR="$topdir"
+	export PATH="$topdir/tools:$topdir/.build/dest/usr/bin:$PATH"
+
+	export MAKE_INITRD_TRACE=1
+	export MAKE_INITRD_TRACE_FORMAT=tsv
+	export MAKE_INITRD_TRACE_PIDS=
+	export MAKE_INITRD_TRACE_EXECUTE_PATTERNS='*'
+	export MAKE_INITRD_TRACE_SRC_PATTERNS='*'
+	export MAKE_INITRD_TRACE_FUNC_PATTERNS='*'
+	export MAKE_INITRD_TRACE_RUN_PATTERNS='*'
+
+	. "$topdir/tools/sh-functions"
+}

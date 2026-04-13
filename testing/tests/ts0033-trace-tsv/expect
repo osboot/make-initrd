@@ -1,0 +1,4 @@
+TRACE	execute		0	testing/tests/ts0033-trace-tsv/run	main		Processing ...
+TRACE	function		1	testing/tests/ts0033-trace-tsv/run	main trace_func	trace_func	arg1
+TRACE	run		1	testing/tests/ts0033-trace-tsv/run	main trace_func	/bin/echo	hello
+rc=0

@@ -1,0 +1,15 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+. "$cwd/../trace-sh-functions"
+
+trace_test_init "$0"
+
+trace_source "Processing ..."
+
+trace_func() {
+	trace_enter arg1
+	trace_run /bin/echo hello >/dev/null
+}
+
+trace_func
