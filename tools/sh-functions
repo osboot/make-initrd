@@ -143,11 +143,13 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 	}
 
 	__trace_print() {
-		local n kind src funcs format
+		local n kind src funcs entity format payload text_payload
 
 		kind="$1"; shift
 		funcs="$1"; shift
+		entity="$1"; shift
 		format="${MAKE_INITRD_TRACE_FORMAT:-text}"
+		payload="$*"
 
 		n="$(( ${#BASH_SOURCE[@]} - 1 ))"
 		src="${BASH_SOURCE[$n]#${PROJECTDIR}/}"
@@ -167,17 +169,27 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 		case "$format" in
 			tsv)
 				printf >&2 \
-					'TRACE\t%s\t%s\t%s\t%s\t%s\n' \
+					'TRACE\t%s\t%s\t%s\t%s\t%s\t%s\n' \
 					"${TRACE_KINDS[$kind]}" \
 					"${MAKE_INITRD_TRACE_PIDS:+$BASHPID}" \
 					"$src" \
 					"$funcs" \
-					"$*"
+					"$entity" \
+					"$payload"
 				;;
 			text|'')
+				text_payload="$payload"
+				case "$kind" in
+					$TRACE_KIND_RUN)
+						text_payload="$entity${payload:+ $payload}"
+						;;
+					$TRACE_KIND_RESOLVE_MODALIAS)
+						text_payload="$entity -> $payload"
+						;;
+				esac
 				printf >&2 \
 					'TRACE %-'${TRACE_KINDS_LEN}'s:%s source=%s: %s: %s\n' \
-					"${TRACE_KINDS[$kind]}" "${MAKE_INITRD_TRACE_PIDS:+ pid=$BASHPID:}" "$src" "$funcs" "$*"
+					"${TRACE_KINDS[$kind]}" "${MAKE_INITRD_TRACE_PIDS:+ pid=$BASHPID:}" "$src" "$funcs" "$text_payload"
 				;;
 			*)
 				fatal "Unsupported trace format: $format"
@@ -196,7 +208,7 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 			return 0
 
 		__trace_print $TRACE_KIND_SOURCE \
-			"main" "$*"
+			"main" "" "$*"
 		export MAKE_INITRD_TRACE_ACTIVE=1
 	}
 
@@ -212,7 +224,7 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 		done < "$kmodules_list"
 
 		__trace_print $TRACE_KIND_RESOLVE_MODALIAS \
-			"main" "${modalias_list##*/} -> (${kmodules[*]})"
+			"main" "${modalias_list##*/}" "(${kmodules[*]})"
 	}
 
 	trace_enter() {
@@ -225,7 +237,7 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 			return 0
 
 		__trace_print $TRACE_KIND_ENTER \
-			"${TRACE_FUNCNAMES[*]} $func" "$*"
+			"${TRACE_FUNCNAMES[*]} $func" "$func" "$*"
 	}
 
 	trace_enter_retcode() {
