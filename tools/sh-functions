@@ -133,6 +133,15 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 		[ $# -eq 0 ] || return 1
 	}
 
+	__trace_source_enabled() {
+		local src="$1"
+
+		[ -z "${MAKE_INITRD_TRACE_ACTIVE-}" ] ||
+			return 0
+
+		__is_traceable "$src" ${MAKE_INITRD_TRACE_EXECUTE_PATTERNS-}
+	}
+
 	__trace_print() {
 		local n kind src funcs format
 
@@ -146,12 +155,8 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 
 		local GLOBIGNORE='.*:*'
 
-		if ! __is_traceable "$src" ${MAKE_INITRD_TRACE_EXECUTE_PATTERNS-}; then
-			export MAKE_INITRD_TRACE_SRC_PATTERNS='-'
-			export MAKE_INITRD_TRACE_FUNC_PATTERNS='-'
-			export MAKE_INITRD_TRACE_RUN_PATTERNS='-'
+		__trace_source_enabled "$src" ||
 			return 0
-		fi
 
 		__is_traceable "$src" ${MAKE_INITRD_TRACE_SRC_PATTERNS-} ||
 			return 0
@@ -181,9 +186,18 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 	}
 
 	trace_source() {
+		local n src
+
+		n="$(( ${#BASH_SOURCE[@]} - 1 ))"
+		src="${BASH_SOURCE[$n]#${PROJECTDIR}/}"
+		src="${BASH_SOURCE[$n]#${TOPDIR}/}"
+
+		__trace_source_enabled "$src" ||
+			return 0
+
 		__trace_print $TRACE_KIND_SOURCE \
 			"main" "$*"
-		export MAKE_INITRD_TRACE_EXECUTE_PATTERNS=''
+		export MAKE_INITRD_TRACE_ACTIVE=1
 	}
 
 	trace_resolve_modalias() {
