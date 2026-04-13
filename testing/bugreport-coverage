@@ -119,19 +119,29 @@ def run_replay(report_root: Path, kernel: str | None, modules_dir: Path) -> tupl
     return proc.returncode, proc.stdout
 
 
-def trace_sources(output: str) -> list[str]:
-    found = set()
+def parse_trace(output: str) -> tuple[list[str], list[str], list[str]]:
+    sources = set()
+    functions = set()
+    run_targets = set()
+
     for line in output.splitlines():
         if not line.startswith("TRACE\t"):
             continue
         fields = line.split("\t", 7)
         if len(fields) != 8:
             continue
-        _, kind, _pid, _depth, source, _funcs, _entity, _details = fields
+        _, kind, _pid, _depth, source, _funcs, entity, _details = fields
         if kind == "filtered":
             continue
-        found.add(source)
-    return sorted(found)
+
+        sources.add(source)
+
+        if kind == "function":
+            functions.add(f"{source}:{entity}")
+        elif kind == "run":
+            run_targets.add(entity)
+
+    return sorted(sources), sorted(functions), sorted(run_targets)
 
 
 def current_guess_sources(root: Path) -> list[str]:
@@ -152,6 +162,28 @@ def current_guess_sources(root: Path) -> list[str]:
     return sorted(found)
 
 
+def print_items(title: str, items: list[str], *, empty: str = "none") -> None:
+    print(f"{title} ({len(items)}):")
+    if not items:
+        print(f"  {empty}")
+        return
+
+    for item in items:
+        print(f"  {item}")
+
+
+def print_aggregate(title: str, data: dict[str, list[str]]) -> None:
+    print(title)
+    if not data:
+        print("  none")
+        return
+
+    for item, names in sorted(data.items(), key=lambda entry: (-len(entry[1]), entry[0])):
+        joined = ", ".join(names)
+        print(f"  {len(names):2d}  {item}")
+        print(f"      reports: {joined}")
+
+
 def main() -> int:
     root = repo_root()
     reports_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else root / ".bugreports"
@@ -159,7 +191,12 @@ def main() -> int:
         print(f"{reports_dir}: not a directory", file=sys.stderr)
         return 1
 
-    aggregate: dict[str, list[str]] = defaultdict(list)
+    aggregate_sources: dict[str, list[str]] = defaultdict(list)
+    aggregate_functions: dict[str, list[str]] = defaultdict(list)
+    aggregate_run_targets: dict[str, list[str]] = defaultdict(list)
+    ok_reports: list[tuple[str, list[str], list[str], list[str]]] = []
+    skipped_reports: list[tuple[str, str]] = []
+    failed_reports: list[tuple[str, int, list[str]]] = []
 
     print(f"Bugreport coverage summary for {reports_dir}\n")
 
@@ -172,49 +209,68 @@ def main() -> int:
             try:
                 extract_report(src, extracted)
             except Exception:
-                print(f"SKIP {src.name}: unable to extract")
+                skipped_reports.append((src.name, "unable to extract"))
                 continue
 
             report_root = find_report_root(extracted)
             if report_root is None:
-                print(f"SKIP {src.name}: missing required replay files")
+                skipped_reports.append((src.name, "missing required replay files"))
                 continue
 
             kernel, modules_dir = pick_kernel_dir(report_root)
             rc, output = run_replay(report_root, kernel, modules_dir)
             if rc != 0:
-                print(f"FAIL {src.name}: replay exited with rc={rc}")
-                for line in output.splitlines()[:5]:
-                    print(f"  {line}")
+                failed_reports.append((src.name, rc, output.splitlines()[:5]))
                 continue
 
-            sources = trace_sources(output)
-            print(f"OK {src.name}")
-            print("  covered sources:")
+            sources, functions, run_targets = parse_trace(output)
             for source in sources:
-                print(f"  {source}")
-                aggregate[source].append(src.name)
-            print()
+                aggregate_sources[source].append(src.name)
+            for function in functions:
+                aggregate_functions[function].append(src.name)
+            for target in run_targets:
+                aggregate_run_targets[target].append(src.name)
+            ok_reports.append((src.name, sources, functions, run_targets))
 
-    print("Aggregate source coverage:")
-    if not aggregate:
-        print("  no supported bugreports")
+    print("Summary:")
+    print(f"  OK:   {len(ok_reports)}")
+    print(f"  SKIP: {len(skipped_reports)}")
+    print(f"  FAIL: {len(failed_reports)}")
+
+    if ok_reports:
+        print("\nSuccessful replays:")
+        for name, sources, functions, run_targets in ok_reports:
+            print(f"\n{name}")
+            print_items("  sources", sources)
+            print_items("  functions", functions)
+            print_items("  run targets", run_targets)
+
+    if skipped_reports:
+        print("\nSkipped bugreports:")
+        for name, reason in skipped_reports:
+            print(f"  {name}: {reason}")
+
+    if failed_reports:
+        print("\nFailed bugreports:")
+        for name, rc, lines in failed_reports:
+            print(f"  {name}: replay exited with rc={rc}")
+            for line in lines:
+                print(f"    {line}")
+
+    print()
+    print_aggregate("Aggregate source coverage:", aggregate_sources)
+    if not aggregate_sources:
         return 0
 
-    for source, names in sorted(aggregate.items(), key=lambda item: (-len(item[1]), item[0])):
-        joined = ", ".join(names)
-        print(f"{len(names):5d}  {source}")
-        print(f"       {joined}")
+    print()
+    print_aggregate("Aggregate function coverage:", aggregate_functions)
+    print()
+    print_aggregate("Aggregate run target coverage:", aggregate_run_targets)
 
-    print("\nUncovered guess sources:")
-    covered = set(aggregate)
+    covered = set(aggregate_sources)
     uncovered = [source for source in current_guess_sources(root) if source not in covered]
-    if not uncovered:
-        print("  none")
-        return 0
-
-    for source in uncovered:
-        print(f"  {source}")
+    print()
+    print_items("Uncovered guess sources", uncovered)
 
     return 0
 
