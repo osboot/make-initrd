@@ -94,6 +94,7 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 	TRACE_KIND_SOURCE=2
 	TRACE_KIND_RESOLVE_MODALIAS=3
 	TRACE_KIND_FILTERED=4
+	TRACE_KIND_RESULT=5
 
 	TRACE_KINDS=()
 	TRACE_KINDS_LEN=0
@@ -103,6 +104,7 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 	TRACE_KINDS[$TRACE_KIND_SOURCE]="execute"
 	TRACE_KINDS[$TRACE_KIND_RESOLVE_MODALIAS]="modules"
 	TRACE_KINDS[$TRACE_KIND_FILTERED]="filtered"
+	TRACE_KINDS[$TRACE_KIND_RESULT]="result"
 
 	for i in "${TRACE_KINDS[@]}"; do
 		[ $TRACE_KINDS_LEN -ge ${#i} ] ||
@@ -231,6 +233,23 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 		esac
 	}
 
+	__trace_print_result() {
+		local rc depth funcs entity details
+
+		[ -n "${MAKE_INITRD_TRACE_RESULTS-}" ] ||
+			return 0
+
+		rc="$1"; shift
+		depth="$1"; shift
+		funcs="$1"; shift
+		entity="$1"; shift
+		details="$*"
+		details="rc=$rc${details:+: $details}"
+
+		__trace_print $TRACE_KIND_RESULT \
+			"$depth" "$funcs" "$entity" "$details"
+	}
+
 	__trace_print() {
 		local kind depth src funcs entity format payload text_payload
 
@@ -279,6 +298,9 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 						;;
 					$TRACE_KIND_RESOLVE_MODALIAS)
 						text_payload="$entity -> $payload"
+						;;
+					$TRACE_KIND_RESULT)
+						text_payload="$entity${payload:+: $payload}"
 						;;
 				esac
 				printf >&2 \
@@ -339,7 +361,12 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 	}
 
 	trace_enter_retcode() {
-		return $1
+		local func rc
+		rc="$1"
+		__trace_get_func
+		__trace_print_result \
+			"$rc" "${#TRACE_FUNCNAMES[@]}" "${TRACE_FUNCNAMES[*]} $func" "$func"
+		return "$rc"
 	}
 
 	trace_run() {
@@ -375,6 +402,9 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 
 		rc=0
 		"$cmd" "$@" || rc=$?
+		__trace_print_result \
+			"$rc" "$(( ${#TRACE_FUNCNAMES[@]} - 1 ))" \
+			"${TRACE_FUNCNAMES[*]}" "$cmdname"
 
 		unset "TRACE_FUNCNAMES[$i]"
 		return $rc
