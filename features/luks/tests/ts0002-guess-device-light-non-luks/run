@@ -1,0 +1,13 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+. "$cwd"/../../../../testing/tests/guess-feature-sh-functions
+
+guess_feature_test_init "$0"
+
+mkdir -p -- "$SYSFS_PATH/devices/test-luks/dm"
+printf '%s\n' 'something-else' > "$SYSFS_PATH/devices/test-luks/dm/uuid"
+
+features/luks/guess/device /devices/test-luks
+guess_feature_test_dump

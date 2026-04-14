@@ -1,0 +1,12 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+. "$cwd"/../../../../testing/tests/guess-feature-sh-functions
+
+guess_feature_test_init "$0"
+
+mkdir -p -- "$SYSFS_PATH/devices/test-bcache"
+
+features/bcache/guess/device /devices/test-bcache
+guess_feature_test_dump

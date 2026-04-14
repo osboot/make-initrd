@@ -1,0 +1,6 @@
+guess:features
+bcache
+
+guess:modules
+bcache
+rc=0

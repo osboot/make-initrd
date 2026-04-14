@@ -1,0 +1,6 @@
+guess:features
+luks
+
+guess:variables:LUKS_MAYBE_UUIDS
+1234567890ABCDEF1234567890ABCDEF
+rc=0
