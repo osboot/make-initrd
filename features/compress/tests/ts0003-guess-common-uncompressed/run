@@ -1,0 +1,14 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+. "$cwd"/../../../../testing/tests/guess-feature-sh-functions
+
+guess_feature_test_init "$0"
+
+export IMAGEFILE="$GUESS_TEST_TMPDIR/initrd.img"
+touch "$IMAGEFILE"
+export FAKE_initrd_ls="$cwd/bin/initrd-ls"
+
+features/compress/guess/common
+guess_feature_test_dump
