@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 [ -d "$SYSFS_PATH$1"/dm ] || exit 0
-command -v clevis >/dev/null 2>&1 || exit 0
 
 . guess-functions
+
+is_command_exist clevis || exit 0
 
 uuid=
 readline uuid "$SYSFS_PATH$1"/dm/uuid
@@ -20,11 +21,12 @@ else
 fi
 
 dashed_uuid="${raw_uuid:0:8}-${raw_uuid:8:4}-${raw_uuid:12:4}-${raw_uuid:16:4}-${raw_uuid:20:12}"
-dev="$(findfs UUID="$dashed_uuid")" || exit 0
-dev="$(readlink -ef "$dev" 2>/dev/null || true)"
+dev="$(sys_findfs UUID="$dashed_uuid")" || exit 0
+dev="$(readlink -ef "$dev" 2>/dev/null || printf '%s\n' "$dev")"
 
-[ -b "$dev" ] || exit 0
+[ -n "$dev" ] && is_block_device "$dev" || exit 0
 
-clevis luks list -d "$dev" >/dev/null 2>&1 || exit 0
+get_sys_command clevis
+sys_clevis luks list -d "$dev" >/dev/null 2>&1 || exit 0
 
 guess_feature clevis

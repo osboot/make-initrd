@@ -7,7 +7,7 @@ if [ -z "${LOCALES-}" ]; then
 	is_active_feature "plymouth" ||
 		exit 0
 
-	for f in /etc/sysconfig/i18n /etc/locale.conf; do
+	for f in ${LOCALES_CONFIG_FILES:-/etc/sysconfig/i18n /etc/locale.conf}; do
 		if [ -s "$f" ] && . "$f"; then
 			break
 		fi

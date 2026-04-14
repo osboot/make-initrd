@@ -1,0 +1,17 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+. "$cwd"/../../../../testing/tests/guess-feature-sh-functions
+
+guess_feature_test_init "$0"
+
+cat > "$GUESS_TEST_TMPDIR/locale.conf" <<-'EOF'
+LANG=de_DE.UTF-8
+EOF
+
+export ALL_ACTIVE_FEATURES='plymouth'
+export LOCALES_CONFIG_FILES="$GUESS_TEST_TMPDIR/locale.conf"
+
+features/locales/guess/common
+guess_feature_test_dump

@@ -1,0 +1,2 @@
+#!/bin/bash
+[ "$1" = luks ] && [ "$2" = list ] && [ "$3" = -d ] && [ "$4" = /dev/mapper/test-clevis ] || exit 1

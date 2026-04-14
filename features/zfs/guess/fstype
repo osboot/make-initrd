@@ -16,6 +16,8 @@ zfs_mounts=()
 [ "$fstype" != 'zfs' ] ||
 	zfs_mounts+=("zfs $devname")
 
+[ ${#zfs_mounts[@]} -eq 0 ] || get_sys_command zpool
+
 for s in "${zfs_mounts[@]}"; do
 	set -- $s
 
@@ -25,7 +27,7 @@ for s in "${zfs_mounts[@]}"; do
 	[ "$fstype" = 'zfs' ] ||
 		continue
 
-	zpool list -o name -v -H -P "${source%%/*}" |
+	sys_zpool list -o name -v -H -P "${source%%/*}" |
 		sed -n -e 's#^[[:space:]]\(/dev/[^[:space:]]\+\).*#\1#p' |
 	while read -r dev; do
 		guess_device "$dev"

@@ -1,0 +1,2 @@
+#!/bin/bash
+printf '%s\n' '-rwxr-xr-x root root 0 gzip ./init'

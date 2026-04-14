@@ -8,7 +8,8 @@ if [ ! -f "${IMAGEFILE-}" ]; then
 	exit 0
 fi
 
-init="$(initrd-ls -nC "$IMAGEFILE" |grep ' \./init$' |tail -1)"
+get_sys_command initrd-ls
+init="$(sys_initrd_ls -nC "$IMAGEFILE" |grep ' \./init$' |tail -1)"
 
 for method in gzip bzip2 xz lzma lzo lz4 zstd; do
 	if [ -z "${init##* $method *}" ]; then

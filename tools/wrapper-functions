@@ -10,6 +10,23 @@ FINDMNT_STATE_FILE="${FINDMNT_STATE_FILE:-/etc/findmnt.out1}"
 BLKID_STATE_FILE="${BLKID_STATE_FILE:-/etc/blkid.out1}"
 DEVLIST_FILE="${DEVLIST_FILE:-/dev/devlist}"
 
+is_command_exist()
+{
+	local _name _replace
+
+	_name="${1//-/_}"
+	eval "_replace=\${FAKE_$_name:-}"
+
+	[ -n "$_replace" ] ||
+		command -v "$1" >/dev/null 2>&1
+}
+
+get_sys_command()
+{
+	local _name="${1//-/_}"
+	eval "sys_$_name() { \"\${FAKE_$_name:-$1}\" \"\$@\"; }"
+}
+
 __fake_find_mountpoint()
 {
 	[ -n "$1" ] && [ -z "${1##/*}" ] ||
@@ -156,15 +173,6 @@ __fake_findmnt()
 	done < "$FINDMNT_STATE_FILE"
 }
 
-sys_findmnt()
-{
-	if [ -n "${MAKE_INITRD_BUG_REPORT-}" ]; then
-		__fake_findmnt "$@"
-		return $?
-	fi
-	findmnt "$@"
-}
-
 __fake_blkid()
 {
 	local TEMP device output match_token match_tag list_one
@@ -266,14 +274,34 @@ __fake_blkid()
 	done < "$BLKID_STATE_FILE"
 }
 
-sys_blkid()
+__fake_findfs()
 {
-	if [ -n "${MAKE_INITRD_BUG_REPORT-}" ]; then
-		__fake_blkid "$@"
-		return $?
-	fi
-	blkid "$@"
+	local spec
+
+	[ "$#" -eq 1 ] ||
+		fatal "findfs: unsupported arguments: $*"
+
+	spec="$1"
+
+	case "$spec" in
+		UUID=*|LABEL=*|PARTUUID=*|PARTLABEL=*)
+			__fake_blkid -l -o device -t "$spec"
+			;;
+		*)
+			fatal "findfs: unsupported spec: $spec"
+			;;
+	esac
 }
+
+if [ -n "${MAKE_INITRD_BUG_REPORT-}" ]; then
+	: "${FAKE_findmnt:=__fake_findmnt}"
+	: "${FAKE_blkid:=__fake_blkid}"
+	: "${FAKE_findfs:=__fake_findfs}"
+fi
+
+get_sys_command findmnt
+get_sys_command blkid
+get_sys_command findfs
 
 is_block_device()
 {

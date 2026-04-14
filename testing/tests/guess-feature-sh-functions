@@ -1,0 +1,39 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+guess_feature_test_init() {
+	local script script_dir topdir tmpdir
+
+	script="$(readlink -ev "$1")"
+	script_dir="${script%/*}"
+	topdir="$(readlink -ev "$script_dir/../../../..")"
+	tmpdir="$(mktemp -d)"
+
+	export TOPDIR="$topdir"
+	export PROJECTDIR="$topdir"
+	export PATH="$topdir/tools:$topdir/.build/dest/usr/bin:$topdir/.build/dest/usr/sbin:$PATH"
+
+	export GUESS_TEST_TMPDIR="$tmpdir"
+	trap 'rm -rf -- "$GUESS_TEST_TMPDIR"' EXIT
+
+	export GUESSDIR="$tmpdir/guess"
+	export SYSFS_PATH="$tmpdir/sys"
+	export PROCFS_PATH="$tmpdir/proc"
+	export KERNEL_CONFIG=/dev/null
+
+	mkdir -p -- "$GUESSDIR" "$SYSFS_PATH" "$PROCFS_PATH"
+}
+
+guess_feature_test_dump() {
+	local file first=1
+
+	find "$GUESSDIR" -maxdepth 1 -type f -name 'guess:*' | sort |
+	while read -r file; do
+		[ "$first" -eq 1 ] ||
+			printf '\n'
+		first=0
+
+		printf '%s\n' "${file##*/}"
+		sed -n '1,$p' "$file"
+	done
+}

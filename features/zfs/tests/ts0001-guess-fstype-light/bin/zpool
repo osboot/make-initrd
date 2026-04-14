@@ -1,0 +1,4 @@
+#!/bin/bash
+cat <<-'EOF'
+	rpool	/dev/zfs-test0
+EOF
