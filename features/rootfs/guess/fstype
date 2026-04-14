@@ -4,6 +4,8 @@
 devname="$1"; shift
 fstype="$1"; shift
 
+. guess-functions
+
 fsmod="${fstype%%.*}"
 
 found=
@@ -21,7 +23,5 @@ if [ -n "${RESOLVE_MODALIAS-}" ]; then
 	depinfo ${KERNEL:+-k "$KERNEL"} -D "fs-$fsmod" >/dev/null 2>&1 ||
 		exit 0
 fi
-
-. guess-functions
 
 guess_modalias "fs-$fsmod"

@@ -1,0 +1,28 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+. "$cwd"/../../../../testing/tests/guess-feature-sh-functions
+
+guess_feature_test_init "$0"
+
+mkdir -p -- "$SYSFS_PATH/devices/test-clevis/dm"
+printf '%s\n' 'CRYPT-LUKS2-1234567890ABCDEF1234567890ABCDEF-name' > "$SYSFS_PATH/devices/test-clevis/dm/uuid"
+
+cat > "$GUESS_TEST_TMPDIR/blkid.out1" <<-'EOF'
+DEVNAME	/dev/mapper/test-clevis
+UUID	12345678-90AB-CDEF-1234-567890ABCDEF
+
+EOF
+
+cat > "$GUESS_TEST_TMPDIR/devlist" <<-'EOF'
+brw-rw---- fd 00 /dev/mapper/test-clevis
+EOF
+
+export MAKE_INITRD_BUG_REPORT=1
+export BLKID_STATE_FILE="$GUESS_TEST_TMPDIR/blkid.out1"
+export DEVLIST_FILE="$GUESS_TEST_TMPDIR/devlist"
+export FAKE_clevis="$cwd/bin/clevis-fail"
+
+features/clevis/guess/device /devices/test-clevis
+guess_feature_test_dump

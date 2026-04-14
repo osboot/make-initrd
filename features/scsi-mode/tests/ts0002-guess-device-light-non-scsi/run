@@ -1,0 +1,13 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+. "$cwd"/../../../../testing/tests/guess-feature-sh-functions
+
+guess_feature_test_init "$0"
+
+mkdir -p -- "$SYSFS_PATH/devices/test-scsi"
+printf '%s\n' 'usb:v1p2d3' > "$SYSFS_PATH/devices/test-scsi/modalias"
+
+features/scsi-mode/guess/device /devices/test-scsi
+guess_feature_test_dump

@@ -1,0 +1,10 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+. "$cwd"/../../../../testing/tests/guess-feature-sh-functions
+
+guess_feature_test_init "$0"
+
+features/sysfs-virtio-pci/guess/device /devices/pci0000:00
+guess_feature_test_dump

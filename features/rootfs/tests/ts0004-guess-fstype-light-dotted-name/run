@@ -1,0 +1,15 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+. "$cwd"/../../../../testing/tests/guess-feature-sh-functions
+
+guess_feature_test_init "$0"
+
+cat > "$PROCFS_PATH/filesystems" <<-'EOF'
+nodev	sysfs
+	ext4
+EOF
+
+features/rootfs/guess/fstype /dev/test-root ext4.1
+guess_feature_test_dump
