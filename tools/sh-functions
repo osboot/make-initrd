@@ -293,13 +293,13 @@ if [ -n "${MAKE_INITRD_TRACE:-${MAKE_INITRD_TRACE_TIMESTAMP-}}" ]; then
 			text|'')
 				text_payload="$payload"
 				case "$kind" in
-					$TRACE_KIND_RUN)
+					"$TRACE_KIND_RUN")
 						text_payload="$entity${payload:+ $payload}"
 						;;
-					$TRACE_KIND_RESOLVE_MODALIAS)
+					"$TRACE_KIND_RESOLVE_MODALIAS")
 						text_payload="$entity -> $payload"
 						;;
-					$TRACE_KIND_RESULT)
+					"$TRACE_KIND_RESULT")
 						text_payload="$entity${payload:+: $payload}"
 						;;
 				esac
