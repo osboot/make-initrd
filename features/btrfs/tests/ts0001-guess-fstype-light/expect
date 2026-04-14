@@ -1,0 +1,6 @@
+guess:features
+btrfs
+
+guess:modalias
+pci:v00001234d00005678
+rc=0

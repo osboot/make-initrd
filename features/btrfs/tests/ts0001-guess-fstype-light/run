@@ -1,0 +1,27 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+. "$cwd"/../../../../testing/tests/guess-feature-sh-functions
+
+guess_feature_test_init "$0"
+
+uuid='11111111-2222-3333-4444-555555555555'
+
+mkdir -p -- \
+	"$SYSFS_PATH/devices/test-btrfs" \
+	"$SYSFS_PATH/fs/btrfs/$uuid/devices"
+printf '%s\n' 'pci:v00001234d00005678' > "$SYSFS_PATH/devices/test-btrfs/modalias"
+ln -s -- "$SYSFS_PATH/devices/test-btrfs" "$SYSFS_PATH/fs/btrfs/$uuid/devices/1"
+
+cat > "$GUESS_TEST_TMPDIR/blkid.out1" <<-EOF
+DEVNAME	/dev/test-btrfs
+UUID	$uuid
+
+EOF
+
+export MAKE_INITRD_BUG_REPORT=1
+export BLKID_STATE_FILE="$GUESS_TEST_TMPDIR/blkid.out1"
+
+features/btrfs/guess/fstype /dev/test-btrfs btrfs
+guess_feature_test_dump
