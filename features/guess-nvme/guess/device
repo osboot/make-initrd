@@ -1,22 +1,80 @@
 #!/bin/bash -eu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-[ -e "$SYSFS_PATH$1"/subsystype ] ||
-	exit 0
-
 . guess-functions
 
-subsystype=
-readline subsystype "$SYSFS_PATH$1"/subsystype
+guess_nvme_transport_modules()
+{
+	local controller="$1"
+	local transport=
 
-if [ "$subsystype" = "nvm" ]; then
+	[ -f "$SYSFS_PATH$controller/transport" ] ||
+		return 1
+
+	readline transport "$SYSFS_PATH$controller/transport"
+	[ -n "$transport" ] ||
+		return 1
+
+	case "$transport" in
+		tcp)
+			guess_module nvme-fabrics
+			guess_module nvme-tcp
+			;;
+		rdma)
+			guess_module nvme-fabrics
+			guess_module nvme-rdma
+			;;
+		fc)
+			guess_module nvme-fabrics
+			guess_module nvme-fc
+			;;
+		loop)
+			guess_module nvme-fabrics
+			guess_module nvme-loop
+			;;
+		*) return 1
+			;;
+	esac
+
+	return 0
+}
+
+guess_nvme_links()
+{
+	local basedir syspath
+
+	basedir="$1"
+
 	for syspath in \
-		"$SYSFS_PATH$1"/nvme[0-9] \
-		"$SYSFS_PATH$1"/nvme[0-9][0-9] \
-		"$SYSFS_PATH$1"/nvme[0-9][0-9][0-9] \
+		"$SYSFS_PATH$basedir"/nvme[0-9] \
+		"$SYSFS_PATH$basedir"/nvme[0-9][0-9] \
+		"$SYSFS_PATH$basedir"/nvme[0-9][0-9][0-9] \
 		;
 	do
-		[ ! -L "$syspath" ] ||
+		[ -L "$syspath" ] ||
+			continue
+
+		guess_nvme_transport_modules "${syspath#$SYSFS_PATH}" ||
 			guess_device "${syspath#$SYSFS_PATH}"
 	done
+}
+
+guess_nvme_transport_modules "$1" && exit 0
+
+if [ -e "$SYSFS_PATH$1"/subsystype ]; then
+	subsystype=
+	readline subsystype "$SYSFS_PATH$1"/subsystype
+
+	[ "$subsystype" != "nvm" ] ||
+		guess_nvme_links "$1"
+	exit 0
 fi
+
+basedir="$1"
+
+if [ -f "$SYSFS_PATH$basedir/partition" ]; then
+	basedir="${basedir%/*}"
+fi
+
+guess_nvme_transport_modules "$basedir/device" ||
+	guess_nvme_links "$basedir/device"

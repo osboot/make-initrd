@@ -1,0 +1,22 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+. "$cwd"/../../../../testing/tests/guess-feature-sh-functions
+
+guess_feature_test_init "$0"
+
+mkdir -p -- \
+	"$SYSFS_PATH/devices/virtual/nvme-subsystem/nvme-subsys2/nvme2n1" \
+	"$SYSFS_PATH/devices/virtual/nvme-fabrics/ctl/nvme2" \
+	"$SYSFS_PATH/devices/virtual/nvme-fabrics/ctl/nvme3"
+ln -s -- ../../nvme-subsys2 "$SYSFS_PATH/devices/virtual/nvme-subsystem/nvme-subsys2/nvme2n1/device"
+ln -s -- ../../nvme-fabrics/ctl/nvme2 "$SYSFS_PATH/devices/virtual/nvme-subsystem/nvme-subsys2/nvme2"
+ln -s -- ../../nvme-fabrics/ctl/nvme3 "$SYSFS_PATH/devices/virtual/nvme-subsystem/nvme-subsys2/nvme3"
+printf '%s\n' 'tcp' > "$SYSFS_PATH/devices/virtual/nvme-fabrics/ctl/nvme2/transport"
+printf '%s\n' 'rdma' > "$SYSFS_PATH/devices/virtual/nvme-fabrics/ctl/nvme3/transport"
+
+export GUESS_DEVICE_SCRIPTS='features/guess-nvme/guess/device'
+
+features/guess-nvme/guess/device /devices/virtual/nvme-subsystem/nvme-subsys2/nvme2n1
+guess_feature_test_dump
