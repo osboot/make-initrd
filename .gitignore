@@ -1,10 +1,15 @@
+*.egg-info
+*.pyc
+*.swp
 *~
 .build
+.mypy_cache
 .tests
 .wiki
+Makefile
+__pycache__
 autom4te.cache
 config.h
 config.log
 config.status
 configure
-Makefile

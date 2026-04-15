@@ -1,89 +1,201 @@
-#!/bin/bash -efu
+#!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-artifacts="$1"
-shift
+from __future__ import annotations
 
-set_prefix()
-{
-	prefix=""
-	printf -v prefix "%-${testname_len}s | %${duration_len}d s |" "$1" "$2"
-}
+import sys
+from dataclasses import dataclass
+from pathlib import Path
 
-block_begin()
-{
-	printf '### Vendor: %s\n' "$vendor"
-	printf '```\n'
-}
 
-block_end()
-{
-	[ -n "$prev_vendor" ] ||
-		return 0
+BAR_WIDTH = 24
 
-	printf "%s|%d %$(( ${chart_len} - ${#over_len} - 1 ))d|\n" \
-		"$blank_prefix" "$over_len" "$(( $rest_len + $over_len ))"
-	printf '```\n'
-}
 
-line_len="####################################################################################################################"
+@dataclass(frozen=True)
+class Artifact:
+    vendor: str
+    testname: str
+    step: str
+    boot_duration: int
+    qemu_runtime: int
+    status: int
 
-find "$artifacts" -name 'artifact-*.txt' -printf '%f\t%p\n' |
-	sort -k1,1 |
-	cut -f2- > "/tmp/artifacts.list"
 
-testname_len=0
-duration_len=0
-duration_max=0
+def parse_value(value: str) -> str:
+    value = value.strip()
+    if len(value) >= 2 and value[0] == '"' and value[-1] == '"':
+        return value[1:-1]
+    return value
 
-while read -r f; do
-	. "$f"
-	testname="${testname#test-root-}"
-	[ "$testname_len" -gt "${#testname}" ] || testname_len="${#testname}"
-	[ "$duration_len" -gt "${#duration}" ] || duration_len="${#duration}"
-	[ "$duration_max" -gt "${duration}"  ] || duration_max="${duration}"
-done < "/tmp/artifacts.list"
 
-set_prefix "" "0"
+def read_artifact(path: Path) -> Artifact:
+    data: dict[str, str] = {}
+    for line in path.read_text().splitlines():
+        if not line or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        data[key] = parse_value(value)
 
-prefix_len=${#prefix}
-rest_len=$(( ${#line_len} - ${prefix_len} ))
-over_len=$(( $duration_max - $rest_len ))
+    return Artifact(
+        vendor=data["vendor"],
+        testname=data["testname"].removeprefix("test-root-"),
+        step=data.get("step", "run-boot"),
+        boot_duration=int(data.get("boot_duration", data.get("duration", "0"))),
+        qemu_runtime=int(data.get("qemu_runtime", "0")),
+        status=int(data.get("status", "0")),
+    )
 
-[ $over_len -ge 0 ] ||
-	over_len=0
 
-chart_len=$(( $duration_max - $over_len )) ||
-chart_len=$(( $chart_len - 1 ))
+def read_artifacts(root: Path) -> list[Artifact]:
+    return sorted(
+        (read_artifact(path) for path in root.rglob("artifact-*.txt")),
+        key=lambda item: (item.vendor, item.testname),
+    )
 
-blank_prefix="${line_len:0:$(( $prefix_len - 1 ))}"
-blank_prefix="${blank_prefix//[! ]/ }"
 
-prev_vendor=""
-while read -r f; do
-	. "$f"
+def markdown_table(headers: list[str], rows: list[list[str]]) -> None:
+    print("| " + " | ".join(headers) + " |")
+    print("| " + " | ".join("---" for _ in headers) + " |")
+    for row in rows:
+        print("| " + " | ".join(row) + " |")
 
-	testname="${testname#test-root-}"
-	len=$(( $duration - $over_len ))
 
-	if [ "$prev_vendor" != "$vendor" ]; then
-		block_end
-		block_begin
-	fi
+def status_text(item: Artifact) -> str:
+    return "ok" if item.status == 0 else f"fail:{item.status}"
 
-	set_prefix "$testname" "$duration"
-	printf '%s' "$prefix"
 
-	for (( i=0; i < chart_len; i++)) {
-		[ $i -lt $len ] &&
-			printf '#' ||
-			printf '-'
-	}
-	printf '|\n'
+def has_boot_measurement(item: Artifact) -> bool:
+    return item.status == 0 and item.boot_duration > 0
 
-	prev_vendor="$vendor"
 
-done < "/tmp/artifacts.list"
+def boot_duration_text(item: Artifact) -> str:
+    if has_boot_measurement(item):
+        return f"{item.boot_duration}s"
+    if item.status == 0:
+        return "-"
+    return "0s"
 
-block_end
 
+def successful_durations(artifacts: list[Artifact]) -> list[int]:
+    return [item.boot_duration for item in artifacts if has_boot_measurement(item)]
+
+
+def make_bar(value: int, max_value: int, width: int = BAR_WIDTH) -> str:
+    if value <= 0 or max_value <= 0:
+        return "-"
+
+    filled = round(value * width / max_value)
+    filled = max(1, min(width, filled))
+    return "█" * filled + "░" * (width - filled)
+
+
+def print_vendor_tables(artifacts: list[Artifact]) -> None:
+    print("## Boot Metrics")
+    prev_vendor = None
+    rows: list[list[str]] = []
+    max_by_vendor = {
+        vendor: max(successful_durations([x for x in artifacts if x.vendor == vendor]), default=0)
+        for vendor in {item.vendor for item in artifacts}
+    }
+
+    for item in artifacts:
+        if item.vendor != prev_vendor:
+            if prev_vendor is not None:
+                print()
+                markdown_table(["test", "boot", "chart", "qemu", "status"], rows)
+            rows = []
+            prev_vendor = item.vendor
+            print()
+            print(f"### Vendor: {item.vendor}")
+
+        rows.append([
+            item.testname,
+            boot_duration_text(item),
+            make_bar(item.boot_duration if has_boot_measurement(item) else 0, max_by_vendor[item.vendor]),
+            f"{item.qemu_runtime}s" if item.qemu_runtime else "-",
+            status_text(item),
+        ])
+
+    if prev_vendor is not None:
+        print()
+        markdown_table(["test", "boot", "chart", "qemu", "status"], rows)
+
+
+def print_global_boot_chart(artifacts: list[Artifact]) -> None:
+    max_duration = max(successful_durations(artifacts), default=0)
+    rows: list[list[str]] = []
+
+    for item in sorted(
+        artifacts,
+        key=lambda x: (x.status != 0, -x.boot_duration, x.vendor, x.testname),
+    ):
+        rows.append([
+            item.vendor,
+            item.testname,
+            boot_duration_text(item),
+            make_bar(item.boot_duration if has_boot_measurement(item) else 0, max_duration),
+            status_text(item),
+        ])
+
+    print()
+    print("## Normalized Boot Chart")
+    print()
+    markdown_table(["vendor", "test", "boot", "chart", "status"], rows)
+
+
+def print_cross_vendor_table(artifacts: list[Artifact]) -> None:
+    vendors = sorted({item.vendor for item in artifacts})
+    testnames = sorted({item.testname for item in artifacts})
+    by_key = {(item.vendor, item.testname): item for item in artifacts}
+    rows: list[list[str]] = []
+
+    for testname in testnames:
+        values: list[str] = []
+        durations: list[int] = []
+        for vendor in vendors:
+            item = by_key.get((vendor, testname))
+            if item is None:
+                values.append("-")
+                continue
+            if item.status != 0:
+                values.append(f"fail:{item.status}")
+                continue
+            if not has_boot_measurement(item):
+                values.append("-")
+                continue
+            durations.append(item.boot_duration)
+            values.append(f"{item.boot_duration}s")
+        spread = "-"
+        if len(durations) >= 2:
+            spread = f"{max(durations) - min(durations)}s"
+        rows.append([testname, *values, spread])
+
+    print()
+    print("## Cross-Vendor Boot Duration")
+    print()
+    markdown_table(["test", *vendors, "spread"], rows)
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) != 2:
+        print(f"usage: {Path(argv[0]).name} <artifacts-dir>", file=sys.stderr)
+        return 1
+
+    artifacts = read_artifacts(Path(argv[1]))
+    if not artifacts:
+        print("No metrics artifacts found.")
+        return 0
+
+    boot_artifacts = [item for item in artifacts if item.step == "run-boot"]
+    if not boot_artifacts:
+        print("No boot metrics artifacts found.")
+        return 0
+
+    print_vendor_tables(boot_artifacts)
+    print_global_boot_chart(boot_artifacts)
+    print_cross_vendor_table(boot_artifacts)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))

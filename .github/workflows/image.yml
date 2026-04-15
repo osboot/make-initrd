@@ -26,7 +26,7 @@ jobs:
 
       - name: "Create images"
         if: steps.cache.outputs.cache-hit != 'true'
-        run: testing/testing-${{ inputs.vendor }} create-images
+        run: testing/orchestrator.py ${{ inputs.vendor }} create-images
 
       - name: "Check image existence"
         if: steps.cache.outputs.cache-hit != 'true'
