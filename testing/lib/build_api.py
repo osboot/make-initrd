@@ -15,12 +15,10 @@ class BuildRenderContext:
 
 
 @dataclass(frozen=True)
-class KickstartScriptSpec:
+class BootScriptSpec:
     imagefile: str | None
     boot_kernel_src: str
     boot_initrd_src: str
-    copy_kernel_files: bool = False
-    copy_verbose: bool = False
 
 
 def container_workdir(ctx: BuildRenderContext) -> str:
@@ -58,9 +56,8 @@ def render_build_sources_script(ctx: BuildRenderContext, *, pre_configure: str =
     )
 
 
-def render_build_kickstart_script(ctx: BuildRenderContext, spec: KickstartScriptSpec) -> str:
+def render_build_kickstart_script(ctx: BuildRenderContext, spec: BootScriptSpec) -> str:
     outdir = shlex.quote(container_workdir(ctx))
-    copy_option = "-vL" if spec.copy_verbose else "-L"
     common = [" AUTODETECT ="]
     if spec.imagefile is not None:
         common.append(f" IMAGEFILE = {spec.imagefile}")
@@ -74,17 +71,6 @@ def render_build_kickstart_script(ctx: BuildRenderContext, spec: KickstartScript
     ])
     initrd_mk = "\n".join(common)
 
-    copy_kernel_files = ""
-    if spec.copy_kernel_files:
-        copy_kernel_files = textwrap.dedent(
-            """\
-            for i in vmlinuz System.map config; do
-                [ ! -e "/lib/modules/$kver/$i" ] || cp -vL "/lib/modules/$kver/$i" "/boot/$i-$kver"
-            done
-
-            """
-        )
-
     return textwrap.dedent(
         f"""\
         #!/bin/bash -efux
@@ -95,11 +81,11 @@ def render_build_kickstart_script(ctx: BuildRenderContext, spec: KickstartScript
         {initrd_mk}
         EOF1
 
-        {copy_kernel_files}export PATH={shlex.quote(ctx.builddir)}/.build/dest/usr/sbin:{shlex.quote(ctx.builddir)}/.build/dest/usr/bin:$PATH
+        export PATH={shlex.quote(ctx.builddir)}/.build/dest/usr/sbin:{shlex.quote(ctx.builddir)}/.build/dest/usr/bin:$PATH
 
         {shlex.quote(ctx.builddir)}/.build/dest/usr/sbin/make-initrd -vv -k "$kver"
 
-        cp {copy_option} {spec.boot_kernel_src} {outdir}/boot-ks-vmlinuz
-        cp {copy_option} {spec.boot_initrd_src} {outdir}/boot-ks-initrd.img
+        cp -vL {spec.boot_kernel_src} {outdir}/boot-ks-vmlinuz
+        cp -vL {spec.boot_initrd_src} {outdir}/boot-ks-initrd.img
         """
     )

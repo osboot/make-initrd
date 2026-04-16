@@ -3,6 +3,10 @@
 from lib.package_api import PackageSet
 
 
+def install_command(packages: tuple[str, ...]) -> str:
+    return f"dnf -y install {' '.join(packages)}; dnf -y clean all"
+
+
 def get_packages() -> PackageSet:
     return PackageSet(
         make_initrd=(
@@ -29,5 +33,8 @@ def get_packages() -> PackageSet:
             "e2fsprogs", "btrfs-progs", "xfsprogs", "dosfstools", "cryptsetup",
             "lvm2", "mdadm", "util-linux", "rsync", "wget", "unzip", "tar",
             "cpio", "pwgen", "zstd", "lz4", "f2fs-tools",
+        ),
+        sshfs_service=(
+            "busybox", "fuse-sshfs", "iproute", "openssh-clients", "openssh-server",
         ),
     )

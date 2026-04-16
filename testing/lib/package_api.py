@@ -13,6 +13,7 @@ class PackageSet:
     init: tuple[str, ...]
     sysimage_extra: tuple[str, ...]
     kickstart_extra: tuple[str, ...]
+    sshfs_service: tuple[str, ...] = field(default_factory=tuple)
     zfs: tuple[str, ...] = field(default_factory=tuple)
 
     def packages(self, name: str) -> tuple[str, ...]:
@@ -26,6 +27,8 @@ class PackageSet:
             return self.init
         if name == "zfs":
             return self.zfs
+        if name == "sshfs_service":
+            return self.sshfs_service
         if name == "sysimage":
             return self.make_initrd + self.init + self.sysimage_extra + self.zfs
         if name == "kickstart":

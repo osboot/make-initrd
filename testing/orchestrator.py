@@ -20,6 +20,15 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from lib.build_api import BuildRenderContext
+from lib.host_services import (
+    configure_initrd,
+    HostServiceContext,
+    HostServiceError,
+    package_sets,
+    prepare_services,
+    print_logs,
+    run_services,
+)
 from lib.image_api import ImageRenderContext
 from lib.package_api import PackageSet
 from pathlib import Path
@@ -53,6 +62,9 @@ TEST_PARAM_KEYS = [
     "boot_prog",
     "boot_bios",
     "boot_logs",
+    "direct_boot",
+    "direct_boot_features",
+    "host_services",
     "qemu_memory",
     "qemu_timeout",
     "qemu_disk_format",
@@ -95,8 +107,15 @@ IGNORE_KMODULES_EXPR = (
     " -path '*/kernel/drivers/isdn/*' -o "
     " -path '*/kernel/drivers/leds/*' -o "
     " -path '*/kernel/drivers/media-core/*' -o "
-    " -path '*/kernel/drivers/net/*' -o "
+    " -path '*/kernel/drivers/net/can/*' -o "
+    " -path '*/kernel/drivers/net/dsa/*' -o "
+    " -path '*/kernel/drivers/net/hamradio/*' -o "
+    " -path '*/kernel/drivers/net/ieee802154/*' -o "
     " -path '*/kernel/drivers/net/usb/*' -o "
+    " -path '*/kernel/drivers/net/wan/*' -o "
+    " -path '*/kernel/drivers/net/wimax/*' -o "
+    " -path '*/kernel/drivers/net/wireless/*' -o "
+    " -path '*/kernel/drivers/net/wwan/*' -o "
     " -path '*/kernel/drivers/nfc/*' -o "
     " -path '*/kernel/drivers/pcmcia/*' -o "
     " -path '*/kernel/drivers/power/*' -o "
@@ -203,7 +222,7 @@ def load_toml_test_params(test_file: Path) -> dict[str, str]:
     for key, value in test.items():
         if key not in result:
             raise FatalStepError(f"unknown test metadata key in {test_file}: {key}")
-        if key in {"boot_cmdline", "boot_logs"} and isinstance(value, list):
+        if key in {"boot_cmdline", "boot_logs", "host_services"} and isinstance(value, list):
             value = " ".join(str(item) for item in value)
         elif isinstance(value, bool):
             value = "1" if value else "0"
@@ -213,6 +232,7 @@ def load_toml_test_params(test_file: Path) -> dict[str, str]:
             raise FatalStepError(f"invalid value for {key} in {test_file}")
         result[key] = value
     return result
+
 
 def write_executable(path: Path, content: str) -> None:
     lines = content.lstrip().splitlines()
@@ -262,6 +282,60 @@ def build_kickstart_script(ctx: "Context") -> str:
         top_workdir=str(ctx.top_workdir),
     )
     return vendor_module(ctx.vendor.name, "build").render_build_kickstart_script(build_ctx)
+
+
+def package_install_command(ctx: "Context", package_set: str) -> str:
+    packages = ctx.packages.packages(package_set)
+    if not packages:
+        return ":"
+    return vendor_module(ctx.vendor.name, "packages").install_command(packages)
+
+
+def host_service_install_command(ctx: "Context") -> str:
+    commands = [
+        package_install_command(ctx, package_set)
+        for package_set in package_sets(ctx.param("host_services").split())
+    ]
+    return "; ".join(commands) if commands else ":"
+
+
+def build_direct_boot_script(ctx: "Context") -> str:
+    spec = vendor_module(ctx.vendor.name, "build").boot_script_spec()
+    features = ctx.param("direct_boot_features")
+    if not features:
+        features = "add-modules add-udev-rules qemu rdshell modules-virtio modules-blockdev"
+
+    initrd_mk = [
+        f"IMAGEFILE = {ctx.builddir}/{ctx.workdir_rel}/boot-initrd.img",
+        "AUTODETECT =",
+        "DISABLE_FEATURES += ucode",
+        f"FEATURES = {features}",
+        "MODULES_ADD += e1000",
+        "MODULES_PRELOAD += e1000 virtio-pci",
+    ]
+
+    initrd_mk = configure_initrd(host_service_context(ctx), ctx.param("host_services").split(), initrd_mk)
+    install_services = host_service_install_command(ctx)
+
+    initrd_mk_text = "\n".join(initrd_mk)
+    return textwrap.dedent(
+        f"""\
+        #!/bin/bash -efux
+
+        kver="$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\\n' -quit)"
+
+        cat > /etc/initrd.mk <<'EOF'
+        {initrd_mk_text}
+        EOF
+
+        {install_services}
+
+        export PATH={shlex.quote(ctx.builddir)}/.build/dest/usr/sbin:{shlex.quote(ctx.builddir)}/.build/dest/usr/bin:$PATH
+
+        {shlex.quote(ctx.builddir)}/.build/dest/usr/sbin/make-initrd -vv -k "$kver"
+        cp -vL {spec.boot_kernel_src} "{ctx.builddir}/{ctx.workdir_rel}/boot-vmlinuz"
+        """
+    )
 
 
 def pack_sysimage_script(ctx: "Context") -> str:
@@ -318,6 +392,13 @@ class Context:
             value = os.environ.get(TEST_PARAM_ENV.get(name, ""))
         return default if value in {None, ""} else value
 
+    def flag(self, name: str) -> bool:
+        return self.param(name) in {"1", "true", "yes", "on"}
+
+    @property
+    def direct_boot(self) -> bool:
+        return self.flag("direct_boot")
+
 
 def prepare_testsuite(ctx: Context) -> None:
     ctx.top_workdir.mkdir(parents=True, exist_ok=True)
@@ -328,6 +409,9 @@ def prepare_testsuite(ctx: Context) -> None:
         return
 
     (ctx.statusdir / f"{ctx.vendor.name}-{ctx.testname}").write_text("FAILED\n")
+
+    if ctx.direct_boot:
+        return
 
     variant = os.environ.get("VARIANT", "")
     variant_suffix = f"-{variant}" if variant else ""
@@ -408,6 +492,10 @@ def build_qemu_args(ctx: Context, *, kickstart: bool) -> list[str]:
         boot_kernel = ctx.top_workdir / "boot-ks-vmlinuz"
         boot_initrd = ctx.top_workdir / "boot-ks-initrd.img"
         boot_append = "console=ttyS0,115200n8 quiet rdlog=console ksfile=ks.cfg"
+    elif ctx.direct_boot:
+        boot_kernel = ctx.top_workdir / "boot-vmlinuz"
+        boot_initrd = ctx.top_workdir / "boot-initrd.img"
+        boot_append = f"console=ttyS0,115200n8 {ctx.param('boot_cmdline')}"
     else:
         boot_kernel = None
         boot_initrd = None
@@ -521,6 +609,38 @@ def qemu_watchdog(ctx: Context, logfile: Path, stop_event: threading.Event) -> N
         time.sleep(1)
 
 
+def host_service_context(ctx: Context) -> HostServiceContext:
+    return HostServiceContext(
+        topdir=ctx.topdir,
+        top_workdir=ctx.top_workdir,
+        top_logdir=ctx.top_logdir,
+        vendor_name=ctx.vendor.name,
+        message=lambda text: message(ctx, text),
+        install_package_set=lambda package_set: package_install_command(ctx, package_set),
+        builddir=ctx.builddir,
+        workdir_rel=ctx.workdir_rel,
+    )
+
+
+@contextmanager
+def host_services(ctx: Context, *, kickstart: bool):
+    if kickstart:
+        yield
+        return
+
+    services = ctx.param("host_services").split()
+    try:
+        with run_services(host_service_context(ctx), services):
+            yield
+    except Exception:
+        print_host_service_logs(ctx)
+        raise
+
+
+def print_host_service_logs(ctx: Context) -> None:
+    print_logs(host_service_context(ctx), ctx.param("host_services").split())
+
+
 def qemu_exec(ctx: Context, *, step_name: str, kickstart: bool) -> None:
     logfile = ctx.top_logdir / "qemu.log"
     logfile.parent.mkdir(parents=True, exist_ok=True)
@@ -546,64 +666,65 @@ def qemu_exec(ctx: Context, *, step_name: str, kickstart: bool) -> None:
     master_fd = -1
     slave_fd = -1
     try:
-        master_fd, slave_fd = pty.openpty()
-        proc = subprocess.Popen(
-            command,
-            cwd=ctx.topdir,
-            stdin=slave_fd,
-            stdout=slave_fd,
-            stderr=slave_fd,
-            start_new_session=True,
-        )
-        os.close(slave_fd)
-        slave_fd = -1
-        start_time = time.monotonic()
-        prompt_buffer = b""
+        with host_services(ctx, kickstart=kickstart):
+            master_fd, slave_fd = pty.openpty()
+            proc = subprocess.Popen(
+                command,
+                cwd=ctx.topdir,
+                stdin=slave_fd,
+                stdout=slave_fd,
+                stderr=slave_fd,
+                start_new_session=True,
+            )
+            os.close(slave_fd)
+            slave_fd = -1
+            start_time = time.monotonic()
+            prompt_buffer = b""
 
-        with logfile.open("ab", buffering=0) as logfh:
-            while True:
-                now = time.monotonic()
-                if now - start_time >= timeout_value:
-                    rc = 124
-                    os.killpg(proc.pid, signal.SIGTERM)
-                    break
+            with logfile.open("ab", buffering=0) as logfh:
+                while True:
+                    now = time.monotonic()
+                    if now - start_time >= timeout_value:
+                        rc = 124
+                        os.killpg(proc.pid, signal.SIGTERM)
+                        break
 
-                timeout_left = min(1.0, timeout_value - (now - start_time))
-                ready, _, _ = select.select([master_fd], [], [], max(timeout_left, 0.0))
-                if ready:
-                    try:
-                        data = os.read(master_fd, 65536)
-                    except OSError:
-                        data = b""
-                    if data:
-                        write_qemu_output(logfh, data)
-                        prompt_buffer = (prompt_buffer + data)[-8192:]
-                        if boot_prog == "expect-password" and LUKS_PROMPT_RE.search(prompt_buffer):
-                            time.sleep(1)
-                            os.write(master_fd, b"qwerty\r")
-                            prompt_buffer = b""
+                    timeout_left = min(1.0, timeout_value - (now - start_time))
+                    ready, _, _ = select.select([master_fd], [], [], max(timeout_left, 0.0))
+                    if ready:
+                        try:
+                            data = os.read(master_fd, 65536)
+                        except OSError:
+                            data = b""
+                        if data:
+                            write_qemu_output(logfh, data)
+                            prompt_buffer = (prompt_buffer + data)[-8192:]
+                            if boot_prog == "expect-password" and LUKS_PROMPT_RE.search(prompt_buffer):
+                                time.sleep(1)
+                                os.write(master_fd, b"qwerty\r")
+                                prompt_buffer = b""
+                        elif proc.poll() is not None:
+                            break
                     elif proc.poll() is not None:
                         break
-                elif proc.poll() is not None:
-                    break
 
-            if rc == 124:
-                try:
-                    proc.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    os.killpg(proc.pid, signal.SIGKILL)
-                    proc.wait()
-            else:
-                try:
-                    proc.wait(timeout=1)
-                except subprocess.TimeoutExpired:
-                    os.killpg(proc.pid, signal.SIGTERM)
+                if rc == 124:
                     try:
                         proc.wait(timeout=5)
                     except subprocess.TimeoutExpired:
                         os.killpg(proc.pid, signal.SIGKILL)
                         proc.wait()
-                rc = proc.returncode or 0
+                else:
+                    try:
+                        proc.wait(timeout=1)
+                    except subprocess.TimeoutExpired:
+                        os.killpg(proc.pid, signal.SIGTERM)
+                        try:
+                            proc.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            os.killpg(proc.pid, signal.SIGKILL)
+                            proc.wait()
+                    rc = proc.returncode or 0
     finally:
         if master_fd >= 0:
             try:
@@ -645,6 +766,8 @@ def qemu_exec(ctx: Context, *, step_name: str, kickstart: bool) -> None:
             print(f"<<<<<< {entry} <<<<<<")
             print(path.read_text(errors="ignore"), end="")
             print(">>>>>>")
+
+    print_host_service_logs(ctx)
 
     if rc != 0:
         message(ctx, f"qemu failed with status {rc}")
@@ -710,9 +833,32 @@ def step_build_sysimage(ctx: Context) -> None:
                 f"/host/{ctx.workdir_rel}/run.sh",
             ],
         )
+    if ctx.direct_boot:
+        with gh_group("creating direct boot image"):
+            prepare_services(host_service_context(ctx), ctx.param("host_services").split())
+            run_sh = ctx.top_workdir / "run.sh"
+            write_executable(run_sh, build_direct_boot_script(ctx))
+            run_command(
+                ctx,
+                [
+                    "podman", "run", "--rm", "-i",
+                    f"--volume={ctx.topdir}:{ctx.builddir}",
+                    f"localhost/image-{ctx.vendor.name}:devel",
+                    f"{ctx.builddir}/{ctx.workdir_rel}/run.sh",
+                ],
+            )
+            for artifact in ("boot-vmlinuz", "boot-initrd.img"):
+                path = ctx.top_workdir / artifact
+                if not path.exists():
+                    raise FatalStepError(f"direct boot build did not create {path}")
+                message(ctx, f"created {path}")
 
 
 def step_build_kickstart(ctx: Context) -> None:
+    if ctx.direct_boot:
+        message(ctx, "skip build-kickstart for direct boot test")
+        return
+
     with gh_group("creating kickstart image"):
         run_sh = ctx.top_workdir / "run.sh"
         write_executable(run_sh, build_kickstart_script(ctx))
@@ -733,6 +879,10 @@ def step_build_kickstart(ctx: Context) -> None:
 
 
 def step_run_kickstart(ctx: Context) -> None:
+    if ctx.direct_boot:
+        message(ctx, "skip run-kickstart for direct boot test")
+        return
+
     with gh_group("creating qemu kickstart disks"):
         qemu_exec(ctx, step_name="run-kickstart", kickstart=True)
 
@@ -793,7 +943,7 @@ def main(argv: list[str]) -> int:
             if handler is None:
                 raise FatalStepError(f"unknown step: {step}")
             handler(ctx)
-    except FatalStepError as exc:
+    except (FatalStepError, HostServiceError) as exc:
         print(f"{Path(argv[0]).name}: {exc}", file=sys.stderr)
         return 1
     except subprocess.CalledProcessError as exc:

@@ -3,6 +3,13 @@
 from lib.package_api import PackageSet
 
 
+APT_ARGS = "-y -qq -o=APT::Install::Virtual=true -o=APT::Install::VirtualVersion=true"
+
+
+def install_command(packages: tuple[str, ...]) -> str:
+    return f"apt-get {APT_ARGS} update; apt-get {APT_ARGS} install {' '.join(packages)}; apt-get {APT_ARGS} clean"
+
+
 def get_packages() -> PackageSet:
     return PackageSet(
         make_initrd=(
@@ -27,5 +34,8 @@ def get_packages() -> PackageSet:
             "util-linux", "rsync", "wget", "cryptsetup", "lvm2", "mdadm", "pwgen",
             "e2fsprogs", "btrfs-progs", "xfsprogs", "dosfstools", "reiserfsprogs",
             "sfdisk", "unzip", "tar", "cpio", "eject", "lz4", "f2fs-tools",
+        ),
+        sshfs_service=(
+            "busybox", "fuse-sshfs", "iproute2", "openssh-clients", "openssh-server",
         ),
     )

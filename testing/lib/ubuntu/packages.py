@@ -3,6 +3,13 @@
 from lib.package_api import PackageSet
 
 
+APT_ARGS = "-y -qq"
+
+
+def install_command(packages: tuple[str, ...]) -> str:
+    return f"apt-get {APT_ARGS} update; apt-get {APT_ARGS} install {' '.join(packages)}; apt-get {APT_ARGS} clean"
+
+
 def get_packages() -> PackageSet:
     return PackageSet(
         make_initrd=(
@@ -27,6 +34,9 @@ def get_packages() -> PackageSet:
             "e2fsprogs", "btrfs-progs", "xfsprogs", "dosfstools", "cryptsetup",
             "lvm2", "mdadm", "util-linux", "rsync", "wget", "unzip", "tar",
             "cpio", "pwgen", "zstd", "lz4", "eject", "fdisk", "f2fs-tools",
+        ),
+        sshfs_service=(
+            "busybox", "iproute2", "openssh-client", "openssh-server", "sshfs",
         ),
         zfs=("zfsutils-linux",),
     )

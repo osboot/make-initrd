@@ -3,6 +3,16 @@
 from lib.package_api import PackageSet
 
 
+def install_command(packages: tuple[str, ...]) -> str:
+    return (
+        "getuto >/dev/null; "
+        "emerge-webrsync --quiet; "
+        "emerge --quiet --ask=n --getbinpkg --autounmask-write --newuse --update "
+        f"{' '.join(packages)}; "
+        "emerge --depclean --with-bdeps=n --ask=n"
+    )
+
+
 def get_packages() -> PackageSet:
     return PackageSet(
         make_initrd=(
@@ -38,5 +48,8 @@ def get_packages() -> PackageSet:
             "sys-apps/util-linux", "net-misc/rsync", "net-misc/wget", "app-arch/unzip",
             "app-arch/tar", "app-arch/cpio", "app-admin/pwgen", "app-arch/zstd",
             "sys-fs/f2fs-tools",
+        ),
+        sshfs_service=(
+            "net-fs/sshfs", "sys-apps/iproute2", "net-misc/openssh", "sys-apps/busybox",
         ),
     )
