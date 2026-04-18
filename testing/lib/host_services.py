@@ -33,6 +33,7 @@ class HostServiceProcess:
     name: str
     process: subprocess.Popen[bytes]
     logfh: BinaryIO
+    cleanup: Callable[[], None] | None = None
 
 
 def wait_tcp_port(host: str, port: int, timeout: float) -> bool:
@@ -112,6 +113,8 @@ def run_services(ctx: HostServiceContext, names: list[str]) -> Iterator[None]:
             except subprocess.TimeoutExpired:
                 service.process.kill()
                 service.process.wait()
+            if service.cleanup is not None:
+                service.cleanup()
             service.logfh.close()
 
 

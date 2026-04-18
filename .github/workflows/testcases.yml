@@ -28,6 +28,7 @@ jobs:
           - f2fs-partition
           - initramfs-on-erofs
           - initramfs-on-squashfs
+          - iscsiroot
           - luks
           - luks+crypttab+noparam
           - luks+lukskey-noparam
@@ -37,6 +38,7 @@ jobs:
           - luks-over-raid1
           - lvm
           - lvm+luks
+          - nvmfroot
           - partition
           - partition+usr
           - pipeline
@@ -45,7 +47,6 @@ jobs:
           - raid1-degraded
           - raid5
           - sdcard
-          - iscsiroot
           - sshfsroot
           - xfs-partition
           - zfs-partition
@@ -70,15 +71,17 @@ jobs:
           podman image load -i=$HOME/.images/${{ inputs.vendor }}/image-sysimage.tar.gz
           podman image load -i=$HOME/.images/${{ inputs.vendor }}/image-devel.tar.gz
 
+      - name: "Install Packages"
+        run: |
+          kver=`uname -r`
+          sudo apt-get -qq -y update
+          sudo apt-get -qq -y install linux-modules-$kver linux-modules-extra-$kver
+          sudo apt-get -qq -y install git qemu-kvm ovmf
+
       - name: "Prepare Node"
         run: |
           for m in kvm kvm-amd kvm-intel; do sudo modprobe -v "$m" ||:; done
           test -c /dev/kvm && sudo chmod -v 666 /dev/kvm ||:
-
-      - name: "Install Packages"
-        run: |
-          sudo apt-get -qq -y update
-          sudo apt-get -qq -y install git qemu-kvm ovmf
 
       - name: "Checkout Repository"
         uses: actions/checkout@v6
