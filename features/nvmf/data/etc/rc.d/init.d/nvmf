@@ -1,0 +1,116 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:            nvmf
+# Required-Start:      cmdline modules network-up
+# Should-Start:
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+### END INIT INFO
+
+[ -z "${1-}" ] || [ "$1" = start ] || exit 0
+
+[ "${NVMF_CONNECT:-0}" != 0 ] || [ "${NVMF_DISCOVER:-0}" != 0 ] ||
+[ -f /etc/nvme/discovery.conf ] ||
+	exit 0
+
+mkdir -p /etc/nvme
+
+[ -z "${NVMF_HOSTNQN:-}" ] ||
+	printf '%s\n' "$NVMF_HOSTNQN" > /etc/nvme/hostnqn
+
+[ -z "${NVMF_HOSTID:-}" ] ||
+	printf '%s\n' "$NVMF_HOSTID" > /etc/nvme/hostid
+
+connect_discover()
+{
+	local entry transport traddr trsvcid
+
+	entry="$1"
+
+	transport="${entry%%,*}"
+	entry="${entry#*,}"
+	traddr="${entry%%,*}"
+	entry="${entry#*,}"
+	trsvcid=
+
+	[ "$entry" = "$traddr" ] ||
+		trsvcid="${entry%%,*}"
+
+	[ -n "$transport" ] && [ -n "$traddr" ] ||
+		return 1
+
+	case "$transport" in
+		tcp) ;;
+		*) return 1 ;;
+	esac
+
+	set -- --transport="$transport" --traddr="$traddr"
+
+	[ -z "$trsvcid" ] ||
+		set -- "$@" --trsvcid="$trsvcid"
+
+	nvme discover "$@" ||
+		return 1
+
+	nvme connect-all "$@"
+}
+
+connect_target()
+{
+	local entry transport traddr subnqn trsvcid
+
+	entry="$1"
+
+	transport="${entry%%,*}"
+	entry="${entry#*,}"
+	traddr="${entry%%,*}"
+	entry="${entry#*,}"
+	subnqn="${entry%%,*}"
+	entry="${entry#*,}"
+	trsvcid=
+
+	[ "$entry" = "$subnqn" ] ||
+		trsvcid="${entry%%,*}"
+
+	[ -n "$transport" ] && [ -n "$traddr" ] && [ -n "$subnqn" ] ||
+		return 1
+
+	case "$transport" in
+		tcp) ;;
+		*) return 1 ;;
+	esac
+
+	set -- --transport="$transport" --traddr="$traddr" --nqn="$subnqn"
+
+	[ -z "$trsvcid" ] ||
+		set -- "$@" --trsvcid="$trsvcid"
+
+	nvme connect "$@"
+}
+
+rc=0
+i=0
+while [ "$i" -lt "${NVMF_CONNECT:-0}" ]; do
+	eval "entry=\${NVMF_CONNECT$i-}"
+	[ -z "$entry" ] ||
+		connect_target "$entry" ||
+		rc=1
+	i=$((i + 1))
+done
+
+i=0
+while [ "$i" -lt "${NVMF_DISCOVER:-0}" ]; do
+	eval "entry=\${NVMF_DISCOVER$i-}"
+	[ -z "$entry" ] ||
+		connect_discover "$entry" ||
+		rc=1
+	i=$((i + 1))
+done
+
+[ "${NVMF_CONNECT:-0}" != 0 ] || [ "${NVMF_DISCOVER:-0}" != 0 ] ||
+	nvme connect-all ||
+	rc=1
+
+exit "$rc"
