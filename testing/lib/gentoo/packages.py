@@ -52,4 +52,7 @@ def get_packages() -> PackageSet:
         sshfs_service=(
             "net-fs/sshfs", "sys-apps/iproute2", "net-misc/openssh", "sys-apps/busybox",
         ),
+        iscsi_service=(
+            "sys-block/open-iscsi", "sys-block/tgt", "sys-apps/iproute2", "sys-apps/busybox",
+        ),
     )

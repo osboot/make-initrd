@@ -14,6 +14,7 @@ def boot_script_spec() -> BootScriptSpec:
         imagefile=None,
         boot_kernel_src="/boot/vmlinuz",
         boot_initrd_src="/boot/initrd.img",
+        install_services=True,
     )
 
 

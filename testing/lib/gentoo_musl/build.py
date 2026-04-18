@@ -24,6 +24,7 @@ def boot_script_spec() -> BootScriptSpec:
         imagefile="/boot/initrd-ks.img",
         boot_kernel_src="/lib/modules/$kver/vmlinuz",
         boot_initrd_src="/boot/initrd-ks.img",
+        install_services=False,
     )
 
 

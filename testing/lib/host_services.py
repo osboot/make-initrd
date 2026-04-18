@@ -46,6 +46,18 @@ def wait_tcp_port(host: str, port: int, timeout: float) -> bool:
     return False
 
 
+def wait_log_line(path: Path, text: str, timeout: float) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            if text in path.read_text(errors="ignore"):
+                return True
+        except FileNotFoundError:
+            pass
+        time.sleep(0.2)
+    return False
+
+
 def service_module(name: str):
     module_name = name.replace("-", "_")
     try:

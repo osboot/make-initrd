@@ -21,3 +21,16 @@ class ImageRenderContext:
 
 def cleanup_command(parts: list[str]) -> str:
     return " ||:; ".join(parts) + " ||:;"
+
+
+def create_init_script() -> str:
+    return """\
+        printf > /init.once '%s\\n' \\
+            '#!/bin/sh' \\
+            'test -d /proc && mount -t proc proc /proc;' \\
+            'test -d /sys && mount -t sysfs sysfs /sys;' \\
+            'echo; echo; echo; echo "IT WORKS!"; echo; echo; echo;' \\
+            'sync; reboot -f || poweroff -f || halt -f' \\
+            'exit 0'; \\
+        chmod 755 /init.once;
+        """
