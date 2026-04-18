@@ -1,9 +1,15 @@
 register_parameter string NVMF_HOSTNQN
 register_parameter string NVMF_HOSTID
+register_parameter bool NVMF_NONVMF
+register_parameter bool NVMF_NOSTATIC
+register_parameter bool NVMF_NONBFT
 register_array string NVMF_CONNECT
 register_array string NVMF_DISCOVER
 
 register_alias NVMF_HOSTNQN  RD_NVMF_HOSTNQN
 register_alias NVMF_HOSTID   RD_NVMF_HOSTID
+register_alias NVMF_NONVMF   RD_NONVMF RD_NVMF_NONVMF
+register_alias NVMF_NOSTATIC RD_NVMF_NOSTATIC
+register_alias NVMF_NONBFT   RD_NVMF_NONBFT
 register_alias NVMF_CONNECT  RD_NVMF_CONNECT
 register_alias NVMF_DISCOVER RD_NVMF_DISCOVER
