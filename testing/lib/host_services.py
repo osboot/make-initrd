@@ -69,10 +69,6 @@ def service_module(name: str):
         raise HostServiceError(f"unsupported host service: {name}") from exc
 
 
-def start_service(ctx: HostServiceContext, name: str) -> HostServiceProcess:
-    return service_module(name).start(ctx)
-
-
 def prepare_services(ctx: HostServiceContext, names: list[str]) -> None:
     for name in names:
         prepare = getattr(service_module(name), "prepare", None)
@@ -103,7 +99,7 @@ def run_services(ctx: HostServiceContext, names: list[str]) -> Iterator[None]:
     processes: list[HostServiceProcess] = []
     try:
         for name in names:
-            processes.append(start_service(ctx, name))
+            processes.append(service_module(name).start(ctx))
         yield
     finally:
         for service in reversed(processes):

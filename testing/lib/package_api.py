@@ -5,6 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 
+SERVICE_PACKAGE_SETS = (
+    "sshfs_service",
+    "iscsi_service",
+    "nvmf_service",
+)
+
+
 @dataclass(frozen=True)
 class PackageSet:
     make_initrd: tuple[str, ...]
@@ -29,14 +36,13 @@ class PackageSet:
             return self.init
         if name == "zfs":
             return self.zfs
-        if name == "sshfs_service":
-            return self.sshfs_service
-        if name == "iscsi_service":
-            return self.iscsi_service
-        if name == "nvmf_service":
-            return self.nvmf_service
+        if name in SERVICE_PACKAGE_SETS:
+            return getattr(self, name)
         if name == "services":
-            return self.sshfs_service + self.iscsi_service + self.nvmf_service
+            packages: tuple[str, ...] = ()
+            for package_set in SERVICE_PACKAGE_SETS:
+                packages += self.packages(package_set)
+            return packages
         if name == "sysimage":
             return self.make_initrd + self.init + self.sysimage_extra + self.zfs
         if name == "kickstart":
