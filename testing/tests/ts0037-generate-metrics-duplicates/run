@@ -1,0 +1,26 @@
+#!/bin/bash -efu
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' EXIT
+
+mkdir -p "$tmpdir/old" "$tmpdir/new"
+
+cat > "$tmpdir/old/artifact-altlinux-test-root-iscsiroot.txt" <<'EOF'
+vendor="altlinux"
+testname="test-root-iscsiroot"
+step="run-boot"
+boot_duration=0
+qemu_runtime=10
+status=0
+EOF
+
+cat > "$tmpdir/new/artifact-altlinux-test-root-iscsiroot.txt" <<'EOF'
+vendor="altlinux"
+testname="test-root-iscsiroot"
+step="run-boot"
+boot_duration=23
+qemu_runtime=30
+status=0
+EOF
+
+testing/generate-metrics "$tmpdir"

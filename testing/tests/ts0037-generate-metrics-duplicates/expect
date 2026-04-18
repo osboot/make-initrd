@@ -1,0 +1,20 @@
+## Boot Metrics
+
+### Vendor: altlinux
+
+| test | boot | chart | qemu | status |
+| --- | --- | --- | --- | --- |
+| iscsiroot | 23s | ████████████████████████ | 30s | ok |
+
+## Normalized Boot Chart
+
+| vendor | test | boot | chart | status |
+| --- | --- | --- | --- | --- |
+| altlinux | iscsiroot | 23s | ████████████████████████ | ok |
+
+## Cross-Vendor Boot Duration
+
+| test | altlinux | spread |
+| --- | --- | --- |
+| iscsiroot | 23s | - |
+rc=0

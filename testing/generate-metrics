@@ -53,6 +53,26 @@ def read_artifacts(root: Path) -> list[Artifact]:
     )
 
 
+def artifact_rank(item: Artifact) -> tuple[int, int, int]:
+    return (
+        1 if has_boot_measurement(item) else 0,
+        1 if item.status == 0 else 0,
+        item.boot_duration,
+    )
+
+
+def merge_artifacts(artifacts: list[Artifact]) -> list[Artifact]:
+    result: dict[tuple[str, str], Artifact] = {}
+
+    for item in artifacts:
+        key = (item.vendor, item.testname)
+        old = result.get(key)
+        if old is None or artifact_rank(item) > artifact_rank(old):
+            result[key] = item
+
+    return sorted(result.values(), key=lambda item: (item.vendor, item.testname))
+
+
 def markdown_table(headers: list[str], rows: list[list[str]]) -> None:
     print("| " + " | ".join(headers) + " |")
     print("| " + " | ".join("---" for _ in headers) + " |")
@@ -186,7 +206,7 @@ def main(argv: list[str]) -> int:
         print("No metrics artifacts found.")
         return 0
 
-    boot_artifacts = [item for item in artifacts if item.step == "run-boot"]
+    boot_artifacts = merge_artifacts([item for item in artifacts if item.step == "run-boot"])
     if not boot_artifacts:
         print("No boot metrics artifacts found.")
         return 0
