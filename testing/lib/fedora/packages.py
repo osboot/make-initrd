@@ -40,4 +40,7 @@ def get_packages() -> PackageSet:
         iscsi_service=(
             "busybox", "iproute", "iscsi-initiator-utils", "scsi-target-utils",
         ),
+        nvmf_service=(
+            "nvme-cli",
+        ),
     )

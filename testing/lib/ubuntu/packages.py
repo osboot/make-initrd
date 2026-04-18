@@ -41,5 +41,8 @@ def get_packages() -> PackageSet:
         iscsi_service=(
             "busybox", "iproute2", "open-iscsi", "tgt",
         ),
+        nvmf_service=(
+            "nvme-cli",
+        ),
         zfs=("zfsutils-linux",),
     )

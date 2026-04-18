@@ -55,4 +55,7 @@ def get_packages() -> PackageSet:
         iscsi_service=(
             "sys-block/open-iscsi", "sys-block/tgt", "sys-apps/iproute2", "sys-apps/busybox",
         ),
+        nvmf_service=(
+            "sys-apps/nvme-cli",
+        ),
     )
