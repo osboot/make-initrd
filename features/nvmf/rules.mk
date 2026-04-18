@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 MODULES_LOAD += $(NVMF_MODULES)
+MODULES_TRY_ADD += $(NVMF_OPTIONAL_MODULES)
 
 PUT_FEATURE_FILES += \
 	$(wildcard /etc/nvme/hostnqn) \

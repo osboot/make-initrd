@@ -11,45 +11,65 @@
 
 [ -z "${1-}" ] || [ "$1" = start ] || exit 0
 
-[ "${NVMF_CONNECT:-0}" != 0 ] || [ "${NVMF_DISCOVER:-0}" != 0 ] ||
-[ -f /etc/nvme/discovery.conf ] ||
+[ -z "${NVMF_NONVMF:-}" ] ||
 	exit 0
 
 mkdir -p /etc/nvme
 
-[ -z "${NVMF_HOSTNQN:-}" ] ||
-	printf '%s\n' "$NVMF_HOSTNQN" > /etc/nvme/hostnqn
+[ -z "${NVMF_HOSTNQN:-}" ] || printf '%s\n' "$NVMF_HOSTNQN" > /etc/nvme/hostnqn
+[ -z "${NVMF_HOSTID:-}"  ] || printf '%s\n' "$NVMF_HOSTID"  > /etc/nvme/hostid
 
-[ -z "${NVMF_HOSTID:-}" ] ||
-	printf '%s\n' "$NVMF_HOSTID" > /etc/nvme/hostid
+glob()
+{
+	[ -e "$1" ]
+}
+
+trigger_fc_auto()
+{
+	[ -f /sys/class/fc/fc_udev_device/nvme_discovery ] ||
+		return 1
+
+	echo add > /sys/class/fc/fc_udev_device/nvme_discovery
+}
 
 connect_discover()
 {
-	local entry transport traddr trsvcid
+	local transport traddr host_traddr trsvcid _rest
 
-	entry="$1"
+	IFS=, read -r transport traddr host_traddr trsvcid _rest <<< "$1"
 
-	transport="${entry%%,*}"
-	entry="${entry#*,}"
-	traddr="${entry%%,*}"
-	entry="${entry#*,}"
-	trsvcid=
-
-	[ "$entry" = "$traddr" ] ||
-		trsvcid="${entry%%,*}"
+	case "$host_traddr,$trsvcid" in
+		[0-9]*,)
+			trsvcid="$host_traddr"
+			host_traddr=
+			;;
+	esac
 
 	[ -n "$transport" ] && [ -n "$traddr" ] ||
 		return 1
 
 	case "$transport" in
-		tcp) ;;
-		*) return 1 ;;
+		tcp|rdma)
+			[ -n "$trsvcid" ] ||
+				trsvcid=4420
+			;;
+		fc)
+			if [ "$traddr" = auto ]; then
+				trigger_fc_auto
+				return "$?"
+			fi
+			[ -n "$host_traddr" ] ||
+				return 1
+			trsvcid=
+			;;
+		*)
+			return 1
+			;;
 	esac
 
-	set -- --transport="$transport" --traddr="$traddr"
-
-	[ -z "$trsvcid" ] ||
-		set -- "$@" --trsvcid="$trsvcid"
+	set -- --transport="$transport" --traddr="$traddr" \
+		${host_traddr:+--host-traddr="$host_traddr"} \
+		${trsvcid:+--trsvcid="$trsvcid"}
 
 	nvme discover "$@" ||
 		return 1
@@ -59,45 +79,74 @@ connect_discover()
 
 connect_target()
 {
-	local entry transport traddr subnqn trsvcid
+	local transport traddr subnqn trsvcid host_traddr _rest
 
-	entry="$1"
+	IFS=, read -r transport traddr subnqn trsvcid host_traddr _rest <<< "$1"
 
-	transport="${entry%%,*}"
-	entry="${entry#*,}"
-	traddr="${entry%%,*}"
-	entry="${entry#*,}"
-	subnqn="${entry%%,*}"
-	entry="${entry#*,}"
-	trsvcid=
-
-	[ "$entry" = "$subnqn" ] ||
-		trsvcid="${entry%%,*}"
+	case "$trsvcid,$host_traddr" in
+		*[!0-9]*,)
+			host_traddr="$trsvcid"
+			trsvcid=
+			;;
+	esac
 
 	[ -n "$transport" ] && [ -n "$traddr" ] && [ -n "$subnqn" ] ||
 		return 1
 
 	case "$transport" in
-		tcp) ;;
-		*) return 1 ;;
+		tcp|rdma)
+			[ -n "$trsvcid" ] ||
+				trsvcid=4420
+			;;
+		fc)
+			[ -n "$host_traddr" ] ||
+				return 1
+			trsvcid=
+			;;
+		*)
+			return 1
+			;;
 	esac
 
-	set -- --transport="$transport" --traddr="$traddr" --nqn="$subnqn"
+	nvme connect \
+		--transport="$transport" --traddr="$traddr" --nqn="$subnqn" \
+		${host_traddr:+--host-traddr="$host_traddr"} \
+		${trsvcid:+--trsvcid="$trsvcid"}
+}
 
-	[ -z "$trsvcid" ] ||
-		set -- "$@" --trsvcid="$trsvcid"
+connect_static()
+{
+	[ -z "${NVMF_NOSTATIC:-}" ] ||
+		return 1
+	[ -f /etc/nvme/discovery.conf ] || [ -f /etc/nvme/config.json ] ||
+		return 1
 
-	nvme connect "$@"
+	nvme connect-all --no-nbft
+}
+
+connect_nbft()
+{
+	[ -z "${NVMF_NONBFT:-}" ] ||
+		return 1
+	glob /sys/firmware/acpi/tables/NBFT* ||
+		return 1
+
+	nvme connect-all --nbft
 }
 
 rc=0
+
+for mod in nvme_tcp nvme_rdma nvme_fc nvme_core nvme_fabrics; do
+	modprobe -b -q "$mod" 2>/dev/null ||:
+done
+
 i=0
 while [ "$i" -lt "${NVMF_CONNECT:-0}" ]; do
 	eval "entry=\${NVMF_CONNECT$i-}"
 	[ -z "$entry" ] ||
 		connect_target "$entry" ||
 		rc=1
-	i=$((i + 1))
+	i=$(( $i + 1 ))
 done
 
 i=0
@@ -106,11 +155,10 @@ while [ "$i" -lt "${NVMF_DISCOVER:-0}" ]; do
 	[ -z "$entry" ] ||
 		connect_discover "$entry" ||
 		rc=1
-	i=$((i + 1))
+	i=$(( $i + 1 ))
 done
 
 [ "${NVMF_CONNECT:-0}" != 0 ] || [ "${NVMF_DISCOVER:-0}" != 0 ] ||
-	nvme connect-all ||
-	rc=1
+	connect_nbft || connect_static || trigger_fc_auto || rc=1
 
 exit "$rc"

@@ -6,4 +6,8 @@ NVMF_MODULES = nvme \
 	       nvme-fabrics \
 	       nvme-tcp
 
+NVMF_OPTIONAL_MODULES = nvme-fc \
+			nvme-rdma \
+			8021q
+
 NVMF_DATADIR = $(FEATURESDIR)/nvmf/data
