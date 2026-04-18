@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import textwrap
 
-from lib.image_api import ImageRenderContext, cleanup_command
+from lib.image_api import ImageRenderContext, cleanup_command, create_init_script
 
 
 def image_cleanup(ctx: ImageRenderContext) -> str:
@@ -34,12 +34,14 @@ def render_dockerfiles(ctx: ImageRenderContext) -> tuple[str, str]:
         RUN emerge-webrsync --quiet
         RUN emerge {emerge_args} {ctx.packages.joined("kernel")}
         RUN emerge {emerge_args} {ctx.packages.joined("sysimage")}
+        RUN emerge {emerge_args} {ctx.packages.joined("services")}
         RUN emerge --depclean --with-bdeps=n --ask=n
         RUN {ctx.depmod_cmd}
         RUN find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\\n' | while read -r kver; do for i in vmlinuz System.map config; do if [ -f "/lib/modules/$kver/$i" ]; then cp -vL "/lib/modules/$kver/$i" "/lib/modules/$kver/$i.real"; rm -v "/lib/modules/$kver/$i"; mv -v "/lib/modules/$kver/$i.real" "/lib/modules/$kver/$i"; fi; done; done;
         RUN {cleanup}
         RUN for i in $(portageq pkgdir) $(portageq distdir) $(portageq get_repo_path / gentoo); do find "$i" -mindepth 1 -delete; done
         RUN mkdir -p /srv
+        RUN {create_init_script()}
         """
     )
     devel = textwrap.dedent(

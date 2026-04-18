@@ -37,4 +37,7 @@ def get_packages() -> PackageSet:
         sshfs_service=(
             "busybox", "fuse-sshfs", "iproute", "openssh-clients", "openssh-server",
         ),
+        iscsi_service=(
+            "busybox", "iproute", "iscsi-initiator-utils", "scsi-target-utils",
+        ),
     )

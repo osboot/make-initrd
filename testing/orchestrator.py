@@ -301,6 +301,7 @@ def host_service_install_command(ctx: "Context") -> str:
 
 def build_direct_boot_script(ctx: "Context") -> str:
     spec = vendor_module(ctx.vendor.name, "build").boot_script_spec()
+
     features = ctx.param("direct_boot_features")
     if not features:
         features = "add-modules add-udev-rules qemu rdshell modules-virtio modules-blockdev"
@@ -315,9 +316,8 @@ def build_direct_boot_script(ctx: "Context") -> str:
     ]
 
     initrd_mk = configure_initrd(host_service_context(ctx), ctx.param("host_services").split(), initrd_mk)
-    install_services = host_service_install_command(ctx)
+    install_services = host_service_install_command(ctx) if spec.install_services else ":"
 
-    initrd_mk_text = "\n".join(initrd_mk)
     return textwrap.dedent(
         f"""\
         #!/bin/bash -efux
@@ -325,7 +325,7 @@ def build_direct_boot_script(ctx: "Context") -> str:
         kver="$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\\n' -quit)"
 
         cat > /etc/initrd.mk <<'EOF'
-        {initrd_mk_text}
+        {"\n".join(initrd_mk)}
         EOF
 
         {install_services}

@@ -19,6 +19,7 @@ class BootScriptSpec:
     imagefile: str | None
     boot_kernel_src: str
     boot_initrd_src: str
+    install_services: bool
 
 
 def container_workdir(ctx: BuildRenderContext) -> str:

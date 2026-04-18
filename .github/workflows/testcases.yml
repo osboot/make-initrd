@@ -45,6 +45,7 @@ jobs:
           - raid1-degraded
           - raid5
           - sdcard
+          - iscsiroot
           - sshfsroot
           - xfs-partition
           - zfs-partition

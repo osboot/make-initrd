@@ -18,7 +18,18 @@ fi
 if [ -z "$ISCSI_INITIATOR" ]; then
 	if [ ! -f /etc/iscsi/initiatorname.iscsi ]; then
 		mkdir -p /etc/iscsi
-		iscsi-gen-initiatorname
+
+		if command -v iscsi-gen-initiatorname >/dev/null 2>&1; then
+			iscsi-gen-initiatorname
+
+		elif command -v iscsi-iname >/dev/null 2>&1; then
+			echo "InitiatorName=$(iscsi-iname)" > /etc/iscsi/initiatorname.iscsi
+
+		elif [ -f /sys/firmware/ibft/initiator/initiator-name ]; then
+			while read -r line || [ -n "$line" ]; do
+				echo "InitiatorName=$line" > /etc/iscsi/initiatorname.iscsi
+			done < /sys/firmware/ibft/initiator/initiator-name
+		fi
 	fi
 	. /etc/iscsi/initiatorname.iscsi
         ISCSI_INITIATOR="$InitiatorName"

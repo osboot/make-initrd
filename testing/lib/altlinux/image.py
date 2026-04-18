@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import textwrap
 
-from lib.image_api import ImageRenderContext, cleanup_command
+from lib.image_api import ImageRenderContext, cleanup_command, create_init_script
 
 
 APT_ARGS = "-y -qq -o=APT::Install::Virtual=true -o=APT::Install::VirtualVersion=true"
@@ -34,6 +34,7 @@ def render_dockerfiles(ctx: ImageRenderContext) -> tuple[str, str]:
         RUN apt-get {APT_ARGS} clean
         RUN {ctx.depmod_cmd}
         RUN {cleanup}
+        RUN {create_init_script()}
         """
     )
     devel = textwrap.dedent(
