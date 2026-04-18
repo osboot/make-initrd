@@ -1,0 +1,7 @@
+#!/bin/bash -efux
+
+bytes=$(du -sb /image |cut -f1)
+bytes=$(( $bytes * 2 ))
+
+dd count=1 bs=$bytes if=/dev/zero of=/host/@WORKDIR_REL@/sysimage.img
+/sbin/mke2fs -t ext3 -L SYSIMAGE -d /image /host/@WORKDIR_REL@/sysimage.img

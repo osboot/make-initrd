@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import textwrap
 
-from lib.image_api import ImageRenderContext, cleanup_command, create_init_script
+from lib.image_api import ImageRenderContext, cleanup_command
+from lib.template import render_template
 
 
 def image_cleanup(ctx: ImageRenderContext) -> str:
@@ -40,7 +41,7 @@ def render_dockerfiles(ctx: ImageRenderContext) -> tuple[str, str]:
         RUN {cleanup}
         RUN for i in $(portageq pkgdir) $(portageq distdir) $(portageq get_repo_path / gentoo); do find "$i" -mindepth 1 -delete; done
         RUN mkdir -p /srv
-        RUN {create_init_script()}
+        RUN {render_template("create-init-script.run.in", {})}
         """
     )
     devel = textwrap.dedent(

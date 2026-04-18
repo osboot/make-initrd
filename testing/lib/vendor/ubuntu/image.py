@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import textwrap
 
-from lib.image_api import ImageRenderContext, cleanup_command, create_init_script
+from lib.image_api import ImageRenderContext, cleanup_command
+from lib.template import render_template
 
 
-APT_ARGS = "-y -qq -o=APT::Install::Virtual=true -o=APT::Install::VirtualVersion=true"
+APT_ARGS = "-y -qq"
 
 
 def image_cleanup(ctx: ImageRenderContext) -> str:
@@ -27,19 +28,20 @@ def render_dockerfiles(ctx: ImageRenderContext) -> tuple[str, str]:
     sysimage = textwrap.dedent(
         f"""\
         FROM {ctx.base_image}
-        RUN rpm -ql filesystem | xargs -r mkdir -p
+        ENV DEBIAN_FRONTEND=noninteractive
         RUN apt-get {APT_ARGS} update
         RUN apt-get {APT_ARGS} install {ctx.packages.joined("kernel")}
         RUN apt-get {APT_ARGS} install {ctx.packages.joined("sysimage")}
         RUN apt-get {APT_ARGS} clean
         RUN {ctx.depmod_cmd}
         RUN {cleanup}
-        RUN {create_init_script()}
+        RUN {render_template("create-init-script.run.in", {})}
         """
     )
     devel = textwrap.dedent(
         f"""\
         FROM localhost/image-{ctx.vendor_name}:sysimage
+        ENV DEBIAN_FRONTEND=noninteractive
         RUN apt-get {APT_ARGS} update
         RUN apt-get {APT_ARGS} install {ctx.packages.joined("kernel")}
         RUN apt-get {APT_ARGS} install {ctx.packages.joined("kickstart")}

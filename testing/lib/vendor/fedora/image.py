@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import textwrap
 
-from lib.image_api import ImageRenderContext, cleanup_command, create_init_script
+from lib.image_api import ImageRenderContext, cleanup_command
+from lib.template import render_template
 
 
 def image_cleanup(ctx: ImageRenderContext) -> str:
@@ -38,7 +39,7 @@ def render_dockerfiles(ctx: ImageRenderContext) -> tuple[str, str]:
         RUN dnf -y clean all
         RUN {ctx.depmod_cmd}
         RUN {cleanup}
-        RUN {create_init_script()}
+        RUN {render_template("create-init-script.run.in", {})}
         """
     )
     devel = textwrap.dedent(

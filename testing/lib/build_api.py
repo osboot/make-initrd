@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import shlex
-import textwrap
+
+from lib.template import render_template
 
 
 @dataclass(frozen=True)
@@ -27,33 +28,12 @@ def container_workdir(ctx: BuildRenderContext) -> str:
 
 
 def render_build_sources_script(ctx: BuildRenderContext, *, pre_configure: str = "") -> str:
-    return textwrap.dedent(
-        f"""\
-        #!/bin/bash -efux
-
-        cd {shlex.quote(ctx.builddir)}
-        rc=0
-
-        {pre_configure}
-        ./autogen.sh
-        ./configure \\
-            --enable-local-build \\
-            --with-runtimedir=/lib/initrd1 || rc=$?
-
-        if [ "$rc" != 0 ]; then
-            echo '========================================='
-            cat config.log
-            exit 1
-        fi
-
-        make || rc=$?
-
-        if [ "$rc" != 0 ]; then
-            echo '========================================='
-            cat config.log
-            exit 1
-        fi
-        """
+    return render_template(
+        "build-sources.sh.in",
+        {
+            "BUILDDIR": shlex.quote(ctx.builddir),
+            "PRE_CONFIGURE": pre_configure,
+        },
     )
 
 
@@ -72,21 +52,13 @@ def render_build_kickstart_script(ctx: BuildRenderContext, spec: BootScriptSpec)
     ])
     initrd_mk = "\n".join(common)
 
-    return textwrap.dedent(
-        f"""\
-        #!/bin/bash -efux
-
-        kver="$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\\n' -quit)"
-
-        cat > /etc/initrd.mk <<'EOF1'
-        {initrd_mk}
-        EOF1
-
-        export PATH={shlex.quote(ctx.builddir)}/.build/dest/usr/sbin:{shlex.quote(ctx.builddir)}/.build/dest/usr/bin:$PATH
-
-        {shlex.quote(ctx.builddir)}/.build/dest/usr/sbin/make-initrd -vv -k "$kver"
-
-        cp -vL {spec.boot_kernel_src} {outdir}/boot-ks-vmlinuz
-        cp -vL {spec.boot_initrd_src} {outdir}/boot-ks-initrd.img
-        """
+    return render_template(
+        "build-kickstart.sh.in",
+        {
+            "BUILDDIR": shlex.quote(ctx.builddir),
+            "INITRD_MK": initrd_mk,
+            "BOOT_KERNEL_SRC": spec.boot_kernel_src,
+            "BOOT_INITRD_SRC": spec.boot_initrd_src,
+            "OUTDIR": outdir,
+        },
     )

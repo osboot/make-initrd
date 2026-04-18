@@ -1,0 +1,14 @@
+#!/bin/bash -efux
+
+kver="$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' -quit)"
+
+cat > /etc/initrd.mk <<'EOF'
+@INITRD_MK@
+EOF
+
+export PATH=@BUILDDIR@/.build/dest/usr/sbin:@BUILDDIR@/.build/dest/usr/bin:$PATH
+
+@BUILDDIR@/.build/dest/usr/sbin/make-initrd -vv -k "$kver"
+
+cp -vL @BOOT_KERNEL_SRC@ @OUTDIR@/boot-ks-vmlinuz
+cp -vL @BOOT_INITRD_SRC@ @OUTDIR@/boot-ks-initrd.img

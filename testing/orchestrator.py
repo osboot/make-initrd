@@ -11,7 +11,6 @@ import signal
 import select
 import subprocess
 import sys
-import textwrap
 import threading
 import time
 import tomllib
@@ -31,6 +30,7 @@ from lib.host_services import (
 )
 from lib.image_api import ImageRenderContext
 from lib.package_api import PackageSet
+from lib.template import render_template
 from pathlib import Path
 from typing import BinaryIO
 
@@ -153,9 +153,12 @@ class FatalStepError(OrchestratorError):
 
 
 def vendor_module(vendor: str, area: str):
+    module_name = f"lib.vendor.{vendor}.{area}"
     try:
-        return import_module(f"lib.{vendor}.{area}")
+        return import_module(module_name)
     except ModuleNotFoundError as exc:
+        if exc.name not in {"lib.vendor", f"lib.vendor.{vendor}", module_name}:
+            raise
         raise FatalStepError(f"missing vendor module for {vendor}: {area}") from exc
 
 
@@ -294,7 +297,7 @@ def package_install_command(ctx: "Context", package_set: str) -> str:
 def host_service_install_command(ctx: "Context") -> str:
     commands = [
         package_install_command(ctx, package_set)
-        for package_set in package_sets(ctx.param("host_services").split())
+        for package_set in package_sets(ctx.host_services)
     ]
     return "; ".join(commands) if commands else ":"
 
@@ -315,40 +318,27 @@ def build_direct_boot_script(ctx: "Context") -> str:
         "MODULES_PRELOAD += e1000 virtio-pci",
     ]
 
-    initrd_mk = configure_initrd(host_service_context(ctx), ctx.param("host_services").split(), initrd_mk)
+    initrd_mk = configure_initrd(host_service_context(ctx), ctx.host_services, initrd_mk)
     install_services = host_service_install_command(ctx) if spec.install_services else ":"
 
-    return textwrap.dedent(
-        f"""\
-        #!/bin/bash -efux
-
-        kver="$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\\n' -quit)"
-
-        cat > /etc/initrd.mk <<'EOF'
-        {"\n".join(initrd_mk)}
-        EOF
-
-        {install_services}
-
-        export PATH={shlex.quote(ctx.builddir)}/.build/dest/usr/sbin:{shlex.quote(ctx.builddir)}/.build/dest/usr/bin:$PATH
-
-        {shlex.quote(ctx.builddir)}/.build/dest/usr/sbin/make-initrd -vv -k "$kver"
-        cp -vL {spec.boot_kernel_src} "{ctx.builddir}/{ctx.workdir_rel}/boot-vmlinuz"
-        """
+    return render_template(
+        "direct-boot.sh.in",
+        {
+            "BUILDDIR": shlex.quote(ctx.builddir),
+            "INITRD_MK": "\n".join(initrd_mk),
+            "INSTALL_SERVICES": install_services,
+            "BOOT_KERNEL_SRC": spec.boot_kernel_src,
+            "BOOT_KERNEL_DST": f"{ctx.builddir}/{ctx.workdir_rel}/boot-vmlinuz",
+        },
     )
 
 
 def pack_sysimage_script(ctx: "Context") -> str:
-    return textwrap.dedent(
-        f"""\
-        #!/bin/bash -efux
-
-        bytes=$(du -sb /image |cut -f1)
-        bytes=$(( $bytes * 2 ))
-
-        dd count=1 bs=$bytes if=/dev/zero of=/host/{ctx.workdir_rel}/sysimage.img
-        /sbin/mke2fs -t ext3 -L SYSIMAGE -d /image /host/{ctx.workdir_rel}/sysimage.img
-        """
+    return render_template(
+        "pack-sysimage.sh.in",
+        {
+            "WORKDIR_REL": ctx.workdir_rel,
+        },
     )
 
 
@@ -398,6 +388,10 @@ class Context:
     @property
     def direct_boot(self) -> bool:
         return self.flag("direct_boot")
+
+    @property
+    def host_services(self) -> list[str]:
+        return self.param("host_services").split()
 
 
 def prepare_testsuite(ctx: Context) -> None:
@@ -623,14 +617,13 @@ def host_service_context(ctx: Context) -> HostServiceContext:
 
 
 @contextmanager
-def host_services(ctx: Context, *, kickstart: bool):
+def running_host_services(ctx: Context, *, kickstart: bool):
     if kickstart:
         yield
         return
 
-    services = ctx.param("host_services").split()
     try:
-        with run_services(host_service_context(ctx), services):
+        with run_services(host_service_context(ctx), ctx.host_services):
             yield
     except Exception:
         print_host_service_logs(ctx)
@@ -638,7 +631,7 @@ def host_services(ctx: Context, *, kickstart: bool):
 
 
 def print_host_service_logs(ctx: Context) -> None:
-    print_logs(host_service_context(ctx), ctx.param("host_services").split())
+    print_logs(host_service_context(ctx), ctx.host_services)
 
 
 def qemu_exec(ctx: Context, *, step_name: str, kickstart: bool) -> None:
@@ -666,7 +659,7 @@ def qemu_exec(ctx: Context, *, step_name: str, kickstart: bool) -> None:
     master_fd = -1
     slave_fd = -1
     try:
-        with host_services(ctx, kickstart=kickstart):
+        with running_host_services(ctx, kickstart=kickstart):
             master_fd, slave_fd = pty.openpty()
             proc = subprocess.Popen(
                 command,
@@ -835,7 +828,7 @@ def step_build_sysimage(ctx: Context) -> None:
         )
     if ctx.direct_boot:
         with gh_group("creating direct boot image"):
-            prepare_services(host_service_context(ctx), ctx.param("host_services").split())
+            prepare_services(host_service_context(ctx), ctx.host_services)
             run_sh = ctx.top_workdir / "run.sh"
             write_executable(run_sh, build_direct_boot_script(ctx))
             run_command(
