@@ -8,6 +8,8 @@ NVMF_MODULES = nvme \
 
 NVMF_OPTIONAL_MODULES = nvme-fc \
 			nvme-rdma \
+			lpfc \
+			qla2xxx \
 			8021q
 
 NVMF_DATADIR = $(FEATURESDIR)/nvmf/data
