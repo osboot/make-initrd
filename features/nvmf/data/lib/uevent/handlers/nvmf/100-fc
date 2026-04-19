@@ -1,0 +1,48 @@
+#!/bin/bash -eu
+
+. shell-error
+. initrd-sh-functions
+. uevent-sh-functions
+. /.initrd/initenv
+
+PROG="${QUEUE:--}: session=${SESSION:-0}: $PROG"
+message_time=1
+
+write_host_config()
+{
+	mkdir -p /etc/nvme
+
+	[ -z "${NVMF_HOSTNQN:-}" ] ||
+		printf '%s\n' "$NVMF_HOSTNQN" > /etc/nvme/hostnqn
+	[ -z "${NVMF_HOSTID:-}" ] ||
+		printf '%s\n' "$NVMF_HOSTID" > /etc/nvme/hostid
+}
+
+connect_fc()
+{
+	[ -z "${NVMF_NONVMF:-}" ] ||
+		return 0
+	[ -n "${NVMEFC_TRADDR:-}" ] ||
+		return 0
+	[ -n "${NVMEFC_HOST_TRADDR:-}" ] ||
+		return 0
+
+	write_host_config
+
+	message "connect NVMe/FC target: traddr=$NVMEFC_TRADDR host-traddr=$NVMEFC_HOST_TRADDR"
+
+	nvme connect-all \
+		--transport=fc \
+		--traddr="$NVMEFC_TRADDR" \
+		--host-traddr="$NVMEFC_HOST_TRADDR"
+}
+
+rc=0
+for e in "$1"/fc.*; do
+	[ -f "$e" ] || break
+	( . "$e"; connect_fc; ) ||
+		rc=1
+	done_event "$e"
+done
+
+exit "$rc"

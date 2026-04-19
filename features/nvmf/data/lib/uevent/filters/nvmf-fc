@@ -1,0 +1,25 @@
+#!/bin/bash -efu
+
+. /.initrd/initenv
+
+[ -z "${NVMF_NONVMF:-}" ] ||
+	exit 0
+
+[ "${ACTION:-}" = change ] ||
+	exit 0
+[ "${SUBSYSTEM:-}" = fc ] ||
+	exit 0
+[ "${FC_EVENT:-}" = nvmediscovery ] ||
+	exit 0
+[ -n "${NVMEFC_TRADDR:-}" ] ||
+	exit 0
+[ -n "${NVMEFC_HOST_TRADDR:-}" ] ||
+	exit 0
+
+. uevent-sh-functions
+
+mkdir -p -- "$filterdir/nvmf/.tmp"
+
+event="$(make_event nvmf)"
+environ -qs > "$event"
+release_event fc "$event"
