@@ -1,0 +1,47 @@
+#!/bin/bash -efu
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' EXIT
+
+cat > "$tmpdir/without-marker.log" <<'EOF'
+[2026-04-18 10:00:00] initramfs: start
+[2026-04-18 10:00:05] initramfs: done
+IT WORKS!
+EOF
+
+cat > "$tmpdir/with-marker.log" <<'EOF'
+[2026-04-18 09:59:00] stale timestamp
+Booting from Hard Disk...
+[2026-04-18 10:00:00] initramfs: start
+[2026-04-18 10:00:05] initramfs: done
+IT WORKS!
+EOF
+
+cat > "$tmpdir/merged-bios-marker.log" <<'EOF'
+[2026-04-18 09:59:00] stale timestamp
+7lSeaBIOS (version 1.16.3-debian-1.16.3-2)
+Booting from ROM..7l[2026-04-18 10:00:00] rootdelay: rootdelayd startup succeeded
+[2026-04-18 10:00:05] initramfs: done
+IT WORKS!
+EOF
+
+cat > "$tmpdir/efi-marker.log" <<'EOF'
+[2026-04-18 09:59:00] stale timestamp
+BdsDxe: loading Boot0001 "UEFI Misc Device" from PciRoot(0x0)/Pci(0x5,0x0)
+BdsDxe: starting Boot0001 "UEFI Misc Device" from PciRoot(0x0)/Pci(0x5,0x0)
+[2026-04-18 10:00:00] initramfs: start
+[2026-04-18 10:00:05] initramfs: done
+IT WORKS!
+EOF
+
+PYTHONPATH=testing python3 - "$tmpdir" <<'PY'
+import sys
+from pathlib import Path
+from orchestrator import qemu_calc_boot_duration
+
+tmpdir = Path(sys.argv[1])
+print(qemu_calc_boot_duration(tmpdir / "without-marker.log"))
+print(qemu_calc_boot_duration(tmpdir / "with-marker.log"))
+print(qemu_calc_boot_duration(tmpdir / "merged-bios-marker.log"))
+print(qemu_calc_boot_duration(tmpdir / "efi-marker.log"))
+PY
