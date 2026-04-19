@@ -1,3 +1,7 @@
+guess:features
+nvmf
+nvmf
+
 guess:modules
 nvme-fabrics
 nvme-tcp

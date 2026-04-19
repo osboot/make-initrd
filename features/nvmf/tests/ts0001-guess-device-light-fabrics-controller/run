@@ -1,0 +1,13 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+. "$cwd"/../../../../testing/tests/guess-feature-sh-functions
+
+guess_feature_test_init "$0"
+
+mkdir -p -- "$SYSFS_PATH/devices/virtual/nvme-fabrics/ctl/nvme2"
+printf '%s\n' 'tcp' > "$SYSFS_PATH/devices/virtual/nvme-fabrics/ctl/nvme2/transport"
+
+features/nvmf/guess/device /devices/virtual/nvme-fabrics/ctl/nvme2
+guess_feature_test_dump

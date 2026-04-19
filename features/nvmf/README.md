@@ -2,6 +2,10 @@
 
 Feature adds support for booting from NVMe over Fabrics devices.
 
+The guess stage enables this feature automatically for NVMe controllers with
+`tcp`, `rdma`, or `fc` transports.  Local PCIe NVMe subsystem links are followed
+without enabling this feature.
+
 ## Parameters
 
 - **NVMF_HOSTNQN** -- NVMe host NQN.

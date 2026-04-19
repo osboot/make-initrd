@@ -7,7 +7,7 @@ cwd="${0%/*}"
 guess_feature_test_init "$0"
 
 mkdir -p -- "$SYSFS_PATH/devices/virtual/nvme-fabrics/ctl/nvme2"
-printf '%s\n' 'tcp' > "$SYSFS_PATH/devices/virtual/nvme-fabrics/ctl/nvme2/transport"
+printf '%s\n' 'loop' > "$SYSFS_PATH/devices/virtual/nvme-fabrics/ctl/nvme2/transport"
 
-features/guess-nvme/guess/device /devices/virtual/nvme-fabrics/ctl/nvme2
+features/nvmf/guess/device /devices/virtual/nvme-fabrics/ctl/nvme2
 guess_feature_test_dump

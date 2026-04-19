@@ -9,5 +9,5 @@ guess_feature_test_init "$0"
 mkdir -p -- "$SYSFS_PATH/devices/test-parent"
 printf '%s\n' 'pci' > "$SYSFS_PATH/devices/test-parent/subsystype"
 
-features/guess-nvme/guess/device /devices/test-parent
+features/nvmf/guess/device /devices/test-parent
 guess_feature_test_dump
