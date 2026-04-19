@@ -16,7 +16,7 @@ ln -s -- ../../nvme-fabrics/ctl/nvme3 "$SYSFS_PATH/devices/virtual/nvme-subsyste
 printf '%s\n' 'tcp' > "$SYSFS_PATH/devices/virtual/nvme-fabrics/ctl/nvme2/transport"
 printf '%s\n' 'rdma' > "$SYSFS_PATH/devices/virtual/nvme-fabrics/ctl/nvme3/transport"
 
-export GUESS_DEVICE_SCRIPTS='features/guess-nvme/guess/device'
+export GUESS_DEVICE_SCRIPTS='features/nvmf/guess/device'
 
-features/guess-nvme/guess/device /devices/virtual/nvme-subsystem/nvme-subsys2/nvme2n1
+features/nvmf/guess/device /devices/virtual/nvme-subsystem/nvme-subsys2/nvme2n1
 guess_feature_test_dump
