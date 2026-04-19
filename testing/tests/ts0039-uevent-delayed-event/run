@@ -1,0 +1,40 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+root="$cwd/root"
+
+rm -rf -- "$root"
+mkdir -p -- "$root"
+
+export PATH="$PWD/.build/dest/usr/bin:$PATH"
+export TIMESTAMP="$PWD/.build/dest/lib/initrd/sbin/timestamp"
+
+. features/runtime/data/bin/uevent-sh-functions
+
+filterdir="$root/queues"
+timerdir="$root/timers"
+ueventdir="$root/events"
+
+mkdir -p -- "$filterdir" "$timerdir" "$ueventdir"
+
+event="$(make_timer_event nvmf)"
+printf '%s\n' 'TYPE=retry' > "$event"
+release_event_at nvmf 42 retry "$event"
+
+find "$timerdir" -type f |
+	sed -e "s#^$timerdir/##" \
+	    -e 's/^\(nvmf\/42\.retry\.\)[0-9][0-9]*\.[0-9][0-9]*\..*/\1<TIMESTAMP>.<TEMP>/'
+
+find "$timerdir/nvmf" -type f -name '42.retry.*' -exec cat {} \;
+
+event="$(make_timer_event nvmf)"
+printf '%s\n' 'TYPE=timeout' > "$event"
+release_event_after nvmf 1 timeout "$event"
+
+base="$(basename "$(find "$timerdir/nvmf" -type f -name '*.timeout.*')")"
+case "$base" in
+	[0-9]*.timeout.*) echo 'timeout event queued' ;;
+	*) echo "unexpected timeout event: $base"; exit 1 ;;
+esac
+
+rm -rf -- "$root"

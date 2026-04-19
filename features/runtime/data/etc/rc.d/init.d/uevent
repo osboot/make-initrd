@@ -20,10 +20,11 @@ PIDFILE=/var/run/$NAME.pid
 ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --displayname $NAME --name $NAME"
 
 start() {
-	export filterdir ueventdir uevent_confdb
+	export filterdir timerdir ueventdir uevent_confdb
 
 	mkdir -p -- \
 		"$filterdir" \
+		"$timerdir" \
 		"$ueventdir" \
 		"$uevent_confdb/queue/pause"
 

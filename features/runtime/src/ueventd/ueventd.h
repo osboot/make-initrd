@@ -13,6 +13,8 @@
 #define F_PAUSE_DIR (1 << 2)
 #define F_DIRTY     (1 << 3)
 #define F_PAUSED    (1 << 4)
+#define F_TIMER_ROOT (1 << 5)
+#define F_TIMER_DIR  (1 << 6)
 
 struct watch {
 	struct watch *next;
@@ -25,6 +27,7 @@ struct watch {
 };
 
 extern char *filter_dir;
+extern char *timer_dir;
 extern char *uevent_dir;
 extern char *handler_file;
 extern uint64_t session;
