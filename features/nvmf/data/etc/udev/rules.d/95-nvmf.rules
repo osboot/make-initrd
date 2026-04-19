@@ -1,0 +1,1 @@
+ACTION=="change", SUBSYSTEM=="fc", ENV{FC_EVENT}=="nvmediscovery", ENV{NVMEFC_HOST_TRADDR}=="*", ENV{NVMEFC_TRADDR}=="*", RUN+="/lib/uevent/filters/nvmf-fc"
