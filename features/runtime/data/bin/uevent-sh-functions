@@ -9,15 +9,24 @@ uevent_confdb='/.initrd/uevent/confdb'
 
 debugdir='/.initrd/uevent/debug'
 filterdir='/.initrd/uevent/queues'
+timerdir='/.initrd/uevent/timers'
 ueventdir='/.initrd/uevent/events'
 
 # backward compatibility
 eventdir='/.initrd/uevent/events/udev'
 
 handlerdir='/lib/uevent/handlers'
+timestamp_bin="${TIMESTAMP:-/sbin/timestamp}"
 
 make_event() {
 	mktemp "$filterdir/${1:-udev}/.tmp/.XXXXXXXXX"
+}
+
+make_timer_event() {
+	local queue="${1:-udev}"
+
+	mkdir -p -- "$filterdir/$queue/.tmp" "$timerdir/$queue/.tmp"
+	mktemp "$timerdir/$queue/.tmp/.XXXXXXXXX"
 }
 
 publish_event() {
@@ -26,8 +35,28 @@ publish_event() {
 
 release_event() {
 	local num dummy
-	num=$(/sbin/timestamp boottime simple)
+	num=$("$timestamp_bin" boottime simple)
 	publish_event "$1.${num:-0.0}${2##*/}" "$2"
+}
+
+release_event_at() {
+	local queue="$1" due="$2" name="$3" event="$4"
+	local num
+
+	due="${due%.*}"
+	mkdir -p -- "$filterdir/$queue/.tmp" "$timerdir/$queue/.tmp"
+	num=$("$timestamp_bin" boottime simple)
+	publish_event "$due.$name.${num:-0.0}${event##*/}" "$event"
+}
+
+release_event_after() {
+	local queue="$1" delay="$2" name="$3" event="$4"
+	local now due
+
+	now=$("$timestamp_bin" boottime raw)
+	now="${now%.*}"
+	due=$(( now + delay ))
+	release_event_at "$queue" "$due" "$name" "$event"
 }
 
 done_event() {

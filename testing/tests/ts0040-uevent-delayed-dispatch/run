@@ -1,0 +1,61 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+root="$cwd/root"
+handler="$root/handler"
+log="$root/handler.log"
+
+rm -rf -- "$root"
+mkdir -p -- \
+	"$root/queues" \
+	"$root/timers" \
+	"$root/events" \
+	"$root/confdb/queue/pause"
+
+cat > "$handler" <<'EOF'
+#!/bin/bash -eu
+queuedir="$1"
+queue="${queuedir##*/}"
+for event in "$queuedir"/*; do
+	[ -f "$event" ] || continue
+	printf '%s %s\n' "$queue" "${event##*/}" >> "$TEST_LOG"
+	rm -f -- "$event"
+done
+EOF
+chmod +x "$handler"
+
+export PATH="$PWD/.build/dest/usr/bin:$PATH"
+export TIMESTAMP="$PWD/.build/dest/lib/initrd/sbin/timestamp"
+export LD_LIBRARY_PATH="$PWD/.build/dest/lib/initrd/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export TEST_LOG="$log"
+export RDLOG_STDERR=1
+
+. features/runtime/data/bin/uevent-sh-functions
+
+export filterdir="$root/queues"
+export timerdir="$root/timers"
+export ueventdir="$root/events"
+export uevent_confdb="$root/confdb"
+
+.build/dest/lib/initrd/sbin/ueventd -l error "$handler" &
+pid="$!"
+trap 'kill "$pid" 2>/dev/null ||:' EXIT
+
+event="$(make_timer_event delayed)"
+printf '%s\n' 'TYPE=retry' > "$event"
+release_event_after delayed 1 retry "$event"
+
+i=0
+while [ "$i" -lt 50 ]; do
+	[ ! -s "$log" ] || break
+	sleep 0.1
+	i=$(( i + 1 ))
+done
+
+kill "$pid" 2>/dev/null ||:
+wait "$pid" 2>/dev/null ||:
+trap - EXIT
+
+sed -e 's/^\(delayed retry\.\)[0-9][0-9]*\.[0-9][0-9]*\..*/\1<TIMESTAMP>.<TEMP>/' "$log"
+
+rm -rf -- "$root"

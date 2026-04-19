@@ -8,6 +8,19 @@ Queues are implemented on the filesystem. All incoming events are placed as:
 
 `/.initrd/uevent/queues/<QUEUE>/<EVENT>`
 
+Delayed events are placed as:
+
+`/.initrd/uevent/timers/<QUEUE>/<DUE>.<EVENT>`
+
+`<DUE>` is a `CLOCK_BOOTTIME` timestamp in seconds. When the timestamp is
+reached, `ueventd` moves the event to the regular queue:
+
+`/.initrd/uevent/queues/<QUEUE>/<EVENT>`
+
+After that it is processed by the same queue handlers as any other event.
+Delayed events are one-shot events. A handler that needs periodic retry should
+publish a new delayed event only while it still needs more work.
+
 Events come to this directory all the time. As soon as the server receives
 a inotify event that something appeared in the directory, it moves all files
 from the queue directory to:
@@ -85,6 +98,15 @@ You can write any necessary content to this file.
 
 `publish_event`, `release_event` publishes an event. After that call, the event
 becomes available for processing.
+
+`make_timer_event` creates a new delayed event. It creates the corresponding
+regular queue and timer queue directories if needed.
+
+`release_event_at` publishes a delayed event for an absolute `CLOCK_BOOTTIME`
+timestamp in seconds.
+
+`release_event_after` publishes a delayed event for a relative delay in
+seconds.
 
 `done_event` marks eventfile as processed. Processed events are prefixed with
 `done.` or deleted.
