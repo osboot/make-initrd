@@ -539,21 +539,30 @@ def build_qemu_args(ctx: Context, *, kickstart: bool) -> list[str]:
 
 
 def qemu_calc_boot_duration(log_path: Path) -> int:
-    pattern = re.compile(r"^\[([0-9-]{10} [0-9:]{8})\] ")
-    timestamps: list[int] = []
-    enabled = False
+    timestamp_pattern = re.compile(r"\[([0-9-]{10} [0-9:]{8})\] ")
+    boot_marker_pattern = re.compile(
+        r"Booting from (Hard Disk|ROM)\.\.|"
+        r"BdsDxe: starting Boot[0-9A-Fa-f]+"
+    )
+    all_timestamps: list[int] = []
+    boot_timestamps: list[int] = []
+    seen_boot_marker = False
     for line in log_path.read_text(errors="ignore").splitlines():
-        if not enabled and re.match(r"^Booting from (Hard Disk|ROM)\.\.\.", line):
-            enabled = True
-        if not enabled:
-            continue
-        match = pattern.match(line)
+        if not seen_boot_marker and boot_marker_pattern.search(line):
+            seen_boot_marker = True
+
+        match = timestamp_pattern.search(line)
         if not match:
             continue
+
         dt = datetime.strptime(match.group(1), "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
         ts = int(dt.timestamp())
-        if not timestamps or timestamps[-1] != ts:
-            timestamps.append(ts)
+        if not all_timestamps or all_timestamps[-1] != ts:
+            all_timestamps.append(ts)
+        if seen_boot_marker and (not boot_timestamps or boot_timestamps[-1] != ts):
+            boot_timestamps.append(ts)
+
+    timestamps = boot_timestamps if boot_timestamps else all_timestamps
     if len(timestamps) < 2:
         return 0
     return timestamps[-1] - timestamps[0]
