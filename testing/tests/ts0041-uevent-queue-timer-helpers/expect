@@ -1,0 +1,9 @@
+nvmf/<TIMESTAMP>.retry.connect.<TIMESTAMP>.<TEMP>
+TYPE=retry
+NAME=connect
+QUEUE=nvmf
+DELAY=10
+REASON=slow-target
+ATTEMPT=1
+timeout event cancelled
+rc=0

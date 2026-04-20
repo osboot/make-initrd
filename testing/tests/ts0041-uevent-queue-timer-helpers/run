@@ -1,0 +1,36 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+root="$cwd/root"
+
+rm -rf -- "$root"
+mkdir -p -- "$root"
+
+export PATH="$PWD/.build/dest/usr/bin:$PATH"
+export TIMESTAMP="$PWD/.build/dest/lib/initrd/sbin/timestamp"
+
+. features/runtime/data/bin/uevent-sh-functions
+
+filterdir="$root/queues"
+timerdir="$root/timers"
+ueventdir="$root/events"
+
+mkdir -p -- "$filterdir" "$timerdir" "$ueventdir"
+
+queue_retry_after nvmf 10 connect REASON=slow-target ATTEMPT=1
+
+retry="$(find "$timerdir/nvmf" -type f -name '*.retry.connect.*')"
+printf '%s\n' "${retry#$timerdir/}" |
+	sed -e 's/^\(nvmf\/\)[0-9][0-9]*\(\.retry\.connect\.\)[0-9][0-9]*\.[0-9][0-9]*\..*/\1<TIMESTAMP>\2<TIMESTAMP>.<TEMP>/'
+cat "$retry"
+
+queue_timeout_after nvmf 20 root REASON=wait-expired
+queue_cancel_timeouts nvmf root
+
+if find "$timerdir/nvmf" -type f -name '*.timeout.root.*' | grep -q .; then
+	echo 'timeout event still queued'
+else
+	echo 'timeout event cancelled'
+fi
+
+rm -rf -- "$root"
