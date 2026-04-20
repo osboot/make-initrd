@@ -1,0 +1,17 @@
+btrfs timers:
+<TIMESTAMP>.timeout.member.<TIMESTAMP>.<TEMP>
+TYPE=timeout
+NAME=member
+QUEUE=btrfs-member
+DELAY=15
+REASON=degraded-check
+btrfs stale timeout removed
+mdadm timers:
+<TIMESTAMP>.timeout.member.<TIMESTAMP>.<TEMP>
+TYPE=timeout
+NAME=member
+QUEUE=md-raid-member
+DELAY=20
+REASON=raid-activation
+mdadm stale timeout removed
+rc=0
