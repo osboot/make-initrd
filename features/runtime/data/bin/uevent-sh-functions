@@ -59,6 +59,46 @@ release_event_after() {
 	release_event_at "$queue" "$due" "$name" "$event"
 }
 
+queue_event_after() {
+	local queue="$1" delay="$2" type="$3" name="$4"
+	local event
+
+	shift 4
+
+	event="$(make_timer_event "$queue")"
+	{
+		printf 'TYPE=%s\n' "$type"
+		printf 'NAME=%s\n' "$name"
+		printf 'QUEUE=%s\n' "$queue"
+		printf 'DELAY=%s\n' "$delay"
+		printf '%s\n' "$@"
+	} > "$event"
+
+	release_event_after "$queue" "$delay" "$type.$name" "$event"
+}
+
+queue_retry_after() {
+	queue_event_after "$1" "$2" retry "$3" "${@:4}"
+}
+
+queue_timeout_after() {
+	queue_event_after "$1" "$2" timeout "$3" "${@:4}"
+}
+
+queue_cancel_events() {
+	local queue="$1" type="$2" name="$3"
+
+	find "$timerdir/$queue" -maxdepth 1 -type f -name "*.$type.$name.*" -delete 2>/dev/null ||:
+}
+
+queue_cancel_retries() {
+	queue_cancel_events "$1" retry "$2"
+}
+
+queue_cancel_timeouts() {
+	queue_cancel_events "$1" timeout "$2"
+}
+
 done_event() {
 	rm -f -- "$1"
 	message "finish event: $1" ||:

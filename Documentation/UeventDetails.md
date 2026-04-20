@@ -108,6 +108,14 @@ timestamp in seconds.
 `release_event_after` publishes a delayed event for a relative delay in
 seconds.
 
+`queue_retry_after` and `queue_timeout_after` are higher-level helpers for
+common delayed queue actions. They create a delayed event with `TYPE`, `NAME`,
+`QUEUE`, and `DELAY` fields and publish it to the same queue after the
+requested delay. Additional `KEY=VALUE` arguments are copied to the event file.
+
+`queue_cancel_retries` and `queue_cancel_timeouts` remove delayed retry or
+timeout events with the requested name from a queue.
+
 `done_event` marks eventfile as processed. Processed events are prefixed with
 `done.` or deleted.
 
