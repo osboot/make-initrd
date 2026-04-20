@@ -1,0 +1,112 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+root="$cwd/root"
+
+rm -rf -- "$root"
+mkdir -p -- \
+	"$root/bin" \
+	"$root/events/btrfs-member" \
+	"$root/events/md-raid-member" \
+	"$root/queues" \
+	"$root/timers"
+
+export PATH="$PWD/.build/dest/usr/bin:$PATH"
+export TIMESTAMP="$PWD/.build/dest/lib/initrd/sbin/timestamp"
+export TEST_FILTERDIR="$root/queues"
+export TEST_TIMERDIR="$root/timers"
+export TEST_UEVENTDIR="$root/events"
+export TEST_INITENV="$root/initenv"
+
+cat > "$TEST_INITENV" <<'EOF'
+PROG=test
+QUEUE=${QUEUE:-test}
+SESSION=1
+BTRFS_MEMBER_DELAY=15
+RAID_MEMBER_DELAY=20
+EOF
+
+prepare_handler()
+{
+	local src="$1" dst="$2" patch_btrfs="${3:-}"
+
+	awk -v patch_btrfs="$patch_btrfs" '
+		$0 == ". shell-error" {
+			print ". .build/dest/usr/bin/shell-error"
+			next
+		}
+		$0 == ". initrd-sh-functions" {
+			print ". features/runtime/data/bin/initrd-sh-functions"
+			next
+		}
+		$0 == ". uevent-sh-functions" {
+			print ". features/runtime/data/bin/uevent-sh-functions"
+			print "filterdir=\"$TEST_FILTERDIR\""
+			print "timerdir=\"$TEST_TIMERDIR\""
+			print "ueventdir=\"$TEST_UEVENTDIR\""
+			print "message() { :; }"
+			next
+		}
+		$0 == ". /.initrd/initenv" {
+			print ". \"$TEST_INITENV\""
+			next
+		}
+		$0 == "message_time=1" {
+			print "message_time="
+			next
+		}
+		patch_btrfs && $0 == "has_member_events=" {
+			print "check_btrfs_arrays() { return 0; }"
+		}
+		{ print }
+	' "$src" > "$dst"
+	chmod +x "$dst"
+}
+
+normalize_timer_name()
+{
+	sed -e 's/^[0-9][0-9]*\.timeout\.member\.[0-9][0-9]*\.[0-9][0-9]*\..*/<TIMESTAMP>.timeout.member.<TIMESTAMP>.<TEMP>/'
+}
+
+prepare_handler \
+	features/btrfs/data/lib/uevent/handlers/btrfs-member/100-timeout \
+	"$root/bin/btrfs-timeout" \
+	1
+
+prepare_handler \
+	features/mdadm/data/lib/uevent/handlers/md-raid-member/100-timeout \
+	"$root/bin/md-timeout"
+
+printf 'old\n' > "$root/events/btrfs-member/btrfs-member.1"
+printf 'stale\n' > "$root/events/btrfs-member/timeout.member.stale"
+QUEUE=btrfs-member "$root/bin/btrfs-timeout" "$root/events/btrfs-member"
+
+echo 'btrfs timers:'
+find "$root/timers/btrfs-member" -maxdepth 1 -type f -printf '%f\n' |
+	sort |
+	normalize_timer_name
+find "$root/timers/btrfs-member" -maxdepth 1 -type f -name '*.timeout.member.*' -exec sed -n '/^TYPE=/p;/^NAME=/p;/^QUEUE=/p;/^DELAY=/p;/^REASON=/p' {} \;
+
+if [ -e "$root/events/btrfs-member/timeout.member.stale" ]; then
+	echo 'btrfs stale timeout remains'
+else
+	echo 'btrfs stale timeout removed'
+fi
+
+printf 'old\n' > "$root/events/md-raid-member/md-raid-member.1"
+printf 'stale\n' > "$root/events/md-raid-member/timeout.member.stale"
+QUEUE=md-raid-member "$root/bin/md-timeout" "$root/events/md-raid-member"
+
+echo 'mdadm timers:'
+find "$root/timers/md-raid-member" -maxdepth 1 -type f -printf '%f\n' |
+	sort |
+	normalize_timer_name
+find "$root/timers/md-raid-member" -maxdepth 1 -type f -name '*.timeout.member.*' -exec sed -n '/^TYPE=/p;/^NAME=/p;/^QUEUE=/p;/^DELAY=/p;/^REASON=/p' {} \;
+
+if [ -e "$root/events/md-raid-member/timeout.member.stale" ]; then
+	echo 'mdadm stale timeout remains'
+else
+	echo 'mdadm stale timeout removed'
+fi
+
+rm -rf -- "$root"

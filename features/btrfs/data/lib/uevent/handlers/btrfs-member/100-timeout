@@ -8,23 +8,7 @@
 PROG="${QUEUE:--}: session=${SESSION:-0}: $PROG"
 message_time=1
 
-pidfile="/var/run/$PROG.pid"
-tsfile=/.initrd/btrfs-member-timeout
 delay="${BTRFS_MEMBER_DELAY-}"
-
-for e in "$1"/btrfs-member.*; do
-	done_event "$e" ||:
-done
-
-[ -n "$delay" ] && [ "$delay" -gt 0 ] ||
-	exit 0
-
-now="$(timestamp boottime raw)"
-now="${now%.*}"
-echo "$(($now + $delay))" > "$tsfile"
-
-[ ! -e "$pidfile" ] ||
-	exit 0
 
 btrfs_fstab_entries()
 {
@@ -74,23 +58,8 @@ check_btrfs_arrays()
 	[ -n "$need_wait" ]
 }
 
-# No multi-device btrfs in fstab, or all devices already present.
-check_btrfs_arrays ||
-	exit 0
-
-(
-	while :; do
-		now="$(timestamp boottime raw)"
-		now="${now%.*}"
-
-		ts=
-		readline ts "$tsfile"
-
-		[ "$ts" -ge "$now" ] ||
-			break
-		sleep 1
-	done
-
+process_timeout()
+{
 	# Run a full device scan to resolve any per-device scan race conditions.
 	btrfs device scan ||:
 
@@ -123,6 +92,40 @@ check_btrfs_arrays ||
 
 	[ -z "$changed" ] ||
 		rootdelay_reset_timer
-) &
+}
 
-echo "$!" > "$pidfile"
+has_member_events=
+for e in "$1"/btrfs-member.*; do
+	[ -f "$e" ] || continue
+	has_member_events=1
+	done_event "$e" ||:
+done
+
+if [ -n "$has_member_events" ]; then
+	for e in "$1"/timeout.member.*; do
+		[ -f "$e" ] || continue
+		done_event "$e" ||:
+	done
+
+	queue_cancel_timeouts btrfs-member member
+
+	[ -n "$delay" ] && [ "$delay" -gt 0 ] ||
+		exit 0
+
+	# No multi-device btrfs in fstab, or all devices already present.
+	check_btrfs_arrays ||
+		exit 0
+
+	queue_timeout_after btrfs-member "$delay" member REASON=degraded-check
+	exit 0
+fi
+
+has_timeout_events=
+for e in "$1"/timeout.member.*; do
+	[ -f "$e" ] || continue
+	has_timeout_events=1
+	done_event "$e" ||:
+done
+
+[ -z "$has_timeout_events" ] ||
+	process_timeout
