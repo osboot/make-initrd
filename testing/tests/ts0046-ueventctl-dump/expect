@@ -1,0 +1,36 @@
+Missing pause:
+ueventctl: queue 'missing' does not exist
+missing pause failed
+
+Initial state:
+queue:empty status:active timers:0 ready:0 events:0
+queue:md-raid-member status:paused timers:0 ready:0 events:0
+queue:nvmf status:active timers:1 ready:1 events:1
+ - timer:42.retry.connect.1 expired:8s
+ --- TYPE=retry
+ --- NAME=connect
+ - ready:fc.1
+ --- QUEUE=nvmf
+ --- TYPE=fc
+ - event:done.fc.0
+ --- DONE=1
+
+Filtered nvmf:
+queue:nvmf status:active timers:1 ready:1 events:1
+ - timer:42.retry.connect.1 expired:8s
+ - ready:fc.1
+ - event:done.fc.0
+
+Managed queue:
+queue:test status:paused timers:1 ready:1 events:0
+ - timer:55.retry.probe.50.0.<TEMP> expiration:5s
+ --- TYPE=retry
+ --- NAME=probe
+ --- QUEUE=test
+ --- DELAY=5
+ --- KEY=value
+ - ready:probe.50.0.<TEMP>
+
+Managed queue after done:
+queue:test status:active timers:0 ready:0 events:0
+rc=0
