@@ -1,0 +1,389 @@
+#!/bin/bash -eu
+
+. shell-error
+. shell-getopt
+
+usage()
+{
+	cat <<-EOF
+	Usage: $PROG [options] show
+	   or: $PROG [options] new-event QUEUE GROUP {-|KEY=VALUE ...}
+	   or: $PROG [options] done-event QUEUE EVENT
+	   or: $PROG [options] queue QUEUE
+
+	This utility allows operating queues and events within them in ueventd.
+
+	Global Options:
+
+	  -r, --root=DIR        inspect alternate initramfs state root;
+	  -h, --help            show this text and exit.
+
+	Command ‘queue’ allows changing the status of the queue.
+
+	  --create              create new queue.
+	  --remove              delete queue with all events.
+	  --pause               pause the execution of the queue.
+	  --unpause             unpause the execution of the queue.
+
+	Command ‘show’ displays the status of queues and the events within them.
+
+	  -n, --name=NAME       filter queues by name.
+	  -s, --status=STATUS   filter queues by status.
+	  -t, --timers          show timer events.
+	  -e, --events          show events.
+	  -b, --body            show events content.
+
+	Command ‘new-event’ adds an event to the queue.
+
+	  --delay=SECS          create a timer with delayed execution.
+	  --retry=SECS          create a retry event.
+
+	Command ‘done-event’ removes the event from the queue.
+
+	Report bugs to authors.
+	EOF
+	exit "${1:-0}"
+}
+
+count_files()
+{
+	if [ -d "$1" ]; then
+		find "$1" -mindepth 1 -maxdepth 1 -type f ! -path '*/.tmp/*' -printf . 2>/dev/null |
+			wc -c
+	else
+		echo 0
+	fi
+}
+
+now=
+get_current_time()
+{
+	[ -z "$now" ] ||
+		return 0
+	now=$("$timestamp_bin" boottime raw)
+	now="${now%.*}"
+}
+
+timer_annotation()
+{
+	local name="$1" due delta
+
+	case "$name" in
+		[0-9]*.*) ;;
+		*) return 0 ;;
+	esac
+
+	due="${name%%.*}"
+
+	case "$due" in
+		*[!0-9]*|'') return 0 ;;
+	esac
+
+	case "$now" in
+		*[!0-9]*|'') return 0 ;;
+	esac
+
+	delta=$(( 10#$due - 10#$now ))
+
+	if [ "$delta" -gt 0 ]; then
+		printf 'expiration:%ds' "$delta"
+	elif [ "$delta" -lt 0 ]; then
+		printf 'expired:%ds' "$(( -$delta ))"
+	else
+		printf 'expiration:now'
+	fi
+}
+
+show_event()
+{
+	local line
+	while read -r line; do
+		printf ' --- %s\n' "$line"
+	done < "$1"
+}
+
+do_show()
+{
+	local TEMP
+	TEMP=`getopt -n "$PROG" -o 'b,e,t,n:,s:' -l 'body,events,timers,name:,status:' -- "$@"` ||
+		usage 2
+	eval set -- "$TEMP"
+
+	local body="" filter_name="" filter_status="" filter_timers="" filter_events=""
+
+	while :; do
+		case "$1" in
+			-b|--body) body=1
+				;;
+			-e|--events) filter_events=1
+				;;
+			-t|--timers) filter_timers=1
+				;;
+			-n|--name) shift; filter_name="$1"
+				;;
+			-s|--status) shift; filter_status="$1"
+				;;
+			--) shift; break
+				;;
+			*) fatal "unrecognized option: $1"
+				;;
+		esac
+		shift
+	done
+
+	local queue event name status count_timer count_ready count_event
+
+	declare -A processed_queues
+	processed_queues=()
+
+	for queue in "$filterdir"/* "$ueventdir"/* "$timerdir"/*; do
+		[ -d "$queue" ] ||
+			continue
+
+		name="${queue##*/}"
+
+		[ -z "${processed_queues[$name]-}" ] ||
+			continue
+
+		processed_queues[$name]=1
+
+		status="active"
+		[ ! -e "$uevent_confdb/queue/pause/$name" ] || status="paused"
+
+		[ -z "$filter_name"   ] || [ "$filter_name"   = "$name"   ] || continue
+		[ -z "$filter_status" ] || [ "$filter_status" = "$status" ] || continue
+
+		count_timer="$(count_files "$timerdir/$name")"
+		count_ready="$(count_files "$filterdir/$name")"
+		count_event="$(count_files "$ueventdir/$name")"
+
+		printf 'queue:%s status:%s timers:%d ready:%d events:%d\n' \
+			"$name" "$status" "$count_timer" "$count_ready" "$count_event"
+
+		if [ -n "$filter_timers" ] && [ "$count_timer" != 0 ]; then
+			get_current_time
+
+			for event in "$timerdir/$name"/*; do
+				[ -f "$event" ] ||
+					continue
+
+				printf ' - timer:%s %s\n' "${event##*/}" "$(timer_annotation "${event##*/}")"
+				[ -z "$body" ] || show_event "$event"
+			done
+		fi
+
+		if [ -n "$filter_events" ] && [ "$count_ready$count_event" != "00" ]; then
+			for event in "$filterdir/$name"/*; do
+				[ -f "$event" ] ||
+					continue
+
+				printf ' - ready:%s\n' "${event##*/}"
+				[ -z "$body" ] || show_event "$event"
+			done
+			for event in "$ueventdir/$name"/*; do
+				[ -f "$event" ] ||
+					continue
+
+				printf ' - event:%s\n' "${event##*/}"
+				[ -z "$body" ] || show_event "$event"
+			done
+		fi
+	done
+}
+
+do_new_event()
+{
+	local TEMP
+	TEMP=`getopt -n "$PROG" -o '' -l 'delay:,retry:' -- "$@"` ||
+		usage 2
+	eval set -- "$TEMP"
+
+	local delay="" evtype="ready"
+
+	while :; do
+		case "$1" in
+			--delay) shift
+				evtype="timeout"
+				delay="$1"
+				;;
+			--retry) shift
+				evtype="retry"
+				delay="$1"
+				;;
+			--) shift; break
+				;;
+			*) fatal "unrecognized option: $1"
+				;;
+		esac
+		shift
+	done
+
+	local queue group event
+
+	if [ "$#" -lt 3 ]; then
+		message "more arguments required"
+		usage 1
+	fi
+
+	queue="${1#queue:}"; shift
+	group="${1#group:}"; shift
+
+	case "$evtype" in
+		retry|timeout)
+			queue_event_after "$queue" "$delay" "$evtype" "$group" "$@"
+			return
+			;;
+	esac
+
+	event="$(make_event "$queue")"
+
+	if [ "$#" -gt 1 ] && [ "$1" != - ]; then
+		printf '%s\n' "$@" > "$event"
+
+	elif [ "$#" -eq 1 ] && [ "$1" = - ]; then
+		cat > "$event"
+	fi
+
+	release_event "$group" "$event"
+}
+
+do_done_event()
+{
+	local TEMP
+	TEMP=`getopt -n "$PROG" -o '' -l '' -- "$@"` ||
+		usage 2
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			*) fatal "unrecognized option: $1"
+				;;
+		esac
+		shift
+	done
+
+	local queue event
+
+	if [ "$#" -lt 2 ]; then
+		message "more arguments required"
+		usage 1
+	fi
+
+	queue="${1#queue:}"; shift
+	event="$1"; shift
+
+	event="${event#timer:}"
+	event="${event#ready:}"
+	event="${event#event:}"
+	event="${event##*/}"
+
+	rm -f -- \
+		"$timerdir/$queue/$event" \
+		"$filterdir/$queue/$event" \
+		"$ueventdir/$queue/$event"
+}
+
+do_queue()
+{
+	local TEMP
+	TEMP=`getopt -n "$PROG" -o '' -l 'create,remove,pause,unpause' -- "$@"` ||
+		usage 2
+	eval set -- "$TEMP"
+
+	local status=""
+
+	while :; do
+		case "$1" in
+			--create)  status=create ;;
+			--remove)  status=remove ;;
+			--pause)   status=pause  ;;
+			--unpause) status=active ;;
+			--) shift; break
+				;;
+			*) fatal "unrecognized option: $1"
+				;;
+		esac
+		shift
+	done
+
+	local queue
+
+	if [ "$#" -ne 1 ]; then
+		message "more arguments required"
+		usage 1
+	fi
+
+	[ -n "$status" ] ||
+		fatal "queue action is required"
+
+	queue="$1"; shift
+
+	[ -n "$queue" ] ||
+		fatal "queue is required"
+
+	case "$status" in
+		create)
+			mkdir -p -- \
+				"$filterdir/$queue/.tmp" \
+				"$ueventdir/$queue/.tmp" \
+				"$timerdir/$queue/.tmp"
+			;;
+		remove)
+			rm -rf -- \
+				"$uevent_confdb/queue/pause/$queue" \
+				"$filterdir/${queue:?}" \
+				"$ueventdir/${queue:?}" \
+				"$timerdir/${queue:?}"
+			;;
+		pause)
+			[ -d "$filterdir/$queue" ] || [ -d "$ueventdir/$queue" ] || [ -d "$timerdir/$queue" ] ||
+				fatal "queue '$queue' does not exist"
+			mkdir -p -- \
+				"$uevent_confdb/queue/pause/$queue"
+			;;
+		active)
+			rm -rf -- \
+				"$uevent_confdb/queue/pause/$queue"
+			;;
+	esac
+}
+
+uevent_rootpath=
+
+GETOPT_ALLOW_UNKNOWN=1
+TEMP=`getopt -n "$PROG" -o "r:,h" -l "root:,help" -- "$@"` ||
+	usage 2
+eval set -- "$TEMP"
+
+while :; do
+	case "$1" in
+		-r|--root) shift;
+			uevent_rootpath="$1"
+			;;
+		-h|--help) usage
+			;;
+		--) shift; break
+			;;
+		*) fatal "unrecognized option: $1"
+			;;
+	esac
+	shift
+done
+
+. uevent-sh-functions
+
+action=
+if [ "$#" -gt 0 ]; then
+	action="$1"
+	shift
+fi
+
+case "$action" in
+	show)       do_show "$@"       ;;
+	new-event)  do_new_event "$@"  ;;
+	done-event) do_done_event "$@" ;;
+	queue)      do_queue "$@"      ;;
+	*)          usage 2            ;;
+esac

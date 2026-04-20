@@ -5,17 +5,20 @@ __uevent_sh_functions=1
 
 . shell-error
 
-uevent_confdb='/.initrd/uevent/confdb'
+uevent_rootpath="${uevent_rootpath-}"
+uevent_basepath="${uevent_basepath:-.initrd}"
 
-debugdir='/.initrd/uevent/debug'
-filterdir='/.initrd/uevent/queues'
-timerdir='/.initrd/uevent/timers'
-ueventdir='/.initrd/uevent/events'
+uevent_confdb="$uevent_rootpath/$uevent_basepath/uevent/confdb"
+
+debugdir="$uevent_rootpath/$uevent_basepath/uevent/debug"
+filterdir="$uevent_rootpath/$uevent_basepath/uevent/queues"
+timerdir="$uevent_rootpath/$uevent_basepath/uevent/timers"
+ueventdir="$uevent_rootpath/$uevent_basepath/uevent/events"
 
 # backward compatibility
-eventdir='/.initrd/uevent/events/udev'
+eventdir="$uevent_rootpath/$uevent_basepath/uevent/events/udev"
 
-handlerdir='/lib/uevent/handlers'
+handlerdir="$uevent_rootpath/lib/uevent/handlers"
 timestamp_bin="${TIMESTAMP:-/sbin/timestamp}"
 
 make_event() {

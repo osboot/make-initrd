@@ -1,0 +1,84 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+root="$cwd/root"
+ueventctl="features/runtime/data/bin/ueventctl --root $root"
+
+rm -rf -- "$root"
+mkdir -p -- "$root/bin"
+
+export PATH="$PWD/features/runtime/data/bin:$PWD/.build/dest/usr/bin:$PATH"
+export TIMESTAMP="$root/bin/timestamp"
+
+cat > "$TIMESTAMP" <<'EOF'
+#!/bin/sh -efu
+
+case "$1 $2" in
+	'boottime raw') printf '50.0\n' ;;
+	'boottime simple') printf '50.0\n' ;;
+	*) exit 1 ;;
+esac
+EOF
+chmod +x "$TIMESTAMP"
+
+normalize_output()
+{
+	sed -E \
+		-e 's/(timer:55\.retry\.probe\.50\.0\.)[^ ]+/\1<TEMP>/g' \
+		-e 's/(ready:probe\.50\.0\.)[^ ]+/\1<TEMP>/g'
+}
+
+echo 'Missing pause:'
+if $ueventctl queue --pause missing 2>&1; then
+	echo 'unexpected pause success'
+else
+	echo 'missing pause failed'
+fi
+
+$ueventctl queue --create empty
+$ueventctl queue --create md-raid-member
+$ueventctl queue --pause md-raid-member
+$ueventctl queue --create nvmf
+
+cat > "$root/.initrd/uevent/queues/nvmf/fc.1" <<'EOF'
+QUEUE=nvmf
+TYPE=fc
+EOF
+
+cat > "$root/.initrd/uevent/events/nvmf/done.fc.0" <<'EOF'
+DONE=1
+EOF
+
+cat > "$root/.initrd/uevent/timers/nvmf/42.retry.connect.1" <<'EOF'
+TYPE=retry
+NAME=connect
+EOF
+
+echo
+echo 'Initial state:'
+$ueventctl show --events --timers --body | normalize_output
+
+echo
+echo 'Filtered nvmf:'
+$ueventctl show --name nvmf --events --timers | normalize_output
+
+echo
+echo 'Managed queue:'
+$ueventctl queue --create test
+$ueventctl new-event test probe KEY=value
+$ueventctl new-event --retry=5 test probe KEY=value
+$ueventctl queue --pause test
+$ueventctl show --name test --events --timers --body | normalize_output
+
+ready="$(find "$root/.initrd/uevent/queues/test" -maxdepth 1 -type f -printf '%f\n' | head -n 1)"
+timer="$(find "$root/.initrd/uevent/timers/test" -maxdepth 1 -type f -printf '%f\n' | head -n 1)"
+
+$ueventctl done-event test "ready:$ready"
+$ueventctl done-event test "timer:$timer"
+$ueventctl queue --unpause test
+
+echo
+echo 'Managed queue after done:'
+$ueventctl show --name test --events --timers --body | normalize_output
+
+rm -rf -- "$root"
