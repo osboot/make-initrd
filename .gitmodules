@@ -1,6 +1,6 @@
 [submodule "external/busybox/upstream"]
 	path = external/busybox/upstream
-	url = https://git.busybox.net/busybox
+	url = https://github.com/vda-linux/busybox_mirror
 [submodule "external/libshell/upstream"]
 	path = external/libshell/upstream
 	url = https://github.com/legionus/libshell.git
