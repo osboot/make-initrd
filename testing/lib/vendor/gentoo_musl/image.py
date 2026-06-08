@@ -30,6 +30,7 @@ def render_dockerfiles(ctx: ImageRenderContext) -> tuple[str, str]:
         FROM {ctx.base_image}
         ENV FEATURES="-ipc-sandbox -network-sandbox -pid-sandbox"
         ENV USE="boot lvm -initramfs"
+        ENV PYTHON_TARGETS="python3_14 python3_12 python3_13"
         RUN getuto >/dev/null
         RUN emerge-webrsync --quiet
         RUN emerge {emerge_args} {ctx.packages.joined("kernel")}
