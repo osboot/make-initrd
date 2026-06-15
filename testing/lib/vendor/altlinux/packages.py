@@ -27,12 +27,11 @@ def get_packages() -> PackageSet:
         init=("systemd",),
         sysimage_extra=(
             "pwgen", "mdadm", "lvm2", "cryptsetup", "btrfs-progs", "e2fsprogs",
-            "xfsprogs", "dosfstools", "reiserfsprogs", "grub-common", "grub-efi",
-            "grub-pc",
+            "xfsprogs", "dosfstools", "grub-common", "grub-efi", "grub-pc",
         ),
         kickstart_extra=(
             "util-linux", "rsync", "wget", "cryptsetup", "lvm2", "mdadm", "pwgen",
-            "e2fsprogs", "btrfs-progs", "xfsprogs", "dosfstools", "reiserfsprogs",
+            "e2fsprogs", "btrfs-progs", "xfsprogs", "dosfstools",
             "sfdisk", "unzip", "tar", "cpio", "eject", "lz4", "f2fs-tools",
         ),
         sshfs_service=(
