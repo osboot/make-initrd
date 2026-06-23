@@ -6,7 +6,7 @@ Feature adds you to perform a diskless system boot using pxe and iSCSI.
 - **ISCSI_TARGET_NAME** -- Target name iSCSI, required parameter
 - **ISCSI_TARGET_IP** -- Target IP address iSCSI, required parameter 
 - **ISCSI_TARGET_PORT** -- Target port iSCSI 
-- **ISCSI_TARGET_LUN** -- Target group tag iSCSI
+- **ISCSI_TARGET_GROUP** -- Target group tag iSCSI
 - **ISCSI_INITIATOR** -- Initiator name iSCSI
 - **ISCSI_USERNAME** -- Username for initiator authentication by the target(s)
 - **ISCSI_PASSWORD** -- Password for initiator authentication by the target(s) 

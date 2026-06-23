@@ -1,7 +1,7 @@
 register_parameter string ISCSI_TARGET_NAME
 register_parameter string ISCSI_TARGET_IP
 register_parameter number ISCSI_TARGET_PORT
-register_parameter number ISCSI_TARGET_LUN
+register_parameter number ISCSI_TARGET_GROUP
 register_parameter string ISCSI_INITIATOR
 register_parameter string ISCSI_USERNAME
 register_parameter string ISCSI_PASSWORD
