@@ -22,18 +22,18 @@ def configure_initrd(ctx: HostServiceContext, initrd_mk: list[str]) -> None:
 
 def _run_script(script: str, logfh) -> None:
     subprocess.run(
-        ["sudo", "sh", "-ec", script],
+        ["sudo", "sh", "-ecx", script],
         stdout=logfh,
-        stderr=subprocess.STDOUT,
+        stderr=logfh,
         check=True,
     )
 
 
 def _run_cleanup(script: str, logfh) -> None:
     subprocess.run(
-        ["sudo", "sh", "-ec", script],
+        ["sudo", "sh", "-ecx", script],
         stdout=logfh,
-        stderr=subprocess.STDOUT,
+        stderr=logfh,
         check=False,
     )
 

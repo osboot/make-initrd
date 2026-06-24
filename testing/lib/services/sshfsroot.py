@@ -48,7 +48,7 @@ def start(ctx: HostServiceContext) -> HostServiceProcess:
             "podman", "run", "--rm", "--network=host",
             "--volume", f"{pubkey}:/tmp/sshfsroot-authorized-key:ro",
             f"localhost/image-{ctx.vendor_name}:sysimage",
-            "sh", "-ec",
+            "sh", "-ecx",
             ""
             f"{ctx.install_package_set('sshfs_service')}; "
             ""
@@ -93,14 +93,14 @@ def start(ctx: HostServiceContext) -> HostServiceProcess:
         ],
         cwd=ctx.topdir,
         stdout=logfh,
-        stderr=subprocess.STDOUT,
+        stderr=logfh,
         start_new_session=True,
     )
 
     if not wait_tcp_port("127.0.0.1", 2222, 180):
         proc.terminate()
         try:
-            proc.wait(timeout=5)
+            proc.wait(timeout=15)
         except subprocess.TimeoutExpired:
             proc.kill()
             proc.wait()

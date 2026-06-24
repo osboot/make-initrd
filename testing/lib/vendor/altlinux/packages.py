@@ -3,7 +3,7 @@
 from lib.package_api import PackageSet
 
 
-APT_ARGS = "-y -qq -o=APT::Install::Virtual=true -o=APT::Install::VirtualVersion=true"
+APT_ARGS = "-y -q -o=APT::Install::Virtual=true -o=APT::Install::VirtualVersion=true"
 
 
 def install_command(packages: tuple[str, ...]) -> str:

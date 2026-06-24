@@ -38,7 +38,7 @@ def start(ctx: HostServiceContext) -> HostServiceProcess:
             "podman", "run", "--rm", "--network=host",
             "--volume", f"{image}:/tmp/sysimage.img:rw",
             f"localhost/image-{ctx.vendor_name}:sysimage",
-            "sh", "-ec",
+            "sh", "-ecx",
             ""
             f"{ctx.install_package_set('iscsi_service')}; "
             "export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH; "
@@ -66,7 +66,7 @@ def start(ctx: HostServiceContext) -> HostServiceProcess:
         ],
         cwd=ctx.topdir,
         stdout=logfh,
-        stderr=subprocess.STDOUT,
+        stderr=logfh,
         start_new_session=True,
     )
 
@@ -76,7 +76,7 @@ def start(ctx: HostServiceContext) -> HostServiceProcess:
     ):
         proc.terminate()
         try:
-            proc.wait(timeout=5)
+            proc.wait(timeout=15)
         except subprocess.TimeoutExpired:
             proc.kill()
             proc.wait()
