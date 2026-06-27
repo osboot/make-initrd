@@ -231,6 +231,25 @@ if [ -n "${UKI_SPLASH_FILE-}" ] && [ -s "$UKI_SPLASH_FILE" ]; then
 fi
 
 #
+# Section(s) with DeviceTree files. The .dtbauto section contains all DTB files
+# found under the devicetree directory for the current kernel version.
+# systemd-stub automatically selects the matching DTB at boot.
+#
+UKI_DTBDIR="${UKI_DTBDIR:-/boot/devicetree}"
+
+if [ -d "$UKI_DTBDIR/$KERNEL" ]; then
+	shopt -s nullglob globstar
+	# shellcheck disable=SC2206
+	dtbfiles=( "$UKI_DTBDIR/$KERNEL"/**/*.dtb )
+	if [ "${#dtbfiles[@]}" -gt 0 ]; then
+		cat "${dtbfiles[@]}" > "$WORKDIR/uki.dtbauto"
+		add_section ".dtbauto" "$WORKDIR/uki.dtbauto"
+		garbage+=( "$WORKDIR/uki.dtbauto" )
+		verbose1 "DTB files: ${dtbfiles[*]}"
+	fi
+fi
+
+#
 # Creating UEFI image file.
 #
 uefi_stub_file="$WORKDIR/stub.efi"

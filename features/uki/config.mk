@@ -15,6 +15,7 @@ UKI_SBAT ?=
 UKI_VMLINUZ ?=
 UKI_CMDLINE ?=
 UKI_SPLASH_FILE ?=
+UKI_DTBDIR  ?=
 
 #
 # The files systemd-boot processes generally reside on the UEFI ESP which is
