@@ -22,6 +22,10 @@ See https://uapi-group.org/specifications/specs/unified_kernel_image/
 - **UKI_UEFI_STUB** -- A simple UEFI kernel boot stub. By default,
   systemd-stub(7) is used. But an independent [stubby](https://github.com/puzzleos/stubby)
   can also be used.
+- **UKI_DTBDIR** -- Directory containing DeviceTree files organized by kernel
+  version. Defaults to `/boot/devicetree`. All `.dtb` files found under
+  `$(UKI_DTBDIR)/$(KERNEL)/` are concatenated into a `.dtbauto` section.
+  systemd-stub automatically selects the matching DTB at boot.
 
 ## ToDo
 
