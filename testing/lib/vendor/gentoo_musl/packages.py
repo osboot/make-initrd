@@ -7,7 +7,7 @@ def install_command(packages: tuple[str, ...]) -> str:
     return (
         "getuto >/dev/null; "
         "emerge-webrsync --quiet; "
-        "emerge --quiet --ask=n --getbinpkg --buildpkg --autounmask-write --newuse --update "
+        "emerge --quiet --ask=n --getbinpkg --buildpkg --autounmask-write --newuse --update --with-bdeps=y "
         f"{' '.join(packages)}; "
         "emerge --depclean --with-bdeps=n --ask=n"
     )
