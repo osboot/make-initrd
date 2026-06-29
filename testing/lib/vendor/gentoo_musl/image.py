@@ -29,13 +29,14 @@ def render_dockerfiles(ctx: ImageRenderContext) -> tuple[str, str]:
         f"""\
         FROM {ctx.base_image}
         ENV FEATURES="-ipc-sandbox -network-sandbox -pid-sandbox"
-        ENV USE="boot lvm -initramfs"
+        ENV USE="boot lvm kernel-install -initramfs"
         ENV PYTHON_TARGETS="python3_14 python3_12 python3_13"
         RUN getuto >/dev/null
         RUN emerge-webrsync --quiet
         RUN emerge {emerge_args} {ctx.packages.joined("kernel")}
         RUN emerge {emerge_args} {ctx.packages.joined("sysimage")}
         RUN emerge {emerge_args} {ctx.packages.joined("services")}
+        RUN emerge --update --newuse --deep --with-bdeps=y @world
         RUN emerge --depclean --with-bdeps=n --ask=n
         RUN {ctx.depmod_cmd}
         RUN find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\\n' | while read -r kver; do for i in vmlinuz System.map config; do if [ -f "/lib/modules/$kver/$i" ]; then cp -vL "/lib/modules/$kver/$i" "/lib/modules/$kver/$i.real"; rm -v "/lib/modules/$kver/$i"; mv -v "/lib/modules/$kver/$i.real" "/lib/modules/$kver/$i"; fi; done; done;
@@ -48,10 +49,11 @@ def render_dockerfiles(ctx: ImageRenderContext) -> tuple[str, str]:
     devel = textwrap.dedent(
         f"""\
         FROM localhost/image-{ctx.vendor_name}:sysimage
-        ENV USE="boot lvm -initramfs"
+        ENV USE="boot lvm kernel-install -initramfs"
         RUN emerge-webrsync --quiet
         RUN emerge {emerge_args} {ctx.packages.joined("kernel")}
         RUN emerge {emerge_args} {ctx.packages.joined("kickstart")}
+        RUN emerge --update --newuse --deep --with-bdeps=y @world
         RUN emerge --depclean --with-bdeps=n --ask=n
         RUN {ctx.depmod_cmd}
         RUN {cleanup}
