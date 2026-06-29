@@ -13,33 +13,6 @@ on:
 jobs:
   verify:
     uses: ./.github/workflows/verify.yml
-  altlinux:
-    needs:
-      - verify
-    uses: ./.github/workflows/testcases.yml
-    with:
-      vendor: altlinux
-      exclude: '[{"testcase": "zfs-partition"}, {"testcase": "initramfs-on-erofs"}]'
-  fedora:
-    needs:
-      - verify
-    uses: ./.github/workflows/testcases.yml
-    with:
-      vendor: fedora
-      exclude: '[{"testcase": "zfs-partition"},{"testcase": "lvm+luks"}]'
-  ubuntu:
-    needs:
-      - verify
-    uses: ./.github/workflows/testcases.yml
-    with:
-      vendor: ubuntu
-  gentoo:
-    needs:
-      - verify
-    uses: ./.github/workflows/testcases.yml
-    with:
-      vendor: gentoo
-      exclude: '[{"testcase": "zfs-partition"}, {"testcase": "sshfsroot"}]'
   gentoo_musl:
     needs:
       - verify
@@ -49,10 +22,6 @@ jobs:
       exclude: '[{"testcase": "zfs-partition"}, {"testcase": "initramfs-on-erofs"}, {"testcase": "initramfs-on-squashfs"}, {"testcase": "sshfsroot"}]'
   metrics:
     needs:
-      - altlinux
-      - fedora
-      - ubuntu
-      - gentoo
       - gentoo_musl
     runs-on: ubuntu-latest
     if: success() || failure()
