@@ -1,0 +1,19 @@
+#!/bin/bash -efu
+
+cwd="${0%/*}"
+
+. "$cwd"/../../../../testing/tests/guess-feature-sh-functions
+
+guess_feature_test_init "$0"
+
+mkdir -p -- "$SYSFS_PATH/devices/test-usb"
+mkdir -p -- "$SYSFS_PATH/bus/usb/drivers/uas"
+
+cat > "$SYSFS_PATH/devices/test-usb/uevent" <<-'EOF'
+SUBSYSTEM=usb
+EOF
+
+ln -s -- "$SYSFS_PATH/bus/usb/drivers/uas" "$SYSFS_PATH/devices/test-usb/driver"
+
+features/usb-storage/guess/device devices/test-usb
+guess_feature_test_dump
