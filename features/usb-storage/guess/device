@@ -1,23 +1,22 @@
 #!/bin/bash -efu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-found=
+driver=
 if [ -f "$SYSFS_PATH/$1"/uevent ]; then
-	! grep -qs '^DRIVER=usb-storage$' "$SYSFS_PATH/$1"/uevent ||
-		found=1
+	driver="$(sed -n -e 's/^DRIVER=\(uas\|usb-storage\)$/\1/p' "$SYSFS_PATH/$1"/uevent)"
 fi
 
-if [ -z "$found" ] && [ -e "$SYSFS_PATH/$1"/driver ]; then
+if [ -z "$driver" ] && [ -e "$SYSFS_PATH/$1"/driver ]; then
 	t="$(readlink -ev "$SYSFS_PATH/$1"/driver 2>/dev/null)" ||:
 	case "${t##*/}" in
-		usb-storage) found=1
+		uas|usb-storage) driver="${t##*/}"
 			;;
 	esac
 fi
 
-[ -n "$found" ] ||
+[ -n "$driver" ] ||
 	exit 0
 
 . guess-functions
 
-guess_module usb-storage
+guess_module "$driver"
