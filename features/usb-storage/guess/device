@@ -1,11 +1,6 @@
 #!/bin/bash -efu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-if [ -s "$KERNEL_CONFIG" ]; then
-	grep -qs '^[[:space:]]*CONFIG_USB_LIBUSUAL=y' "$KERNEL_CONFIG" ||
-		exit 0
-fi
-
 found=
 if [ -f "$SYSFS_PATH/$1"/uevent ]; then
 	! grep -qs '^DRIVER=usb-storage$' "$SYSFS_PATH/$1"/uevent ||
