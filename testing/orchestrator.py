@@ -460,7 +460,7 @@ def qemu_cpu_args(ctx: Context) -> list[str]:
 def ensure_disk(path: Path, fmt: str) -> None:
     if path.exists():
         return
-    subprocess.run(["qemu-img", "create", "-q", "-f", fmt, str(path), "4G"], check=True)
+    subprocess.run(["qemu-img", "create", "-q", "-f", fmt, str(path), "8G"], check=True)
 
 
 def qemu_disk_args(index: int, path: Path, fmt: str) -> list[str]:
@@ -481,7 +481,7 @@ def qemu_sdcard_args(index: int, path: Path, fmt: str) -> list[str]:
 
 def build_qemu_args(ctx: Context, *, kickstart: bool) -> list[str]:
     args = [f"qemu-system-{ctx.vendor.arch}"]
-    args.extend(["-m", ctx.param("qemu_memory", "1G"), "-no-reboot"])
+    args.extend(["-m", ctx.param("qemu_memory", "2G"), "-no-reboot"])
     if kickstart:
         boot_kernel = ctx.top_workdir / "boot-ks-vmlinuz"
         boot_initrd = ctx.top_workdir / "boot-ks-initrd.img"
