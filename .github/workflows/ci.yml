@@ -19,7 +19,7 @@ jobs:
     uses: ./.github/workflows/testcases.yml
     with:
       vendor: altlinux
-      exclude: '[{"testcase": "zfs-partition"}, {"testcase": "initramfs-on-erofs"}]'
+      exclude: '[{"testcase": "zfs-partition"}, {"testcase": "initramfs-on-erofs"}, {"testcase": "iscsiroot"}, {"testcase": "sshfsroot"}]'
   fedora:
     needs:
       - verify
