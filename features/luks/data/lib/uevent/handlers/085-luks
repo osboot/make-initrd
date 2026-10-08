@@ -347,7 +347,9 @@ handler() {
 		freekey
 	else
 		message "The keyfile was not found for partition: $LUKS_ROOT"
-		rc=1
+		message "Attempting to unlock using LUKS token..."
+                cryptsetup --token-only "$@"
+                rc="$?"
 	fi
 	if command -v clevis >/dev/null 2>&1; then
 		message "Сlevis detected."
