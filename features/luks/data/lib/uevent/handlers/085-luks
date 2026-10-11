@@ -22,25 +22,22 @@ crypttab=/etc/crypttab
 match_dev_in_array() {
 	[ "$#" = 2 ] || return 2
 
-	local value array_name array_size
-
-	array_name="$1"
+	local name value
+	name="$1"
 	value="$2"
 
-	eval "array_size=\"\${$array_name-}\""
+	local sz
+	sz="${!name-}"
 
-	[ -n "$array_size" ] && [ "$array_size" != 0 ] ||
+	[ -n "$sz" ] && [ "$sz" != 0 ] ||
 		return 1
 
-	local i luksdev realdev
-
-	i=0
-	while [ "$i" -lt "$array_size" ]; do
-		eval "luksdev=\"\$$array_name$i\""
-		i=$(($i + 1))
+	local i n realdev
+	for (( i=0; i < sz; i++ )); do
+		n="$name$i"
 
 		realdev=
-		get_dev realdev "$luksdev"
+		get_dev realdev "${!n}"
 
 		[ "$realdev" != "$value" ] ||
 			return 0
@@ -55,7 +52,7 @@ read_pkcs11_key() {
 	keyid=${keyid#pkcs11:}
 	keyid="${keyid%;};"
 
-	local serial id label application_label module type output_file flags rc=1
+	local serial id label application_label module type output_file flags rc
 	export id application_label module type output_file flags
 
 	while [ "$keyid" ]; do
@@ -97,21 +94,9 @@ freekey() {
 }
 
 findkey() {
-	local path keydev luksdev prefix s v
+	local path keydev luksdev prefix rc=0
 
-	while IFS='' read -u 3 -r s; do
-		for n in path keydev luksdev; do
-			v=
-			if [ -n "$s" ] && [ -z "${s##*$tab*}" ]; then
-				v="${s%%$tab*}"
-				s="${s#*$tab}"
-			else
-				v="$s"
-				s=
-			fi
-			eval "$n=\"\$v\""
-		done
-
+	while IFS="$tab" read -u 3 -r path keydev luksdev; do
 		if [ -z "$path" ]; then
 			message "ERROR: keypath required."
 			return 1
@@ -120,10 +105,7 @@ findkey() {
 		if [ -n "$luksdev" ]; then
 			get_dev "$luksdev" ||
 				continue
-
-			[ "${luksdev#/dev/}" = "${LUKS_ROOT#/dev/}" ] || continue
 		fi
-
 
 		prefix=
 		if [ -n "$keydev" ]; then
@@ -134,12 +116,10 @@ findkey() {
 		fi
 
 		if [[ "$path" = "pkcs11:"* ]]; then
-			local pkcs11_id="$path"
-			# assign path variable inside
-			read_pkcs11_key "$pkcs11_id"
-			local rc=$?
-			[ "$rc" == "2" ] && message "No smart card found." && return $rc
-			[ "$rc" != "0" ] && message "ERROR: can't read key '$pkcs11_id' from smart card." && return $rc
+			read_pkcs11_key "$path"
+			rc="$?"
+			[ "$rc" = 2 ] && message "No smart card found." && return $rc
+			[ "$rc" != 0 ] && message "ERROR: can't read key '$path' from smart card." && return $rc
 		fi
 
 		if [ ! -f "$prefix/$path" ]; then
@@ -151,7 +131,6 @@ findkey() {
 
 		message "Found keyfile '$path' for '${LUKS_ROOT#/dev/}' encrypted partition."
 		return 0
-
 	done 3< /etc/luks.keys
 
 	# Keyfile not found yet.
@@ -348,18 +327,20 @@ handler() {
 	else
 		message "The keyfile was not found for partition: $LUKS_ROOT"
 		message "Attempting to unlock using LUKS token..."
-                cryptsetup --token-only "$@"
-                rc="$?"
+		cryptsetup --token-only "$@"
+		rc="$?"
 	fi
-	if command -v clevis >/dev/null 2>&1; then
-		message "Сlevis detected."
-		message "Attempting to decrypt the partition using clevis luks..."
-		if [ "$rc" -ne 0 ] && shell_var_is_no "$luks_headless"; then
-			clevis luks unlock -d "$LUKS_ROOT" -n "$luks_volume"
-			rc="$?"
-		fi
-		if [ "$rc" -ne 0 ]; then
-			message "clevis could not decrypt!"
+
+	#
+	# The keyfile (if any) did not work, so we try to unlock the partition
+	# with Clevis (if it is available).
+	#
+	if [ "$rc" -ne 0 ] && shell_var_is_no "$luks_headless" && command -v clevis >/dev/null 2>&1; then
+		message "Attempting to unlock the partition using 'clevis luks unlock'..."
+		if clevis luks unlock -d "$LUKS_ROOT" -n "$luks_volume"; then
+			rc=0
+		else
+			message "clevis could not decrypt the partition!"
 		fi
 	fi
 
