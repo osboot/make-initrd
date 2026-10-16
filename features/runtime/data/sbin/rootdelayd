@@ -37,7 +37,8 @@ while :; do
 		mkdir -p -- "$disabled"
 
 		fd_lock 90 /dev/console
-		rdshell "Emergency shell" &
+		rdshell "Emergency shell" 90<&-
+		fd_unlock 90
 
 		continue
 	fi
@@ -91,7 +92,9 @@ while :; do
 
 		mkdir -p -- "$disabled"
 
-		rdshell "$msg" &
+		rdshell "$msg" 90<&-
+
+		fd_unlock 90
 
 		continue
 	fi
