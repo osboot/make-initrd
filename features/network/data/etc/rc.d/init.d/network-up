@@ -13,13 +13,10 @@
 
 msg="Network up"
 
-. shell-locks
 . network-sh-functions
 
 # wait for network modules
 udevadm settle --timeout=3
-
-fd_rlock 90 /dev/console
 
 ifaces=' '
 while :; do
