@@ -20,7 +20,7 @@ logfile=$(
 	[ "${RDLOG-}" != 'console' ] &&
 		echo "/var/log/$CMDNAME.$INTERFACE.log" ||
 		echo "/dev/console"
-)
+) 90<&-
 exec >>"$logfile" 2>&1
 
 . network-sh-functions
@@ -151,7 +151,6 @@ case "$STATE" in
 	deconfig)
 		rm -rf -- "$statedir"
 		;;
-	*)
-		exit 0
-		;;
 esac 90<&-
+
+fd_unlock 90

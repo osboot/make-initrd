@@ -80,7 +80,7 @@ while [ "$method" = localdev ]; do
 
 	fd_lock 90 /.initrd/console.lock
 
-	message "$QUEUE: session=$SESSION: $method ready. acting!"
+	message "$QUEUE: session=$SESSION: $method ready. acting!" 90<&-
 
 	echo 2 > /.initrd/telinit
 

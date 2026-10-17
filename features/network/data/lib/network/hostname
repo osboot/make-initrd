@@ -20,6 +20,8 @@ name=
 read -r name < "$confdir/hostname" ||:
 
 if [ -n "$name" ]; then
-	message "set hostname: $name"
+	message "set hostname: $name" 90<&-
 	printf '%s\n' "$name" > /proc/sys/kernel/hostname
 fi
+
+fd_unlock 90

@@ -16,42 +16,46 @@ get_iface_confdir &&
 
 fd_lock 90 "$0"
 
-message "write resolv.conf"
+{
+	message "write resolv.conf"
 
-tmp="$(mktemp "/etc/resolv.conf.XXXXXX")"
+	tmp="$(mktemp "/etc/resolv.conf.XXXXXX")"
 
-cat /etc/resolv.conf "$confdir/resolv.conf" |
-while :; do
-	list=${list:-0}
+	cat /etc/resolv.conf "$confdir/resolv.conf" |
+	while :; do
+		list=${list:-0}
 
-	eof=
-	read -r s || eof=1
+		eof=
+		read -r s || eof=1
 
-	dup=
-	if [ -n "$s" ]; then
-		i=0
-		while [ $i -lt $list ]; do
-			eval '[ "$list'$i'" != "$s" ] || { dup=1; break; }'
-			i=$(($i+1))
-		done
-	elif [ -z "${p-}" ]; then
-		dup=1
-	fi
-	p="$s"
+		dup=
+		if [ -n "$s" ]; then
+			i=0
+			while [ $i -lt $list ]; do
+				eval '[ "$list'$i'" != "$s" ] || { dup=1; break; }'
+				i=$(($i+1))
+			done
+		elif [ -z "${p-}" ]; then
+			dup=1
+		fi
+		p="$s"
 
-	if [ -z "$dup" ]; then
-		eval "list$list=\"\$s\""
-		list=$(($list+1))
-	fi
+		if [ -z "$dup" ]; then
+			eval "list$list=\"\$s\""
+			list=$(($list+1))
+		fi
 
-	if [ -n "$eof" ]; then
-		i=0
-		while [ $i -lt $list ]; do
-			eval "printf '%s\n' \"\$list$i\""
-			i=$(($i+1))
-		done
-		break
-	fi
-done >"$tmp"
-chmod 644 "$tmp"
-mv -f -- "$tmp" /etc/resolv.conf
+		if [ -n "$eof" ]; then
+			i=0
+			while [ $i -lt $list ]; do
+				eval "printf '%s\n' \"\$list$i\""
+				i=$(($i+1))
+			done
+			break
+		fi
+	done >"$tmp"
+	chmod 644 "$tmp"
+	mv -f -- "$tmp" /etc/resolv.conf
+} 90<&-
+
+fd_unlock 90

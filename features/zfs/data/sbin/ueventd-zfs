@@ -106,10 +106,12 @@ while :; do
 	if resume_checked; then
 		fd_lock 90 /.initrd/console.lock
 
-		findmnt -sno TARGET -t zfs | sort -d -k1,1 |
-		while read -r mnt; do
-			mount_zfs "$mnt" </dev/null ||:
-		done
+		{
+			findmnt -sno TARGET -t zfs | sort -d -k1,1 |
+			while read -r mnt; do
+				mount_zfs "$mnt" </dev/null ||:
+			done
+		} 90<&-
 
 		fd_unlock 90
 	fi

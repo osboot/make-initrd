@@ -24,7 +24,7 @@ rcd="/etc/rc.d/rc$runlevel.d"
 exec </dev/console 2>&1
 fd_lock 90 /.initrd/console.lock
 
-msg "INIT: Entering runlevel: $runlevel"
+msg "INIT: Entering runlevel: $runlevel" 90<&-
 
 export INITLOG_FILE='/var/log/boot.log'
 
