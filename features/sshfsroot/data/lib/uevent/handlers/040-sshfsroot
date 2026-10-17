@@ -2,8 +2,6 @@
 
 . /.initrd/initenv
 
-. shell-locks
-
 . initrd-sh-functions
 . uevent-sh-functions
 . network-sh-functions
@@ -40,16 +38,16 @@ handler() {
 	done
 }
 
+process_events() {
+	local e rc=0
+	for e in "$eventdir"/sshfsroot.*; do
+		[ -f "$e" ] || break
+		( . "$e"; handler; ) ||
+			rc=1
+		done_event "$e"
+	done
+	return $rc
+}
+
 exec 0</dev/console >/dev/console 2>&1
-fd_lock 90 /.initrd/console.lock
-
-rc=0
-for e in "$eventdir"/sshfsroot.*; do
-	[ -f "$e" ] || break
-	( . "$e"; handler; ) ||
-		rc=1
-	done_event "$e"
-done 90<&-
-
-fd_unlock 90
-exit $rc
+run_console_locked process_events

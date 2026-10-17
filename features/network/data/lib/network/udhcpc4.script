@@ -1,6 +1,6 @@
 #!/bin/bash -efu
 
-. shell-locks
+. network-sh-functions
 
 STATE="$1"
 
@@ -12,18 +12,6 @@ INTERFACE="${interface-}"
 
 lock="/tmp/$CMDNAME.$INTERFACE.lock"
 [ -d "$lock" ] || mkdir -p -- "$lock"
-
-fd_lock 90 "$lock"
-
-logfile=$(
-	. /.initrd/initenv
-	[ "${RDLOG-}" != 'console' ] &&
-		echo "/var/log/$CMDNAME.$INTERFACE.log" ||
-		echo "/dev/console"
-) 90<&-
-exec >>"$logfile" 2>&1
-
-. network-sh-functions
 
 cfg="$net_confdir/ifaces/$INTERFACE/ipv${V}dhcp"
 [ ! -e "$cfg" ] || . "$cfg"
@@ -127,30 +115,42 @@ gen_net_event()
 	net_event "$2" "$INTERFACE"
 }
 
-case "$STATE" in
-	renew)
-		env_to_configs
-		gen_net_event "$dir/iplink" "network.link.update"
-		gen_net_event "$dir/ipv${V}address" "network.addr.update"
-		gen_net_event "$dir/ipv${V}route" "network.route.update"
-		gen_net_event "$dir/resolv.conf" "network.resolvconf.update"
-		gen_net_event "$dir/hostname" "network.hostname.update"
-		mkdir -p -- "$statedir"
-		echo ready > "$state"
-		;;
-	bound)
-		suffix=
-		env_to_configs
-		mkdir -p -- "$statedir"
-		echo ready > "$state"
-		;;
-	leasefail)
-		mkdir -p -- "$statedir"
-		echo failed > "$state"
-		;;
-	deconfig)
-		rm -rf -- "$statedir"
-		;;
-esac 90<&-
+handle_state()
+{
+	local logfile
+	logfile=$(
+		. /.initrd/initenv
+		[ "${RDLOG-}" != 'console' ] &&
+			echo "/var/log/$CMDNAME.$INTERFACE.log" ||
+			echo "/dev/console"
+	)
+	exec >>"$logfile" 2>&1
 
-fd_unlock 90
+	case "$STATE" in
+		renew)
+			env_to_configs
+			gen_net_event "$dir/iplink" "network.link.update"
+			gen_net_event "$dir/ipv${V}address" "network.addr.update"
+			gen_net_event "$dir/ipv${V}route" "network.route.update"
+			gen_net_event "$dir/resolv.conf" "network.resolvconf.update"
+			gen_net_event "$dir/hostname" "network.hostname.update"
+			mkdir -p -- "$statedir"
+			echo ready > "$state"
+			;;
+		bound)
+			suffix=
+			env_to_configs
+			mkdir -p -- "$statedir"
+			echo ready > "$state"
+			;;
+		leasefail)
+			mkdir -p -- "$statedir"
+			echo failed > "$state"
+			;;
+		deconfig)
+			rm -rf -- "$statedir"
+			;;
+	esac
+}
+
+run_locked "$lock" handle_state

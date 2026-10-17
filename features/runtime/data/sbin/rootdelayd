@@ -1,13 +1,45 @@
 #!/bin/bash -efu
 
 . shell-error
-. shell-locks
 
 . initrd-sh-functions
 
 message_time=1
 disabled="/.initrd/rootdelay/disabled"
 period=1
+
+timeout_expired()
+{
+	local msg="$1"
+
+	# Disallow console access
+	if [ "${PANIC-}" = "0" ]; then
+		{
+			PROG=initramfs
+
+			message "$msg"
+			message "Disallow console access (panic=0). reboot."
+		} >/dev/console 2>&1 ||:
+
+		reboot -f
+	fi
+
+	mkdir -p -- "$disabled"
+
+	rdshell "$msg"
+}
+
+show_waiting_message()
+{
+	local msg
+
+	resume_checked &&
+		msg="Waiting for root ${ROOT:+($ROOT) }..." ||
+		msg="Waiting for resume device ${RESUME:+($RESUME) }..."
+
+	PROG=initramfs \
+	message "$msg" >/dev/console 2>&1 ||:
+}
 
 while :; do
 	if [ -e "$disabled" ] || rootdelay_paused; then
@@ -34,9 +66,7 @@ while :; do
 	if [ -n "${RDSHELL-}" ]; then
 		mkdir -p -- "$disabled"
 
-		fd_lock 90 /.initrd/console.lock
-		rdshell "Emergency shell" 90<&-
-		fd_unlock 90
+		run_console_locked rdshell "Emergency shell"
 
 		continue
 	fi
@@ -74,41 +104,13 @@ while :; do
 
 		msg="${msg:-The waiting time expired!}"
 
-		fd_lock 90 /.initrd/console.lock
-
-		# Disallow console access
-		if [ "${PANIC-}" = "0" ]; then
-			{
-				PROG=initramfs
-
-				message "$msg"
-				message "Disallow console access (panic=0). reboot."
-			} >/dev/console 2>&1 90<&- ||:
-
-			reboot -f
-		fi
-
-		mkdir -p -- "$disabled"
-
-		rdshell "$msg" 90<&-
-
-		fd_unlock 90
+		run_console_locked timeout_expired "$msg"
 
 		continue
 	fi
 
 	if [ -z "${QUIET-}" ] && [ -z "$first_iter" ] && [ $(( $delay % 15 )) -eq 0 ]; then
-
-		fd_lock 90 /.initrd/console.lock
-
-		resume_checked &&
-			msg="Waiting for root ${ROOT:+($ROOT) }..." ||
-			msg="Waiting for resume device ${RESUME:+($RESUME) }..."
-
-		PROG=initramfs \
-		message "$msg" >/dev/console 2>&1 90<&- ||:
-
-		fd_unlock 90
+		run_console_locked show_waiting_message
 	fi
 
 	sleep $period

@@ -3,7 +3,6 @@
 . /.initrd/initenv
 
 . shell-error
-. shell-locks
 
 . uevent-sh-functions
 . initrd-sh-functions
@@ -67,6 +66,12 @@ sysinit_found()
 	return 1
 }
 
+activate_localdev()
+{
+	message "$QUEUE: session=$SESSION: $method ready. acting!"
+	echo 2 > /.initrd/telinit
+}
+
 method=
 { read -r method < /etc/initrd/method; } >/dev/null 2>&1 ||:
 
@@ -78,13 +83,7 @@ while [ "$method" = localdev ]; do
 	all_mounted && sysinit_found ||
 		break
 
-	fd_lock 90 /.initrd/console.lock
-
-	message "$QUEUE: session=$SESSION: $method ready. acting!" 90<&-
-
-	echo 2 > /.initrd/telinit
-
-	fd_unlock 90
+	run_console_locked activate_localdev
 	break
 done
 
