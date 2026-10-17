@@ -86,9 +86,7 @@ period=0.5
 
 while :; do
 	if [ -z "${__initrd_initenv-}" ] && [ -f /.initrd/initenv ]; then
-		fd_rlock 90 /.initrd/initenv
 		. /.initrd/initenv
-		fd_unlock 90
 
 		if [ -z "${__initrd_initenv-}" ]; then
 			# Waiting for cmdline service

@@ -18,7 +18,6 @@
 . shell-error
 . shell-var
 . shell-cmdline
-. shell-locks
 
 defaults()
 {
@@ -213,12 +212,11 @@ parse()
 		fi
 	fi
 
-	fd_lock 90 /.initrd/initenv
 	{
 		echo __initrd_initenv=1
 		environ -q -s -p 'export ' -u '_*,INITLOG_FILE,RUNLEVEL,runlevel,PWD,SHLVL'
-	} > /.initrd/initenv 90<&-
-	fd_unlock 90
+	} > /.initrd/initenv.new
+	mv -f -- /.initrd/initenv.new /.initrd/initenv
 }
 
 action_shell 'Parsing cmdline arguments:' parse
