@@ -8,7 +8,7 @@
 #
 
 . /etc/init.d/functions
-. shell-locks
+. initrd-sh-functions
 
 # Get first argument. Set new runlevel to this argument.
 [ $# -eq 0 ] ||
@@ -21,13 +21,6 @@ rcd="/etc/rc.d/rc$runlevel.d"
 [ -d "$rcd" ] ||
 	exit 0
 
-exec </dev/console 2>&1
-fd_lock 90 /.initrd/console.lock
-
-msg "INIT: Entering runlevel: $runlevel" 90<&-
-
-export INITLOG_FILE='/var/log/boot.log'
-
 run_scripts() {
 	local s n="$1"
 	shift
@@ -36,80 +29,87 @@ run_scripts() {
 	done
 }
 
-# First, run the KILL scripts.
-for i in "$rcd"/K*; do
-	[ -x "$i" ] ||
-		continue
+run_runlevel() {
+	msg "INIT: Entering runlevel: $runlevel"
 
-	subsys=${i#$rcd/K*:}
+	export INITLOG_FILE='/var/log/boot.log'
 
-	# Check if the subsystem is already up.
-	[ -f "$locksys/$subsys" ] ||
-		continue
+	# First, run the KILL scripts.
+	for i in "$rcd"/K*; do
+		[ -x "$i" ] ||
+			continue
 
-	SourceIfExists /.initrd/initenv
+		subsys=${i#$rcd/K*:}
 
-	[ "${RDLOG-}" != 'console' ] ||
-		export INITLOG_FILE=/dev/console
+		# Check if the subsystem is already up.
+		[ -f "$locksys/$subsys" ] ||
+			continue
 
-	run_scripts "pre/$subsys" stop "$subsys"
+		SourceIfExists /.initrd/initenv
 
-	"$i" stop
-	rc="$?"
+		[ "${RDLOG-}" != 'console' ] ||
+			export INITLOG_FILE=/dev/console
 
-	run_scripts "post/$subsys" stop "$subsys" "$rc"
-done 90<&-
+		run_scripts "pre/$subsys" stop "$subsys"
 
-# Now run the START scripts.
-for i in "$rcd"/S*; do
-	[ -x "$i" ] ||
-		continue
+		"$i" stop
+		rc="$?"
 
-	subsys="${i#$rcd/S*:}"
+		run_scripts "post/$subsys" stop "$subsys" "$rc"
+	done
 
-	SourceIfExists /.initrd/initenv
+	# Now run the START scripts.
+	for i in "$rcd"/S*; do
+		[ -x "$i" ] ||
+			continue
 
-	[ "${RDLOG-}" != 'console' ] ||
-		export INITLOG_FILE=/dev/console
+		subsys="${i#$rcd/S*:}"
 
-	interactive=
-	[ -z "${STOP-}" ] ||
-		for n in all "$subsys"; do
-			[ -n "${STOP##*,$n,*}" ] || interactive=1
-		done
+		SourceIfExists /.initrd/initenv
 
-	if [ -n "$interactive" ]; then
-		while :; do
-			printf 'Start service %s (Y)es/(N)o/(C)ontinue/(S)hell? [Y] ' "$subsys"
-			read -r answer < /dev/console
-			case "${answer,,}" in
-				c|continue)
-					printf 'STOP=,,\n' >> /.initrd/initenv
-					break
-					;;
-				s|shell)
-					rdshell 'This shell remains here for debug purposes. Press Ctrl-D to continue.'
-					;;
-				n|no)
-					continue 2
-					;;
-				y|yes|'')
-					break
-					;;
-			esac
-		done
-	fi
+		[ "${RDLOG-}" != 'console' ] ||
+			export INITLOG_FILE=/dev/console
 
-	# Check if the subsystem is already up.
-	[ ! -f "$locksys/$subsys" ] ||
-		continue
+		interactive=
+		[ -z "${STOP-}" ] ||
+			for n in all "$subsys"; do
+				[ -n "${STOP##*,$n,*}" ] || interactive=1
+			done
 
-	run_scripts "pre/$subsys" start "$subsys"
+		if [ -n "$interactive" ]; then
+			while :; do
+				printf 'Start service %s (Y)es/(N)o/(C)ontinue/(S)hell? [Y] ' "$subsys"
+				read -r answer < /dev/console
+				case "${answer,,}" in
+					c|continue)
+						printf 'STOP=,,\n' >> /.initrd/initenv
+						break
+						;;
+					s|shell)
+						rdshell 'This shell remains here for debug purposes. Press Ctrl-D to continue.'
+						;;
+					n|no)
+						continue 2
+						;;
+					y|yes|'')
+						break
+						;;
+				esac
+			done
+		fi
 
-	"$i" start
-	rc="$?"
+		# Check if the subsystem is already up.
+		[ ! -f "$locksys/$subsys" ] ||
+			continue
 
-	run_scripts "post/$subsys" start "$subsys" "$rc"
-done 90<&-
+		run_scripts "pre/$subsys" start "$subsys"
 
-fd_unlock 90
+		"$i" start
+		rc="$?"
+
+		run_scripts "post/$subsys" start "$subsys" "$rc"
+	done
+}
+
+exec </dev/console 2>&1
+run_console_locked run_runlevel

@@ -18,6 +18,7 @@ ip_cmd()
 }
 
 . uevent-sh-functions
+. initrd-sh-functions
 
 net_event()
 {

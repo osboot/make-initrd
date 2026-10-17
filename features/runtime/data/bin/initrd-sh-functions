@@ -155,4 +155,51 @@ resume_checked()
 		return 1
 }
 
+. shell-locks
+
+lock_file_fd=
+
+lock_file()
+{
+	exec {lock_file_fd}<"$1"
+	shift
+	flock "$@" "$lock_file_fd"
+}
+
+unlock_file()
+{
+	[ -n "${lock_file_fd-}" ] || return 0
+	fd_unlock "$lock_file_fd"
+	lock_file_fd=
+}
+
+run_locked()
+{
+	local lock_file_fd='' rc=0
+
+	lock_file "$1" -x
+	shift
+	"$@" {lock_file_fd}<&- || rc=$?
+	unlock_file
+
+	return $rc
+}
+
+console_lock_file=/.initrd/console.lock
+
+console_lock()
+{
+	lock_file "$console_lock_file" -x
+}
+
+console_unlock()
+{
+	unlock_file
+}
+
+run_console_locked()
+{
+	run_locked "$console_lock_file" "$@"
+}
+
 fi

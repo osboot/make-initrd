@@ -4,7 +4,6 @@
 
 . shell-error
 . shell-var
-. shell-locks
 
 . uevent-sh-functions
 . initrd-sh-functions
@@ -365,20 +364,20 @@ handler() {
 	fi
 }
 
+process_events() {
+	local e r rc=0
+	for e in "$eventdir"/luks.*; do
+		[ -f "$e" ] || break
+		r=0
+		( . "$e"; handler; ) || r="$?"
+		case "$r" in
+			2) ;;
+			1) rc=1 ;;
+			0) done_event "$e" ;;
+		esac
+	done
+	return $rc
+}
+
 exec 0</dev/console >/dev/console 2>&1
-fd_lock 90 /.initrd/console.lock
-
-rc=0
-for e in "$eventdir"/luks.*; do
-	[ -f "$e" ] || break
-	r=0
-	( . "$e"; handler; ) || r="$?"
-	case "$r" in
-		2) ;;
-		1) rc=1 ;;
-		0) done_event "$e" ;;
-	esac
-done 90<&-
-
-fd_unlock 90
-exit $rc
+run_console_locked process_events

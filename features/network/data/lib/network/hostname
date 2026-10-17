@@ -1,7 +1,6 @@
 #!/bin/bash -efu
 
 . shell-error
-. shell-locks
 . network-sh-functions
 
 [ "$NET_EV_ACTION" = update ] ||
@@ -14,14 +13,15 @@ get_iface_confdir &&
 	[ -f "$confdir/hostname" ] ||
 	exit 0
 
-fd_lock 90 "$0"
+update_hostname()
+{
+	local name=
+	read -r name < "$confdir/hostname" ||:
 
-name=
-read -r name < "$confdir/hostname" ||:
+	if [ -n "$name" ]; then
+		message "set hostname: $name"
+		printf '%s\n' "$name" > /proc/sys/kernel/hostname
+	fi
+}
 
-if [ -n "$name" ]; then
-	message "set hostname: $name" 90<&-
-	printf '%s\n' "$name" > /proc/sys/kernel/hostname
-fi
-
-fd_unlock 90
+run_locked "$0" update_hostname
