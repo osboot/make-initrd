@@ -19,27 +19,40 @@ split() {
 	luksdev="${3-}"
 }
 
+add_key() {
+	local entry
+	printf -v entry '%s\t%s\t%s' "$1" "$2" "$3"
+	grep -qsFx -- "$entry" /etc/luks.keys 2>/dev/null ||
+		printf '%s\n' "$entry" >> /etc/luks.keys
+}
+
+process_keys() {
+	local i=0 path keydev luksdev is_pkcs11 realdev
+
+	while [ "$i" -lt "$LUKS_KEY" ]; do
+		path='' keydev='' luksdev='' is_pkcs11=''
+		eval "split \"\$LUKS_KEY$i\""
+		i=$(( $i + 1 ))
+
+		if [ -n "$is_pkcs11" ]; then
+			[ -n "$path" ] || continue
+			add_key "pkcs11:$path" "" "$luksdev"
+			continue
+		fi
+
+		[ -n "$keydev" ] ||
+			continue
+		realdev=
+		get_dev realdev "$keydev" ||
+			continue
+		add_key "$path" "$realdev" "$luksdev"
+	done
+}
+
 [ -z "${NO_LUKS-}" ] ||
 	exit 0
 
 [ -n "$LUKS_KEY" ] && [ "$LUKS_KEY" != 0 ] ||
 	exit 0
-i=0
-while [ "$i" -lt "$LUKS_KEY" ]; do
-	path='' keydev='' luksdev='' is_pkcs11=''
-	eval "split \"\$LUKS_KEY$i\""
-	i=$(( $i + 1 ))
 
-	if [ -n "$is_pkcs11" ]; then
-		[ -n "$path" ] || continue
-		printf 'pkcs11:%s\t%s\t%s\n' "$path" "" "$luksdev"
-		continue
-	fi
-
-	[ -n "$keydev" ] ||
-		continue
-	realdev=
-	get_dev realdev "$keydev" ||
-		continue
-	printf '%s\t%s\t%s\n' "$path" "$realdev" "$luksdev"
-done >> /etc/luks.keys
+run_locked /etc/luks.keys process_keys
