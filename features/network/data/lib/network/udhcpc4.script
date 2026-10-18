@@ -10,7 +10,7 @@ V="${CMDNAME##udhcpc}"
 
 INTERFACE="${interface-}"
 
-lock="/tmp/$CMDNAME.$INTERFACE.lock"
+lock="/tmp/udhcpc.$INTERFACE.lock"
 [ -d "$lock" ] || mkdir -p -- "$lock"
 
 cfg="$net_confdir/ifaces/$INTERFACE/ipv${V}dhcp"
