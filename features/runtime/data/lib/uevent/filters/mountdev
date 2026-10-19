@@ -4,41 +4,48 @@
 . uevent-sh-functions
 . initrd-sh-functions
 
-eof=
-while [ -z "$eof" ]; do
-	read -r fsdev fsdir fstype fsopts freq passno ||
-		eof=1
-	[ -n "$fsdev" ] ||
-		continue
+process_fstab()
+{
+	local eof='' fsdev fsdir fstype fsopts freq passno dev o
+	local -a fsoptions
 
-	if [ -n "${ROOTONLY-}" ]; then
-		[ "$fsdir" = "$rootmnt" ] ||
+	while [ -z "$eof" ]; do
+		read -r fsdev fsdir fstype fsopts freq passno ||
+			eof=1
+		[ -n "$fsdev" ] ||
 			continue
-	fi
 
-	fsoptions=()
-	readarray -d, -t fsoptions < <(printf '%s' "$fsopts")
-
-	dev=
-	for o in "${fsoptions[@]}"; do
-		if [ "$o" = 'x-initrd-mount-virtual' ]; then
-			# A virtual mountpoint does not have a real device and
-			# fires every time a block device is found. Let's let
-			# the handler decide to process this event or ignore it.
-			dev="$fsdev"
-			break
+		if [ -n "${ROOTONLY-}" ]; then
+			[ "$fsdir" = "$rootmnt" ] ||
+				continue
 		fi
-	done
 
-	[ -n "$dev" ] || get_dev dev "$fsdev" ||
-		continue
+		fsoptions=()
+		readarray -d, -t fsoptions < <(printf '%s' "$fsopts")
 
-	event="$(make_event)"
+		dev=
+		for o in "${fsoptions[@]}"; do
+			if [ "$o" = 'x-initrd-mount-virtual' ]; then
+				# A virtual mountpoint does not have a real device and
+				# fires every time a block device is found. Let's let
+				# the handler decide to process this event or ignore it.
+				dev="$fsdev"
+				break
+			fi
+		done
 
-	cat > "$event" <<-EOF
-		MOUNTDEV="$dev"
-		MOUNTPOINT="$fsdir"
-	EOF
+		[ -n "$dev" ] || get_dev dev "$fsdev" ||
+			continue
 
-	release_event mountdev "$event"
-done < /etc/fstab
+		event="$(make_event)"
+
+		cat > "$event" <<-EOF
+			MOUNTDEV="$dev"
+			MOUNTPOINT="$fsdir"
+		EOF
+
+		release_event mountdev "$event"
+	done < /etc/fstab
+}
+
+run_fstab_rlocked process_fstab

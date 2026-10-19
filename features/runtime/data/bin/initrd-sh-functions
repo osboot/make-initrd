@@ -185,7 +185,19 @@ run_locked()
 	return $rc
 }
 
-console_lock_file=/.initrd/console.lock
+run_rlocked()
+{
+	local lock_file_fd='' rc=0
+
+	lock_file "$1" -s
+	shift
+	"$@" {lock_file_fd}<&- || rc=$?
+	unlock_file
+
+	return $rc
+}
+
+console_lock_file="${console_lock_file:-/.initrd/console.lock}"
 
 console_lock()
 {
@@ -200,6 +212,33 @@ console_unlock()
 run_console_locked()
 {
 	run_locked "$console_lock_file" "$@"
+}
+
+fstab_lock_file="${fstab_lock_file:-/.initrd/fstab.lock}"
+
+fstab_lock()
+{
+	lock_file "$fstab_lock_file" -x
+}
+
+fstab_rlock()
+{
+	lock_file "$fstab_lock_file" -s
+}
+
+fstab_unlock()
+{
+	unlock_file
+}
+
+run_fstab_locked()
+{
+	run_locked "$fstab_lock_file" "$@"
+}
+
+run_fstab_rlocked()
+{
+	run_rlocked "$fstab_lock_file" "$@"
 }
 
 fi

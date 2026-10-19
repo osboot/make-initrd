@@ -12,6 +12,7 @@ export PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin
 # Create storage for init environment
 :> /.initrd/initenv
 :> /.initrd/console.lock
+:> /.initrd/fstab.lock
 
 # Check and create the necessary device files
 [ -d /dev ] ||

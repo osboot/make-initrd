@@ -128,4 +128,6 @@ gen_fstab()
 	printf '%s\n' "${fstab[@]}" > /etc/fstab
 }
 
-action_shell 'Creating /etc/fstab:' gen_fstab
+. initrd-sh-functions
+
+action_shell 'Creating /etc/fstab:' run_fstab_locked gen_fstab

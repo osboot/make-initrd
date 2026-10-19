@@ -80,7 +80,7 @@ while [ "$method" = localdev ]; do
 	resume_checked ||
 		exit 0
 
-	all_mounted && sysinit_found ||
+	run_fstab_rlocked all_mounted && sysinit_found ||
 		break
 
 	run_console_locked activate_localdev

@@ -113,7 +113,7 @@ if [ -n "$has_member_events" ]; then
 		exit 0
 
 	# No multi-device btrfs in fstab, or all devices already present.
-	check_btrfs_arrays ||
+	run_fstab_rlocked check_btrfs_arrays ||
 		exit 0
 
 	queue_timeout_after btrfs-member "$delay" member REASON=degraded-check
@@ -128,4 +128,4 @@ for e in "$1"/timeout.member.*; do
 done
 
 [ -z "$has_timeout_events" ] ||
-	process_timeout
+	run_fstab_locked process_timeout

@@ -17,6 +17,8 @@ export TEST_FILTERDIR="$root/queues"
 export TEST_TIMERDIR="$root/timers"
 export TEST_UEVENTDIR="$root/events"
 export TEST_INITENV="$root/initenv"
+export fstab_lock_file="$root/fstab.lock"
+:> "$fstab_lock_file"
 
 cat > "$TEST_INITENV" <<'EOF'
 PROG=test

@@ -2,42 +2,51 @@
 
 [ "$1" = start ] || exit 0
 
+. initrd-sh-functions
+
 mount_event_needed=
 
-eof=
-while [ -z "$eof" ]; do
-	read -r fsdev fsdir fstype fsopts freq passno ||
-		eof=1
+update_fstab()
+{
+	local eof='' fsdev fsdir fstype fsopts freq passno i j
+	local -a fsoptions
 
-	[ -n "$fsdev" ] ||
-		continue
+	while [ -z "$eof" ]; do
+		read -r fsdev fsdir fstype fsopts freq passno ||
+			eof=1
 
-	fsoptions=()
-	readarray -t fsoptions <<<"${fsopts//,/$'\n'}"
-
-	if [ -z "${fsdev##SOURCE=*}" ]; then
-		fsdev="${fsdev#SOURCE=}"
-		fsoptions+=("x-initrd-mount-virtual")
-		mount_event_needed=1
-	fi
-
-	fsopts=
-	for (( i=0; i < ${#fsoptions[@]}; i++ )); do
-		[ -n "${fsoptions[$i]}" ] ||
+		[ -n "$fsdev" ] ||
 			continue
-		for (( j=0; j < $i; j++ )); do
-			[ "${fsoptions[$i]}" != "${fsoptions[$j]}" ] ||
-				continue 2
+
+		fsoptions=()
+		readarray -t fsoptions <<<"${fsopts//,/$'\n'}"
+
+		if [ -z "${fsdev##SOURCE=*}" ]; then
+			fsdev="${fsdev#SOURCE=}"
+			fsoptions+=("x-initrd-mount-virtual")
+			mount_event_needed=1
+		fi
+
+		fsopts=
+		for (( i=0; i < ${#fsoptions[@]}; i++ )); do
+			[ -n "${fsoptions[$i]}" ] ||
+				continue
+			for (( j=0; j < $i; j++ )); do
+				[ "${fsoptions[$i]}" != "${fsoptions[$j]}" ] ||
+					continue 2
+			done
+			fsopts="${fsopts:+$fsopts,}${fsoptions[$i]}"
 		done
-		fsopts="${fsopts:+$fsopts,}${fsoptions[$i]}"
-	done
 
-	printf '%s %s %s %s %s %s\n' \
-		"$fsdev" "$fsdir" "$fstype" "$fsopts" "$freq" "$passno"
+		printf '%s %s %s %s %s %s\n' \
+			"$fsdev" "$fsdir" "$fstype" "$fsopts" "$freq" "$passno"
 
-done < /etc/fstab > /etc/fstab."$$"
+	done < /etc/fstab > /etc/fstab."$$"
 
-mv /etc/fstab."$$" /etc/fstab
+	mv -f -- /etc/fstab."$$" /etc/fstab
+}
+
+run_fstab_locked update_fstab
 
 if [ -n "$mount_event_needed" ]; then
 	. /etc/init.d/functions
