@@ -45,23 +45,22 @@ sysinit_found()
 	fi
 
 	local msglock="/.initrd/polld/$PROG/message-shown"
-	local deadline='/.initrd/rootdelay/deadline'
 	local consmsg="/.initrd/rootdelay/message"
 
-	[ ! -f "$deadline" ] ||
-		echo 0 > "$deadline" ||:
+	if [ ! -d "$msglock" ]; then
+		mkdir -p -- "$msglock" "${consmsg%/*}" ||:
 
-	[ ! -d "$msglock" ] ||
-		return 1
+		printf > "$consmsg.$$.$BASHPID" '%s\n' \
+			"The init program \`$INIT' not found in the root directory."
+		mv -f -- "$consmsg.$$.$BASHPID" "$consmsg"
 
-	mkdir -p -- "$msglock" ||:
+		message "it looks like all mountpoints are ready, but \`$INIT' not found" \
+		        "in the new root directory ($rootmnt)." \
+		        "There is no point in waiting any longer."
+	fi
 
-	printf > "$consmsg" '%s\n' \
-		"The init program \`$INIT' not found in the root directory."
-
-	message "it looks like all mountpoints are ready, but \`$INIT' not found" \
-	        "in the new root directory ($rootmnt)." \
-	        "There is no point in waiting any longer."
+	[ ! -f "$_rootdelay_timestamp" ] ||
+		rootdelay_set_deadline 0 ||:
 
 	return 1
 }

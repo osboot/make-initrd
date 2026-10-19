@@ -123,12 +123,21 @@ rootdelay_paused()
 	[ -d "$_rootdelay_pause" ]
 }
 
+rootdelay_set_deadline()
+{
+	mkdir -p -- "${_rootdelay_timestamp%/*}"
+	printf '%s\n' "$1" > "$_rootdelay_timestamp.$$.$BASHPID"
+	mv -f -- "$_rootdelay_timestamp.$$.$BASHPID" "$_rootdelay_timestamp"
+}
+
 rootdelay_reset_timer()
 {
-	local now
-	now="$(timestamp boottime raw)"
-	now="${now%.*}"
-	echo $(( $now + $ROOTDELAY )) > "$_rootdelay_timestamp"
+	local now="${1-}"
+	if [ -z "$now" ]; then
+		now="$(timestamp boottime raw)"
+		now="${now%.*}"
+	fi
+	rootdelay_set_deadline "$(( $now + $ROOTDELAY ))"
 }
 
 initrd_features=/.initrd/features

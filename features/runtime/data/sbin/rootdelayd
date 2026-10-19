@@ -80,8 +80,7 @@ while :; do
 		first_iter=1
 		deadline=$(( $now + $ROOTDELAY ))
 
-		mkdir -p -- "${_rootdelay_timestamp%/*}"
-		echo $deadline > "$_rootdelay_timestamp"
+		rootdelay_set_deadline "$deadline"
 	else
 		readline deadline "$_rootdelay_timestamp"
 	fi
@@ -92,7 +91,7 @@ while :; do
 	if [ "$delay" -le 0 ]; then
 		if ! resume_checked; then
 			set_resume_checked
-			echo $(( $now + $ROOTDELAY )) > "$_rootdelay_timestamp"
+			rootdelay_reset_timer "$now"
 
 			sleep $period
 			continue
