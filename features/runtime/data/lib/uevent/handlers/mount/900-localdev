@@ -50,9 +50,8 @@ sysinit_found()
 	if [ ! -d "$msglock" ]; then
 		mkdir -p -- "$msglock" "${consmsg%/*}" ||:
 
-		printf > "$consmsg.$$.$BASHPID" '%s\n' \
+		write_atomic "$consmsg" printf '%s\n' \
 			"The init program \`$INIT' not found in the root directory."
-		mv -f -- "$consmsg.$$.$BASHPID" "$consmsg"
 
 		message "it looks like all mountpoints are ready, but \`$INIT' not found" \
 		        "in the new root directory ($rootmnt)." \

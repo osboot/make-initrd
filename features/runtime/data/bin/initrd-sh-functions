@@ -105,6 +105,27 @@ readline()
         eval "$1=\"\$__v\""
 }
 
+write_atomic()
+{
+	local __write_atomic_dst="$1"
+	local __write_atomic_tmp="$1.$$.$BASHPID"
+	local __write_atomic_rc=0
+	shift
+
+	if [ "$#" -gt 0 ]; then
+		"$@" > "$__write_atomic_tmp" || __write_atomic_rc=$?
+	else
+		cat > "$__write_atomic_tmp" || __write_atomic_rc=$?
+	fi
+
+	if [ "$__write_atomic_rc" -eq 0 ]; then
+		mv -f -- "$__write_atomic_tmp" "$__write_atomic_dst"
+	else
+		rm -f -- "$__write_atomic_tmp"
+		return "$__write_atomic_rc"
+	fi
+}
+
 _rootdelay_pause=/.initrd/rootdelay/pause
 _rootdelay_timestamp=/.initrd/rootdelay/deadline
 
@@ -126,8 +147,7 @@ rootdelay_paused()
 rootdelay_set_deadline()
 {
 	mkdir -p -- "${_rootdelay_timestamp%/*}"
-	printf '%s\n' "$1" > "$_rootdelay_timestamp.$$.$BASHPID"
-	mv -f -- "$_rootdelay_timestamp.$$.$BASHPID" "$_rootdelay_timestamp"
+	write_atomic "$_rootdelay_timestamp" printf '%s\n' "$1"
 }
 
 rootdelay_reset_timer()

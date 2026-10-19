@@ -59,9 +59,7 @@ update_fstab()
 		printf '%s %s %s %s %s %s\n' \
 			"$fspool" "$fsdir" "$fstype" "$fsopts" "$freq" "$passno"
 
-	done < /etc/fstab > /etc/fstab."$$"
-
-	mv -f -- /etc/fstab."$$" /etc/fstab
+	done < /etc/fstab
 }
 
-run_fstab_locked update_fstab
+run_fstab_locked write_atomic /etc/fstab update_fstab
