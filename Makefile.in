@@ -140,6 +140,11 @@ USE_BUSYBOX	= @USE_BUSYBOX@
 USE_LIBSHELL	= @USE_LIBSHELL@
 SCDOC		= @SCDOC@
 
+INSTALL         = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_SCRIPT  = @INSTALL_SCRIPT@
+INSTALL_DATA    = @INSTALL_DATA@
+
 SED = @SED@ \
 	-e 's|@UDEVD[@]|$(UDEVD)|g' \
 	-e 's|@UDEVADM[@]|$(UDEVADM)|g' \
@@ -236,9 +241,9 @@ $(dest_rulesdir)/%.mk: $(srcdir)/mk/%.mk.in Makefile
 
 build: $(addprefix $(dest_rulesdir)/,$(RULE_NAMES))
 
-ifneq ($(SCDOC),)
 MANPAGE_NAMES = $(notdir $(basename $(wildcard $(srcdir)/Documentation/manpages/*.md)))
 
+ifneq ($(SCDOC),)
 $(dest_man1dir)/%.1: $(srcdir)/Documentation/manpages/%.1.md
 	$(Q)mkdir -p -- $(dir $@)
 	$(call quiet_cmd,MAN,$@,$(SCDOC)) < $< > $@
@@ -410,7 +415,7 @@ distclean: clean
 	$(Q)rm -rf -- autom4te.cache
 
 installdirs:
-	$(Q)mkdir -p -- \
+	$(Q)$(INSTALL) -d -m 755 -- \
 	 $(DESTDIR)$(bindir) \
 	 $(DESTDIR)$(sbindir) \
 	 $(DESTDIR)$(sysconfdir) \
@@ -420,16 +425,23 @@ installdirs:
 	 $(DESTDIR)$(execdir)/$(FEATURESDIR) \
 	 $(DESTDIR)$(runtimedir)/bin \
 	 $(DESTDIR)$(runtimedir)/sbin \
-	 $(DESTDIR)$(runtimedir)/$(libcdir) \
-	 $(DESTDIR)$(completionsdir)
+	 $(DESTDIR)$(runtimedir)/$(libcdir)
+	$(Q)[ -z "$(completionsdir)" ] || $(INSTALL) -d -m 755 -- "$(DESTDIR)$(completionsdir)"
 
 install: build installdirs
-	$(Q)cp -at "$(DESTDIR)$(bindir)" -- $(addprefix $(dest_bindir)/,$(BIN_NAMES))
-	$(Q)cp -at "$(DESTDIR)$(sbindir)" -- $(addprefix $(dest_sbindir)/,$(SBIN_NAMES))
-	$(Q)cp -at "$(DESTDIR)$(sysconfdir)" -- $(addprefix $(dest_sysconfdir)/,$(SYSCONF_NAMES))
-	$(Q)cp -at "$(DESTDIR)$(rulesdir)" -- $(addprefix $(dest_rulesdir)/,$(RULE_NAMES))
+	$(Q)$(INSTALL_PROGRAM) -m 755 -t "$(DESTDIR)$(bindir)" -- $(addprefix $(dest_bindir)/,$(BIN_NAMES))
+	$(Q)$(INSTALL_PROGRAM) -m 755 -t "$(DESTDIR)$(sbindir)" -- $(addprefix $(dest_sbindir)/,$(SBIN_NAMES))
+	$(Q)for f in $(SYSCONF_NAMES); do \
+	   if [ -d "$(dest_sysconfdir)/$$f" ]; then \
+	      $(INSTALL) -d -m 755 -- "$(DESTDIR)$(sysconfdir)/$$f" && \
+	      $(INSTALL_DATA) -t "$(DESTDIR)$(sysconfdir)/$$f" -- $(dest_sysconfdir)/$$f/*; \
+	   else \
+	      $(INSTALL_DATA) -t "$(DESTDIR)$(sysconfdir)" -- "$(dest_sysconfdir)/$$f"; \
+	   fi; \
+	done
+	$(Q)$(INSTALL_DATA) -t "$(DESTDIR)$(rulesdir)" -- $(addprefix $(dest_rulesdir)/,$(RULE_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(projectdir)" -- $(realpath $(addprefix $(dest_projectdir)/,$(PROJECT_SUBDIRS)))
-	$(Q)mkdir -p -- $(addprefix $(DESTDIR)$(projectdir)/$(FEATURESDIR)/,$(FEATURES_SUBDIRS))
+	$(Q)$(INSTALL) -d -m 755 -- $(addprefix $(DESTDIR)$(projectdir)/$(FEATURESDIR)/,$(FEATURES_SUBDIRS))
 	$(Q)for n in $(FEATURES_SUBDIRS); do \
 	   find "$(dest_projectdir)/$(FEATURESDIR)/$$n/" -mindepth 1 -maxdepth 1 \
 	     '(' \
@@ -438,20 +450,20 @@ install: build installdirs
 	     ')' \
 	     -exec cp -at "$(DESTDIR)$(projectdir)/$(FEATURESDIR)/$$n" -- '{}' '+'; \
 	done
-	$(Q)cp -at "$(DESTDIR)$(projectdir)/$(FEATURESDIR)" -- $(realpath $(dest_projectdir)/$(FEATURESDIR)/README.md)
+	$(Q)$(INSTALL_DATA) -t "$(DESTDIR)$(projectdir)/$(FEATURESDIR)" -- $(realpath $(dest_projectdir)/$(FEATURESDIR)/README.md)
 	$(Q)cp -at "$(DESTDIR)$(execdir)/$(FEATURESDIR)" -- $(wildcard $(dest_execdir)/$(FEATURESDIR)/*)
-	$(Q)cp -at "$(DESTDIR)$(runtimedir)/bin" -- $(addprefix $(dest_data_bindir)/,$(RUNTIME_BIN_NAMES))
-	$(Q)cp -at "$(DESTDIR)$(runtimedir)/sbin" -- $(addprefix $(dest_data_sbindir)/,$(RUNTIME_SBIN_NAMES))
+	$(Q)$(INSTALL_PROGRAM) -m 755 -t "$(DESTDIR)$(runtimedir)/bin" -- $(addprefix $(dest_data_bindir)/,$(RUNTIME_BIN_NAMES))
+	$(Q)$(INSTALL_PROGRAM) -m 755 -t "$(DESTDIR)$(runtimedir)/sbin" -- $(addprefix $(dest_data_sbindir)/,$(RUNTIME_SBIN_NAMES))
 	$(Q)[ -z "$(wildcard $(dest_data_libdir)/lib*)" ] || \
 	    cp -at "$(DESTDIR)$(runtimedir)/$(libcdir)" -- $(wildcard $(dest_data_libdir)/lib*)
 	$(Q)[ -z "$(completionsdir)" ] || \
-	    cp -at "$(DESTDIR)$(completionsdir)" -- $(wildcard $(srcdir)/contrib/bash-completion/*)
+	    $(INSTALL_DATA) -t "$(DESTDIR)$(completionsdir)" -- $(wildcard $(srcdir)/contrib/bash-completion/*)
 	$(Q)[ -z "$(kernelinstalldir)" ] || { \
-	    mkdir -p -- "$(DESTDIR)$(kernelinstalldir)" "$(DESTDIR)$(kernelconfdir)" && \
-	    cp -at "$(DESTDIR)$(kernelinstalldir)" -- $(wildcard $(srcdir)/contrib/kernel-install/*.install) && \
-	    cp -at "$(DESTDIR)$(kernelconfdir)" -- $(wildcard $(srcdir)/contrib/kernel-install/*.conf); }
+	    $(INSTALL) -d -m 755 -- "$(DESTDIR)$(kernelinstalldir)" "$(DESTDIR)$(kernelconfdir)" && \
+	    $(INSTALL_SCRIPT) -m 755 -t "$(DESTDIR)$(kernelinstalldir)" -- $(wildcard $(srcdir)/contrib/kernel-install/*.install) && \
+	    $(INSTALL_DATA) -t "$(DESTDIR)$(kernelconfdir)" -- $(wildcard $(srcdir)/contrib/kernel-install/*.conf); }
 ifneq ($(SCDOC),)
-	$(Q)cp -at "$(DESTDIR)$(man1dir)" -- $(addprefix $(dest_man1dir)/,$(MANPAGE_NAMES))
+	$(Q)$(INSTALL_DATA) -t "$(DESTDIR)$(man1dir)" -- $(addprefix $(dest_man1dir)/,$(MANPAGE_NAMES))
 endif
 ifeq ($(USE_BUSYBOX),yes)
 	$(Q)while read -r busybox_link; do \
@@ -469,4 +481,13 @@ uninstall:
 	$(Q)[ -z "$(kernelinstalldir)" ] || \
 	    rm -f -- $(addprefix $(DESTDIR)$(kernelinstalldir)/,$(notdir $(wildcard $(srcdir)/contrib/kernel-install/*.install))) \
 	          $(addprefix $(DESTDIR)$(kernelconfdir)/,$(notdir $(wildcard $(srcdir)/contrib/kernel-install/*.conf)))
-	$(Q)rm -rf -- $(DESTDIR)$(rulesdir) $(DESTDIR)$(projectdir) $(DESTDIR)$(execdir) $(DESTDIR)$(runtimedir)
+	$(Q)for d in "$(rulesdir)" "$(projectdir)" "$(execdir)" "$(runtimedir)"; do \
+	    [ -n "$$d" ] || continue; \
+	    case "$${d%/}" in \
+	        ""|"/"|"/usr"|"/lib"|"/lib64"|"/bin"|"/sbin"|"/etc"|"/var"|"/opt"|"/usr/share"|"/usr/lib"|"/usr/libexec"|"/usr/bin"|"/usr/sbin") \
+	            echo >&2 "Refusing to remove dangerous directory: $(DESTDIR)$$d"; \
+	            exit 1 ;; \
+	        *) \
+	            [ ! -d "$(DESTDIR)$$d" ] || rm -rf -- "$(DESTDIR)$$d" ;; \
+	    esac; \
+	done
