@@ -268,15 +268,10 @@ $(dest_sysconfdir)/%: conf/%
 build: $(addprefix $(dest_sysconfdir)/,$(SYSCONF_NAMES))
 
 cflags = $($(subst -,_,$(notdir $*))_c_CFLAGS)
+depflags = -MT $@ -MMD -MP -MF $(@:.o=.d)
 $(OBJDIR)/%.o: %.c
 	$(Q)mkdir -p -- $(dir $@)
-	$(call quiet_cmd,CC,$<,$(COMPILE.c)) $(cflags) $(OUTPUT_OPTION) $<
-
-cflags = $($(subst -,_,$(notdir $*))_c_CFLAGS)
-$(OBJDIR)/%.d: %.c
-	$(Q)mkdir -p -- $(dir $@)
-	$(call quiet_cmd,DEP,$<,$(CC)) -MM $(cflags) $(CPPFLAGS) $(CFLAGS) $< | \
-	  sed -e 's,\($(notdir $*)\)\.o[ :]*,$(@:.d=.o) $@: Makefile ,g' >$@
+	$(call quiet_cmd,CC,$<,$(COMPILE.c)) $(depflags) $(cflags) $(OUTPUT_OPTION) $<
 
 BIN_NAMES          =
 SBIN_NAMES         =
