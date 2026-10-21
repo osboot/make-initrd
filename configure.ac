@@ -288,7 +288,7 @@ AC_ARG_WITH([libelf],
 	[],
 	[: m4_divert_text([DEFAULTS], [with_libelf=yes])])
 
-AS_IF([test "x$with_elf" != xno],
+AS_IF([test "x$with_libelf" != xno],
 	[PKG_CHECK_MODULES(HAVE_LIBELF, libelf, [HAVE_LIBELF=yes], [HAVE_LIBELF=no])],
 	[HAVE_LIBELF=no])
 
