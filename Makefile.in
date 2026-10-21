@@ -5,6 +5,9 @@ PACKAGE_VERSION := @PACKAGE_VERSION@
 
 MKLOCAL := @MKLOCAL@
 
+srcdir = @srcdir@
+VPATH = @srcdir@
+
 prefix      = @prefix@
 exec_prefix = @exec_prefix@
 sysconfdir  = @sysconfdir@
@@ -27,12 +30,12 @@ rulesdir    = ${projectdir}/mk
 kernelinstalldir = $(prefix)/lib/kernel/install.d
 kernelconfdir    = $(prefix)/lib/kernel/install.conf.d
 
-libcdir := $(shell $(CURDIR)/tools/get-libc-dir)
+libcdir := $(shell $(srcdir)/tools/get-libc-dir)
 completionsdir := $(shell pkg-config --variable=completionsdir bash-completion 2>/dev/null ||:)
 
-runtime_srcdir = runtime/src
-utils_srcdir = utils
-external_srcdir = $(CURDIR)/external
+runtime_srcdir = $(srcdir)/runtime/src
+utils_srcdir = $(srcdir)/utils
+external_srcdir = $(abspath $(srcdir)/external)
 
 localbuilddir =
 build_prefix = .build
@@ -44,6 +47,7 @@ statedir = /tmp
 endif
 
 FEATURESDIR = features
+features_srcdir = $(srcdir)/$(FEATURESDIR)
 OBJDIR = $(build_prefix)/obj
 GENDIR = $(build_prefix)/gen
 
@@ -110,9 +114,9 @@ all: build
 
 -include \
 	$(filter-out \
-		$(foreach skip,$(SKIP_FEATURES),$(FEATURESDIR)/$(skip)/src/Makefile.mk), \
+		$(foreach skip,$(SKIP_FEATURES),$(features_srcdir)/$(skip)/src/Makefile.mk), \
 		$(wildcard $(utils_srcdir)/*/Makefile.mk) \
-		$(wildcard $(FEATURESDIR)/*/src/Makefile.mk))
+		$(wildcard $(features_srcdir)/*/src/Makefile.mk))
 
 define VAR_c_CFLAGS =
 $(1)_c_CFLAGS = $(2)
@@ -124,8 +128,8 @@ $(foreach name,$(PROGS) $(LIBS),\
 			$(basename $(subst -,_,$(notdir $(src)))),\
 			$($(subst -,_,$(notdir $(name)))_CFLAGS)))))
 
-get_objects = $(foreach name,$(filter %.c,$(1)),$(OBJDIR)/$(name:.c=.o))
-get_depends = $(foreach name,$(filter %.c,$(1)),$(OBJDIR)/$(name:.c=.d))
+get_objects = $(foreach name,$(filter %.c,$(1)),$(OBJDIR)/$(patsubst $(srcdir)/%,%,$(name:.c=.o)))
+get_depends = $(foreach name,$(filter %.c,$(1)),$(OBJDIR)/$(patsubst $(srcdir)/%,%,$(name:.c=.d)))
 quiet_cmd   = $(if $(VERBOSE),$(3),$(Q)printf "  %-08s%s\n" "$(1)" $(2); $(3))
 
 PATH = $(CURDIR)/$(dest_sbindir):$(CURDIR)/$(dest_bindir):$(shell echo $$PATH)
@@ -137,7 +141,7 @@ CFLAGS = @CFLAGS@ \
 	-Wno-pointer-arith \
 	-Werror=shadow -Werror=missing-prototypes -Werror=implicit-function-declaration
 
-CPPFLAGS += @CPPFLAGS@ @DEFS@ -I$(CURDIR) -I$(CURDIR)/include
+CPPFLAGS += @CPPFLAGS@ @DEFS@ -I$(CURDIR) -I$(srcdir) -I$(srcdir)/include
 LDFLAGS = @LDFLAGS@
 
 UDEVD		= @UDEVD@
@@ -169,7 +173,7 @@ build-libs: $(LIBS)
 build-progs: build-libs $(PROGS) $(SCRIPTS)
 
 PROJECT_SUBDIRS = guess tools
-FEATURES_SUBDIRS = $(filter-out README.md $(SKIP_FEATURES),$(notdir $(wildcard $(FEATURESDIR)/*)))
+FEATURES_SUBDIRS = $(filter-out README.md $(SKIP_FEATURES),$(notdir $(wildcard $(features_srcdir)/*)))
 
 build: $(addprefix $(dest_projectdir)/,$(PROJECT_SUBDIRS))
 build: $(addprefix $(dest_projectdir)/features/,README.md $(FEATURES_SUBDIRS))
@@ -183,29 +187,29 @@ verify:
 	    echo >&2 "WARNING: shellcheck utility not found."; \
 	fi
 	@rc=0; \
-	for d in `find guess -mindepth 1 -maxdepth 1 -type d`; do \
+	for d in `find $(srcdir)/guess -mindepth 1 -maxdepth 1 -type d`; do \
 	    [ -f "$$d/README.md" ] || { \
 	        echo >&2 "ERROR: Guess module has no README: $$d"; rc=1; \
 	    }; \
 	done; exit $$rc; \
 
-verify: SHELLCHECK_DIRS = features guess tools $(utils_srcdir)
+verify: SHELLCHECK_DIRS = $(srcdir)/features $(srcdir)/guess $(srcdir)/tools $(utils_srcdir)
 verify: SHELLCHECK_EXCLUDE = SC1003,SC1090,SC1091,SC2004,SC2006,SC2015,SC2034,SC2086,SC2154,SC2295,SC2317,SC2329
 
 UNITTEST_DIRS = $(sort \
 			$(foreach 1, guess features runtime mk utils testing, \
-				$(wildcard $(1)/tests $(1)/*/tests)))
+				$(wildcard $(srcdir)/$(1)/tests $(srcdir)/$(1)/*/tests)))
 
 check-unit: $(UNITTEST_DIRS)
-	@env PATH="$(CURDIR)/tools:$$PATH" testing/tests/run $?
+	@env PATH="$(CURDIR)/tools:$(srcdir)/tools:$$PATH" $(srcdir)/testing/tests/run $?
 
 check-services:
 	@rc=0; \
 	for svc in \
-	   `find features/ -executable -path '*/etc/rc.d/init.d/*' |sort`; \
+	   `find $(srcdir)/features/ -executable -path '*/etc/rc.d/init.d/*' |sort`; \
 	do \
 	   ret=0; \
-	   errors=`tools/sort-services --json "$$svc" 2>&1 >/dev/null` || ret=1; \
+	   errors=`$(srcdir)/tools/sort-services --json "$$svc" 2>&1 >/dev/null` || ret=1; \
 	   if [ $$ret != 0 ] || [ -n "$$errors" ]; then \
 	      echo >&2 "BAD service: $$svc: $$errors"; rc=1; \
 	   else \
@@ -217,7 +221,7 @@ check: check-unit
 
 .PHONY: wiki
 wiki:
-	$(Q)utils/make-wiki.sh
+	$(Q)$(srcdir)/utils/make-wiki.sh
 
 release:
 	$(Q)git archive -o $(PKGFILE).tar --prefix=$(PREFIX)/ HEAD
@@ -235,18 +239,18 @@ release: PREFIX=$(PACKAGE_NAME)-$(PACKAGE_VERSION)
 release: GPG=gpg
 release: GPG_KEY=4CFFD434
 
-RULE_NAMES = $(patsubst mk/%.in,%,$(wildcard mk/*.mk.in))
+RULE_NAMES = $(patsubst $(srcdir)/mk/%.in,%,$(wildcard $(srcdir)/mk/*.mk.in))
 
-$(dest_rulesdir)/%.mk: mk/%.mk.in
+$(dest_rulesdir)/%.mk: $(srcdir)/mk/%.mk.in
 	$(Q)mkdir -p -- $(dir $@)
 	$(call quiet_cmd,SED,$@,$(SED)) < $< > $@
 
 build: $(addprefix $(dest_rulesdir)/,$(RULE_NAMES))
 
 ifneq ($(SCDOC),)
-MANPAGE_NAMES = $(notdir $(basename $(wildcard Documentation/manpages/*.md)))
+MANPAGE_NAMES = $(notdir $(basename $(wildcard $(srcdir)/Documentation/manpages/*.md)))
 
-$(dest_man1dir)/%.1: Documentation/manpages/%.1.md
+$(dest_man1dir)/%.1: $(srcdir)/Documentation/manpages/%.1.md
 	$(Q)mkdir -p -- $(dir $@)
 	$(call quiet_cmd,MAN,$@,$(SCDOC)) < $< > $@
 
@@ -254,14 +258,14 @@ build-manpages: build-progs $(addprefix $(dest_man1dir)/,$(MANPAGE_NAMES))
 build: build-manpages
 endif
 
-$(dest_projectdir)/%: %
+$(dest_projectdir)/%: $(srcdir)/%
 	$(Q)mkdir -p -- $(dir $@)
 	$(Q)rm -f -- "$@"
-	$(call quiet_cmd,SLINK,$@,ln) -sf -- "$(CURDIR)/$(@:$(dest_projectdir)/%=%)" "$@"
+	$(call quiet_cmd,SLINK,$@,ln) -rsf -- "$<" "$@"
 
-SYSCONF_NAMES = $(patsubst conf/%,%,$(wildcard conf/*))
+SYSCONF_NAMES = $(patsubst $(srcdir)/conf/%,%,$(wildcard $(srcdir)/conf/*))
 
-$(dest_sysconfdir)/%: conf/%
+$(dest_sysconfdir)/%: $(srcdir)/conf/%
 	$(Q)mkdir -p -- $(dir $@)
 	$(call quiet_cmd,COPY,$@,cp) -a -- $< $@
 
@@ -354,7 +358,7 @@ endif
 
 ifeq ($(USE_BUSYBOX),yes)
 BBCFG = $(OBJDIR)/external/busybox/.config
-BBCFG_SED_ARGS = -e "s,^CONFIG_PREFIX=.*,CONFIG_PREFIX=\"$(realpath $(dest_runtimedir))\","
+BBCFG_SED_ARGS = -e "s,^CONFIG_PREFIX=.*,CONFIG_PREFIX=\"$(CURDIR)/$(dest_runtimedir)\","
 
 # Some busybox features are broken with musl.
 # See https://wiki.musl-libc.org/building-busybox
@@ -441,11 +445,11 @@ install: build-progs build-manpages installdirs
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/sbin" -- $(addprefix $(dest_data_sbindir)/,$(RUNTIME_SBIN_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/$(libcdir)" -- $(dest_data_libdir)/lib*
 	$(Q)[ -z "$(completionsdir)" ] || \
-	    cp -at "$(DESTDIR)$(completionsdir)" -- $(wildcard contrib/bash-completion/*)
+	    cp -at "$(DESTDIR)$(completionsdir)" -- $(wildcard $(srcdir)/contrib/bash-completion/*)
 	$(Q)[ -z "$(kernelinstalldir)" ] || { \
 	    mkdir -p -- "$(DESTDIR)$(kernelinstalldir)" "$(DESTDIR)$(kernelconfdir)" && \
-	    cp -at "$(DESTDIR)$(kernelinstalldir)" -- $(wildcard contrib/kernel-install/*.install) && \
-	    cp -at "$(DESTDIR)$(kernelconfdir)" -- $(wildcard contrib/kernel-install/*.conf); }
+	    cp -at "$(DESTDIR)$(kernelinstalldir)" -- $(wildcard $(srcdir)/contrib/kernel-install/*.install) && \
+	    cp -at "$(DESTDIR)$(kernelconfdir)" -- $(wildcard $(srcdir)/contrib/kernel-install/*.conf); }
 ifneq ($(SCDOC),)
 	$(Q)cp -at "$(DESTDIR)$(man1dir)" -- $(addprefix $(dest_man1dir)/,$(MANPAGE_NAMES))
 endif
@@ -461,8 +465,8 @@ uninstall:
 	$(Q)rm -f -- $(addprefix $(DESTDIR)$(sbindir)/,$(SBIN_NAMES))
 	$(Q)rm -f -- $(addprefix $(DESTDIR)$(man1dir)/,$(MANPAGE_NAMES))
 	$(Q)[ -z "$(completionsdir)" ] || \
-	    rm -f -- $(addprefix $(DESTDIR)$(completionsdir)/,$(notdir $(wildcard contrib/bash-completion/*)))
+	    rm -f -- $(addprefix $(DESTDIR)$(completionsdir)/,$(notdir $(wildcard $(srcdir)/contrib/bash-completion/*)))
 	$(Q)[ -z "$(kernelinstalldir)" ] || \
-	    rm -f -- $(addprefix $(DESTDIR)$(kernelinstalldir)/,$(notdir $(wildcard contrib/kernel-install/*.install))) \
-	          $(addprefix $(DESTDIR)$(kernelconfdir)/,$(notdir $(wildcard contrib/kernel-install/*.conf)))
+	    rm -f -- $(addprefix $(DESTDIR)$(kernelinstalldir)/,$(notdir $(wildcard $(srcdir)/contrib/kernel-install/*.install))) \
+	          $(addprefix $(DESTDIR)$(kernelconfdir)/,$(notdir $(wildcard $(srcdir)/contrib/kernel-install/*.conf)))
 	$(Q)rm -rf -- $(DESTDIR)$(rulesdir) $(DESTDIR)$(projectdir) $(DESTDIR)$(execdir) $(DESTDIR)$(runtimedir)
