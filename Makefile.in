@@ -118,18 +118,7 @@ all: build
 		$(wildcard $(utils_srcdir)/*/Makefile.mk) \
 		$(wildcard $(features_srcdir)/*/src/Makefile.mk))
 
-define VAR_c_CFLAGS =
-$(1)_c_CFLAGS = $(2)
-endef
-
-$(foreach name,$(PROGS) $(LIBS),\
-	$(foreach src,$($(subst -,_,$(notdir $(name)))_SRCS),\
-		$(eval $(call VAR_c_CFLAGS,\
-			$(basename $(subst -,_,$(notdir $(src)))),\
-			$($(subst -,_,$(notdir $(name)))_CFLAGS)))))
-
 get_objects = $(foreach name,$(filter %.c,$(1)),$(OBJDIR)/$(patsubst $(srcdir)/%,%,$(name:.c=.o)))
-get_depends = $(foreach name,$(filter %.c,$(1)),$(OBJDIR)/$(patsubst $(srcdir)/%,%,$(name:.c=.d)))
 quiet_cmd   = $(if $(VERBOSE),$(3),$(Q)printf "  %-08s%s\n" "$(1)" $(2); $(3))
 
 PATH = $(CURDIR)/$(dest_sbindir):$(CURDIR)/$(dest_bindir):$(shell echo $$PATH)
@@ -271,7 +260,6 @@ $(dest_sysconfdir)/%: $(srcdir)/conf/%
 
 build: $(addprefix $(dest_sysconfdir)/,$(SYSCONF_NAMES))
 
-cflags = $($(subst -,_,$(notdir $*))_c_CFLAGS)
 depflags = -MT $@ -MMD -MP -MF $(@:.o=.d)
 $(OBJDIR)/%.o: %.c
 	$(Q)mkdir -p -- $(dir $@)
@@ -300,7 +288,8 @@ endef
 define generate_link_lib_target =
 $(call classify_file,$($(1)_DEST))
 
-DEPS += $(call get_depends,$($(1)_SRCS))
+ALL_OBJS += $$(call get_objects,$$($(1)_SRCS))
+$$(call get_objects,$$($(1)_SRCS)): cflags = $$($(1)_CFLAGS)
 
 $($(1)_DEST): $(call get_objects,$($(1)_SRCS))
 	$(Q)mkdir -p -- $(dir $($(1)_DEST))
@@ -313,11 +302,12 @@ endef
 define generate_link_bin_target =
 $(call classify_file,$($(1)_DEST))
 
-DEPS += $(call get_depends,$($(1)_SRCS))
+ALL_OBJS += $$(call get_objects,$$($(1)_SRCS))
+$$(call get_objects,$$($(1)_SRCS)): cflags = $$($(1)_CFLAGS)
 
 $($(1)_DEST): $(call get_objects,$($(1)_SRCS))
 	$(Q)mkdir -p -- $(dir $($(1)_DEST))
-	$(call quiet_cmd,CCLD,$($(1)_DEST),$(LINK.o)) -o $($(1)_DEST) $$^ $($(1)_LIBS)
+	$(call quiet_cmd,CCLD,$($(1)_DEST),$(LINK.o)) $($(1)_LDFLAGS) -o $($(1)_DEST) $$^ $($(1)_LIBS)
 
 $(1): $($(1)_DEST)
 endef
@@ -353,7 +343,7 @@ $(foreach name,$(PROGS) $(LIBS),\
 		$(eval $(call generate_symlink_target,$(symlink),$(name)))))
 
 ifeq ($(filter verify clean,$(MAKECMDGOALS)),)
--include $(DEPS)
+-include $(sort $(ALL_OBJS:.o=.d))
 endif
 
 ifeq ($(USE_BUSYBOX),yes)
