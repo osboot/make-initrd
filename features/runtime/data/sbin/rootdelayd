@@ -47,6 +47,11 @@ while :; do
 		continue
 	fi
 
+	if [ -f "$_rootdelay_pause_time" ]; then
+		_rootdelay_finalize_pause || sleep 0.1
+		continue
+	fi
+
 	if [ -z "${__initrd_initenv-}" ] && [ -f /.initrd/initenv ]; then
 		. /.initrd/initenv
 
@@ -71,9 +76,9 @@ while :; do
 		continue
 	fi
 
+	current_seconds now
+
 	first_iter=
-	now="$(timestamp boottime raw)"
-	now="${now%.*}"
 	consmsg="/.initrd/rootdelay/message"
 
 	if [ ! -f "$_rootdelay_timestamp" ]; then

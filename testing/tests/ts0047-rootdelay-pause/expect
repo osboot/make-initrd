@@ -1,0 +1,18 @@
+initial unpause ok
+deadline after init: 160
+paused at 120
+unpaused at 150
+deadline after unpause: 190
+remaining delay: 40
+pause before deadline ok
+deadline reset: 360
+deadline after reset during pause: 410
+remaining delay: 60
+deadline 0 preserved: 0
+run_rootdelay_paused: inside paused ok
+run_rootdelay_paused: outside unpaused ok
+B unpause: still paused because A holds lock ok
+A unpause: unpaused ok
+concurrent deadline: 800
+concurrent remaining delay: 50
+rc=0

@@ -126,22 +126,126 @@ write_atomic()
 	fi
 }
 
-_rootdelay_pause=/.initrd/rootdelay/pause
-_rootdelay_timestamp=/.initrd/rootdelay/deadline
+current_seconds()
+{
+	local __v=
+	__v="$("${TIMESTAMP:-timestamp}" boottime raw 2>/dev/null)" ||:
+	__v="${__v%.*}"
+	eval "$1=\"\$__v\""
+}
+
+rootdelay_pause_lock="${rootdelay_pause_lock:-/.initrd/rootdelay/pause.lock}"
+_rootdelay_pause_time="${_rootdelay_pause_time:-/.initrd/rootdelay/pause.time}"
+_rootdelay_reset="${_rootdelay_reset:-/.initrd/rootdelay/reset}"
+_rootdelay_timestamp="${_rootdelay_timestamp:-/.initrd/rootdelay/deadline}"
+
+_rootdelay_finalize_pause()
+{
+	local chk_fd pause_start reset_time now paused_duration deadline
+
+	[ -e "$rootdelay_pause_lock" ] || return 0
+
+	exec {chk_fd}<"$rootdelay_pause_lock"
+	if ! flock -n -x "$chk_fd"; then
+		exec {chk_fd}<&-
+		return 1
+	fi
+
+	if [ -f "$_rootdelay_pause_time" ]; then
+		readline pause_start "$_rootdelay_pause_time"
+
+		if [ -f "$_rootdelay_reset" ]; then
+			readline reset_time "$_rootdelay_reset"
+			rm -f "$_rootdelay_reset"
+
+			if [ -n "$reset_time" ] && [ -n "$pause_start" ] && [ "$reset_time" -gt "$pause_start" ]; then
+				pause_start="$reset_time"
+			fi
+		fi
+
+		if [ -n "$pause_start" ] && [ -f "$_rootdelay_timestamp" ]; then
+			current_seconds now
+			paused_duration=$(( $now - $pause_start ))
+
+			if [ "$paused_duration" -gt 0 ]; then
+				readline deadline "$_rootdelay_timestamp"
+
+				if [ -n "$deadline" ] && [ "$deadline" -gt 0 ]; then
+					rootdelay_set_deadline "$(( $deadline + $paused_duration ))"
+				fi
+			fi
+		fi
+
+		rm -f "$_rootdelay_pause_time"
+	fi
+
+	exec {chk_fd}<&-
+}
+
+run_rootdelay_paused()
+{
+	local fd rc=0 now
+
+	mkdir -p -- "${rootdelay_pause_lock%/*}"
+	touch "$rootdelay_pause_lock"
+
+	exec {fd}<"$rootdelay_pause_lock"
+	flock -s "$fd"
+
+	if [ ! -f "$_rootdelay_pause_time" ]; then
+		current_seconds now
+		write_atomic "$_rootdelay_pause_time" printf '%s\n' "$now"
+	fi
+
+	"$@" {fd}<&- || rc=$?
+	exec {fd}<&-
+
+	_rootdelay_finalize_pause
+
+	return $rc
+}
 
 rootdelay_pause()
 {
-	mkdir -p "$_rootdelay_pause"
+	local now
+
+	[ -z "${rootdelay_pause_fd-}" ] || return 0
+
+	mkdir -p -- "${rootdelay_pause_lock%/*}"
+	touch "$rootdelay_pause_lock"
+
+	exec {rootdelay_pause_fd}<"$rootdelay_pause_lock"
+	flock -s "$rootdelay_pause_fd"
+
+	if [ ! -f "$_rootdelay_pause_time" ]; then
+		current_seconds now
+		write_atomic "$_rootdelay_pause_time" printf '%s\n' "$now"
+	fi
 }
 
 rootdelay_unpause()
 {
-	rm -rf "$_rootdelay_pause"
+	[ -n "${rootdelay_pause_fd-}" ] || return 0
+
+	exec {rootdelay_pause_fd}<&-
+	rootdelay_pause_fd=
+
+	_rootdelay_finalize_pause
 }
 
 rootdelay_paused()
 {
-	[ -d "$_rootdelay_pause" ]
+	local fd rc=0
+
+	[ -z "${rootdelay_pause_fd-}" ] || return 0
+	[ -e "$rootdelay_pause_lock"  ] || return 1
+
+	exec {fd}<"$rootdelay_pause_lock"
+
+	! flock -n -x "$fd" || rc=1
+	exec {fd}<&-
+
+	return $rc
 }
 
 rootdelay_set_deadline()
@@ -153,11 +257,17 @@ rootdelay_set_deadline()
 rootdelay_reset_timer()
 {
 	local now="${1-}"
+
 	if [ -z "$now" ]; then
-		now="$(timestamp boottime raw)"
-		now="${now%.*}"
+		current_seconds now
 	fi
-	rootdelay_set_deadline "$(( $now + $ROOTDELAY ))"
+
+	rootdelay_set_deadline "$(( $now + ${ROOTDELAY:-0} ))"
+
+	if rootdelay_paused; then
+		mkdir -p -- "${_rootdelay_reset%/*}"
+		write_atomic "$_rootdelay_reset" printf '%s\n' "$now"
+	fi
 }
 
 initrd_features=/.initrd/features

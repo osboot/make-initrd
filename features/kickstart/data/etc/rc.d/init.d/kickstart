@@ -25,18 +25,15 @@ if [ -s "$KSFILE" ]; then
 	. uevent-sh-functions
 	. initrd-sh-functions
 
-	rootdelay_pause
-
 	method=
 	{ read -r method < /etc/initrd/method; } >/dev/null 2>&1 ||:
 	echo kickstart > /etc/initrd/method
 
-	kickstart -v "$KSFILE"
+	run_rootdelay_paused kickstart -v "$KSFILE"
 
 	echo "$method" > /etc/initrd/method
 
 	rootdelay_reset_timer
-	rootdelay_unpause
 
 	rmdir -- "$uevent_confdb/queue/pause/udev"
 	rmdir -- "$uevent_confdb/queue/pause/md-raid-member"

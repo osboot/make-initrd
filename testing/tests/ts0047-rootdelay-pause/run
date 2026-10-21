@@ -1,0 +1,156 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+cwd="${0%/*}"
+root="$cwd/root"
+
+rm -rf -- "$root"
+mkdir -p -- "$root/bin" "$root/rootdelay"
+
+mock_time="$root/time"
+echo "100" > "$mock_time"
+
+cat > "$root/bin/timestamp" <<EOF
+#!/bin/bash -efu
+[ "\$1" = "boottime" ] && [ "\$2" = "raw" ] || exit 1
+cat "$mock_time"
+EOF
+chmod +x "$root/bin/timestamp"
+
+export PATH="$PWD/.build/dest/usr/bin:$PATH"
+export TIMESTAMP="$root/bin/timestamp"
+export rootdelay_pause_lock="$root/rootdelay/pause.lock"
+export _rootdelay_pause_time="$root/rootdelay/pause.time"
+export _rootdelay_reset="$root/rootdelay/reset"
+export _rootdelay_timestamp="$root/rootdelay/deadline"
+export ROOTDELAY=60
+
+. features/runtime/data/bin/initrd-sh-functions
+
+# 1. Initially not paused, unpause is a no-op
+if rootdelay_paused; then
+	echo "unexpectedly paused initially"
+fi
+rootdelay_unpause
+echo "initial unpause ok"
+
+# 2. Reset timer at t=100 with ROOTDELAY=60 -> deadline=160
+rootdelay_reset_timer
+readline deadline "$_rootdelay_timestamp"
+echo "deadline after init: $deadline"
+
+# 3. Pause at t=120 (remaining: 40)
+echo "120" > "$mock_time"
+rootdelay_pause
+if rootdelay_paused; then
+	echo "paused at 120"
+fi
+
+# 4. Redundant pause at t=130 should not overwrite pause start
+echo "130" > "$mock_time"
+rootdelay_pause
+
+# 5. Unpause at t=150 (30 seconds paused). Deadline should be 160 + 30 = 190.
+echo "150" > "$mock_time"
+rootdelay_unpause
+if ! rootdelay_paused; then
+	echo "unpaused at 150"
+fi
+readline deadline "$_rootdelay_timestamp"
+echo "deadline after unpause: $deadline"
+echo "remaining delay: $(( deadline - 150 ))"
+
+# 6. Pause before deadline exists
+rm -f -- "$_rootdelay_timestamp"
+echo "200" > "$mock_time"
+rootdelay_pause
+echo "220" > "$mock_time"
+rootdelay_unpause
+if [ ! -f "$_rootdelay_timestamp" ]; then
+	echo "pause before deadline ok"
+fi
+
+# 7. Timer reset during pause
+echo "300" > "$mock_time"
+rootdelay_reset_timer
+readline deadline "$_rootdelay_timestamp"
+echo "deadline reset: $deadline"
+echo "320" > "$mock_time"
+rootdelay_pause
+echo "340" > "$mock_time"
+rootdelay_reset_timer
+echo "350" > "$mock_time"
+rootdelay_unpause
+readline deadline "$_rootdelay_timestamp"
+echo "deadline after reset during pause: $deadline"
+echo "remaining delay: $(( deadline - 350 ))"
+
+# 8. Deadline 0 is preserved
+rootdelay_set_deadline 0
+echo "500" > "$mock_time"
+rootdelay_pause
+echo "520" > "$mock_time"
+rootdelay_unpause
+readline deadline "$_rootdelay_timestamp"
+echo "deadline 0 preserved: $deadline"
+
+# 9. run_rootdelay_paused wrapper
+echo "600" > "$mock_time"
+rootdelay_reset_timer
+run_rootdelay_paused bash -c '
+	. features/runtime/data/bin/initrd-sh-functions
+	rootdelay_paused && echo "run_rootdelay_paused: inside paused ok"
+'
+if ! rootdelay_paused; then
+	echo "run_rootdelay_paused: outside unpaused ok"
+fi
+
+# 10. Concurrent / overlapping pauses in background subshells
+echo "700" > "$mock_time"
+rootdelay_reset_timer
+
+fifo1="$root/fifo1"
+fifo2="$root/fifo2"
+mkfifo "$fifo1" "$fifo2"
+
+# Subshell 1 (Process A)
+bash -c '
+	. features/runtime/data/bin/initrd-sh-functions
+	rootdelay_pause
+	echo "A_paused" > "'"$fifo1"'"
+	read -r _ < "'"$fifo2"'"
+	rootdelay_unpause
+' &
+pid_a=$!
+
+# Wait for A to pause at 710
+echo "710" > "$mock_time"
+read -r _ < "$fifo1"
+
+# Subshell 2 (Process B) pauses at 720
+echo "720" > "$mock_time"
+bash -c '
+	. features/runtime/data/bin/initrd-sh-functions
+	rootdelay_pause
+	# B unpauses at 730
+	echo "730" > "'"$mock_time"'"
+	rootdelay_unpause
+	if rootdelay_paused; then
+		echo "B unpause: still paused because A holds lock ok"
+	fi
+'
+
+# Now unblock A at 750
+echo "750" > "$mock_time"
+echo "go" > "$fifo2"
+wait "$pid_a"
+
+if ! rootdelay_paused; then
+	echo "A unpause: unpaused ok"
+fi
+readline deadline "$_rootdelay_timestamp"
+# Deadline was 700 + 60 = 760. Total pause was from 710 to 750 = 40s. New deadline: 760 + 40 = 800.
+echo "concurrent deadline: $deadline"
+echo "concurrent remaining delay: $(( deadline - 750 ))"
+
+rm -rf -- "$root"

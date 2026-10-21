@@ -26,14 +26,11 @@ handler()
 
 	local rc=0
 
-	rootdelay_pause
-
-	action "Checking filesystem [$MOUNTDEV]:" fsck -t noloop,noswap -T "$MOUNTDEV" -- ${FSCK_ARGS-} ||
+	run_rootdelay_paused \
+		action "Checking filesystem [$MOUNTDEV]:" fsck -t noloop,noswap -T "$MOUNTDEV" -- ${FSCK_ARGS-} ||
 		rc=$?
 
 	if [ "$rc" = 0 ] || [ "$rc" = 1 ]; then
-		rootdelay_unpause
-
 		majmin="$(get_majmin "$MOUNTDEV")" &&
 			echo 'done' | statefs_write "/devices/block/$majmin/fsck" ||:
 
