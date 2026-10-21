@@ -205,6 +205,24 @@ AC_MSG_RESULT([$with_imagename])
 with_imagename=$(echo "$with_imagename" | sed 's/\$/\$\$/g')
 AC_SUBST([imagename], ["$with_imagename"])
 
+m4_define([CHECK_SUBMODULE], [
+	AS_IF([! test -f "$srcdir/$3"], [
+		AS_IF([test -d "$srcdir/.git" || test -f "$srcdir/.git"], [
+			AS_IF([command -v git >/dev/null 2>&1 && (cd "$srcdir" && git rev-parse --is-inside-work-tree >/dev/null 2>&1)], [
+				AC_MSG_NOTICE([initializing submodule '$2'...])
+				(cd "$srcdir" && git submodule update --init "$2")
+			])
+		])
+		AS_IF([! test -f "$srcdir/$3"], [
+			AS_IF([test -d "$srcdir/.git" || test -f "$srcdir/.git"], [
+				AC_MSG_FAILURE([submodule '$1' is not initialized. Run: git submodule update --init])
+			], [
+				AC_MSG_FAILURE([directory '$srcdir/$2' is missing or incomplete])
+			])
+		])
+	])
+])
+
 AC_ARG_WITH([busybox],
 	[AS_HELP_STRING([--with-busybox],
 			[Use builtin busybox (default: auto)])],
@@ -218,8 +236,8 @@ if test "$with_busybox" != "no"; then
 			with_busybox=yes
 		fi
 	fi
-	if test "$with_busybox" = "yes" && ! test -f "$srcdir/external/busybox/upstream/Makefile"; then
-		AC_MSG_FAILURE([submodule 'busybox' is out of sync])
+	if test "$with_busybox" = "yes"; then
+		CHECK_SUBMODULE([busybox], [external/busybox/upstream], [external/busybox/upstream/Makefile])
 	fi
 fi
 AC_MSG_RESULT([$with_busybox])
@@ -238,8 +256,8 @@ if test "$with_libshell" != "no"; then
 			with_libshell=yes
 		fi
 	fi
-	if test "$with_libshell" = "yes" && ! test -f "$srcdir/external/libshell/upstream/Makefile"; then
-		AC_MSG_FAILURE([submodule 'libshell' is out of sync])
+	if test "$with_libshell" = "yes"; then
+		CHECK_SUBMODULE([libshell], [external/libshell/upstream], [external/libshell/upstream/Makefile])
 	fi
 fi
 AC_MSG_RESULT([$with_libshell])

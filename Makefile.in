@@ -365,7 +365,13 @@ $(BBCFG): $(external_srcdir)/busybox/config Makefile
 	$(Q)mkdir -p -- $(dest_runtimedir)
 	$(call quiet_cmd,SED,$@,@SED@) $(BBCFG_SED_ARGS) < "$<" > "$@"
 
-$(dest_data_bindir)/busybox: $(BBCFG)
+BB_DEPS = $(BBCFG) $(wildcard $(srcdir)/.git/modules/external/busybox/upstream/HEAD $(external_srcdir)/busybox/upstream/.git/HEAD)
+
+ifneq ($(shell find $(external_srcdir)/busybox/upstream -newer $(dest_data_bindir)/busybox -print -quit 2>/dev/null),)
+.PHONY: $(dest_data_bindir)/busybox
+endif
+
+$(dest_data_bindir)/busybox: $(BB_DEPS)
 	$(Q)mkdir -p -- "$(OBJDIR)/external/busybox"
 	$(MAKE) -C "$(OBJDIR)/external/busybox" \
 		-f "$(external_srcdir)/busybox/upstream/Makefile" \
@@ -373,6 +379,7 @@ $(dest_data_bindir)/busybox: $(BBCFG)
 	$(MAKE) -C "$(OBJDIR)/external/busybox" busybox.links
 	$(Q)mkdir -p -- "$(dest_data_bindir)" "$(dest_data_sbindir)" "$(dest_data_libdir)"
 	$(Q)cp -a -- "$(OBJDIR)/external/busybox/busybox" "$@"
+	$(Q)touch "$@"
 	$(Q)while read -r busybox_link; do \
 	 for ign in $(BB_SYMLINK_DISABLE); do [ -n "$${busybox_link##*/$$ign}" ] || continue 2; done; \
 	 ln -srf -- "$@" "$(dest_runtimedir)$$busybox_link"; \
