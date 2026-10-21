@@ -217,21 +217,134 @@ check: check-unit
 wiki:
 	$(Q)$(srcdir)/utils/make-wiki.sh
 
-release:
-	$(Q)git archive -o $(PKGFILE).tar --prefix=$(PREFIX)/ HEAD
-	$(Q)git submodule update --init --checkout --depth=1 --force
-	$(Q)git submodule foreach --recursive ' \
-	    git archive -o $(PKGFILE)-sm.tar --prefix=$(PREFIX)/$$sm_path/ HEAD; \
-	    tar -A -f $(PKGFILE).tar $(PKGFILE)-sm.tar; \
-	    rm -f -- $(PKGFILE)-sm.tar;'
-	$(Q)xz -S .xz -f $(PKGFILE).tar
+DISTCHECK_CONFIGURE_FLAGS ?=
+DISTCHECK_CHECK_TARGET ?= check-services
+
+.PHONY: dist distcheck release
+dist:
+	$(Q)rm -f -- "$(PKGFILE).tar" "$(PKGFILE).tar.xz"
+	$(Q)if [ -d "$(srcdir)/.git" ]; then \
+	   [ -f "$(srcdir)/configure" ] || (cd "$(srcdir)" && ./autogen.sh) || exit 1; \
+	   (cd "$(srcdir)" && git archive -o "$(PKGFILE).tar" --prefix="$(PREFIX)/" HEAD) || exit 1; \
+	   if [ -f "$(srcdir)/.gitmodules" ]; then \
+	      (cd "$(srcdir)" && git submodule update --init --checkout --depth=1 --force) || exit 1; \
+	      (cd "$(srcdir)" && git submodule foreach --recursive ' \
+	         git archive -o "$(PKGFILE)-sm.tar" --prefix="$(PREFIX)/$$sm_path/" HEAD; \
+	         tar -A -f "$(PKGFILE).tar" "$(PKGFILE)-sm.tar"; \
+	         rm -f -- "$(PKGFILE)-sm.tar";') || exit 1; \
+	   fi; \
+	   for f in $$(cd "$(srcdir)" && git diff --name-only HEAD); do \
+	      [ ! -f "$(srcdir)/$$f" ] || tar -rf "$(PKGFILE).tar" -C "$(srcdir)" --transform "s|^|$(PREFIX)/|" "$$f" || exit 1; \
+	   done; \
+	   tar -rf "$(PKGFILE).tar" -C "$(srcdir)" --transform "s|^|$(PREFIX)/|" configure || exit 1; \
+	else \
+	   tar -cf "$(PKGFILE).tar" \
+	      --transform "s|^\.|$(PREFIX)|" \
+	      --exclude="./.build*" \
+	      --exclude="./_build*" \
+	      --exclude="./_inst*" \
+	      --exclude="./autom4te.cache" \
+	      --exclude="./config.log" \
+	      --exclude="./config.status" \
+	      --exclude="./config.h" \
+	      --exclude="./Makefile" \
+	      --exclude="*.tar" \
+	      --exclude="*.tar.xz" \
+	      -C "$(srcdir)" . || exit 1; \
+	fi
+	$(Q)xz -S .xz -f "$(PKGFILE).tar"
+	$(Q)echo; echo "Distribution tarball: $(PKGFILE).tar.xz"; echo;
+
+release: dist
 	$(Q)[ -z "$(GPG)" ] || $(GPG) --default-key $(GPG_KEY) -sb $(PKGFILE).tar.xz
 	$(Q)echo; echo "Release tarball: $(PKGFILE).tar.xz"; echo;
 
-release: PKGFILE=$(CURDIR)/$(PACKAGE_NAME)-$(PACKAGE_VERSION)
-release: PREFIX=$(PACKAGE_NAME)-$(PACKAGE_VERSION)
-release: GPG=gpg
-release: GPG_KEY=4CFFD434
+distcheck: dist
+	$(Q)am_distdir="$(PACKAGE_NAME)-$(PACKAGE_VERSION)"; \
+	tar_xz="$(PKGFILE).tar.xz"; \
+	rm -rf -- "$$am_distdir"; \
+	echo "=== Unpacking $$tar_xz ==="; \
+	tar -xf "$$tar_xz" || exit 1; \
+	chmod -R u+w "$$am_distdir" 2>/dev/null ||:; \
+	mkdir -p "$$am_distdir/_build" "$$am_distdir/_inst" || exit 1; \
+	chmod -R a-w "$$am_distdir" || exit 1; \
+	chmod -R u+w "$$am_distdir/_build" "$$am_distdir/_inst" || exit 1; \
+	[ ! -d "$$am_distdir/external/busybox/upstream" ] || \
+	   chmod -R u+w "$$am_distdir/external/busybox/upstream" || exit 1; \
+	dc_inst_dir=`cd "$$am_distdir/_inst" && pwd` || exit 1; \
+	echo "=== Build #1: Out-of-tree build and verification ==="; \
+	( \
+	   cd "$$am_distdir/_build" && \
+	   ../configure --srcdir=.. \
+	      --prefix="$$dc_inst_dir" \
+	      --sysconfdir="$$dc_inst_dir/etc" \
+	      --with-runtimedir="$$dc_inst_dir/lib/initrd" \
+	      $(DISTCHECK_CONFIGURE_FLAGS) && \
+	   $(MAKE) && \
+	   $(MAKE) $(DISTCHECK_CHECK_TARGET) && \
+	   $(MAKE) install && \
+	   $(MAKE) uninstall && \
+	   echo "=== Verifying clean uninstall in prefix ===" && \
+	   files_left=`find "$$dc_inst_dir" -type f -print` && \
+	   if [ -n "$$files_left" ]; then \
+	      echo >&2 "ERROR: files left after uninstall:"; \
+	      echo >&2 "$$files_left"; \
+	      exit 1; \
+	   fi && \
+	   echo "=== Verifying DESTDIR install and uninstall ===" && \
+	   mkdir -p _dest && \
+	   dc_dest_dir=`cd _dest && pwd` && \
+	   $(MAKE) DESTDIR="$$dc_dest_dir" install && \
+	   $(MAKE) DESTDIR="$$dc_dest_dir" uninstall && \
+	   files_left_dest=`find "$$dc_dest_dir" -type f -print` && \
+	   if [ -n "$$files_left_dest" ]; then \
+	      echo >&2 "ERROR: files left in DESTDIR after uninstall:"; \
+	      echo >&2 "$$files_left_dest"; \
+	      exit 1; \
+	   fi && \
+	   rm -rf -- "$$dc_dest_dir" && \
+	   echo "=== Build #2: Self-hosting tarball generation and build ===" && \
+	   $(MAKE) dist && \
+	   mkdir -p _sub2 && \
+	   tar -xf "$$am_distdir.tar.xz" -C _sub2 && \
+	   chmod -R u+w _sub2 && \
+	   mkdir -p "_sub2/$$am_distdir/_bld" "_sub2/$$am_distdir/_inst" && \
+	   chmod -R a-w "_sub2/$$am_distdir" && \
+	   chmod -R u+w "_sub2/$$am_distdir/_bld" "_sub2/$$am_distdir/_inst" && \
+	   if [ -d "_sub2/$$am_distdir/external/busybox/upstream" ]; then \
+	      chmod -R u+w "_sub2/$$am_distdir/external/busybox/upstream"; \
+	   fi && \
+	   ( \
+	      cd "_sub2/$$am_distdir/_bld" && \
+	      dc_sub2_inst=`cd ../_inst && pwd` && \
+	      ../configure --srcdir=.. \
+	         --prefix="$$dc_sub2_inst" \
+	         --sysconfdir="$$dc_sub2_inst/etc" \
+	         --with-runtimedir="$$dc_sub2_inst/lib/initrd" \
+	         $(DISTCHECK_CONFIGURE_FLAGS) && \
+	      $(MAKE) && \
+	      $(MAKE) $(DISTCHECK_CHECK_TARGET) && \
+	      $(MAKE) distclean \
+	   ) && \
+	   chmod -R u+w _sub2 && \
+	   rm -rf -- _sub2 "$$am_distdir.tar.xz" && \
+	   echo "=== Verifying distclean ===" && \
+	   $(MAKE) distclean \
+	) || { \
+	   chmod -R u+w "$$am_distdir" 2>/dev/null ||:; \
+	   rm -rf -- "$$am_distdir"; \
+	   exit 1; \
+	}; \
+	chmod -R u+w "$$am_distdir" 2>/dev/null ||:; \
+	rm -rf -- "$$am_distdir"; \
+	echo "========================================================================"; \
+	echo "Archive $$tar_xz is ready for distribution"; \
+	echo "========================================================================"
+
+dist release distcheck: PKGFILE ?= $(CURDIR)/$(PACKAGE_NAME)-$(PACKAGE_VERSION)
+dist release distcheck: PREFIX ?= $(PACKAGE_NAME)-$(PACKAGE_VERSION)
+release: GPG ?= gpg
+release: GPG_KEY ?= 4CFFD434
 
 RULE_NAMES = $(patsubst $(srcdir)/mk/%.in,%,$(wildcard $(srcdir)/mk/*.mk.in))
 
@@ -262,6 +375,7 @@ SYSCONF_NAMES = $(patsubst $(srcdir)/conf/%,%,$(wildcard $(srcdir)/conf/*))
 $(dest_sysconfdir)/%: $(srcdir)/conf/%
 	$(Q)mkdir -p -- $(dir $@)
 	$(call quiet_cmd,COPY,$@,cp) -a -- $< $@
+	$(Q)chmod -R u+w -- "$@"
 
 build: $(addprefix $(dest_sysconfdir)/,$(SYSCONF_NAMES))
 
@@ -322,8 +436,10 @@ $(call classify_file,$($(1)_DEST))
 
 $($(1)_DEST): $($(1)_SRCS) Makefile
 	$(Q)mkdir -p -- $$(dir $($(1)_DEST))
+	$(Q)rm -f -- $($(1)_DEST)
 	$(call quiet_cmd,SED,$($(1)_DEST),$(SED)) < $($(1)_SRCS) > $($(1)_DEST)
 	$(Q)chmod --reference=$($(1)_SRCS) $($(1)_DEST)
+	$(Q)chmod u+w $($(1)_DEST)
 
 $(1): $($(1)_DEST)
 endef
@@ -408,6 +524,7 @@ BIN_NAMES += $(LIBSHELL_NAMES)
 endif
 
 clean:
+	$(Q)chmod -R u+w -- $(build_prefix) 2>/dev/null || :
 	$(Q)rm -f -r -- $(build_prefix)
 
 distclean: clean
@@ -476,6 +593,13 @@ uninstall:
 	$(Q)rm -f -- $(addprefix $(DESTDIR)$(bindir)/,$(BIN_NAMES))
 	$(Q)rm -f -- $(addprefix $(DESTDIR)$(sbindir)/,$(SBIN_NAMES))
 	$(Q)rm -f -- $(addprefix $(DESTDIR)$(man1dir)/,$(MANPAGE_NAMES))
+	$(Q)for f in $(SYSCONF_NAMES); do \
+	   if [ -d "$(dest_sysconfdir)/$$f" ]; then \
+	      rm -rf -- "$(DESTDIR)$(sysconfdir)/$$f"; \
+	   else \
+	      rm -f -- "$(DESTDIR)$(sysconfdir)/$$f"; \
+	   fi; \
+	done
 	$(Q)[ -z "$(completionsdir)" ] || \
 	    rm -f -- $(addprefix $(DESTDIR)$(completionsdir)/,$(notdir $(wildcard $(srcdir)/contrib/bash-completion/*)))
 	$(Q)[ -z "$(kernelinstalldir)" ] || \
@@ -488,6 +612,6 @@ uninstall:
 	            echo >&2 "Refusing to remove dangerous directory: $(DESTDIR)$$d"; \
 	            exit 1 ;; \
 	        *) \
-	            [ ! -d "$(DESTDIR)$$d" ] || rm -rf -- "$(DESTDIR)$$d" ;; \
+	            [ ! -d "$(DESTDIR)$$d" ] || { chmod -R u+w -- "$(DESTDIR)$$d" 2>/dev/null ||:; rm -rf -- "$(DESTDIR)$$d"; } ;; \
 	    esac; \
 	done

@@ -4,7 +4,7 @@ AC_CONFIG_HEADERS([config.h])
 
 AC_PREFIX_DEFAULT([/usr])
 
-sysconfdir=/etc
+AS_IF([test "$sysconfdir" = '${prefix}/etc'], [sysconfdir=/etc])
 AC_SUBST([sysconfdir])
 
 AC_USE_SYSTEM_EXTENSIONS
