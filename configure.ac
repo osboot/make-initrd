@@ -41,6 +41,57 @@ AS_CASE([$enable_lto],
 	[no], [],
 	[AC_MSG_ERROR([bad value '$enable_lto' for --enable-lto])])
 
+AC_ARG_ENABLE([sanitizers],
+	[AS_HELP_STRING([--enable-sanitizers],
+			[build C programs with AddressSanitizer and UndefinedBehaviorSanitizer])],
+	[], [enable_sanitizers=no])
+
+AC_ARG_ENABLE([asan],
+	[AS_HELP_STRING([--enable-asan],
+			[build C programs with AddressSanitizer])],
+	[], [enable_asan=$enable_sanitizers])
+
+AS_CASE([$enable_asan],
+	[yes], [
+		AC_MSG_CHECKING([whether $CC supports AddressSanitizer])
+		saved_CFLAGS=$CFLAGS
+		saved_LDFLAGS=$LDFLAGS
+		CFLAGS="$CFLAGS -fsanitize=address -fno-omit-frame-pointer"
+		LDFLAGS="$LDFLAGS -fsanitize=address"
+		AC_LINK_IFELSE(
+			[AC_LANG_PROGRAM([], [return 0;])],
+			[AC_MSG_RESULT([yes])],
+			[CFLAGS=$saved_CFLAGS
+			 LDFLAGS=$saved_LDFLAGS
+			 AC_MSG_RESULT([no])
+			 AC_MSG_FAILURE([$CC does not support AddressSanitizer])])
+	],
+	[no], [],
+	[AC_MSG_ERROR([bad value '$enable_asan' for --enable-asan])])
+
+AC_ARG_ENABLE([ubsan],
+	[AS_HELP_STRING([--enable-ubsan],
+			[build C programs with UndefinedBehaviorSanitizer])],
+	[], [enable_ubsan=$enable_sanitizers])
+
+AS_CASE([$enable_ubsan],
+	[yes], [
+		AC_MSG_CHECKING([whether $CC supports UndefinedBehaviorSanitizer])
+		saved_CFLAGS=$CFLAGS
+		saved_LDFLAGS=$LDFLAGS
+		CFLAGS="$CFLAGS -fsanitize=undefined"
+		LDFLAGS="$LDFLAGS -fsanitize=undefined"
+		AC_LINK_IFELSE(
+			[AC_LANG_PROGRAM([], [return 0;])],
+			[AC_MSG_RESULT([yes])],
+			[CFLAGS=$saved_CFLAGS
+			 LDFLAGS=$saved_LDFLAGS
+			 AC_MSG_RESULT([no])
+			 AC_MSG_FAILURE([$CC does not support UndefinedBehaviorSanitizer])])
+	],
+	[no], [],
+	[AC_MSG_ERROR([bad value '$enable_ubsan' for --enable-ubsan])])
+
 m4_ifndef([PKG_PROG_PKG_CONFIG],
   [m4_fatal([Could not locate the pkg-config autoconf
     macros. These are usually located in /usr/share/aclocal/pkg.m4.
