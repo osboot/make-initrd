@@ -101,13 +101,6 @@ AC_ARG_ENABLE(local-build,
 AC_MSG_RESULT([${MKLOCAL}])
 AC_SUBST([MKLOCAL])
 
-if test "$MKLOCAL" != no; then
-	localbuilddir=".build/dest"
-else
-	localbuilddir=""
-fi
-AC_SUBST([localbuilddir], [$localbuilddir])
-
 AC_ARG_WITH([bootdir],
 	[AS_HELP_STRING([--with-bootdir=DIR],
 			[Directory for initramfs images (default: /boot)])],
@@ -321,7 +314,6 @@ AC_SUBST([HAVE_ZSTD])
 AC_SUBST([HAVE_LIBELF])
 AC_SUBST([HAVE_LIBJSON_C])
 AC_SUBST([HAVE_LIBKMOD])
-AC_SUBST([MKLOCAL])
 AC_SUBST([YACC])
 AC_SUBST([LEX])
 

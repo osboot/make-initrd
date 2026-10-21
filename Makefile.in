@@ -230,7 +230,7 @@ release: GPG_KEY=4CFFD434
 
 RULE_NAMES = $(patsubst $(srcdir)/mk/%.in,%,$(wildcard $(srcdir)/mk/*.mk.in))
 
-$(dest_rulesdir)/%.mk: $(srcdir)/mk/%.mk.in
+$(dest_rulesdir)/%.mk: $(srcdir)/mk/%.mk.in Makefile
 	$(Q)mkdir -p -- $(dir $@)
 	$(call quiet_cmd,SED,$@,$(SED)) < $< > $@
 
@@ -315,10 +315,9 @@ endef
 define generate_script_target =
 $(call classify_file,$($(1)_DEST))
 
-$($(1)_DEST): $($(1)_SRCS)
+$($(1)_DEST): $($(1)_SRCS) Makefile
 	$(Q)mkdir -p -- $$(dir $($(1)_DEST))
 	$(call quiet_cmd,SED,$($(1)_DEST),$(SED)) < $($(1)_SRCS) > $($(1)_DEST)
-	$(Q)touch -r $($(1)_SRCS) $($(1)_DEST)
 	$(Q)chmod --reference=$($(1)_SRCS) $($(1)_DEST)
 
 $(1): $($(1)_DEST)
@@ -361,11 +360,10 @@ endif
 # utilities.
 BB_SYMLINK_DISABLE = ash insmod losetup mount
 
-$(BBCFG): $(external_srcdir)/busybox/config
+$(BBCFG): $(external_srcdir)/busybox/config Makefile
 	$(Q)mkdir -p -- "$(OBJDIR)/external/busybox"
 	$(Q)mkdir -p -- $(dest_runtimedir)
 	$(call quiet_cmd,SED,$@,@SED@) $(BBCFG_SED_ARGS) < "$<" > "$@"
-	$(Q)touch -r $< $@
 
 $(dest_data_bindir)/busybox: $(BBCFG)
 	$(Q)mkdir -p -- "$(OBJDIR)/external/busybox"
@@ -400,6 +398,10 @@ endif
 clean:
 	$(Q)rm -f -r -- $(build_prefix)
 
+distclean: clean
+	$(Q)rm -f -- Makefile config.log config.status
+	$(Q)rm -rf -- autom4te.cache
+
 installdirs:
 	$(Q)mkdir -p -- \
 	 $(DESTDIR)$(bindir) \
@@ -414,7 +416,7 @@ installdirs:
 	 $(DESTDIR)$(runtimedir)/$(libcdir) \
 	 $(DESTDIR)$(completionsdir)
 
-install: build-progs build-manpages installdirs
+install: build installdirs
 	$(Q)cp -at "$(DESTDIR)$(bindir)" -- $(addprefix $(dest_bindir)/,$(BIN_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(sbindir)" -- $(addprefix $(dest_sbindir)/,$(SBIN_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(sysconfdir)" -- $(addprefix $(dest_sysconfdir)/,$(SYSCONF_NAMES))
@@ -433,7 +435,8 @@ install: build-progs build-manpages installdirs
 	$(Q)cp -at "$(DESTDIR)$(execdir)/$(FEATURESDIR)" -- $(wildcard $(dest_execdir)/$(FEATURESDIR)/*)
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/bin" -- $(addprefix $(dest_data_bindir)/,$(RUNTIME_BIN_NAMES))
 	$(Q)cp -at "$(DESTDIR)$(runtimedir)/sbin" -- $(addprefix $(dest_data_sbindir)/,$(RUNTIME_SBIN_NAMES))
-	$(Q)cp -at "$(DESTDIR)$(runtimedir)/$(libcdir)" -- $(dest_data_libdir)/lib*
+	$(Q)[ -z "$(wildcard $(dest_data_libdir)/lib*)" ] || \
+	    cp -at "$(DESTDIR)$(runtimedir)/$(libcdir)" -- $(wildcard $(dest_data_libdir)/lib*)
 	$(Q)[ -z "$(completionsdir)" ] || \
 	    cp -at "$(DESTDIR)$(completionsdir)" -- $(wildcard $(srcdir)/contrib/bash-completion/*)
 	$(Q)[ -z "$(kernelinstalldir)" ] || { \
