@@ -7,6 +7,7 @@
 #include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/utsname.h>
+#include <sys/queue.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,134 +56,120 @@ static size_t n_modules = 0;
 
 static int use_blacklist = 0;
 
-struct kernel_builtin {
-	char *name;
-	char **aliases;
-
-	struct kernel_builtin *next;
+struct string_entry {
+	char *str;
+	STAILQ_ENTRY(string_entry) entries;
 };
 
-static struct kernel_builtin *kbuiltin = NULL;
+STAILQ_HEAD(string_head, string_entry);
 
-static char *
-is_kernel_builtin_match(const char *str)
+struct kernel_builtin {
+	char *name;
+	struct string_head aliases;
+	struct string_head firmware;
+	int tracked;
+
+	STAILQ_ENTRY(kernel_builtin) entries;
+};
+
+STAILQ_HEAD(kernel_builtin_head, kernel_builtin);
+
+static struct kernel_builtin_head kbuiltin = STAILQ_HEAD_INITIALIZER(kbuiltin);
+
+static struct kernel_builtin *
+find_kernel_builtin(const char *str)
 {
-	struct kernel_builtin *next;
+	struct kernel_builtin *b;
+	struct string_entry *e;
+
+	if (!str || !*str)
+		return NULL;
 
 	// First we are looking for a name match.
-	next = kbuiltin;
-	while (next) {
-		if (!strcmp(next->name, str))
-			return next->name;
-		next = next->next;
+	STAILQ_FOREACH(b, &kbuiltin, entries) {
+		if (!strcmp(b->name, str))
+			return b;
 	}
 
 	// Second we are looking for a match in aliases.
-	next = kbuiltin;
-	while (next) {
-		int i = 0;
-		while (next->aliases && next->aliases[i]) {
-			if (!fnmatch(next->aliases[i], str, FNM_NOESCAPE))
-				return next->name;
-			i++;
+	STAILQ_FOREACH(b, &kbuiltin, entries) {
+		STAILQ_FOREACH(e, &b->aliases, entries) {
+			if (!fnmatch(e->str, str, FNM_NOESCAPE))
+				return b;
 		}
-		next = next->next;
 	}
 
 	return NULL;
 }
 
-static int
-append_kernel_builtin(char *name)
+static struct kernel_builtin *
+append_kernel_builtin(const char *name)
 {
-	struct kernel_builtin *new, *next, *last = NULL;
+	struct kernel_builtin *b;
 
-	if (kbuiltin) {
-		last = next = kbuiltin;
-		while (next) {
-			if (!strcmp(next->name, name))
-				return 0;
-			last = next;
-			next = next->next;
-		}
+	STAILQ_FOREACH(b, &kbuiltin, entries) {
+		if (!strcmp(b->name, name))
+			return b;
 	}
 
-	new = calloc(1, sizeof(struct kernel_builtin));
-	if (!new)
+	b = calloc(1, sizeof(*b));
+	if (!b)
 		errx(EXIT_FAILURE, "memory allocation failed");
 
-	new->name = strdup(name);
-	new->aliases = NULL;
-
-	if (new->name == NULL)
+	b->name = strdup(name);
+	if (!b->name)
 		errx(EXIT_FAILURE, "memory allocation failed");
 
-	if (!kbuiltin) {
-		kbuiltin = new;
-		return 0;
-	}
+	STAILQ_INIT(&b->aliases);
+	STAILQ_INIT(&b->firmware);
+	b->tracked = 0;
 
-	if (last)
-		last->next = new;
-	return 0;
+	STAILQ_INSERT_TAIL(&kbuiltin, b, entries);
+	return b;
 }
 
 static void
-append_kernel_builtin_alias(char *name, char *alias)
+append_string_entry(struct string_head *head, const char *str)
 {
-	struct kernel_builtin *next;
+	struct string_entry *e;
 
-	if (!alias || !strlen(alias))
+	if (!str || !*str)
 		return;
 
-	next = kbuiltin;
-	while (next) {
-		if (strcmp(next->name, name)) {
-			next = next->next;
-			continue;
-		}
+	e = malloc(sizeof(*e));
+	if (!e)
+		errx(EXIT_FAILURE, "memory allocation failed");
 
-		char **aliases;
-		unsigned int i = 0;
+	e->str = strdup(str);
+	if (!e->str)
+		errx(EXIT_FAILURE, "memory allocation failed");
 
-		if (next->aliases != NULL) {
-			while (next->aliases[i]) i++;
-			aliases = realloc(next->aliases, sizeof(char *) * (i + 2));
-		} else {
-			aliases = calloc(2, sizeof(char *));
-		}
+	STAILQ_INSERT_TAIL(head, e, entries);
+}
 
-		if (aliases == NULL)
-			errx(EXIT_FAILURE, "memory allocation failed");
+static void
+free_string_list(struct string_head *head)
+{
+	struct string_entry *e;
 
-		next->aliases = aliases;
-		next->aliases[i] = strdup(alias);
-
-		if (next->aliases[i] == NULL)
-			errx(EXIT_FAILURE, "memory allocation failed");
-
-		next->aliases[i+1] = 0;
-		break;
+	while ((e = STAILQ_FIRST(head)) != NULL) {
+		STAILQ_REMOVE_HEAD(head, entries);
+		free(e->str);
+		free(e);
 	}
 }
 
 static void
 free_kernel_builtin(void)
 {
-	struct kernel_builtin *p, *next = kbuiltin;
-	while (next) {
-		free(next->name);
+	struct kernel_builtin *b;
 
-		int i = 0;
-		while (next->aliases && next->aliases[i])
-			free(next->aliases[i++]);
-
-		if (next->aliases)
-			free(next->aliases);
-
-		p = next->next;
-		free(next);
-		next = p;
+	while ((b = STAILQ_FIRST(&kbuiltin)) != NULL) {
+		STAILQ_REMOVE_HEAD(&kbuiltin, entries);
+		free(b->name);
+		free_string_list(&b->aliases);
+		free_string_list(&b->firmware);
+		free(b);
 	}
 }
 
@@ -244,10 +231,12 @@ read_kernel_builtin(char *module_dir, const char *modinfo)
 		*field = '\0';
 		field++;
 
-		append_kernel_builtin(s);
+		struct kernel_builtin *b = append_kernel_builtin(s);
 
 		if (!strcmp(field, "alias"))
-			append_kernel_builtin_alias(s, value);
+			append_string_entry(&b->aliases, value);
+		else if (!strcmp(field, "firmware"))
+			append_string_entry(&b->firmware, value);
 
 		free(s);
 
@@ -264,7 +253,6 @@ ignore:
 	close(fd);
 
 	free_kernel_builtin();
-	kbuiltin = NULL;
 
 	return 0;
 }
@@ -412,6 +400,54 @@ process_firmware(const char *pattern)
 }
 
 static int
+process_builtin(const char *name)
+{
+	struct kernel_builtin *b = find_kernel_builtin(name);
+	struct string_entry *e;
+
+	if (b) {
+		if (b->tracked)
+			return 0;
+		b->tracked = 1;
+	}
+
+	if (opts & SHOW_BUILTIN) {
+		show_with_prefix(show_tree, "builtin", b ? b->name : name);
+		if (show_tree)
+			show_tree++;
+	}
+
+	if ((opts & SHOW_FIRMWARE) && b) {
+		STAILQ_FOREACH(e, &b->firmware, entries)
+			process_firmware(e->str);
+	}
+
+	if ((opts & SHOW_BUILTIN) && show_tree > 1)
+		show_tree--;
+
+	return 0;
+}
+
+static int
+module_in_list(struct kmod_module *mod, struct kmod_list *list)
+{
+	struct kmod_list *l;
+	const char *name = kmod_module_get_name(mod);
+
+	if (!list)
+		return 0;
+
+	kmod_list_foreach(l, list) {
+		struct kmod_module *m = kmod_module_get_module(l);
+		int match = !strcmp(kmod_module_get_name(m), name);
+		kmod_module_unref(m);
+		if (match)
+			return 1;
+	}
+	return 0;
+}
+
+static int
 depinfo(struct kmod_ctx *ctx, struct kmod_module *mod);
 
 static int
@@ -448,31 +484,25 @@ process_module_list(struct kmod_ctx *ctx, struct kmod_list *list)
 
 	ret = 0;
 
-	if (!filtered) {
-		if (opts & SHOW_BUILTIN) {
-			kmod_list_foreach(l, list) {
-				mod = kmod_module_get_module(l);
-				show_with_prefix(show_tree, "builtin", kmod_module_get_name(mod));
-				kmod_module_unref(mod);
-			}
-		}
-		goto end;
+	kmod_list_foreach(l, list) {
+		mod = kmod_module_get_module(l);
+		if (!module_in_list(mod, filtered))
+			process_builtin(kmod_module_get_name(mod));
+		kmod_module_unref(mod);
 	}
 
-	kmod_list_foreach(l, filtered) {
-		mod = kmod_module_get_module(l);
-		if (kbuiltin) {
-			char *name = is_kernel_builtin_match(kmod_module_get_name(mod));
-			if (name != NULL) {
-				if (opts & SHOW_BUILTIN)
-					show_with_prefix(show_tree, "builtin", name);
+	if (filtered) {
+		kmod_list_foreach(l, filtered) {
+			mod = kmod_module_get_module(l);
+			if (find_kernel_builtin(kmod_module_get_name(mod))) {
+				process_builtin(kmod_module_get_name(mod));
 				kmod_module_unref(mod);
 				continue;
 			}
+			if (depinfo(ctx, mod) < 0)
+				ret = -1;
+			kmod_module_unref(mod);
 		}
-		if (depinfo(ctx, mod) < 0)
-			ret = -1;
-		kmod_module_unref(mod);
 	}
 end:
 	if (filtered)
@@ -488,14 +518,8 @@ depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req)
 {
 	struct kmod_list *list = NULL;
 
-	if (kbuiltin) {
-		char *name = is_kernel_builtin_match(alias);
-
-		if (name != NULL && opts & SHOW_BUILTIN) {
-			show_with_prefix(show_tree, "builtin", name);
-			return 0;
-		}
-	}
+	if (find_kernel_builtin(alias))
+		return process_builtin(alias);
 
 	if (kmod_module_new_from_lookup(ctx, alias, &list) < 0) {
 		if (req == ALIAS_OPTIONAL)
