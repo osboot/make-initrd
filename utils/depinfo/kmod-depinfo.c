@@ -412,7 +412,140 @@ process_firmware(const char *pattern)
 }
 
 static int
-depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req);
+depinfo(struct kmod_ctx *ctx, struct kmod_module *mod);
+
+static int
+process_module_list(struct kmod_ctx *ctx, struct kmod_list *list)
+{
+	int ret = -1;
+	struct kmod_module *mod;
+	struct kmod_list *l;
+	struct kmod_list *filtered = NULL;
+
+	if (!list)
+		return 0;
+
+	if (use_blacklist) {
+		if (kmod_module_apply_filter(ctx, KMOD_FILTER_BLACKLIST, list, &filtered) < 0) {
+			warn("ERROR: Failed to filter (blacklist) list");
+			goto end;
+		}
+
+		if (!filtered) {
+			ret = 0;
+			goto end;
+		}
+
+		kmod_module_unref_list(list);
+		list = filtered;
+		filtered = NULL;
+	}
+
+	if (kmod_module_apply_filter(ctx, KMOD_FILTER_BUILTIN, list, &filtered) < 0) {
+		warn("ERROR: Failed to filter list");
+		goto end;
+	}
+
+	ret = 0;
+
+	if (!filtered) {
+		if (opts & SHOW_BUILTIN) {
+			kmod_list_foreach(l, list) {
+				mod = kmod_module_get_module(l);
+				show_with_prefix(show_tree, "builtin", kmod_module_get_name(mod));
+				kmod_module_unref(mod);
+			}
+		}
+		goto end;
+	}
+
+	kmod_list_foreach(l, filtered) {
+		mod = kmod_module_get_module(l);
+		if (kbuiltin) {
+			char *name = is_kernel_builtin_match(kmod_module_get_name(mod));
+			if (name != NULL) {
+				if (opts & SHOW_BUILTIN)
+					show_with_prefix(show_tree, "builtin", name);
+				kmod_module_unref(mod);
+				continue;
+			}
+		}
+		if (depinfo(ctx, mod) < 0)
+			ret = -1;
+		kmod_module_unref(mod);
+	}
+end:
+	if (filtered)
+		kmod_module_unref_list(filtered);
+	if (list)
+		kmod_module_unref_list(list);
+
+	return ret;
+}
+
+static int
+depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req)
+{
+	struct kmod_list *list = NULL;
+
+	if (kbuiltin) {
+		char *name = is_kernel_builtin_match(alias);
+
+		if (name != NULL && opts & SHOW_BUILTIN) {
+			show_with_prefix(show_tree, "builtin", name);
+			return 0;
+		}
+	}
+
+	if (kmod_module_new_from_lookup(ctx, alias, &list) < 0) {
+		if (req == ALIAS_OPTIONAL)
+			return 0;
+		warnx("ERROR: Module alias %s not found.", alias);
+		return -1;
+	}
+
+	if (!list) {
+		if (req == ALIAS_OPTIONAL)
+			return 0;
+		warnx("ERROR: Module %s not found.", alias);
+		return -1;
+	}
+
+	return process_module_list(ctx, list);
+}
+
+static int
+process_soft_deps(struct kmod_ctx *ctx, struct kmod_module *mod)
+{
+	struct kmod_list *pre = NULL, *post = NULL;
+	int ret = 0;
+
+	if (kmod_module_get_softdeps(mod, &pre, &post) < 0)
+		return 0;
+
+	if (pre && process_module_list(ctx, pre) < 0)
+		ret = -1;
+
+	if (post && process_module_list(ctx, post) < 0)
+		ret = -1;
+
+	return ret;
+}
+
+static int
+process_weak_deps(struct kmod_ctx *ctx, struct kmod_module *mod)
+{
+#ifdef HAVE_KMOD_MODULE_GET_WEAKDEPS
+	struct kmod_list *weak = NULL;
+
+	if (kmod_module_get_weakdeps(mod, &weak) < 0)
+		return 0;
+
+	if (weak && process_module_list(ctx, weak) < 0)
+		return -1;
+#endif
+	return 0;
+}
 
 static int
 __process_depends(struct kmod_ctx *ctx, const char *depends, const char *delim, enum alias_need req)
@@ -506,6 +639,13 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 
 	kmod_module_info_free_list(list);
 
+	if ((opts & SHOW_DEPS) && (opts & SHOW_MODULES)) {
+		if (process_soft_deps(ctx, mod) < 0)
+			ret = -1;
+		if (process_weak_deps(ctx, mod) < 0)
+			ret = -1;
+	}
+
 	if (show_tree > 1)
 		show_tree--;
 
@@ -525,91 +665,6 @@ depinfo_path(struct kmod_ctx *ctx, const char *path)
 
 	ret = depinfo(ctx, mod);
 	kmod_module_unref(mod);
-
-	return ret;
-}
-
-static int
-depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req)
-{
-	int ret = -1;
-	struct kmod_module *mod;
-	struct kmod_list *l;
-	struct kmod_list *filtered = NULL;
-	struct kmod_list *list = NULL;
-
-	if (kbuiltin) {
-		char *name = is_kernel_builtin_match(alias);
-
-		if (name != NULL && opts & SHOW_BUILTIN) {
-			show_with_prefix(show_tree, "builtin", name);
-			return 0;
-		}
-	}
-
-	if (kmod_module_new_from_lookup(ctx, alias, &list) < 0) {
-		if (req == ALIAS_OPTIONAL) {
-			ret = 0;
-			goto end;
-		}
-		warnx("ERROR: Module alias %s not found.", alias);
-		goto end;
-	}
-
-	if (!list) {
-		if (req == ALIAS_OPTIONAL) {
-			ret = 0;
-			goto end;
-		}
-		warnx("ERROR: Module %s not found.", alias);
-		goto end;
-	}
-
-	if (use_blacklist) {
-		if (kmod_module_apply_filter(ctx, KMOD_FILTER_BLACKLIST, list, &filtered) < 0) {
-			warn("ERROR: Failed to filter (blacklist) list");
-			goto end;
-		}
-
-		if (!filtered) {
-			ret = 0;
-			goto end;
-		}
-
-		kmod_module_unref_list(list);
-		list = filtered;
-		filtered = NULL;
-	}
-
-	if (kmod_module_apply_filter(ctx, KMOD_FILTER_BUILTIN, list, &filtered) < 0) {
-		warn("ERROR: Failed to filter list");
-		goto end;
-	}
-
-	ret = 0;
-
-	if (!filtered) {
-		if (opts & SHOW_BUILTIN) {
-			kmod_list_foreach(l, list) {
-				mod = kmod_module_get_module(l);
-				show_with_prefix(show_tree, "builtin", kmod_module_get_name(mod));
-				kmod_module_unref(mod);
-			}
-			goto end;
-		}
-	}
-
-	kmod_list_foreach(l, filtered) {
-		mod = kmod_module_get_module(l);
-		if (depinfo(ctx, mod) < 0)
-			ret = -1;
-		kmod_module_unref(mod);
-	}
-end:
-	if (filtered)
-		kmod_module_unref_list(filtered);
-	if (list)
-		kmod_module_unref_list(list);
 
 	return ret;
 }

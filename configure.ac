@@ -377,6 +377,14 @@ PKG_CHECK_MODULES(HAVE_LIBKMOD, libkmod, [HAVE_LIBKMOD=yes], [HAVE_LIBKMOD=no])
 AS_IF([test "x$HAVE_LIBKMOD" != xyes],
 	[AC_MSG_ERROR([libkmod was not found: https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git])])
 
+save_CFLAGS="$CFLAGS"
+save_LIBS="$LIBS"
+CFLAGS="$CFLAGS $HAVE_LIBKMOD_CFLAGS"
+LIBS="$LIBS $HAVE_LIBKMOD_LIBS"
+AC_CHECK_FUNCS([kmod_module_get_weakdeps])
+CFLAGS="$save_CFLAGS"
+LIBS="$save_LIBS"
+
 AC_SUBST([HAVE_GZIP])
 AC_SUBST([HAVE_BZIP2])
 AC_SUBST([HAVE_LZMA])
