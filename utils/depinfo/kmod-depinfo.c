@@ -51,9 +51,6 @@ static char *firmware_dir;
 static char firmware_defaultdir[] = "/lib/firmware/updates:/lib/firmware";
 static char firmware_class_path[PATH_MAX + 1] = { 0 };
 
-static char **modules   = NULL;
-static size_t n_modules = 0;
-
 static int use_blacklist = 0;
 
 struct string_entry {
@@ -62,6 +59,8 @@ struct string_entry {
 };
 
 STAILQ_HEAD(string_head, string_entry);
+
+static struct string_head tracked_modules = STAILQ_HEAD_INITIALIZER(tracked_modules);
 
 struct kernel_builtin {
 	char *name;
@@ -260,55 +259,25 @@ ignore:
 static int
 tracked_module(struct kmod_module *mod)
 {
-	char **new;
+	struct string_entry *e;
 	const char *path = kmod_module_get_path(mod);
 
-	if (modules) {
-		int i   = 0;
-		char *m = modules[i++];
+	if (!path)
+		return 0;
 
-		while (m) {
-			if (!strcmp(m, path))
-				return 1;
-			m = modules[i++];
-		}
+	STAILQ_FOREACH(e, &tracked_modules, entries) {
+		if (!strcmp(e->str, path))
+			return 1;
 	}
 
-	new = realloc(modules, (n_modules + 2) * sizeof(void *));
-
-	if (!new) {
-		warn("realloc: allocating %lu bytes", (n_modules + 2) * sizeof(void *));
-		return -1;
-	}
-
-	modules = new;
-	modules[n_modules] = strdup(path);
-	modules[n_modules + 1] = NULL;
-
-	if (!(modules[n_modules])) {
-		warnx("memory allocation failed");
-		return -1;
-	}
-
-	n_modules++;
+	append_string_entry(&tracked_modules, path);
 	return 0;
 }
 
 static void
 free_modules(void)
 {
-	if (!modules)
-		return;
-
-	int i   = 0;
-	char *m = modules[i++];
-
-	while (m) {
-		free(m);
-		m = modules[i++];
-	}
-
-	free(modules);
+	free_string_list(&tracked_modules);
 }
 
 static void
