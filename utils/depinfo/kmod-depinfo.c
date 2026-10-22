@@ -552,7 +552,13 @@ __process_depends(struct kmod_ctx *ctx, const char *depends, const char *delim, 
 {
 	int ret = 0;
 	char *s, *str, *token, *saveptr = NULL;
+
+	if (!depends || !*depends)
+		return 0;
+
 	s = str = strdup(depends);
+	if (!s)
+		errx(EXIT_FAILURE, "memory allocation failed");
 
 	while ((token = strtok_r(str, delim, &saveptr)) != NULL) {
 		if (depinfo_alias(ctx, token, req) < 0)
@@ -566,26 +572,48 @@ __process_depends(struct kmod_ctx *ctx, const char *depends, const char *delim, 
 static int
 process_depends(struct kmod_ctx *ctx, const char *depends)
 {
-	return __process_depends(ctx, depends, ",", ALIAS_REQUIRED);
+	return __process_depends(ctx, depends, ", \t\r\n", ALIAS_REQUIRED);
 }
 
 static int
 process_soft_depends(struct kmod_ctx *ctx, const char *depends)
 {
-	size_t len = strlen(depends);
+	int ret = 0;
+	char *s, *str, *token, *saveptr = NULL;
 
-	if (len > 5 && !strncmp("pre: ", depends, 5))
-		depends += 5;
-	else if (len > 6 && !strncmp("post: ", depends, 6))
-		depends += 6;
+	if (!depends || !*depends)
+		return 0;
 
-	return __process_depends(ctx, depends, " ", ALIAS_OPTIONAL);
+	s = str = strdup(depends);
+	if (!s)
+		errx(EXIT_FAILURE, "memory allocation failed");
+
+	while ((token = strtok_r(str, " \t\r\n", &saveptr)) != NULL) {
+		str = NULL;
+
+		if (!strcmp(token, "pre:") || !strcmp(token, "post:"))
+			continue;
+
+		if (!strncmp(token, "pre:", 4))
+			token += 4;
+		else if (!strncmp(token, "post:", 5))
+			token += 5;
+
+		if (!*token)
+			continue;
+
+		if (depinfo_alias(ctx, token, ALIAS_OPTIONAL) < 0)
+			ret = -1;
+	}
+
+	free(s);
+	return ret;
 }
 
 static int
 process_weak_depends(struct kmod_ctx *ctx, const char *depends)
 {
-	return __process_depends(ctx, depends, " ", ALIAS_OPTIONAL);
+	return __process_depends(ctx, depends, " \t\r\n", ALIAS_OPTIONAL);
 }
 
 static int
