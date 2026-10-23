@@ -7,6 +7,8 @@
 #include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/utsname.h>
+#include <sys/queue.h>
+#include <search.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,140 +52,155 @@ static char *firmware_dir;
 static char firmware_defaultdir[] = "/lib/firmware/updates:/lib/firmware";
 static char firmware_class_path[PATH_MAX + 1] = { 0 };
 
-static char **modules   = NULL;
-static size_t n_modules = 0;
-
 static int use_blacklist = 0;
+
+struct string_entry {
+	char *str;
+	STAILQ_ENTRY(string_entry) entries;
+};
+
+STAILQ_HEAD(string_head, string_entry);
 
 struct kernel_builtin {
 	char *name;
-	char **aliases;
+	struct string_head aliases;
+	struct string_head firmware;
+	int tracked;
 
-	struct kernel_builtin *next;
+	STAILQ_ENTRY(kernel_builtin) alias_entries;
 };
 
-static struct kernel_builtin *kbuiltin = NULL;
+STAILQ_HEAD(kernel_builtin_head, kernel_builtin);
 
-static char *
-is_kernel_builtin_match(const char *str)
+static void *kbuiltin_tree = NULL;
+static struct kernel_builtin_head kbuiltin_with_aliases = STAILQ_HEAD_INITIALIZER(kbuiltin_with_aliases);
+
+static int
+compare_kernel_builtin(const void *pa, const void *pb)
 {
-	struct kernel_builtin *next;
+	const struct kernel_builtin *a = pa;
+	const struct kernel_builtin *b = pb;
 
-	// First we are looking for a name match.
-	next = kbuiltin;
-	while (next) {
-		if (!strcmp(next->name, str))
-			return next->name;
-		next = next->next;
-	}
+	return strcmp(a->name, b->name);
+}
+
+static struct kernel_builtin *
+find_kernel_builtin(const char *str)
+{
+	struct kernel_builtin key = { .name = (char *)str };
+	void **res;
+	struct kernel_builtin *b;
+	struct string_entry *e;
+
+	if (!str || !*str)
+		return NULL;
+
+	// First we are looking for a name match in the binary tree.
+	res = tfind(&key, &kbuiltin_tree, compare_kernel_builtin);
+	if (res)
+		return *(struct kernel_builtin **)res;
 
 	// Second we are looking for a match in aliases.
-	next = kbuiltin;
-	while (next) {
-		int i = 0;
-		while (next->aliases && next->aliases[i]) {
-			if (!fnmatch(next->aliases[i], str, FNM_NOESCAPE))
-				return next->name;
-			i++;
+	STAILQ_FOREACH(b, &kbuiltin_with_aliases, alias_entries) {
+		STAILQ_FOREACH(e, &b->aliases, entries) {
+			if (!fnmatch(e->str, str, FNM_NOESCAPE))
+				return b;
 		}
-		next = next->next;
 	}
 
 	return NULL;
 }
 
-static int
-append_kernel_builtin(char *name)
+static struct kernel_builtin *
+append_kernel_builtin(const char *name)
 {
-	struct kernel_builtin *new, *next, *last = NULL;
+	struct kernel_builtin key = { .name = (char *)name };
+	void **res;
+	struct kernel_builtin *b;
 
-	if (kbuiltin) {
-		last = next = kbuiltin;
-		while (next) {
-			if (!strcmp(next->name, name))
-				return 0;
-			last = next;
-			next = next->next;
-		}
-	}
+	res = tfind(&key, &kbuiltin_tree, compare_kernel_builtin);
+	if (res)
+		return *(struct kernel_builtin **)res;
 
-	new = calloc(1, sizeof(struct kernel_builtin));
-	if (!new)
+	b = calloc(1, sizeof(*b));
+	if (!b)
 		errx(EXIT_FAILURE, "memory allocation failed");
 
-	new->name = strdup(name);
-	new->aliases = NULL;
-
-	if (new->name == NULL)
+	b->name = strdup(name);
+	if (!b->name)
 		errx(EXIT_FAILURE, "memory allocation failed");
 
-	if (!kbuiltin) {
-		kbuiltin = new;
-		return 0;
+	STAILQ_INIT(&b->aliases);
+	STAILQ_INIT(&b->firmware);
+	b->tracked = 0;
+
+	res = tsearch(b, &kbuiltin_tree, compare_kernel_builtin);
+	if (!res) {
+		free(b->name);
+		free(b);
+		errx(EXIT_FAILURE, "memory allocation failed");
 	}
 
-	if (last)
-		last->next = new;
-	return 0;
+	return b;
 }
 
 static void
-append_kernel_builtin_alias(char *name, char *alias)
+append_string_entry(struct string_head *head, const char *str)
 {
-	struct kernel_builtin *next;
+	struct string_entry *e;
 
-	if (!alias || !strlen(alias))
+	if (!str || !*str)
 		return;
 
-	next = kbuiltin;
-	while (next) {
-		if (strcmp(next->name, name)) {
-			next = next->next;
-			continue;
-		}
+	e = malloc(sizeof(*e));
+	if (!e)
+		errx(EXIT_FAILURE, "memory allocation failed");
 
-		char **aliases;
-		unsigned int i = 0;
+	e->str = strdup(str);
+	if (!e->str)
+		errx(EXIT_FAILURE, "memory allocation failed");
 
-		if (next->aliases != NULL) {
-			while (next->aliases[i]) i++;
-			aliases = realloc(next->aliases, sizeof(char *) * (i + 2));
-		} else {
-			aliases = calloc(2, sizeof(char *));
-		}
+	STAILQ_INSERT_TAIL(head, e, entries);
+}
 
-		if (aliases == NULL)
-			errx(EXIT_FAILURE, "memory allocation failed");
+static void
+append_kernel_builtin_alias(struct kernel_builtin *b, const char *alias)
+{
+	if (STAILQ_EMPTY(&b->aliases))
+		STAILQ_INSERT_TAIL(&kbuiltin_with_aliases, b, alias_entries);
 
-		next->aliases = aliases;
-		next->aliases[i] = strdup(alias);
+	append_string_entry(&b->aliases, alias);
+}
 
-		if (next->aliases[i] == NULL)
-			errx(EXIT_FAILURE, "memory allocation failed");
+static void
+free_string_list(struct string_head *head)
+{
+	struct string_entry *e;
 
-		next->aliases[i+1] = 0;
-		break;
+	while ((e = STAILQ_FIRST(head)) != NULL) {
+		STAILQ_REMOVE_HEAD(head, entries);
+		free(e->str);
+		free(e);
 	}
+}
+
+static void
+free_kernel_builtin_node(void *nodep)
+{
+	struct kernel_builtin *b = nodep;
+
+	free(b->name);
+	free_string_list(&b->aliases);
+	free_string_list(&b->firmware);
+	free(b);
 }
 
 static void
 free_kernel_builtin(void)
 {
-	struct kernel_builtin *p, *next = kbuiltin;
-	while (next) {
-		free(next->name);
-
-		int i = 0;
-		while (next->aliases && next->aliases[i])
-			free(next->aliases[i++]);
-
-		if (next->aliases)
-			free(next->aliases);
-
-		p = next->next;
-		free(next);
-		next = p;
-	}
+	tdestroy(kbuiltin_tree, free_kernel_builtin_node);
+	kbuiltin_tree = NULL;
+	STAILQ_INIT(&kbuiltin_with_aliases);
 }
 
 static int
@@ -244,10 +261,12 @@ read_kernel_builtin(char *module_dir, const char *modinfo)
 		*field = '\0';
 		field++;
 
-		append_kernel_builtin(s);
+		struct kernel_builtin *b = append_kernel_builtin(s);
 
 		if (!strcmp(field, "alias"))
-			append_kernel_builtin_alias(s, value);
+			append_kernel_builtin_alias(b, value);
+		else if (!strcmp(field, "firmware"))
+			append_string_entry(&b->firmware, value);
 
 		free(s);
 
@@ -264,63 +283,42 @@ ignore:
 	close(fd);
 
 	free_kernel_builtin();
-	kbuiltin = NULL;
 
 	return 0;
 }
 
+static void *tracked_modules = NULL;
+
 static int
 tracked_module(struct kmod_module *mod)
 {
-	char **new;
 	const char *path = kmod_module_get_path(mod);
+	void **val;
 
-	if (modules) {
-		int i   = 0;
-		char *m = modules[i++];
+	if (!path)
+		return 0;
 
-		while (m) {
-			if (!strcmp(m, path))
-				return 1;
-			m = modules[i++];
-		}
+	if (tfind(path, &tracked_modules, (int (*)(const void *, const void *))strcmp))
+		return 1;
+
+	char *p = strdup(path);
+	if (!p)
+		errx(EXIT_FAILURE, "memory allocation failed");
+
+	val = tsearch(p, &tracked_modules, (int (*)(const void *, const void *))strcmp);
+	if (!val) {
+		free(p);
+		errx(EXIT_FAILURE, "memory allocation failed");
 	}
 
-	new = realloc(modules, (n_modules + 2) * sizeof(void *));
-
-	if (!new) {
-		warn("realloc: allocating %lu bytes", (n_modules + 2) * sizeof(void *));
-		return -1;
-	}
-
-	modules = new;
-	modules[n_modules] = strdup(path);
-	modules[n_modules + 1] = NULL;
-
-	if (!(modules[n_modules])) {
-		warnx("memory allocation failed");
-		return -1;
-	}
-
-	n_modules++;
 	return 0;
 }
 
 static void
 free_modules(void)
 {
-	if (!modules)
-		return;
-
-	int i   = 0;
-	char *m = modules[i++];
-
-	while (m) {
-		free(m);
-		m = modules[i++];
-	}
-
-	free(modules);
+	tdestroy(tracked_modules, free);
+	tracked_modules = NULL;
 }
 
 static void
@@ -382,9 +380,6 @@ process_firmware_pattern(const char *basedir, size_t baselen, const char *patter
 			break;
 	}
 
-	if (opts & SHOW_MISSING_FIRMWARE && !found)
-		show_with_prefix(show_tree, "missing-firmware", pattern);
-
 	return found;
 }
 
@@ -394,14 +389,14 @@ process_firmware(const char *pattern)
 	const char *begin = firmware_dir;
 
 	if (*firmware_class_path &&
-	    process_firmware_pattern(firmware_class_path, strlen(firmware_class_path), pattern))
+	    process_firmware_pattern(firmware_class_path, strlen(firmware_class_path), pattern) > 0)
 		return;
 
 	while (*begin) {
 		const char *end = strchr(begin, ':');
 		size_t len = end ? (size_t) (end - begin) : strlen(begin);
 
-		if (len > 0 && process_firmware_pattern(begin, len, pattern))
+		if (len > 0 && process_firmware_pattern(begin, len, pattern) > 0)
 			return;
 
 		if (!end)
@@ -409,17 +404,195 @@ process_firmware(const char *pattern)
 
 		begin = end + 1;
 	}
+
+	if (opts & SHOW_MISSING_FIRMWARE)
+		show_with_prefix(show_tree, "missing-firmware", pattern);
 }
 
 static int
-depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req);
+process_builtin(const char *name)
+{
+	struct kernel_builtin *b = find_kernel_builtin(name);
+	struct string_entry *e;
+
+	if (b) {
+		if (b->tracked)
+			return 0;
+		b->tracked = 1;
+	}
+
+	if (opts & SHOW_BUILTIN) {
+		show_with_prefix(show_tree, "builtin", b ? b->name : name);
+		if (show_tree)
+			show_tree++;
+	}
+
+	if ((opts & SHOW_FIRMWARE) && b) {
+		STAILQ_FOREACH(e, &b->firmware, entries)
+			process_firmware(e->str);
+	}
+
+	if ((opts & SHOW_BUILTIN) && show_tree > 1)
+		show_tree--;
+
+	return 0;
+}
+
+static int
+module_in_list(struct kmod_module *mod, struct kmod_list *list)
+{
+	struct kmod_list *l;
+	const char *name = kmod_module_get_name(mod);
+
+	if (!list)
+		return 0;
+
+	kmod_list_foreach(l, list) {
+		struct kmod_module *m = kmod_module_get_module(l);
+		int match = !strcmp(kmod_module_get_name(m), name);
+		kmod_module_unref(m);
+		if (match)
+			return 1;
+	}
+	return 0;
+}
+
+static int
+depinfo(struct kmod_ctx *ctx, struct kmod_module *mod);
+
+static int
+process_module_list(struct kmod_ctx *ctx, struct kmod_list *list)
+{
+	int ret = -1;
+	struct kmod_module *mod;
+	struct kmod_list *l;
+	struct kmod_list *filtered = NULL;
+
+	if (!list)
+		return 0;
+
+	if (use_blacklist) {
+		if (kmod_module_apply_filter(ctx, KMOD_FILTER_BLACKLIST, list, &filtered) < 0) {
+			warn("ERROR: Failed to filter (blacklist) list");
+			goto end;
+		}
+
+		if (!filtered) {
+			ret = 0;
+			goto end;
+		}
+
+		kmod_module_unref_list(list);
+		list = filtered;
+		filtered = NULL;
+	}
+
+	if (kmod_module_apply_filter(ctx, KMOD_FILTER_BUILTIN, list, &filtered) < 0) {
+		warn("ERROR: Failed to filter list");
+		goto end;
+	}
+
+	ret = 0;
+
+	kmod_list_foreach(l, list) {
+		mod = kmod_module_get_module(l);
+		if (!module_in_list(mod, filtered))
+			process_builtin(kmod_module_get_name(mod));
+		kmod_module_unref(mod);
+	}
+
+	if (filtered) {
+		kmod_list_foreach(l, filtered) {
+			mod = kmod_module_get_module(l);
+			if (find_kernel_builtin(kmod_module_get_name(mod))) {
+				process_builtin(kmod_module_get_name(mod));
+				kmod_module_unref(mod);
+				continue;
+			}
+			if (depinfo(ctx, mod) < 0)
+				ret = -1;
+			kmod_module_unref(mod);
+		}
+	}
+end:
+	if (filtered)
+		kmod_module_unref_list(filtered);
+	if (list)
+		kmod_module_unref_list(list);
+
+	return ret;
+}
+
+static int
+depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req)
+{
+	struct kmod_list *list = NULL;
+
+	if (find_kernel_builtin(alias))
+		return process_builtin(alias);
+
+	if (kmod_module_new_from_lookup(ctx, alias, &list) < 0) {
+		if (req == ALIAS_OPTIONAL)
+			return 0;
+		warnx("ERROR: Module alias %s not found.", alias);
+		return -1;
+	}
+
+	if (!list) {
+		if (req == ALIAS_OPTIONAL)
+			return 0;
+		warnx("ERROR: Module %s not found.", alias);
+		return -1;
+	}
+
+	return process_module_list(ctx, list);
+}
+
+static int
+process_soft_deps(struct kmod_ctx *ctx, struct kmod_module *mod)
+{
+	struct kmod_list *pre = NULL, *post = NULL;
+	int ret = 0;
+
+	if (kmod_module_get_softdeps(mod, &pre, &post) < 0)
+		return 0;
+
+	if (pre && process_module_list(ctx, pre) < 0)
+		ret = -1;
+
+	if (post && process_module_list(ctx, post) < 0)
+		ret = -1;
+
+	return ret;
+}
+
+static int
+process_weak_deps(struct kmod_ctx *ctx, struct kmod_module *mod)
+{
+#ifdef HAVE_KMOD_MODULE_GET_WEAKDEPS
+	struct kmod_list *weak = NULL;
+
+	if (kmod_module_get_weakdeps(mod, &weak) < 0)
+		return 0;
+
+	if (weak && process_module_list(ctx, weak) < 0)
+		return -1;
+#endif
+	return 0;
+}
 
 static int
 __process_depends(struct kmod_ctx *ctx, const char *depends, const char *delim, enum alias_need req)
 {
 	int ret = 0;
 	char *s, *str, *token, *saveptr = NULL;
+
+	if (!depends || !*depends)
+		return 0;
+
 	s = str = strdup(depends);
+	if (!s)
+		errx(EXIT_FAILURE, "memory allocation failed");
 
 	while ((token = strtok_r(str, delim, &saveptr)) != NULL) {
 		if (depinfo_alias(ctx, token, req) < 0)
@@ -433,26 +606,48 @@ __process_depends(struct kmod_ctx *ctx, const char *depends, const char *delim, 
 static int
 process_depends(struct kmod_ctx *ctx, const char *depends)
 {
-	return __process_depends(ctx, depends, ",", ALIAS_REQUIRED);
+	return __process_depends(ctx, depends, ", \t\r\n", ALIAS_REQUIRED);
 }
 
 static int
 process_soft_depends(struct kmod_ctx *ctx, const char *depends)
 {
-	size_t len = strlen(depends);
+	int ret = 0;
+	char *s, *str, *token, *saveptr = NULL;
 
-	if (len > 5 && !strncmp("pre: ", depends, 5))
-		depends += 5;
-	else if (len > 6 && !strncmp("post: ", depends, 6))
-		depends += 6;
+	if (!depends || !*depends)
+		return 0;
 
-	return __process_depends(ctx, depends, " ", ALIAS_OPTIONAL);
+	s = str = strdup(depends);
+	if (!s)
+		errx(EXIT_FAILURE, "memory allocation failed");
+
+	while ((token = strtok_r(str, " \t\r\n", &saveptr)) != NULL) {
+		str = NULL;
+
+		if (!strcmp(token, "pre:") || !strcmp(token, "post:"))
+			continue;
+
+		if (!strncmp(token, "pre:", 4))
+			token += 4;
+		else if (!strncmp(token, "post:", 5))
+			token += 5;
+
+		if (!*token)
+			continue;
+
+		if (depinfo_alias(ctx, token, ALIAS_OPTIONAL) < 0)
+			ret = -1;
+	}
+
+	free(s);
+	return ret;
 }
 
 static int
 process_weak_depends(struct kmod_ctx *ctx, const char *depends)
 {
-	return __process_depends(ctx, depends, " ", ALIAS_OPTIONAL);
+	return __process_depends(ctx, depends, " \t\r\n", ALIAS_OPTIONAL);
 }
 
 static int
@@ -506,6 +701,13 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 
 	kmod_module_info_free_list(list);
 
+	if ((opts & SHOW_DEPS) && (opts & SHOW_MODULES)) {
+		if (process_soft_deps(ctx, mod) < 0)
+			ret = -1;
+		if (process_weak_deps(ctx, mod) < 0)
+			ret = -1;
+	}
+
 	if (show_tree > 1)
 		show_tree--;
 
@@ -525,91 +727,6 @@ depinfo_path(struct kmod_ctx *ctx, const char *path)
 
 	ret = depinfo(ctx, mod);
 	kmod_module_unref(mod);
-
-	return ret;
-}
-
-static int
-depinfo_alias(struct kmod_ctx *ctx, const char *alias, enum alias_need req)
-{
-	int ret = -1;
-	struct kmod_module *mod;
-	struct kmod_list *l;
-	struct kmod_list *filtered = NULL;
-	struct kmod_list *list = NULL;
-
-	if (kbuiltin) {
-		char *name = is_kernel_builtin_match(alias);
-
-		if (name != NULL && opts & SHOW_BUILTIN) {
-			show_with_prefix(show_tree, "builtin", name);
-			return 0;
-		}
-	}
-
-	if (kmod_module_new_from_lookup(ctx, alias, &list) < 0) {
-		if (req == ALIAS_OPTIONAL) {
-			ret = 0;
-			goto end;
-		}
-		warnx("ERROR: Module alias %s not found.", alias);
-		goto end;
-	}
-
-	if (!list) {
-		if (req == ALIAS_OPTIONAL) {
-			ret = 0;
-			goto end;
-		}
-		warnx("ERROR: Module %s not found.", alias);
-		goto end;
-	}
-
-	if (use_blacklist) {
-		if (kmod_module_apply_filter(ctx, KMOD_FILTER_BLACKLIST, list, &filtered) < 0) {
-			warn("ERROR: Failed to filter (blacklist) list");
-			goto end;
-		}
-
-		if (!filtered) {
-			ret = 0;
-			goto end;
-		}
-
-		kmod_module_unref_list(list);
-		list = filtered;
-		filtered = NULL;
-	}
-
-	if (kmod_module_apply_filter(ctx, KMOD_FILTER_BUILTIN, list, &filtered) < 0) {
-		warn("ERROR: Failed to filter list");
-		goto end;
-	}
-
-	ret = 0;
-
-	if (!filtered) {
-		if (opts & SHOW_BUILTIN) {
-			kmod_list_foreach(l, list) {
-				mod = kmod_module_get_module(l);
-				show_with_prefix(show_tree, "builtin", kmod_module_get_name(mod));
-				kmod_module_unref(mod);
-			}
-			goto end;
-		}
-	}
-
-	kmod_list_foreach(l, filtered) {
-		mod = kmod_module_get_module(l);
-		if (depinfo(ctx, mod) < 0)
-			ret = -1;
-		kmod_module_unref(mod);
-	}
-end:
-	if (filtered)
-		kmod_module_unref_list(filtered);
-	if (list)
-		kmod_module_unref_list(list);
 
 	return ret;
 }
