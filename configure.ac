@@ -4,7 +4,7 @@ AC_CONFIG_HEADERS([config.h])
 
 AC_PREFIX_DEFAULT([/usr])
 
-sysconfdir=/etc
+AS_IF([test "$sysconfdir" = '${prefix}/etc'], [sysconfdir=/etc])
 AC_SUBST([sysconfdir])
 
 AC_USE_SYSTEM_EXTENSIONS
@@ -12,6 +12,7 @@ AC_USE_SYSTEM_EXTENSIONS
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_MAKE_SET
+AC_PROG_INSTALL
 AC_PROG_MKDIR_P
 AC_PROG_LN_S
 AC_PROG_SED
@@ -40,6 +41,57 @@ AS_CASE([$enable_lto],
 	],
 	[no], [],
 	[AC_MSG_ERROR([bad value '$enable_lto' for --enable-lto])])
+
+AC_ARG_ENABLE([sanitizers],
+	[AS_HELP_STRING([--enable-sanitizers],
+			[build C programs with AddressSanitizer and UndefinedBehaviorSanitizer])],
+	[], [enable_sanitizers=no])
+
+AC_ARG_ENABLE([asan],
+	[AS_HELP_STRING([--enable-asan],
+			[build C programs with AddressSanitizer])],
+	[], [enable_asan=$enable_sanitizers])
+
+AS_CASE([$enable_asan],
+	[yes], [
+		AC_MSG_CHECKING([whether $CC supports AddressSanitizer])
+		saved_CFLAGS=$CFLAGS
+		saved_LDFLAGS=$LDFLAGS
+		CFLAGS="$CFLAGS -fsanitize=address -fno-omit-frame-pointer"
+		LDFLAGS="$LDFLAGS -fsanitize=address"
+		AC_LINK_IFELSE(
+			[AC_LANG_PROGRAM([], [return 0;])],
+			[AC_MSG_RESULT([yes])],
+			[CFLAGS=$saved_CFLAGS
+			 LDFLAGS=$saved_LDFLAGS
+			 AC_MSG_RESULT([no])
+			 AC_MSG_FAILURE([$CC does not support AddressSanitizer])])
+	],
+	[no], [],
+	[AC_MSG_ERROR([bad value '$enable_asan' for --enable-asan])])
+
+AC_ARG_ENABLE([ubsan],
+	[AS_HELP_STRING([--enable-ubsan],
+			[build C programs with UndefinedBehaviorSanitizer])],
+	[], [enable_ubsan=$enable_sanitizers])
+
+AS_CASE([$enable_ubsan],
+	[yes], [
+		AC_MSG_CHECKING([whether $CC supports UndefinedBehaviorSanitizer])
+		saved_CFLAGS=$CFLAGS
+		saved_LDFLAGS=$LDFLAGS
+		CFLAGS="$CFLAGS -fsanitize=undefined"
+		LDFLAGS="$LDFLAGS -fsanitize=undefined"
+		AC_LINK_IFELSE(
+			[AC_LANG_PROGRAM([], [return 0;])],
+			[AC_MSG_RESULT([yes])],
+			[CFLAGS=$saved_CFLAGS
+			 LDFLAGS=$saved_LDFLAGS
+			 AC_MSG_RESULT([no])
+			 AC_MSG_FAILURE([$CC does not support UndefinedBehaviorSanitizer])])
+	],
+	[no], [],
+	[AC_MSG_ERROR([bad value '$enable_ubsan' for --enable-ubsan])])
 
 m4_ifndef([PKG_PROG_PKG_CONFIG],
   [m4_fatal([Could not locate the pkg-config autoconf
@@ -101,13 +153,6 @@ AC_ARG_ENABLE(local-build,
 AC_MSG_RESULT([${MKLOCAL}])
 AC_SUBST([MKLOCAL])
 
-if test "$MKLOCAL" != no; then
-	localbuilddir=".build/dest"
-else
-	localbuilddir=""
-fi
-AC_SUBST([localbuilddir], [$localbuilddir])
-
 AC_ARG_WITH([bootdir],
 	[AS_HELP_STRING([--with-bootdir=DIR],
 			[Directory for initramfs images (default: /boot)])],
@@ -161,6 +206,24 @@ AC_MSG_RESULT([$with_imagename])
 with_imagename=$(echo "$with_imagename" | sed 's/\$/\$\$/g')
 AC_SUBST([imagename], ["$with_imagename"])
 
+m4_define([CHECK_SUBMODULE], [
+	AS_IF([! test -f "$srcdir/$3"], [
+		AS_IF([test -d "$srcdir/.git" || test -f "$srcdir/.git"], [
+			AS_IF([command -v git >/dev/null 2>&1 && (cd "$srcdir" && git rev-parse --is-inside-work-tree >/dev/null 2>&1)], [
+				AC_MSG_NOTICE([initializing submodule '$2'...])
+				(cd "$srcdir" && git submodule update --init "$2")
+			])
+		])
+		AS_IF([! test -f "$srcdir/$3"], [
+			AS_IF([test -d "$srcdir/.git" || test -f "$srcdir/.git"], [
+				AC_MSG_FAILURE([submodule '$1' is not initialized. Run: git submodule update --init])
+			], [
+				AC_MSG_FAILURE([directory '$srcdir/$2' is missing or incomplete])
+			])
+		])
+	])
+])
+
 AC_ARG_WITH([busybox],
 	[AS_HELP_STRING([--with-busybox],
 			[Use builtin busybox (default: auto)])],
@@ -174,8 +237,8 @@ if test "$with_busybox" != "no"; then
 			with_busybox=yes
 		fi
 	fi
-	if test "$with_busybox" = "yes" && ! test -f "$srcdir/external/busybox/upstream/Makefile"; then
-		AC_MSG_FAILURE([submodule 'busybox' is out of sync])
+	if test "$with_busybox" = "yes"; then
+		CHECK_SUBMODULE([busybox], [external/busybox/upstream], [external/busybox/upstream/Makefile])
 	fi
 fi
 AC_MSG_RESULT([$with_busybox])
@@ -194,8 +257,8 @@ if test "$with_libshell" != "no"; then
 			with_libshell=yes
 		fi
 	fi
-	if test "$with_libshell" = "yes" && ! test -f "$srcdir/external/libshell/upstream/Makefile"; then
-		AC_MSG_FAILURE([submodule 'libshell' is out of sync])
+	if test "$with_libshell" = "yes"; then
+		CHECK_SUBMODULE([libshell], [external/libshell/upstream], [external/libshell/upstream/Makefile])
 	fi
 fi
 AC_MSG_RESULT([$with_libshell])
@@ -295,7 +358,7 @@ AC_ARG_WITH([libelf],
 	[],
 	[: m4_divert_text([DEFAULTS], [with_libelf=yes])])
 
-AS_IF([test "x$with_elf" != xno],
+AS_IF([test "x$with_libelf" != xno],
 	[PKG_CHECK_MODULES(HAVE_LIBELF, libelf, [HAVE_LIBELF=yes], [HAVE_LIBELF=no])],
 	[HAVE_LIBELF=no])
 
@@ -321,7 +384,6 @@ AC_SUBST([HAVE_ZSTD])
 AC_SUBST([HAVE_LIBELF])
 AC_SUBST([HAVE_LIBJSON_C])
 AC_SUBST([HAVE_LIBKMOD])
-AC_SUBST([MKLOCAL])
 AC_SUBST([YACC])
 AC_SUBST([LEX])
 

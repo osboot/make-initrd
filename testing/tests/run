@@ -15,7 +15,10 @@ for testsuite in "$@"; do
 	name="${testsuite%/tests}"
 	name="${name}"
 
-	testsuite="$PWD/$testsuite"
+	case "$testsuite" in
+		/*) ;;
+		*) testsuite="$PWD/$testsuite" ;;
+	esac
 	max=$(find "$testsuite" -type d -name 'ts*' | wc -l)
 
 	echo "=== Check $name [$max]";

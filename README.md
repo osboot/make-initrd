@@ -106,6 +106,13 @@ Build C programs with link-time optimization:
 make
 ```
 
+Build C programs with sanitizers (ASan / UBSan):
+
+```bash
+./configure --enable-sanitizers
+make
+```
+
 ## Common Commands
 
 - Build images for configured targets:
