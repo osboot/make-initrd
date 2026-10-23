@@ -173,31 +173,36 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 	if (!set->flags)
 		return 0;
 
+	if (verbose > 1)
+		warnx("%s: checking module against the ruleset patterns from %s ...", filename, set->filename);
+
+	if (set->flags & RULESET_HAS_PATHS) {
+		rc = match_filename(filename, set->paths);
+
+		if (rc < 0)
+			return 0;
+		if (rc > 0) {
+			is_match |= RULESET_HAS_PATHS;
+
+			if (verbose > 1)
+				warnx("%s: path matches", filename);
+		} else {
+			if (verbose > 1)
+				warnx("%s: path does not match", filename);
+			return 0;
+		}
+	}
+
+	if (set->flags == is_match) {
+		printf("%s\n", filename);
+		return 1;
+	}
+
 	if (kmod_module_new_from_path(ctx, filename, &mod) < 0)
 		goto exit;
 
 	if (!(modname = kmod_module_get_name(mod)))
 		goto exit;
-
-	if (verbose > 1)
-		warnx("%s: checking module against the ruleset patterns from %s ...", kmod_module_get_path(mod), set->filename);
-
-	if (set->flags & RULESET_HAS_PATHS) {
-		rc = match_filename(kmod_module_get_path(mod), set->paths);
-
-		if (rc < 0)
-			goto exit;
-		if (rc > 0) {
-			is_match |= RULESET_HAS_PATHS;
-
-			if (verbose > 1)
-				warnx("%s: path matches", kmod_module_get_path(mod));
-		} else {
-			if (verbose > 1)
-				warnx("%s: path does not match", kmod_module_get_path(mod));
-			goto exit;
-		}
-	}
 
 	if (set->flags & RULESET_HAS_INFO) {
 		rc = kmod_module_get_info(mod, &infolist);
@@ -216,10 +221,10 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 				is_match |= RULESET_HAS_INFO;
 
 				if (verbose > 1)
-					warnx("%s: the module information matches", kmod_module_get_path(mod));
+					warnx("%s: the module information matches", filename);
 			} else {
 				if (verbose > 1)
-					warnx("%s: the module information does not match", kmod_module_get_path(mod));
+					warnx("%s: the module information does not match", filename);
 				goto exit;
 			}
 
@@ -264,15 +269,15 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 			is_match |= RULESET_HAS_SYMBOLS;
 
 			if (verbose > 1)
-				warnx("%s: symbols match", kmod_module_get_path(mod));
+				warnx("%s: symbols match", filename);
 		} else {
 			if (verbose > 1)
-				warnx("%s: symbols do not match", kmod_module_get_path(mod));
+				warnx("%s: symbols do not match", filename);
 			goto exit;
 		}
 	}
 	if (set->flags && set->flags == is_match) {
-		printf("%s\n", kmod_module_get_path(mod));
+		printf("%s\n", filename);
 		matched = 1;
 	}
 exit:
