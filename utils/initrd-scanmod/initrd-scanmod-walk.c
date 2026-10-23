@@ -160,24 +160,46 @@ match_symbols(struct kmod_list *provided, struct kmod_list *required, struct rul
 	return 1;
 }
 
-static int
-process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct ruleset *set)
-{
-	int rc, matched = 0, is_match = 0;
+struct module_data {
+	struct kmod_ctx *ctx;
+	const char *filename;
+	struct kmod_module *mod;
 	const char *modname;
-	struct kmod_module *mod = NULL;
-	struct kmod_list *infolist = NULL;
-	struct kmod_list *provided = NULL;
-	struct kmod_list *required = NULL;
+	struct kmod_list *infolist;
+	int info_state;
+	struct kmod_list *provided;
+	struct kmod_list *required;
+	int symbols_state;
+};
+
+static int
+init_module_mod(struct module_data *mdata)
+{
+	if (mdata->mod)
+		return 0;
+
+	if (kmod_module_new_from_path(mdata->ctx, mdata->filename, &mdata->mod) < 0)
+		return -1;
+
+	if (!(mdata->modname = kmod_module_get_name(mdata->mod)))
+		return -1;
+
+	return 0;
+}
+
+static int
+process_module_ruleset(struct module_data *mdata, struct ruleset *set)
+{
+	int rc, is_match = 0;
 
 	if (!set->flags)
 		return 0;
 
 	if (verbose > 1)
-		warnx("%s: checking module against the ruleset patterns from %s ...", filename, set->filename);
+		warnx("%s: checking module against the ruleset patterns from %s ...", mdata->filename, set->filename);
 
 	if (set->flags & RULESET_HAS_PATHS) {
-		rc = match_filename(filename, set->paths);
+		rc = match_filename(mdata->filename, set->paths);
 
 		if (rc < 0)
 			return 0;
@@ -185,129 +207,129 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 			is_match |= RULESET_HAS_PATHS;
 
 			if (verbose > 1)
-				warnx("%s: path matches", filename);
+				warnx("%s: path matches", mdata->filename);
 		} else {
 			if (verbose > 1)
-				warnx("%s: path does not match", filename);
+				warnx("%s: path does not match", mdata->filename);
 			return 0;
 		}
 	}
 
 	if (set->flags == is_match) {
-		printf("%s\n", filename);
+		printf("%s\n", mdata->filename);
 		return 1;
 	}
 
-	if (kmod_module_new_from_path(ctx, filename, &mod) < 0)
-		goto exit;
-
-	if (!(modname = kmod_module_get_name(mod)))
-		goto exit;
-
 	if (set->flags & RULESET_HAS_INFO) {
-		rc = kmod_module_get_info(mod, &infolist);
+		if (init_module_mod(mdata) < 0)
+			return 0;
 
-		if (rc >= 0) {
-			rc = match(infolist, set->info, &kmod_module_info_get_key, &kmod_module_info_get_value);
-
-			if (infolist) {
-				kmod_module_info_free_list(infolist);
-				infolist = NULL;
-			}
-
-			if (rc < 0)
-				goto exit;
-			if (rc > 0) {
-				is_match |= RULESET_HAS_INFO;
-
-				if (verbose > 1)
-					warnx("%s: the module information matches", filename);
+		if (mdata->info_state == 0) {
+			rc = kmod_module_get_info(mdata->mod, &mdata->infolist);
+			if (rc >= 0) {
+				mdata->info_state = 1;
 			} else {
-				if (verbose > 1)
-					warnx("%s: the module information does not match", filename);
-				goto exit;
+				errno = -rc;
+				warn("Could not get information from '%s'", mdata->modname);
+				mdata->info_state = -1;
+				return 0;
 			}
+		} else if (mdata->info_state < 0) {
+			return 0;
+		}
 
+		rc = match(mdata->infolist, set->info, &kmod_module_info_get_key, &kmod_module_info_get_value);
+		if (rc < 0)
+			return 0;
+		if (rc > 0) {
+			is_match |= RULESET_HAS_INFO;
+
+			if (verbose > 1)
+				warnx("%s: the module information matches", mdata->filename);
 		} else {
-			errno = -rc;
-			warn("Could not get information from '%s'", modname);
-			goto exit;
+			if (verbose > 1)
+				warnx("%s: the module information does not match", mdata->filename);
+			return 0;
 		}
 	}
 
 	if (set->flags & RULESET_HAS_SYMBOLS) {
-		rc = kmod_module_get_symbols(mod, &provided);
+		if (init_module_mod(mdata) < 0)
+			return 0;
 
-		if (rc < 0 && rc != -ENOENT && rc != -ENODATA) {
-			errno = -rc;
-			warn("Could not get symbols from '%s'", modname);
-			goto exit;
+		if (mdata->symbols_state == 0) {
+			rc = kmod_module_get_symbols(mdata->mod, &mdata->provided);
+			if (rc < 0 && rc != -ENOENT && rc != -ENODATA) {
+				errno = -rc;
+				warn("Could not get symbols from '%s'", mdata->modname);
+				mdata->symbols_state = -1;
+				return 0;
+			}
+
+			rc = kmod_module_get_dependency_symbols(mdata->mod, &mdata->required);
+			if (rc < 0 && rc != -ENOENT && rc != -ENODATA) {
+				errno = -rc;
+				warn("Could not get dependency symbols from '%s'", mdata->modname);
+				mdata->symbols_state = -1;
+				return 0;
+			}
+
+			mdata->symbols_state = 1;
+		} else if (mdata->symbols_state < 0) {
+			return 0;
 		}
 
-		rc = kmod_module_get_dependency_symbols(mod, &required);
-
-		if (rc < 0 && rc != -ENOENT && rc != -ENODATA) {
-			errno = -rc;
-			warn("Could not get dependency symbols from '%s'", modname);
-			goto exit;
-		}
-
-		rc = match_symbols(provided, required, set->symbols);
-
-		if (provided) {
-			kmod_module_symbols_free_list(provided);
-			provided = NULL;
-		}
-		if (required) {
-			kmod_module_dependency_symbols_free_list(required);
-			required = NULL;
-		}
-
+		rc = match_symbols(mdata->provided, mdata->required, set->symbols);
 		if (rc < 0)
-			goto exit;
+			return 0;
 		if (rc > 0) {
 			is_match |= RULESET_HAS_SYMBOLS;
 
 			if (verbose > 1)
-				warnx("%s: symbols match", filename);
+				warnx("%s: symbols match", mdata->filename);
 		} else {
 			if (verbose > 1)
-				warnx("%s: symbols do not match", filename);
-			goto exit;
+				warnx("%s: symbols do not match", mdata->filename);
+			return 0;
 		}
 	}
-	if (set->flags && set->flags == is_match) {
-		printf("%s\n", filename);
-		matched = 1;
-	}
-exit:
-	if (infolist)
-		kmod_module_info_free_list(infolist);
-	if (provided)
-		kmod_module_symbols_free_list(provided);
-	if (required)
-		kmod_module_dependency_symbols_free_list(required);
-	if (mod)
-		kmod_module_unref(mod);
 
-	return matched;
+	if (set->flags && set->flags == is_match) {
+		printf("%s\n", mdata->filename);
+		return 1;
+	}
+
+	return 0;
 }
 
 static void
 process_module(struct kmod_ctx *ctx, const char *filename)
 {
-	int i               = 0;
+	int i = 0;
 	struct ruleset *set = NULL;
+	struct module_data mdata = {
+		.ctx = ctx,
+		.filename = filename,
+	};
 
 	if (!filter_rules)
 		return;
 
 	set = filter_rules[i++];
 	while (set) {
-		if (process_module_ruleset(ctx, filename, set))
-			return;
+		if (process_module_ruleset(&mdata, set))
+			break;
 		set = filter_rules[i++];
 	}
+
+	if (mdata.infolist)
+		kmod_module_info_free_list(mdata.infolist);
+	if (mdata.provided)
+		kmod_module_symbols_free_list(mdata.provided);
+	if (mdata.required)
+		kmod_module_dependency_symbols_free_list(mdata.required);
+	if (mdata.mod)
+		kmod_module_unref(mdata.mod);
 }
 
 static int
