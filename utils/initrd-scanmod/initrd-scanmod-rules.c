@@ -61,20 +61,30 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 		if (!nline)
 			nline = a + strlen(a);
 
+		size_t linelen = (size_t) (nline - a);
+		char *line = xmalloc(linelen + 1);
+		memcpy(line, a, linelen);
+		line[linelen] = '\0';
+
+		size_t len = linelen;
+		while (len > 0 && (line[len - 1] == '\r' || isblank(line[len - 1])))
+			line[--len] = '\0';
+
 		rule       = xcalloc(1, sizeof(struct rule_pair));
 		rule->type = RULE_NOT_MATCH;
 
-		n = sscanf(a, "not-%ms %m[^\n]\n", &kw, &value);
+		n = sscanf(line, "not-%ms %m[^\n]", &kw, &value);
 		if (n != 2) {
 			kw    = xfree(kw);
 			value = xfree(value);
 
 			rule->type = RULE_MATCH;
-			n          = sscanf(a, "%ms %m[^\n]\n", &kw, &value);
+			n          = sscanf(line, "%ms %m[^\n]", &kw, &value);
 
 			if (n != 2)
 				errx(EXIT_FAILURE, "%s:%lu: bad line format", rulesfile, i);
 		}
+		free(line);
 
 		if ((rule->keyword = get_keyword(kw)) == KW_UNKNOWN_KEYWORD)
 			errx(EXIT_FAILURE, "%s:%lu: unknown keyword", rulesfile, i);
