@@ -10,80 +10,135 @@ initrd-scanmod - searches for kernel modules according to patterns
 
 # DESCRIPTION
 
-The utility uses a set of rules to find and show kernel modules. It shows the
-modules that satisfy all the rules.  This utility reads rules for filtering from
-files. It can filter modules by the following criteria: *alias*, *author*,
-*depends*, *description*, *filename*, *firmware*, *license*, *name* and *symbol*.
+The *initrd-scanmod* utility searches for kernel modules matching one or more sets
+of rules and prints their absolute file paths to standard output, one per line.
+
+Each _rules-file_ defines an independent ruleset. Within a single ruleset, all
+rules must match (*logical AND*). When multiple rules files are specified, a
+module will be printed if it satisfies the criteria of any of the rulesets
+(*logical OR*). Each matching module is printed at most once.
+
+Empty rules files and files containing only comments are ignored.
 
 # OPTIONS
 
 *-k, --set-version=*_VERSION_
-	use _VERSION_ instead of ‘uname -r‘.
+	Use _VERSION_ instead of the version returned by `uname -r`.
 
 *-b, --base-dir=*_DIR_
-	use _DIR_ as filesystem root for /lib/modules;
+	Use _DIR_ as the filesystem root for /lib/modules.
 
 *-j, --jobs=*_N_
-	run N worker threads (default: number of CPUs).
+	Run _N_ worker threads concurrently (default: number of online CPUs).
 
 *-v, --verbose*
-	print a message for each action.
+	Print verbose informational messages during operation.
 
 *-V, --version*
-	Show version of program and exit.
+	Show program version and exit.
 
 *-h, --help*
-	Show this text and exit.
+	Display usage help and exit.
 
 # RULES
 
-The rules are in the format:
+A rules file consists of one rule per line. The format of each rule is:
 
 ```
-<keyword> <regular-expression>
+[not-]<keyword> <regular-expression>
 ```
 
-All empty rules or starting with the ‘‘#’’ character are ignored. If the keyword
-begins with the prefix ‘‘not-’’ then the rule will be inverted.
+Empty lines and lines beginning with the `#` character are ignored.
 
-	*name*
+Regular expressions are compiled as POSIX Extended Regular Expressions (ERE).
+Unless anchored with `^` and `$`, patterns match any substring within the target
+field.
 
-	This allows you to filter modules by the kernel module name.
+If the keyword begins with the `not-` prefix, the match result is inverted: the
+rule matches only if the pattern does not match the target field.
 
-	*alias*
+The supported keywords are:
 
-	This allows you to search the aliases list of a kernel module. For
-	example:
+*name*
+	Matches against the kernel module name (e.g. _ext4_, _virtio_net_).
 
-	```
-	alias ˆfs-
-	```
+*filename*
+	Matches against the absolute filesystem path of the module file
+	(e.g. _/lib/modules/.../kernel/drivers/net/..._).
 
-	*depends*
-
-	Modules depend on other modules. This keyword allows you to filter
-	modules based on dependencies. Example:
-
-	```
-	depends ˆ(.*,)?af_alg(,.*)?$
-	```
-
-	*symbol*
-
-	Also you can filter by module symbol names. This is a very shaky
-	approach. The symbol names may change in the new kernel version and the
-	filter will stop working. Some stable subsystems don’t change often.
-	Example:
+*alias*
+	Matches against the list of module aliases declared by the module.
+	For example:
 
 	```
-	symbol ˆ(nfs_.*|svc_.*)$
+	alias ^fs-
+	```
+
+*author*
+	Matches against the module author string from the module metadata.
+
+*description*
+	Matches against the module description string from the module metadata.
+
+*license*
+	Matches against the module license string (e.g. _GPL_).
+
+*depends*
+	Matches against the comma-separated list of modules this module depends
+	on. For example, to match an exact module name in the dependency list:
+
+	```
+	depends ^(.*,)?af_alg(,.*)?$
+	```
+
+*firmware*
+	Matches against the list of firmware files requested by the module.
+
+*symbol*
+	Matches against symbol names. Both exported (provided) and imported
+	(required dependency) symbols are checked. For example:
+
+	```
+	symbol ^(nfs_.*|svc_.*)$
 	```
 
 	or
 
 	```
-	symbol ˆregister_virtio_driver
+	symbol ^register_virtio_driver$
 	```
+
+# EXIT STATUS
+
+*0*
+	Success (even if no matching modules were found).
+
+*>0*
+	An error occurred (e.g. invalid arguments, unreadable files, or memory allocation failure).
+
+# EXAMPLES
+
+Find all filesystem modules excluding those under architecture-specific or network paths:
+
+```
+$ cat >/tmp/fs.rules <<EOF
+alias ^fs-
+not-filename .*/kernel/arch/.*
+not-filename .*/net/.*
+EOF
+
+$ initrd-scanmod -k 6.6.0-alt1 /tmp/fs.rules
+```
+
+Find modules that either match the filesystem rules or are virtio device drivers:
+
+```
+$ cat >/tmp/virtio.rules <<EOF
+symbol ^register_virtio_driver$
+EOF
+
+$ initrd-scanmod -k 6.6.0-alt1 /tmp/fs.rules /tmp/virtio.rules
+```
 
 # AUTHOR
 
@@ -92,3 +147,7 @@ Written by Alexey Gladkov.
 # BUGS
 
 Report bugs to the authors.
+
+# SEE ALSO
+
+*depinfo*(1), *make-initrd*(1)
