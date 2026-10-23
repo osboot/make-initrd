@@ -64,7 +64,7 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 		rule       = xcalloc(1, sizeof(struct rule_pair));
 		rule->type = RULE_NOT_MATCH;
 
-		n = sscanf(a, "not-%ms %ms\n", &kw, &value);
+		n = sscanf(a, "not-%ms %m[^\n]\n", &kw, &value);
 		if (n != 2) {
 			kw    = xfree(kw);
 			value = xfree(value);
