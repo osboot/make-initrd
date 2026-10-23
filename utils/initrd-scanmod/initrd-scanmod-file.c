@@ -25,6 +25,8 @@ open_map(const char *filename, struct mapfile *f, int quiet)
 
 	if (fstat(f->fd, &sb) < 0) {
 		warn("fstat: %s", filename);
+		close(f->fd);
+		f->fd = -1;
 		return -1;
 	}
 
@@ -40,6 +42,8 @@ open_map(const char *filename, struct mapfile *f, int quiet)
 
 	if ((f->map = mmap(NULL, f->size, PROT_READ, MAP_PRIVATE, f->fd, 0)) == MAP_FAILED) {
 		warn("mmap: %s", filename);
+		close(f->fd);
+		f->fd = -1;
 		return -1;
 	}
 

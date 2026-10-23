@@ -13,6 +13,7 @@
 #include <regex.h>
 #include <err.h>
 #include <errno.h>
+#include <pthread.h>
 
 #include <fts.h>
 
@@ -84,8 +85,10 @@ match(struct kmod_list *symlist, struct rule_pair **filters, get_list_key_t *get
 			if (!val)
 				continue;
 
-			if (!regexec(r->value, val, 0, NULL, 0))
+			if (!regexec(r->value, val, 0, NULL, 0)) {
 				is_match = 1;
+				break;
+			}
 		}
 
 		switch (r->type) {
@@ -106,158 +109,232 @@ match(struct kmod_list *symlist, struct rule_pair **filters, get_list_key_t *get
 }
 
 static int
-process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct ruleset *set)
+has_symbol_match(struct kmod_list *list, regex_t *preg, get_list_val_t *get_val)
+{
+	struct kmod_list *l = NULL;
+
+	if (!list || !preg || !get_val)
+		return 0;
+
+	kmod_list_foreach(l, list) {
+		const char *val = get_val(l);
+
+		if (!val)
+			continue;
+
+		if (!regexec(preg, val, 0, NULL, 0))
+			return 1;
+	}
+
+	return 0;
+}
+
+static int
+match_symbols(struct kmod_list *provided, struct kmod_list *required, struct rule_pair **filters)
+{
+	int i               = 0;
+	struct rule_pair *r = NULL;
+
+	if (!filters)
+		return 0;
+
+	r = filters[i++];
+
+	while (r) {
+		int is_match = has_symbol_match(provided, r->value, &kmod_module_symbol_get_symbol) ||
+		               has_symbol_match(required, r->value, &kmod_module_dependency_symbol_get_symbol);
+
+		switch (r->type) {
+			case RULE_MATCH:
+				if (!is_match)
+					return 0;
+				break;
+			case RULE_NOT_MATCH:
+				if (is_match)
+					return 0;
+				break;
+		}
+
+		r = filters[i++];
+	}
+
+	return 1;
+}
+
+static pthread_mutex_t print_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+struct module_data {
+	struct kmod_ctx *ctx;
+	const char *filename;
+	struct kmod_module *mod;
+	const char *modname;
+	struct kmod_list *infolist;
+	int info_state;
+	struct kmod_list *provided;
+	struct kmod_list *required;
+	int symbols_state;
+};
+
+static int
+init_module_mod(struct module_data *mdata)
+{
+	if (mdata->mod)
+		return 0;
+
+	if (kmod_module_new_from_path(mdata->ctx, mdata->filename, &mdata->mod) < 0)
+		return -1;
+
+	if (!(mdata->modname = kmod_module_get_name(mdata->mod)))
+		return -1;
+
+	return 0;
+}
+
+static int
+process_module_ruleset(struct module_data *mdata, struct ruleset *set)
 {
 	int rc, is_match = 0;
-	const char *modname;
-	struct kmod_module *mod = NULL;
-	struct kmod_list *infolist, *symlist;
 
-	symlist = infolist = NULL;
-
-	if (kmod_module_new_from_path(ctx, filename, &mod) < 0)
-		goto exit;
-
-	if (!(modname = kmod_module_get_name(mod)))
-		goto exit;
+	if (!set->flags)
+		return 0;
 
 	if (verbose > 1)
-		warnx("%s: checking module against the ruleset patterns from %s ...", kmod_module_get_path(mod), set->filename);
+		warnx("%s: checking module against the ruleset patterns from %s ...", mdata->filename, set->filename);
 
 	if (set->flags & RULESET_HAS_PATHS) {
-		rc = match_filename(kmod_module_get_path(mod), set->paths);
+		rc = match_filename(mdata->filename, set->paths);
 
 		if (rc < 0)
-			goto exit;
+			return 0;
 		if (rc > 0) {
 			is_match |= RULESET_HAS_PATHS;
 
 			if (verbose > 1)
-				warnx("%s: path matches", kmod_module_get_path(mod));
+				warnx("%s: path matches", mdata->filename);
 		} else {
 			if (verbose > 1)
-				warnx("%s: path does not match", kmod_module_get_path(mod));
+				warnx("%s: path does not match", mdata->filename);
+			return 0;
 		}
 	}
 
+	if (set->flags == is_match) {
+		printf("%s\n", mdata->filename);
+		return 1;
+	}
+
 	if (set->flags & RULESET_HAS_INFO) {
-		rc = kmod_module_get_info(mod, &infolist);
+		if (init_module_mod(mdata) < 0)
+			return 0;
 
-		if (rc > 0) {
-			rc = match(infolist, set->info, &kmod_module_info_get_key, &kmod_module_info_get_value);
-
-			kmod_module_info_free_list(infolist);
-			infolist = NULL;
-
-			if (rc < 0)
-				goto exit;
-			if (rc > 0) {
-				is_match |= RULESET_HAS_INFO;
-
-				if (verbose > 1)
-					warnx("%s: the module information matches", kmod_module_get_path(mod));
+		if (mdata->info_state == 0) {
+			rc = kmod_module_get_info(mdata->mod, &mdata->infolist);
+			if (rc >= 0) {
+				mdata->info_state = 1;
 			} else {
-				if (verbose > 1)
-					warnx("%s: the module information does not match", kmod_module_get_path(mod));
+				errno = -rc;
+				warn("Could not get information from '%s'", mdata->modname);
+				mdata->info_state = -1;
+				return 0;
 			}
+		} else if (mdata->info_state < 0) {
+			return 0;
+		}
 
-		} else if (rc < 0) {
-			errno = -rc;
-			warn("Could not get information from '%s'", modname);
-			goto exit;
+		rc = match(mdata->infolist, set->info, &kmod_module_info_get_key, &kmod_module_info_get_value);
+		if (rc < 0)
+			return 0;
+		if (rc > 0) {
+			is_match |= RULESET_HAS_INFO;
+
+			if (verbose > 1)
+				warnx("%s: the module information matches", mdata->filename);
+		} else {
+			if (verbose > 1)
+				warnx("%s: the module information does not match", mdata->filename);
+			return 0;
 		}
 	}
 
 	if (set->flags & RULESET_HAS_SYMBOLS) {
-		rc = kmod_module_get_symbols(mod, &symlist);
+		if (init_module_mod(mdata) < 0)
+			return 0;
 
-		if (rc > 0) {
-			rc = match(symlist, set->symbols, NULL, &kmod_module_symbol_get_symbol);
-
-			kmod_module_symbols_free_list(symlist);
-			symlist = NULL;
-
-			if (rc < 0)
-				goto exit;
-			if (rc > 0) {
-				is_match |= RULESET_HAS_SYMBOLS;
-
-				if (verbose > 1)
-					warnx("%s: symbols matches", kmod_module_get_path(mod));
-			} else {
-				if (verbose > 1)
-					warnx("%s: symbols does not match", kmod_module_get_path(mod));
+		if (mdata->symbols_state == 0) {
+			rc = kmod_module_get_symbols(mdata->mod, &mdata->provided);
+			if (rc < 0 && rc != -ENOENT && rc != -ENODATA) {
+				errno = -rc;
+				warn("Could not get symbols from '%s'", mdata->modname);
+				mdata->symbols_state = -1;
+				return 0;
 			}
 
-		} else if (rc < 0 && rc != -ENOENT && rc != -ENODATA) {
-			errno = -rc;
-			warn("Could not get symbols from '%s'", modname);
-			goto exit;
+			rc = kmod_module_get_dependency_symbols(mdata->mod, &mdata->required);
+			if (rc < 0 && rc != -ENOENT && rc != -ENODATA) {
+				errno = -rc;
+				warn("Could not get dependency symbols from '%s'", mdata->modname);
+				mdata->symbols_state = -1;
+				return 0;
+			}
+
+			mdata->symbols_state = 1;
+		} else if (mdata->symbols_state < 0) {
+			return 0;
 		}
 
-		if (!(is_match & RULESET_HAS_SYMBOLS)) {
-			rc = kmod_module_get_dependency_symbols(mod, &symlist);
+		rc = match_symbols(mdata->provided, mdata->required, set->symbols);
+		if (rc < 0)
+			return 0;
+		if (rc > 0) {
+			is_match |= RULESET_HAS_SYMBOLS;
 
-			if (rc > 0) {
-				rc = match(symlist, set->symbols, NULL, &kmod_module_dependency_symbol_get_symbol);
-
-				kmod_module_dependency_symbols_free_list(symlist);
-				symlist = NULL;
-
-				if (rc < 0)
-					goto exit;
-				if (rc > 0) {
-					is_match |= RULESET_HAS_SYMBOLS;
-
-					if (verbose > 1)
-						warnx("%s: symbols matches", kmod_module_get_path(mod));
-				} else {
-					if (verbose > 1)
-						warnx("%s: symbols does not match", kmod_module_get_path(mod));
-				}
-
-			} else if (rc < 0 && rc != -ENOENT) {
-				errno = -rc;
-				warn("Could not get dependency symbols from '%s'", modname);
-				goto exit;
-			}
+			if (verbose > 1)
+				warnx("%s: symbols match", mdata->filename);
+		} else {
+			if (verbose > 1)
+				warnx("%s: symbols do not match", mdata->filename);
+			return 0;
 		}
 	}
-	if (set->flags == is_match)
-		printf("%s\n", kmod_module_get_path(mod));
-exit:
-	if (mod)
-		kmod_module_unref(mod);
 
-	return is_match;
+	if (set->flags && set->flags == is_match) {
+		pthread_mutex_lock(&print_mutex);
+		printf("%s\n", mdata->filename);
+		pthread_mutex_unlock(&print_mutex);
+		return 1;
+	}
+
+	return 0;
 }
 
 static void
 process_module(struct kmod_ctx *ctx, const char *filename)
 {
-	int i               = 0;
+	int i = 0;
 	struct ruleset *set = NULL;
+	struct module_data mdata = {
+		.ctx = ctx,
+		.filename = filename,
+	};
 
 	if (!filter_rules)
 		return;
 
 	set = filter_rules[i++];
 	while (set) {
-		if (process_module_ruleset(ctx, filename, set))
-			return;
+		if (process_module_ruleset(&mdata, set))
+			break;
 		set = filter_rules[i++];
 	}
-}
 
-static int
-dsort(const FTSENT **a, const FTSENT **b)
-{
-	if (S_ISDIR((*a)->fts_statp->st_mode)) {
-		if (!S_ISDIR((*b)->fts_statp->st_mode))
-			return 1;
-	} else if (S_ISDIR((*b)->fts_statp->st_mode))
-		return -1;
-	return (strcmp((*a)->fts_name, (*b)->fts_name));
+	if (mdata.infolist)
+		kmod_module_info_free_list(mdata.infolist);
+	if (mdata.provided)
+		kmod_module_symbols_free_list(mdata.provided);
+	if (mdata.required)
+		kmod_module_dependency_symbols_free_list(mdata.required);
+	if (mdata.mod)
+		kmod_module_unref(mdata.mod);
 }
 
 static int
@@ -275,23 +352,66 @@ is_kernel_modname(const char *filename)
 	return 0;
 }
 
+struct module_queue {
+	char **paths;
+	size_t count;
+	size_t capacity;
+	size_t current;
+	pthread_mutex_t mutex;
+};
+
+static const char *
+queue_pop(struct module_queue *q)
+{
+	const char *path = NULL;
+
+	pthread_mutex_lock(&q->mutex);
+	if (q->current < q->count)
+		path = q->paths[q->current++];
+	pthread_mutex_unlock(&q->mutex);
+
+	return path;
+}
+
+struct worker_data {
+	const char *kerneldir;
+	struct module_queue *queue;
+};
+
+static void *
+worker_func(void *arg)
+{
+	struct worker_data *wdata = arg;
+	struct kmod_ctx *ctx = kmod_new(wdata->kerneldir, NULL);
+	const char *path;
+
+	if (!ctx)
+		err(EXIT_FAILURE, "%s: kmod_new", wdata->kerneldir);
+
+	while ((path = queue_pop(wdata->queue)))
+		process_module(ctx, path);
+
+	kmod_unref(ctx);
+	return NULL;
+}
+
 void
 find_modules(const char *kerneldir)
 {
-	struct kmod_ctx *ctx = NULL;
 	FTS *t;
 	FTSENT *p;
 	char *argv[2];
+	struct module_queue q = { 0 };
 
-	if (!(ctx = kmod_new(kerneldir, NULL)))
-		err(EXIT_FAILURE, "%s: kmod_new", kerneldir);
+	pthread_mutex_init(&q.mutex, NULL);
 
 	argv[0] = (char *) kerneldir;
 	argv[1] = NULL;
 
-	if (!(t = fts_open(argv, FTS_PHYSICAL, dsort)))
+	if (!(t = fts_open(argv, FTS_PHYSICAL, NULL)))
 		err(EXIT_FAILURE, "%s: fts_open", kerneldir);
 
+	errno = 0;
 	while ((p = fts_read(t))) {
 		switch (p->fts_info) {
 			case FTS_F:
@@ -313,11 +433,64 @@ find_modules(const char *kerneldir)
 		if (!is_kernel_modname(p->fts_accpath))
 			continue;
 
-		process_module(ctx, p->fts_path);
+		if (q.count >= q.capacity) {
+			q.capacity = q.capacity ? q.capacity * 2 : 256;
+			q.paths    = xrealloc(q.paths, q.capacity, sizeof(char *));
+		}
+		q.paths[q.count++] = xstrdup(p->fts_path);
+		errno = 0;
 	}
+
+	if (errno != 0)
+		err(EXIT_FAILURE, "%s: fts_read", kerneldir);
 
 	if (fts_close(t) < 0)
 		err(EXIT_FAILURE, "%s: fts_close", kerneldir);
 
-	kmod_unref(ctx);
+	if (!q.count) {
+		pthread_mutex_destroy(&q.mutex);
+		return;
+	}
+
+	int n_workers = jobs;
+	if (n_workers <= 0) {
+		long nprocs = sysconf(_SC_NPROCESSORS_ONLN);
+		n_workers = (nprocs > 0) ? (int) nprocs : 1;
+	}
+	if ((size_t) n_workers > q.count)
+		n_workers = (int) q.count;
+
+	if (n_workers <= 1) {
+		struct worker_data wdata = {
+			.kerneldir = kerneldir,
+			.queue     = &q,
+		};
+		worker_func(&wdata);
+	} else {
+		pthread_t *threads = xmalloc(sizeof(pthread_t) * (size_t) n_workers);
+		struct worker_data *wdata = xmalloc(sizeof(struct worker_data) * (size_t) n_workers);
+		int n_created = 0;
+
+		for (int i = 0; i < n_workers; i++) {
+			wdata[i].kerneldir = kerneldir;
+			wdata[i].queue     = &q;
+
+			if (pthread_create(&threads[i], NULL, worker_func, &wdata[i]) != 0) {
+				warn("pthread_create");
+				break;
+			}
+			n_created++;
+		}
+
+		for (int i = 0; i < n_created; i++)
+			pthread_join(threads[i], NULL);
+
+		free(threads);
+		free(wdata);
+	}
+
+	for (size_t i = 0; i < q.count; i++)
+		xfree(q.paths[i]);
+	xfree(q.paths);
+	pthread_mutex_destroy(&q.mutex);
 }

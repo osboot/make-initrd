@@ -6,6 +6,7 @@ _initrd_scanmod()
 	opts="
 	-k --set-version=
 	-b --base-dir=
+	-j --jobs=
 	-v --verbose
 	-V --version
 	-h --help
