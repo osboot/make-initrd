@@ -84,9 +84,64 @@ match(struct kmod_list *symlist, struct rule_pair **filters, get_list_key_t *get
 			if (!val)
 				continue;
 
-			if (!regexec(r->value, val, 0, NULL, 0))
+			if (!regexec(r->value, val, 0, NULL, 0)) {
 				is_match = 1;
+				break;
+			}
 		}
+
+		switch (r->type) {
+			case RULE_MATCH:
+				if (!is_match)
+					return 0;
+				break;
+			case RULE_NOT_MATCH:
+				if (is_match)
+					return 0;
+				break;
+		}
+
+		r = filters[i++];
+	}
+
+	return 1;
+}
+
+static int
+has_symbol_match(struct kmod_list *list, regex_t *preg, get_list_val_t *get_val)
+{
+	struct kmod_list *l = NULL;
+
+	if (!list || !preg || !get_val)
+		return 0;
+
+	kmod_list_foreach(l, list) {
+		const char *val = get_val(l);
+
+		if (!val)
+			continue;
+
+		if (!regexec(preg, val, 0, NULL, 0))
+			return 1;
+	}
+
+	return 0;
+}
+
+static int
+match_symbols(struct kmod_list *provided, struct kmod_list *required, struct rule_pair **filters)
+{
+	int i               = 0;
+	struct rule_pair *r = NULL;
+
+	if (!filters)
+		return 0;
+
+	r = filters[i++];
+
+	while (r) {
+		int is_match = has_symbol_match(provided, r->value, &kmod_module_symbol_get_symbol) ||
+		               has_symbol_match(required, r->value, &kmod_module_dependency_symbol_get_symbol);
 
 		switch (r->type) {
 			case RULE_MATCH:
@@ -111,9 +166,9 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 	int rc, matched = 0, is_match = 0;
 	const char *modname;
 	struct kmod_module *mod = NULL;
-	struct kmod_list *infolist, *symlist;
-
-	symlist = infolist = NULL;
+	struct kmod_list *infolist = NULL;
+	struct kmod_list *provided = NULL;
+	struct kmod_list *required = NULL;
 
 	if (!set->flags)
 		return 0;
@@ -176,58 +231,44 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 	}
 
 	if (set->flags & RULESET_HAS_SYMBOLS) {
-		rc = kmod_module_get_symbols(mod, &symlist);
+		rc = kmod_module_get_symbols(mod, &provided);
 
-		if (rc > 0) {
-			rc = match(symlist, set->symbols, NULL, &kmod_module_symbol_get_symbol);
-
-			kmod_module_symbols_free_list(symlist);
-			symlist = NULL;
-
-			if (rc < 0)
-				goto exit;
-			if (rc > 0) {
-				is_match |= RULESET_HAS_SYMBOLS;
-
-				if (verbose > 1)
-					warnx("%s: symbols matches", kmod_module_get_path(mod));
-			} else {
-				if (verbose > 1)
-					warnx("%s: symbols does not match", kmod_module_get_path(mod));
-			}
-
-		} else if (rc < 0 && rc != -ENOENT && rc != -ENODATA) {
+		if (rc < 0 && rc != -ENOENT && rc != -ENODATA) {
 			errno = -rc;
 			warn("Could not get symbols from '%s'", modname);
 			goto exit;
 		}
 
-		if (!(is_match & RULESET_HAS_SYMBOLS)) {
-			rc = kmod_module_get_dependency_symbols(mod, &symlist);
+		rc = kmod_module_get_dependency_symbols(mod, &required);
 
-			if (rc > 0) {
-				rc = match(symlist, set->symbols, NULL, &kmod_module_dependency_symbol_get_symbol);
+		if (rc < 0 && rc != -ENOENT && rc != -ENODATA) {
+			errno = -rc;
+			warn("Could not get dependency symbols from '%s'", modname);
+			goto exit;
+		}
 
-				kmod_module_dependency_symbols_free_list(symlist);
-				symlist = NULL;
+		rc = match_symbols(provided, required, set->symbols);
 
-				if (rc < 0)
-					goto exit;
-				if (rc > 0) {
-					is_match |= RULESET_HAS_SYMBOLS;
+		if (provided) {
+			kmod_module_symbols_free_list(provided);
+			provided = NULL;
+		}
+		if (required) {
+			kmod_module_dependency_symbols_free_list(required);
+			required = NULL;
+		}
 
-					if (verbose > 1)
-						warnx("%s: symbols matches", kmod_module_get_path(mod));
-				} else {
-					if (verbose > 1)
-						warnx("%s: symbols does not match", kmod_module_get_path(mod));
-				}
+		if (rc < 0)
+			goto exit;
+		if (rc > 0) {
+			is_match |= RULESET_HAS_SYMBOLS;
 
-			} else if (rc < 0 && rc != -ENOENT) {
-				errno = -rc;
-				warn("Could not get dependency symbols from '%s'", modname);
-				goto exit;
-			}
+			if (verbose > 1)
+				warnx("%s: symbols match", kmod_module_get_path(mod));
+		} else {
+			if (verbose > 1)
+				warnx("%s: symbols do not match", kmod_module_get_path(mod));
+			goto exit;
 		}
 	}
 	if (set->flags && set->flags == is_match) {
@@ -235,6 +276,12 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 		matched = 1;
 	}
 exit:
+	if (infolist)
+		kmod_module_info_free_list(infolist);
+	if (provided)
+		kmod_module_symbols_free_list(provided);
+	if (required)
+		kmod_module_dependency_symbols_free_list(required);
 	if (mod)
 		kmod_module_unref(mod);
 
