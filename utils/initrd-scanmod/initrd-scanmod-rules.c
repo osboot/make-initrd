@@ -30,7 +30,7 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 {
 	size_t i;
 	int n;
-	char *nline, *a;
+	const char *ptr, *end;
 	struct rule_pair *rule = NULL;
 	struct mapfile rules   = { 0 };
 
@@ -42,44 +42,46 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 		exit(EXIT_FAILURE);
 
 	i = 1;
-	a = rules.map;
-	while (a && a[0]) {
-		char *kw    = NULL;
-		char *value = NULL;
+	ptr = rules.map;
+	end = rules.map ? rules.map + rules.size : NULL;
 
-		nline = strchr(a, '\n');
+	while (ptr && ptr < end) {
+		const char *eol = memchr(ptr, '\n', (size_t) (end - ptr));
+		size_t linelen = eol ? (size_t) (eol - ptr) : (size_t) (end - ptr);
 
-		while (isblank(a[0]))
-			a++;
+		char *line = xmalloc(linelen + 1);
+		memcpy(line, ptr, linelen);
+		line[linelen] = '\0';
 
-		if (a[0] == '#' || a[0] == '\n') {
-			a = (nline) ? nline + 1 : NULL;
+		ptr = eol ? eol + 1 : end;
+
+		char *p = line;
+		while (isblank(*p))
+			p++;
+
+		if (*p == '#' || *p == '\0') {
+			free(line);
 			i++;
 			continue;
 		}
 
-		if (!nline)
-			nline = a + strlen(a);
+		size_t len = strlen(p);
+		while (len > 0 && (p[len - 1] == '\r' || isblank(p[len - 1])))
+			p[--len] = '\0';
 
-		size_t linelen = (size_t) (nline - a);
-		char *line = xmalloc(linelen + 1);
-		memcpy(line, a, linelen);
-		line[linelen] = '\0';
-
-		size_t len = linelen;
-		while (len > 0 && (line[len - 1] == '\r' || isblank(line[len - 1])))
-			line[--len] = '\0';
+		char *kw    = NULL;
+		char *value = NULL;
 
 		rule       = xcalloc(1, sizeof(struct rule_pair));
 		rule->type = RULE_NOT_MATCH;
 
-		n = sscanf(line, "not-%ms %m[^\n]", &kw, &value);
+		n = sscanf(p, "not-%ms %m[^\n]", &kw, &value);
 		if (n != 2) {
 			kw    = xfree(kw);
 			value = xfree(value);
 
 			rule->type = RULE_MATCH;
-			n          = sscanf(line, "%ms %m[^\n]", &kw, &value);
+			n          = sscanf(p, "%ms %m[^\n]", &kw, &value);
 
 			if (n != 2)
 				errx(EXIT_FAILURE, "%s:%lu: bad line format", rulesfile, i);
@@ -128,7 +130,6 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 				break;
 		}
 
-		a = nline + 1;
 		i++;
 	}
 
