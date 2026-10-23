@@ -348,6 +348,7 @@ find_modules(const char *kerneldir)
 	if (!(t = fts_open(argv, FTS_PHYSICAL, dsort)))
 		err(EXIT_FAILURE, "%s: fts_open", kerneldir);
 
+	errno = 0;
 	while ((p = fts_read(t))) {
 		switch (p->fts_info) {
 			case FTS_F:
@@ -370,7 +371,11 @@ find_modules(const char *kerneldir)
 			continue;
 
 		process_module(ctx, p->fts_path);
+		errno = 0;
 	}
+
+	if (errno != 0)
+		err(EXIT_FAILURE, "%s: fts_read", kerneldir);
 
 	if (fts_close(t) < 0)
 		err(EXIT_FAILURE, "%s: fts_close", kerneldir);

@@ -46,18 +46,7 @@ typedef enum {
 	KW_UNKNOWN_KEYWORD,
 } keyword_t;
 
-static const char *const keywords[] = {
-	[KW_ALIAS]       = "alias",
-	[KW_AUTHOR]      = "author",
-	[KW_DEPENDS]     = "depends",
-	[KW_DESCRIPTION] = "description",
-	[KW_FILENAME]    = "filename",
-	[KW_FIRMWARE]    = "firmware",
-	[KW_LICENSE]     = "license",
-	[KW_NAME]        = "name",
-	[KW_SYMBOL]      = "symbol",
-	NULL
-};
+extern const char *const keywords[];
 
 struct rule_pair {
 	rule_t type;
