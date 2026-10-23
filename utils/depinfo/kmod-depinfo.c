@@ -8,6 +8,7 @@
 #include <sys/param.h>
 #include <sys/utsname.h>
 #include <sys/queue.h>
+#include <search.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,38 +61,47 @@ struct string_entry {
 
 STAILQ_HEAD(string_head, string_entry);
 
-static struct string_head tracked_modules = STAILQ_HEAD_INITIALIZER(tracked_modules);
-
 struct kernel_builtin {
 	char *name;
 	struct string_head aliases;
 	struct string_head firmware;
 	int tracked;
 
-	STAILQ_ENTRY(kernel_builtin) entries;
+	STAILQ_ENTRY(kernel_builtin) alias_entries;
 };
 
 STAILQ_HEAD(kernel_builtin_head, kernel_builtin);
 
-static struct kernel_builtin_head kbuiltin = STAILQ_HEAD_INITIALIZER(kbuiltin);
+static void *kbuiltin_tree = NULL;
+static struct kernel_builtin_head kbuiltin_with_aliases = STAILQ_HEAD_INITIALIZER(kbuiltin_with_aliases);
+
+static int
+compare_kernel_builtin(const void *pa, const void *pb)
+{
+	const struct kernel_builtin *a = pa;
+	const struct kernel_builtin *b = pb;
+
+	return strcmp(a->name, b->name);
+}
 
 static struct kernel_builtin *
 find_kernel_builtin(const char *str)
 {
+	struct kernel_builtin key = { .name = (char *)str };
+	void **res;
 	struct kernel_builtin *b;
 	struct string_entry *e;
 
 	if (!str || !*str)
 		return NULL;
 
-	// First we are looking for a name match.
-	STAILQ_FOREACH(b, &kbuiltin, entries) {
-		if (!strcmp(b->name, str))
-			return b;
-	}
+	// First we are looking for a name match in the binary tree.
+	res = tfind(&key, &kbuiltin_tree, compare_kernel_builtin);
+	if (res)
+		return *(struct kernel_builtin **)res;
 
 	// Second we are looking for a match in aliases.
-	STAILQ_FOREACH(b, &kbuiltin, entries) {
+	STAILQ_FOREACH(b, &kbuiltin_with_aliases, alias_entries) {
 		STAILQ_FOREACH(e, &b->aliases, entries) {
 			if (!fnmatch(e->str, str, FNM_NOESCAPE))
 				return b;
@@ -104,12 +114,13 @@ find_kernel_builtin(const char *str)
 static struct kernel_builtin *
 append_kernel_builtin(const char *name)
 {
+	struct kernel_builtin key = { .name = (char *)name };
+	void **res;
 	struct kernel_builtin *b;
 
-	STAILQ_FOREACH(b, &kbuiltin, entries) {
-		if (!strcmp(b->name, name))
-			return b;
-	}
+	res = tfind(&key, &kbuiltin_tree, compare_kernel_builtin);
+	if (res)
+		return *(struct kernel_builtin **)res;
 
 	b = calloc(1, sizeof(*b));
 	if (!b)
@@ -123,7 +134,13 @@ append_kernel_builtin(const char *name)
 	STAILQ_INIT(&b->firmware);
 	b->tracked = 0;
 
-	STAILQ_INSERT_TAIL(&kbuiltin, b, entries);
+	res = tsearch(b, &kbuiltin_tree, compare_kernel_builtin);
+	if (!res) {
+		free(b->name);
+		free(b);
+		errx(EXIT_FAILURE, "memory allocation failed");
+	}
+
 	return b;
 }
 
@@ -147,6 +164,15 @@ append_string_entry(struct string_head *head, const char *str)
 }
 
 static void
+append_kernel_builtin_alias(struct kernel_builtin *b, const char *alias)
+{
+	if (STAILQ_EMPTY(&b->aliases))
+		STAILQ_INSERT_TAIL(&kbuiltin_with_aliases, b, alias_entries);
+
+	append_string_entry(&b->aliases, alias);
+}
+
+static void
 free_string_list(struct string_head *head)
 {
 	struct string_entry *e;
@@ -159,17 +185,22 @@ free_string_list(struct string_head *head)
 }
 
 static void
+free_kernel_builtin_node(void *nodep)
+{
+	struct kernel_builtin *b = nodep;
+
+	free(b->name);
+	free_string_list(&b->aliases);
+	free_string_list(&b->firmware);
+	free(b);
+}
+
+static void
 free_kernel_builtin(void)
 {
-	struct kernel_builtin *b;
-
-	while ((b = STAILQ_FIRST(&kbuiltin)) != NULL) {
-		STAILQ_REMOVE_HEAD(&kbuiltin, entries);
-		free(b->name);
-		free_string_list(&b->aliases);
-		free_string_list(&b->firmware);
-		free(b);
-	}
+	tdestroy(kbuiltin_tree, free_kernel_builtin_node);
+	kbuiltin_tree = NULL;
+	STAILQ_INIT(&kbuiltin_with_aliases);
 }
 
 static int
@@ -233,7 +264,7 @@ read_kernel_builtin(char *module_dir, const char *modinfo)
 		struct kernel_builtin *b = append_kernel_builtin(s);
 
 		if (!strcmp(field, "alias"))
-			append_string_entry(&b->aliases, value);
+			append_kernel_builtin_alias(b, value);
 		else if (!strcmp(field, "firmware"))
 			append_string_entry(&b->firmware, value);
 
@@ -256,28 +287,38 @@ ignore:
 	return 0;
 }
 
+static void *tracked_modules = NULL;
+
 static int
 tracked_module(struct kmod_module *mod)
 {
-	struct string_entry *e;
 	const char *path = kmod_module_get_path(mod);
+	void **val;
 
 	if (!path)
 		return 0;
 
-	STAILQ_FOREACH(e, &tracked_modules, entries) {
-		if (!strcmp(e->str, path))
-			return 1;
+	if (tfind(path, &tracked_modules, (int (*)(const void *, const void *))strcmp))
+		return 1;
+
+	char *p = strdup(path);
+	if (!p)
+		errx(EXIT_FAILURE, "memory allocation failed");
+
+	val = tsearch(p, &tracked_modules, (int (*)(const void *, const void *))strcmp);
+	if (!val) {
+		free(p);
+		errx(EXIT_FAILURE, "memory allocation failed");
 	}
 
-	append_string_entry(&tracked_modules, path);
 	return 0;
 }
 
 static void
 free_modules(void)
 {
-	free_string_list(&tracked_modules);
+	tdestroy(tracked_modules, free);
+	tracked_modules = NULL;
 }
 
 static void
