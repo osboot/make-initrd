@@ -118,8 +118,6 @@ To find out what firmware could not be found for the kernel modules:
 module /lib/modules/6.15.5-gentoo-dist/kernel/drivers/net/wireless/realtek/rtlwifi/rtlwifi.ko
    \\_ module /lib/modules/6.15.5-gentoo-dist/kernel/net/wireless/cfg80211.ko
       \\_ missing-firmware regulatory.db
-      \\_ missing-firmware regulatory.db
-      \\_ missing-firmware regulatory.db.p7s
       \\_ missing-firmware regulatory.db.p7s
       \\_ module /lib/modules/6.15.5-gentoo-dist/kernel/net/rfkill/rfkill.ko
    \\_ module /lib/modules/6.15.5-gentoo-dist/kernel/net/mac80211/mac80211.ko

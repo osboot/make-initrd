@@ -380,9 +380,6 @@ process_firmware_pattern(const char *basedir, size_t baselen, const char *patter
 			break;
 	}
 
-	if (opts & SHOW_MISSING_FIRMWARE && !found)
-		show_with_prefix(show_tree, "missing-firmware", pattern);
-
 	return found;
 }
 
@@ -392,14 +389,14 @@ process_firmware(const char *pattern)
 	const char *begin = firmware_dir;
 
 	if (*firmware_class_path &&
-	    process_firmware_pattern(firmware_class_path, strlen(firmware_class_path), pattern))
+	    process_firmware_pattern(firmware_class_path, strlen(firmware_class_path), pattern) > 0)
 		return;
 
 	while (*begin) {
 		const char *end = strchr(begin, ':');
 		size_t len = end ? (size_t) (end - begin) : strlen(begin);
 
-		if (len > 0 && process_firmware_pattern(begin, len, pattern))
+		if (len > 0 && process_firmware_pattern(begin, len, pattern) > 0)
 			return;
 
 		if (!end)
@@ -407,6 +404,9 @@ process_firmware(const char *pattern)
 
 		begin = end + 1;
 	}
+
+	if (opts & SHOW_MISSING_FIRMWARE)
+		show_with_prefix(show_tree, "missing-firmware", pattern);
 }
 
 static int
