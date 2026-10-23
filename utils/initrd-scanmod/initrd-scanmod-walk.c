@@ -108,12 +108,15 @@ match(struct kmod_list *symlist, struct rule_pair **filters, get_list_key_t *get
 static int
 process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct ruleset *set)
 {
-	int rc, is_match = 0;
+	int rc, matched = 0, is_match = 0;
 	const char *modname;
 	struct kmod_module *mod = NULL;
 	struct kmod_list *infolist, *symlist;
 
 	symlist = infolist = NULL;
+
+	if (!set->flags)
+		return 0;
 
 	if (kmod_module_new_from_path(ctx, filename, &mod) < 0)
 		goto exit;
@@ -137,17 +140,20 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 		} else {
 			if (verbose > 1)
 				warnx("%s: path does not match", kmod_module_get_path(mod));
+			goto exit;
 		}
 	}
 
 	if (set->flags & RULESET_HAS_INFO) {
 		rc = kmod_module_get_info(mod, &infolist);
 
-		if (rc > 0) {
+		if (rc >= 0) {
 			rc = match(infolist, set->info, &kmod_module_info_get_key, &kmod_module_info_get_value);
 
-			kmod_module_info_free_list(infolist);
-			infolist = NULL;
+			if (infolist) {
+				kmod_module_info_free_list(infolist);
+				infolist = NULL;
+			}
 
 			if (rc < 0)
 				goto exit;
@@ -159,9 +165,10 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 			} else {
 				if (verbose > 1)
 					warnx("%s: the module information does not match", kmod_module_get_path(mod));
+				goto exit;
 			}
 
-		} else if (rc < 0) {
+		} else {
 			errno = -rc;
 			warn("Could not get information from '%s'", modname);
 			goto exit;
@@ -223,13 +230,15 @@ process_module_ruleset(struct kmod_ctx *ctx, const char *filename, struct rulese
 			}
 		}
 	}
-	if (set->flags == is_match)
+	if (set->flags && set->flags == is_match) {
 		printf("%s\n", kmod_module_get_path(mod));
+		matched = 1;
+	}
 exit:
 	if (mod)
 		kmod_module_unref(mod);
 
-	return is_match;
+	return matched;
 }
 
 static void
