@@ -16,11 +16,13 @@
 #include "initrd-scanmod.h"
 
 int verbose = 0;
+int jobs = 0;
 
-const char short_opts[]         = "Vhb:k:v";
+const char short_opts[]         = "Vhb:k:vj:";
 const struct option long_opts[] = {
 	{ "set-version", required_argument, 0, 'k' },
 	{ "base-dir", required_argument, 0, 'b' },
+	{ "jobs", required_argument, 0, 'j' },
 	{ "help", no_argument, NULL, 'h' },
 	{ "verbose", no_argument, NULL, 'v' },
 	{ "version", no_argument, NULL, 'V' },
@@ -36,6 +38,7 @@ usage(const char *progname, int code)
 	        "Options:\n"
 	        " -k, --set-version=VERSION   use VERSION instead of `uname -r`;\n"
 	        " -b, --base-dir=DIR          use DIR as filesystem root for /lib/modules;\n"
+	        " -j, --jobs=N                run N worker threads (default: number of CPUs);\n"
 	        " -v, --verbose               print a message for each action;\n"
 	        " -h, --help                  display this help and exit;\n"
 	        " -V, --version               output version information and exit.\n"
@@ -74,6 +77,11 @@ main(int argc, char **argv)
 				break;
 			case 'b':
 				basedir = optarg;
+				break;
+			case 'j':
+				jobs = atoi(optarg);
+				if (jobs < 1)
+					errx(EXIT_FAILURE, "invalid number of jobs: %s", optarg);
 				break;
 			case 'v':
 				verbose++;

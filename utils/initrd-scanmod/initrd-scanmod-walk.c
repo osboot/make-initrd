@@ -13,6 +13,7 @@
 #include <regex.h>
 #include <err.h>
 #include <errno.h>
+#include <pthread.h>
 
 #include <fts.h>
 
@@ -160,6 +161,8 @@ match_symbols(struct kmod_list *provided, struct kmod_list *required, struct rul
 	return 1;
 }
 
+static pthread_mutex_t print_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 struct module_data {
 	struct kmod_ctx *ctx;
 	const char *filename;
@@ -295,7 +298,9 @@ process_module_ruleset(struct module_data *mdata, struct ruleset *set)
 	}
 
 	if (set->flags && set->flags == is_match) {
+		pthread_mutex_lock(&print_mutex);
 		printf("%s\n", mdata->filename);
+		pthread_mutex_unlock(&print_mutex);
 		return 1;
 	}
 
@@ -333,17 +338,6 @@ process_module(struct kmod_ctx *ctx, const char *filename)
 }
 
 static int
-dsort(const FTSENT **a, const FTSENT **b)
-{
-	if (S_ISDIR((*a)->fts_statp->st_mode)) {
-		if (!S_ISDIR((*b)->fts_statp->st_mode))
-			return 1;
-	} else if (S_ISDIR((*b)->fts_statp->st_mode))
-		return -1;
-	return (strcmp((*a)->fts_name, (*b)->fts_name));
-}
-
-static int
 is_kernel_modname(const char *filename)
 {
 	const char *exts[] = {".ko", ".ko.zst", ".ko.xz", ".ko.gz", ".ko.bz2"};
@@ -358,21 +352,63 @@ is_kernel_modname(const char *filename)
 	return 0;
 }
 
+struct module_queue {
+	char **paths;
+	size_t count;
+	size_t capacity;
+	size_t current;
+	pthread_mutex_t mutex;
+};
+
+static const char *
+queue_pop(struct module_queue *q)
+{
+	const char *path = NULL;
+
+	pthread_mutex_lock(&q->mutex);
+	if (q->current < q->count)
+		path = q->paths[q->current++];
+	pthread_mutex_unlock(&q->mutex);
+
+	return path;
+}
+
+struct worker_data {
+	const char *kerneldir;
+	struct module_queue *queue;
+};
+
+static void *
+worker_func(void *arg)
+{
+	struct worker_data *wdata = arg;
+	struct kmod_ctx *ctx = kmod_new(wdata->kerneldir, NULL);
+	const char *path;
+
+	if (!ctx)
+		err(EXIT_FAILURE, "%s: kmod_new", wdata->kerneldir);
+
+	while ((path = queue_pop(wdata->queue)))
+		process_module(ctx, path);
+
+	kmod_unref(ctx);
+	return NULL;
+}
+
 void
 find_modules(const char *kerneldir)
 {
-	struct kmod_ctx *ctx = NULL;
 	FTS *t;
 	FTSENT *p;
 	char *argv[2];
+	struct module_queue q = { 0 };
 
-	if (!(ctx = kmod_new(kerneldir, NULL)))
-		err(EXIT_FAILURE, "%s: kmod_new", kerneldir);
+	pthread_mutex_init(&q.mutex, NULL);
 
 	argv[0] = (char *) kerneldir;
 	argv[1] = NULL;
 
-	if (!(t = fts_open(argv, FTS_PHYSICAL, dsort)))
+	if (!(t = fts_open(argv, FTS_PHYSICAL, NULL)))
 		err(EXIT_FAILURE, "%s: fts_open", kerneldir);
 
 	errno = 0;
@@ -397,7 +433,11 @@ find_modules(const char *kerneldir)
 		if (!is_kernel_modname(p->fts_accpath))
 			continue;
 
-		process_module(ctx, p->fts_path);
+		if (q.count >= q.capacity) {
+			q.capacity = q.capacity ? q.capacity * 2 : 256;
+			q.paths    = xrealloc(q.paths, q.capacity, sizeof(char *));
+		}
+		q.paths[q.count++] = xstrdup(p->fts_path);
 		errno = 0;
 	}
 
@@ -407,5 +447,50 @@ find_modules(const char *kerneldir)
 	if (fts_close(t) < 0)
 		err(EXIT_FAILURE, "%s: fts_close", kerneldir);
 
-	kmod_unref(ctx);
+	if (!q.count) {
+		pthread_mutex_destroy(&q.mutex);
+		return;
+	}
+
+	int n_workers = jobs;
+	if (n_workers <= 0) {
+		long nprocs = sysconf(_SC_NPROCESSORS_ONLN);
+		n_workers = (nprocs > 0) ? (int) nprocs : 1;
+	}
+	if ((size_t) n_workers > q.count)
+		n_workers = (int) q.count;
+
+	if (n_workers <= 1) {
+		struct worker_data wdata = {
+			.kerneldir = kerneldir,
+			.queue     = &q,
+		};
+		worker_func(&wdata);
+	} else {
+		pthread_t *threads = xmalloc(sizeof(pthread_t) * (size_t) n_workers);
+		struct worker_data *wdata = xmalloc(sizeof(struct worker_data) * (size_t) n_workers);
+		int n_created = 0;
+
+		for (int i = 0; i < n_workers; i++) {
+			wdata[i].kerneldir = kerneldir;
+			wdata[i].queue     = &q;
+
+			if (pthread_create(&threads[i], NULL, worker_func, &wdata[i]) != 0) {
+				warn("pthread_create");
+				break;
+			}
+			n_created++;
+		}
+
+		for (int i = 0; i < n_created; i++)
+			pthread_join(threads[i], NULL);
+
+		free(threads);
+		free(wdata);
+	}
+
+	for (size_t i = 0; i < q.count; i++)
+		xfree(q.paths[i]);
+	xfree(q.paths);
+	pthread_mutex_destroy(&q.mutex);
 }

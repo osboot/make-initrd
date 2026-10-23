@@ -6,6 +6,7 @@
 #include <regex.h>
 
 extern int verbose;
+extern int jobs;
 
 // findmodule-common.c
 void *xmalloc(size_t size);

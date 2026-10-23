@@ -23,6 +23,9 @@ files. It can filter modules by the following criteria: *alias*, *author*,
 *-b, --base-dir=*_DIR_
 	use _DIR_ as filesystem root for /lib/modules;
 
+*-j, --jobs=*_N_
+	run N worker threads (default: number of CPUs).
+
 *-v, --verbose*
 	print a message for each action.
 
