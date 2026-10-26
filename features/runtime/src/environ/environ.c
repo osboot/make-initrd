@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include "cleanup.h"
 #include "rd/logging.h"
 #include "rd/memory.h"
 
@@ -25,7 +26,7 @@ static char *prefix = (char *) "";
 static char *quote = (char *) "";
 static unsigned int shell = 0;
 
-static void __attribute__ ((noreturn))
+static void __noreturn
 show_usage(int ret)
 {
 	fprintf(stderr,
@@ -79,7 +80,7 @@ static void
 set_environ(const char *fname)
 {
 	char *a, *map = NULL;
-	int fd = -1;
+	int fd __free(close) = -1;
 	struct stat sb;
 
 	if ((fd = open(fname, O_RDONLY | O_CLOEXEC)) < 0)
@@ -88,18 +89,17 @@ set_environ(const char *fname)
 	if (fstat(fd, &sb) < 0)
 		rd_fatal("fstat: %s: %m", fname);
 
-	if (!sb.st_size) {
-		close(fd);
+	if (!sb.st_size)
 		return;
-	}
 
 	if ((a = map = mmap(NULL, (size_t) sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0)) == MAP_FAILED)
 		rd_fatal("mmap: %s: %m", fname);
 
 	while (a && *a) {
-		char *name, *value;
+		char *name __free(free) = NULL;
+		char *value __free(free) = NULL;
 		size_t namesz, valuesz;
-		FILE *valfd;
+		FILE *valfd __free(fclose) = NULL;
 		int is_quote = 0;
 
 		while (isspace(*a)) a++;
@@ -144,7 +144,7 @@ set_environ(const char *fname)
 			a++;
 		}
 
-		fclose(valfd);
+		fclose(no_free_ptr(valfd));
 
 		if (*a != '"')
 			rd_fatal("open: %s: expect closing quote not found for '%s', but '%c' found", fname, name, *a);
@@ -152,21 +152,16 @@ set_environ(const char *fname)
 		a++;
 
 		setenv(name, value, 1);
-
-		free(name);
-		free(value);
 	}
 
 	munmap(map, (size_t) sb.st_size);
-	close(fd);
 }
 
 static void
 unset_environ(char **envp, char *patterns, int invert_match)
 {
 	size_t i, j, max = 0, envp_sz = 0;
-	char *pattern, *next, *s, **e, **last, *env;
-	ssize_t *envname;
+	char *pattern, *next, *s, **e, **last;
 
 	if (!patterns)
 		return;
@@ -177,7 +172,7 @@ unset_environ(char **envp, char *patterns, int invert_match)
 		last++;
 	}
 
-	envname = rd_calloc_or_die(envp_sz, sizeof(ssize_t));
+	ssize_t *envname __free(free) = rd_calloc_or_die(envp_sz, sizeof(ssize_t));
 
 	e = last;
 	i = envp_sz;
@@ -202,7 +197,7 @@ next:
 		i--;
 	}
 
-	env = rd_malloc_or_die(sizeof(char) * (max + 1));
+	char *env __free(free) = rd_malloc_or_die(sizeof(char) * (max + 1));
 
 	pattern = s = patterns;
 	next = NULL;
@@ -260,9 +255,6 @@ next:
 		e--;
 		i--;
 	}
-
-	free(envname);
-	free(env);
 }
 
 int
