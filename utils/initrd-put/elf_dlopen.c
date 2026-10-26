@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <limits.h>
 #include <regex.h>
 #include <errno.h>
 #include <err.h>
@@ -137,6 +138,8 @@ static int resolve_soname(const char **soname, size_t len, char *outbuf)
 	void *handle;
 	int ret = -1;
 
+	outbuf[0] = '\0';
+
 	if (pipe(pipefd) < 0) {
 		warn("pipe");
 		return -1;
@@ -161,6 +164,11 @@ static int resolve_soname(const char **soname, size_t len, char *outbuf)
 		}
 		if (!siz) {
 			ret = 0;
+			goto out_parent;
+		}
+
+		if (siz > PATH_MAX + 1) {
+			warnx("resolved library path too long");
 			goto out_parent;
 		}
 
@@ -193,46 +201,47 @@ out_parent:
 	handle = NULL;
 	ret = EXIT_FAILURE;
 
+	struct link_map *map = NULL;
+
 	for (size_t i = 0; i < len; i++) {
-		struct link_map *map = NULL;
-
-		if (handle)
+		if (handle) {
 			dlclose(handle);
-
-		offset = 0;
-		siz = 0;
+			handle = NULL;
+		}
 
 		if ((handle = dlopen(soname[i], RTLD_LAZY)) != NULL) {
-			if (dlinfo(handle, RTLD_DI_LINKMAP, &map) == 0) {
-				siz = strlen(map->l_name) + 1;
+			if (dlinfo(handle, RTLD_DI_LINKMAP, &map) == 0 && map && map->l_name) {
+				break;
 			} else {
-				warnx("dladdr(%s) failed: %s", soname[i], dlerror());
+				warnx("dlinfo(%s) failed: %s", soname[i], dlerror());
+				map = NULL;
 			}
 		}
+	}
 
+	offset = 0;
+	siz = map ? strlen(map->l_name) + 1 : 0;
+
+	errno = 0;
+	n = TEMP_FAILURE_RETRY(write(pipefd[1], &siz, sizeof(siz)));
+	if (n < 0) {
+		if (errno != EPIPE)
+			warn("write(size)");
+		goto out_child;
+	}
+
+	while (siz > 0) {
 		errno = 0;
-		n = TEMP_FAILURE_RETRY(write(pipefd[1], &siz, sizeof(siz)));
+		n = TEMP_FAILURE_RETRY(write(pipefd[1], map->l_name + offset, siz));
 		if (n < 0) {
 			if (errno != EPIPE)
-				warn("write(size)");
+				warn("write(library)");
 			goto out_child;
 		}
-
-		while (siz > 0) {
-			errno = 0;
-			n = TEMP_FAILURE_RETRY(write(pipefd[1], map->l_name + offset, siz));
-			if (n < 0) {
-				if (errno != EPIPE)
-					warn("write(library)");
-				goto out_child;
-			}
-			siz -= (size_t) n;
-			offset += (size_t) n;
-		}
-
-		if (map)
-			break;
+		siz -= (size_t) n;
+		offset += (size_t) n;
 	}
+
 	ret = EXIT_SUCCESS;
 out_child:
 	if (handle)
