@@ -759,7 +759,7 @@ void show_version(void)
 
 int main(int argc, char **argv)
 {
-	const char *optstring = "efnl:r:vVh";
+	const char *optstring = "e:fnl:r:vVh";
 	const struct option longopts[] = {
 		{"exclude", required_argument, 0, 'e' },
 		{"remove-prefix", required_argument, 0, 'r' },
