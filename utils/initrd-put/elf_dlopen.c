@@ -22,6 +22,8 @@
 
 #include "temp_failure_retry.h"
 #include "memory.h"
+#include "queue.h"
+#include "tree.h"
 #include "elf_dlopen.h"
 
 extern int verbose;
@@ -325,11 +327,16 @@ static int visit_userfunc(json_object *jso, int flags, json_object *,
 		data->retcode = resolve_soname(soname, array_len, data->outbuf);
 		free(soname);
 
-		if (verbose > 0) {
-			warnx("(elf dlopen): feature=%s: priority=%s: shared object '%s' depends on '%s'",
-			      elf_metadata.feature,
-			      elf_metadata.priority,
-			      data->filename, data->outbuf);
+		if (data->retcode == 0 && data->outbuf[0] == '/') {
+			if (verbose > 0) {
+				warnx("(elf dlopen): feature=%s: priority=%s: shared object '%s' depends on '%s'",
+				      elf_metadata.feature,
+				      elf_metadata.priority,
+				      data->filename, data->outbuf);
+			}
+
+			if (!is_path_added(data->outbuf))
+				enqueue_item(data->outbuf, -1);
 		}
 	}
 

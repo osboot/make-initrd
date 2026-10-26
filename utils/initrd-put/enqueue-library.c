@@ -15,6 +15,7 @@
 
 #include <gelf.h>
 
+#include "memory.h"
 #include "queue.h"
 #include "tree.h"
 #include "enqueue.h"
@@ -199,12 +200,11 @@ int enqueue_elf_dlopen(const char *filename, int fd)
 			if (nhdr.n_type == NT_FDO_DLOPEN_METADATA &&
 			    nhdr.n_namesz == sizeof(ELF_NOTE_FDO) &&
 			    !strcmp(data->d_buf + n_off, ELF_NOTE_FDO)) {
+				char *json = xstrndup(data->d_buf + d_off, nhdr.n_descsz);
 				library[0] = '\0';
 
-				process_json_metadata(filename, (char *)data->d_buf + d_off, library);
-
-				if (library[0] == '/' && !is_path_added(library))
-					enqueue_item(library, -1);
+				process_json_metadata(filename, json, library);
+				free(json);
 			}
 			off = next;
 		}
