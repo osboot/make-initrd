@@ -36,7 +36,11 @@ const char *v_hddown = "@(#)hddown.c  1.02  22-Apr-2003  miquels@cistron.nl";
 #include <byteswap.h>
 #endif
 
+#include "compiler.h"
+#include "cleanup.h"
 #include "reboot.h"
+
+DEFINE_FREE(closedir, DIR *, if (_t) closedir(_t))
 
 #define SYS_BLK		"/sys/block"
 #define SYS_CLASS	"/sys/class/scsi_disk"
@@ -202,7 +206,8 @@ static int do_standby_disk(char *device, unsigned int flags)
 	unsigned char stdby1[4] = {WIN_STANDBYNOW1,0,0,0};
 	unsigned char stdby2[4] = {WIN_STANDBYNOW2,0,0,0};
 	char buf[NAME_MAX+1];
-	int fd, ret;
+	int ret;
+	int fd __free(close) = -1;
 
 	ret = snprintf(buf, sizeof(buf), DEV_BASE "/%s", device);
 	if ((ret >= (int)sizeof(buf)) || (ret < 0))
@@ -216,7 +221,7 @@ static int do_standby_disk(char *device, unsigned int flags)
 			if ((ret = ioctl(fd, HDIO_DRIVE_CMD, &flush1)) == 0)
 				break;
 			/* Extend flush rejected, try standard flush */
-			__attribute__ ((fallthrough));
+			__fallthrough;
 		default:
 			ret = ioctl(fd, HDIO_DRIVE_CMD, &flush2) &&
 			      ioctl(fd, BLKFLSBUF);
@@ -227,8 +232,6 @@ static int do_standby_disk(char *device, unsigned int flags)
 		ret = ioctl(fd, HDIO_DRIVE_CMD, &stdby1) &&
 		      ioctl(fd, HDIO_DRIVE_CMD, &stdby2);
 	}
-
-	close(fd);
 
 	if (ret)
 		return -1;
@@ -244,15 +247,15 @@ int hddown(void)
 {
 	unsigned int flags;
 	char *disk;
-	DIR *blk;
+	DIR *blk __free(closedir) = opendir(SYS_BLK);
 
-	if ((blk = opendir(SYS_BLK)) == (DIR *)0)
+	if (!blk)
 		return -1;
 
 	while ((disk = list_disks(blk, &flags)))
 		do_standby_disk(disk, flags);
 
-	return closedir(blk);
+	return 0;
 }
 
 /*
@@ -262,15 +265,15 @@ int hdflush(void)
 {
 	unsigned int flags;
 	char *disk;
-	DIR *blk;
+	DIR *blk __free(closedir) = opendir(SYS_BLK);
 
-	if ((blk = opendir(SYS_BLK)) == (DIR *)0)
+	if (!blk)
 		return -1;
 
 	while ((disk = list_disks(blk, &flags)))
 		do_standby_disk(disk, (flags|DISK_FLUSHONLY));
 
-	return closedir(blk);
+	return 0;
 }
 
 /*
@@ -329,7 +332,8 @@ static int flush_cache_ext(const char *device)
 	unsigned char args[4+IDBYTES];
 	unsigned short *id = (unsigned short *)(&args[4]);
 	char buf[NAME_MAX+1], *ptr;
-	int fd = -1, ret = 0;
+	int ret = 0;
+	int fd __free(close) = -1;
 	FILE *fp;
 
 	fp = hdopen(SYS_BLK "/%s/size", device);
@@ -380,7 +384,5 @@ static int flush_cache_ext(const char *device)
 	if ((id[83] & MASK_EXT) == TEST_EXT)
 		ret = 1;
 out:
-	if (fd >= 0)
-		close(fd);
 	return ret;
 }
