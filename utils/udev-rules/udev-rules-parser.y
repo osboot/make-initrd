@@ -18,7 +18,7 @@
 #include "udev-rules-parser.h"
 #include "udev-rules-scanner.h"
 
-static int yyerror(YYLTYPE *lloc, yyscan_t scanner __attribute__((unused)),
+static int yyerror(YYLTYPE *lloc, yyscan_t scanner __maybe_unused,
                    struct rules_state *state, const char *s)
 {
 	warnx("%s:%d:%d: %s", state->cur_file->name, lloc->first_line, lloc->first_column, s);
@@ -697,7 +697,7 @@ int rules_readfile(char *filename, struct rules_state *state)
 	struct stat st;
 	struct rule_file *rule_file;
 	int ret = -1;
-	FILE *fp = NULL;
+	FILE *fp __free(fclose) = NULL;
 
 	if (stat(filename, &st) < 0) {
 		warn("stat: %s", filename);
@@ -730,19 +730,16 @@ int rules_readfile(char *filename, struct rules_state *state)
 	rules_parse(fp, state);
 	ret = 0;
 end:
-	if (fp)
-		fclose(fp);
-
 	return ret;
 }
 
 int rules_readdir(const char *dir, struct rules_state *state)
 {
-	DIR *d;
+	DIR *d __free(closedir) = opendir(dir);
 	struct dirent *ent;
 	int ret = 0;
 
-	if (!(d = opendir(dir))) {
+	if (!d) {
 		warn("opendir: %s", dir);
 		return -1;
 	}
@@ -768,7 +765,6 @@ int rules_readdir(const char *dir, struct rules_state *state)
 			ret = -1;
 	}
 
-	closedir(d);
 	return ret;
 }
 

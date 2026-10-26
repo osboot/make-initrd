@@ -13,7 +13,7 @@
 
 #include "udev-rules.h"
 
-static void __attribute__((noreturn))
+static void __noreturn
 print_help(const char *progname, int rc)
 {
 	printf("Usage: %s [options] [file|directory]...\n"
@@ -102,7 +102,6 @@ int main(int argc, char **argv)
 		errx(EXIT_FAILURE, "Error: missing directory name");
 
 	while (optind < argc) {
-		char *filename;
 		struct stat st;
 
 		if (stat(argv[optind], &st) < 0)
@@ -115,8 +114,8 @@ int main(int argc, char **argv)
 					goto end;
 				}
 				break;
-			case S_IFREG:
-				filename = strdup(argv[optind]);
+			case S_IFREG: {
+				char *filename __free(free) = strdup(argv[optind]);
 				if (!filename)
 					err(EXIT_FAILURE, "strdup");
 
@@ -125,6 +124,7 @@ int main(int argc, char **argv)
 					goto end;
 				}
 				break;
+			}
 			default:
 				warnx("%s: the type of the argument is neither a file nor a directory. crazy?",
 				      argv[optind]);
