@@ -683,13 +683,21 @@ fallback_readwrite:
 		ret = TEMP_FAILURE_RETRY(read(sfd, buf, sizeof(buf)));
 		if (ret < 0)
 			err(EX_IOERR, "read: %s", p->src);
+		if (ret == 0)
+			break;
 
-		ret = TEMP_FAILURE_RETRY(write(dfd, buf, (size_t) ret));
-		if (ret < 0)
-			err(EX_IOERR, "write: %s", p->dst);
+		size_t written = 0;
+		while (written < (size_t) ret) {
+			ssize_t w = TEMP_FAILURE_RETRY(write(dfd, buf + written, (size_t) ret - written));
+			if (w < 0)
+				err(EX_IOERR, "write: %s", p->dst);
+			if (w == 0)
+				errx(EX_IOERR, "write: %s: unexpected end of stream", p->dst);
+			written += (size_t) w;
+		}
 
 		len -= ret;
-	} while (len > 0 && ret > 0);
+	} while (len > 0);
 
 	goto finish;
 }
