@@ -29,7 +29,7 @@ const struct option long_opts[] = {
 	{ NULL, 0, NULL, 0 }
 };
 
-static void __attribute__((noreturn))
+static void __noreturn
 usage(const char *progname, int code)
 {
 	dprintf(STDOUT_FILENO,
@@ -49,7 +49,7 @@ usage(const char *progname, int code)
 	exit(code);
 }
 
-static inline void __attribute__((noreturn))
+static inline void __noreturn
 print_version_and_exit(const char *progname)
 {
 	dprintf(STDOUT_FILENO, "%s version %s\n", progname, PACKAGE_VERSION);
@@ -66,7 +66,7 @@ main(int argc, char **argv)
 {
 	int c;
 	struct utsname u;
-	char *kerneldir      = NULL;
+	char *kerneldir __free(free) = NULL;
 	const char *kversion = NULL;
 	const char *basedir  = NULL;
 
@@ -120,7 +120,6 @@ main(int argc, char **argv)
 	find_modules(kerneldir);
 
 	free_rules();
-	xfree(kerneldir);
 
 	return EXIT_SUCCESS;
 }

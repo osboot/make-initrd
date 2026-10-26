@@ -22,6 +22,9 @@
 
 #include "initrd-scanmod.h"
 
+DEFINE_FREE(kmod_unref, struct kmod_ctx *, if (_t) kmod_unref(_t))
+DEFINE_FREE(fts_close, FTS *, if (_t) fts_close(_t))
+
 extern struct ruleset **filter_rules;
 
 typedef const char *(get_list_key_t)(const struct kmod_list *);
@@ -383,7 +386,7 @@ static void *
 worker_func(void *arg)
 {
 	struct worker_data *wdata = arg;
-	struct kmod_ctx *ctx = kmod_new(wdata->kerneldir, NULL);
+	struct kmod_ctx *ctx __free(kmod_unref) = kmod_new(wdata->kerneldir, NULL);
 	const char *path;
 
 	if (!ctx)
@@ -392,14 +395,13 @@ worker_func(void *arg)
 	while ((path = queue_pop(wdata->queue)))
 		process_module(ctx, path);
 
-	kmod_unref(ctx);
 	return NULL;
 }
 
 void
 find_modules(const char *kerneldir)
 {
-	FTS *t;
+	FTS *t __free(fts_close) = NULL;
 	FTSENT *p;
 	char *argv[2];
 	struct module_queue q = { 0 };
@@ -445,9 +447,6 @@ find_modules(const char *kerneldir)
 	if (errno != 0)
 		err(EXIT_FAILURE, "%s: fts_read", kerneldir);
 
-	if (fts_close(t) < 0)
-		err(EXIT_FAILURE, "%s: fts_close", kerneldir);
-
 	if (!q.count) {
 		pthread_mutex_destroy(&q.mutex);
 		return;
@@ -468,8 +467,8 @@ find_modules(const char *kerneldir)
 		};
 		worker_func(&wdata);
 	} else {
-		pthread_t *threads = xmalloc(sizeof(pthread_t) * (size_t) n_workers);
-		struct worker_data *wdata = xmalloc(sizeof(struct worker_data) * (size_t) n_workers);
+		pthread_t *threads __free(free) = xmalloc(sizeof(pthread_t) * (size_t) n_workers);
+		struct worker_data *wdata __free(free) = xmalloc(sizeof(struct worker_data) * (size_t) n_workers);
 		int n_created = 0;
 
 		for (int i = 0; i < n_workers; i++) {
@@ -485,9 +484,6 @@ find_modules(const char *kerneldir)
 
 		for (int i = 0; i < n_created; i++)
 			pthread_join(threads[i], NULL);
-
-		free(threads);
-		free(wdata);
 	}
 
 	for (size_t i = 0; i < q.count; i++)
