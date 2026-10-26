@@ -990,6 +990,7 @@ int main(int argc, char **argv)
 
 	for (size_t i = 0; i < exclude_match_nr; i++)
 		regfree(&exclude_match[i]);
+	free(exclude_match);
 
 	return EXIT_SUCCESS;
 }
