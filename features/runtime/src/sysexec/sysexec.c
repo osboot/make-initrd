@@ -18,6 +18,11 @@
 #include <errno.h>
 #include <err.h>
 
+#include "compiler.h"
+#include "cleanup.h"
+
+DEFINE_FREE(closedir, DIR *, if (_t) closedir(_t))
+
 /*
  * Because statfs.t_type can be int on some architectures, we have to cast the
  * const magic to the type, otherwise the compiler warns about signed/unsigned
@@ -46,7 +51,7 @@ static int remove_recursive_at(int fd)
 {
 	struct stat root_sb;
 	int rc = -1;
-	DIR *dir = fdopendir(fd);
+	DIR *dir __free(closedir) = fdopendir(fd);
 
 	if (!dir) {
 		warn("failed to open directory");
@@ -92,12 +97,10 @@ static int remove_recursive_at(int fd)
 
 			/* remove subdirectories */
 			if (S_ISDIR(dir_sb.st_mode)) {
-				int cfd;
-
-				cfd = openat(dir_fd, d->d_name, DIR_FLAGS);
+				int cfd __free(close) = openat(dir_fd, d->d_name, DIR_FLAGS);
 
 				if (cfd >= 0)
-					remove_recursive_at(cfd);
+					remove_recursive_at(no_free_fd(cfd));
 
 				isdir = 1;
 			}
@@ -109,7 +112,6 @@ static int remove_recursive_at(int fd)
 
 	rc = 0;
 fail:
-	closedir(dir);
 	return rc;
 }
 
@@ -125,7 +127,7 @@ static bool is_temporary_fs(int fd)
 	        F_TYPE_EQUAL(stfs.f_type, TMPFS_MAGIC));
 }
 
-static void usage(int retcode)
+static void __noreturn usage(int retcode)
 {
 	printf("Usage: %s <newrootdir> <init> [<args ...>]\n", program_invocation_short_name);
 	exit(retcode);
@@ -153,12 +155,12 @@ int main(int argc, char *argv[])
 		usage(EXIT_FAILURE);
 	}
 
-	int old_root_fd = open("/", DIR_FLAGS);
+	int old_root_fd __free(close) = open("/", DIR_FLAGS);
 
 	if (old_root_fd < 0)
 		err(EXIT_FAILURE, "failed to open current root directory");
 
-	int new_root_fd = open(newroot, DIR_FLAGS);
+	int new_root_fd __free(close) = open(newroot, DIR_FLAGS);
 
 	if (new_root_fd < 0)
 		err(EXIT_FAILURE, "failed to open new root directory: %s", newroot);
