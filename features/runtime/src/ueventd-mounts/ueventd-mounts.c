@@ -12,6 +12,7 @@
 #include <time.h>
 #include <errno.h>
 
+#include "cleanup.h"
 #include "rd/memory.h"
 #include "rd/logging.h"
 #include "rd/list.h"
@@ -41,9 +42,9 @@ struct mounts {
 static void reset_state(void);
 static void read_mounts(void);
 static void diff_mounts(void);
-static struct mounts *find_mounts(const struct mntent *mnt)     __attribute__((nonnull(1)));
-static void create_event(const char *action, struct mounts *m)  __attribute__((nonnull(1,2)));
-static inline char *get_param_dir(const char *name)             __attribute__((nonnull(1)));
+static struct mounts *find_mounts(const struct mntent *mnt)     __nonnull(1);
+static void create_event(const char *action, struct mounts *m)  __nonnull(1, 2);
+static inline char *get_param_dir(const char *name)             __nonnull(1);
 
 static char *filter_dir;
 static int queue_dirfd;
@@ -74,9 +75,9 @@ struct mounts *find_mounts(const struct mntent *mnt)
 void read_mounts(void)
 {
 	struct mntent *mnt;
-	FILE *fp;
+	FILE *fp __free(fclose) = fopen(MOUNT_PROC, "r");
 
-	if (!(fp = fopen(MOUNT_PROC, "r")))
+	if (!fp)
 		rd_fatal("fopen: %s: %m", MOUNT_PROC);
 
 	while ((mnt = getmntent(fp))) {
@@ -96,21 +97,18 @@ void read_mounts(void)
 
 		list_add_tail(&mount->list, &mounts);
 	}
-
-	fclose(fp);
 }
 
 void create_event(const char *action, struct mounts *m)
 {
-	int fd;
-	char *p, *fname;
+	char *p;
 	struct timespec tp = { 0 };
 
 	clock_gettime(CLOCK_BOOTTIME, &tp);
 
-	fd = openat(temp_dirfd, EVENT_TEMP_NAME,
-	            O_WRONLY | O_CREAT | O_EXCL,
-	            S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	int fd __free(close) = openat(temp_dirfd, EVENT_TEMP_NAME,
+	                              O_WRONLY | O_CREAT | O_EXCL,
+	                              S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if (fd < 0)
 		rd_fatal("open: %s/" QUEUE_TMPNAME "/%s: %m", filter_dir, EVENT_TEMP_NAME);
 
@@ -118,10 +116,8 @@ void create_event(const char *action, struct mounts *m)
 	        "ACTION='%s'\n" "SOURCE='%s'\n" "TARGET='%s'\n" "FSTYPE='%s'\n" "OPTIONS='%s'\n",
 	        action, m->ent_name, m->ent_path, m->ent_type, m->ent_opts);
 
-	close(fd);
-
-	fname = rd_asprintf_or_die(QUEUE_NAME ".%s.%06lu.%012lu", m->ent_path,
-	                           (unsigned long) tp.tv_sec, tp.tv_nsec);
+	char *fname __free(free) = rd_asprintf_or_die(QUEUE_NAME ".%s.%06lu.%012lu", m->ent_path,
+	                                              (unsigned long) tp.tv_sec, tp.tv_nsec);
 
 	for (p = fname; *p != '\0'; p++) {
 		if (*p == '/')
@@ -132,8 +128,6 @@ void create_event(const char *action, struct mounts *m)
 		rd_fatal("rename `%s/" QUEUE_TMPNAME "/%s' -> `%s/%s': %m",
 		         filter_dir, EVENT_TEMP_NAME,
 		         filter_dir, fname);
-
-	free(fname);
 }
 
 void diff_mounts(void)
