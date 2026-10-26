@@ -6,6 +6,8 @@
 #include <sys/types.h>
 #include <stdbool.h>
 
+#include "compiler.h"
+
 struct file {
 	struct file *prev;
 	struct file *next;
@@ -19,10 +21,10 @@ struct file {
 };
 
 struct file *get_queue(size_t *nr);
-void free_file(void *ptr) __attribute__((__nonnull__ (1)));
-struct file *enqueue_item(const char *str, ssize_t len) __attribute__((__nonnull__ (1)));
+void free_file(void *ptr) __nonnull(1);
+struct file *enqueue_item(const char *str, ssize_t len) __nonnull(1);
 void dequeue_item(struct file *ptr);
-bool is_path_queued(const char *path) __attribute__((__nonnull__ (1)));
+bool is_path_queued(const char *path) __nonnull(1);
 void queue_destroy(void);
 
 #endif // __INITRD_PUT_QUEUE_H__

@@ -18,6 +18,7 @@
 
 #include <gelf.h>
 
+#include "cleanup.h"
 #include "memory.h"
 #include "queue.h"
 #include "tree.h"
@@ -33,10 +34,12 @@
 # define ELF_NOTE_FDO "FDO"
 #endif
 
+DEFINE_FREE(elf_end, Elf *, if (_t) elf_end(_t))
+
 extern int verbose;
 
-static int enqueue_elf_dlopen(const char *filename, int fd) __attribute__((__nonnull__ (1)));
-static int enqueue_shared_libraries(const char *filename, uint8_t elf_class, uint16_t elf_machine, bool can_cache) __attribute__((__nonnull__ (1)));
+static int enqueue_elf_dlopen(const char *filename, int fd) __nonnull(1);
+static int enqueue_shared_libraries(const char *filename, uint8_t elf_class, uint16_t elf_machine, bool can_cache) __nonnull(1);
 static FILE *pipe_command(char *const argv[], pid_t *pid_out);
 static int pipe_command_close(FILE *stream, pid_t pid);
 
@@ -191,12 +194,12 @@ int enqueue_elf_dlopen(const char *filename, int fd)
 {
 	int ret = 0;
 	char library[PATH_MAX + 1];
-	Elf *e;
+	Elf *e __free(elf_end) = NULL;
 	Elf_Scn *scn;
 
 	if ((e = elf_begin(fd, ELF_C_READ, NULL)) == NULL) {
 		warnx("%s: elf_begin: %s", filename, elf_errmsg(-1));
-		goto err;
+		return ret;
 	}
 
 	switch (elf_kind(e)) {
@@ -206,7 +209,7 @@ int enqueue_elf_dlopen(const char *filename, int fd)
 		case  ELF_K_ELF:
 			break;
 		default:
-			goto end;
+			return ret;
 	}
 
 	for (scn = NULL; (scn = elf_nextscn(e, scn)) != NULL;) {
@@ -217,7 +220,7 @@ int enqueue_elf_dlopen(const char *filename, int fd)
 
 		if (gelf_getshdr(scn, &shdr) != &shdr) {
 			warnx("%s: gelf_getshdr: %s", filename, elf_errmsg(-1));
-			goto end;
+			return ret;
 		}
 
 		if (shdr.sh_type != SHT_NOTE)
@@ -226,7 +229,7 @@ int enqueue_elf_dlopen(const char *filename, int fd)
 		data = elf_getdata(scn, NULL);
 		if (data == NULL) {
 			warnx("%s: elf_getdata: %s", filename, elf_errmsg(-1));
-			goto end;
+			return ret;
 		}
 
 		off = 0;
@@ -234,18 +237,15 @@ int enqueue_elf_dlopen(const char *filename, int fd)
 			if (nhdr.n_type == NT_FDO_DLOPEN_METADATA &&
 			    nhdr.n_namesz == sizeof(ELF_NOTE_FDO) &&
 			    !strcmp(data->d_buf + n_off, ELF_NOTE_FDO)) {
-				char *json = xstrndup(data->d_buf + d_off, nhdr.n_descsz);
+				char *json __free(free) = xstrndup(data->d_buf + d_off, nhdr.n_descsz);
 				library[0] = '\0';
 
 				process_json_metadata(filename, json, library);
-				free(json);
 			}
 			off = next;
 		}
 	}
-end:
-	elf_end(e);
-err:
+
 	return ret;
 }
 
@@ -259,11 +259,11 @@ static int enqueue_shared_libraries(const char *filename, uint8_t elf_class, uin
 	int ret = 0;
 	pid_t pid = -1;
 	FILE *pfd;
-	char *line = NULL;
+	char *line __free(free) = NULL;
 	size_t len = 0;
 	ssize_t n;
 	char *const argv[] = { (char *) "ldd", (char *) "--", (char *) filename, NULL };
-	struct pending_cache *pending = NULL;
+	struct pending_cache *pending __free(free) = NULL;
 	size_t pending_cnt = 0, pending_cap = 0;
 
 	pfd = pipe_command(argv, &pid);
@@ -333,8 +333,6 @@ static int enqueue_shared_libraries(const char *filename, uint8_t elf_class, uin
 		enqueue_item(p, -1);
 	}
 
-	free(line);
-
 	if (pipe_command_close(pfd, pid) < 0) {
 		warn("pipe_command_close(ldd): %s", filename);
 		ret = -1;
@@ -348,7 +346,6 @@ static int enqueue_shared_libraries(const char *filename, uint8_t elf_class, uin
 		free(pending[i].soname);
 		free(pending[i].path);
 	}
-	free(pending);
 
 	return ret;
 }
@@ -370,7 +367,7 @@ bool is_elf_file(char buf[LINE_MAX])
 int enqueue_libraries(const char *filename, int fd)
 {
 	int ret = 0;
-	Elf *e;
+	Elf *e __free(elf_end) = NULL;
 	GElf_Ehdr ehdr;
 	Elf_Scn *scn;
 	Elf_Scn *dynamic_scn = NULL;
@@ -497,8 +494,6 @@ int enqueue_libraries(const char *filename, int fd)
 	free(needed_names);
 
 end:
-	elf_end(e);
-
 	if (!ret && dynamic_scn)
 		ret = enqueue_elf_dlopen(filename, fd);
 
