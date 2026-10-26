@@ -804,6 +804,10 @@ int main(int argc, char **argv)
 			case 'r':
 				prefix = optarg;
 				prefix_len = strlen(optarg);
+				while (prefix_len > 1 && prefix[prefix_len - 1] == '/') {
+					prefix[prefix_len - 1] = '\0';
+					prefix_len--;
+				}
 				break;
 			case 'v':
 				verbose++;
@@ -850,13 +854,15 @@ int main(int argc, char **argv)
 
 			queue->dst = queue->src;
 
-			if (prefix) {
+			if (prefix && prefix_len > 0) {
 				size_t dst_len = strlen(queue->dst);
-				if (dst_len >= prefix_len && queue->dst[prefix_len] == '/' &&
-				    !strncmp(queue->dst, prefix, prefix_len - 1))
+				if (dst_len >= prefix_len &&
+				    (queue->dst[prefix_len] == '/' || queue->dst[prefix_len] == '\0') &&
+				    !strncmp(queue->dst, prefix, prefix_len)) {
 					queue->dst += prefix_len;
-				else if (!strcmp(queue->dst, prefix))
-					queue->dst = (char *) "";
+					if (queue->dst[0] == '\0')
+						queue->dst = (char *) "";
+				}
 			}
 
 			if (!force) {
