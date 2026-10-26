@@ -558,10 +558,28 @@ void install_file(struct file *p)
 	}
 
 	if (S_IFLNK == (p->stat.st_mode & S_IFMT)) {
+		if (!p->symlink) {
+			warnx("symlink target missing for `%s'", p->src);
+			return;
+		}
+
+		const char *target = p->symlink;
+
+		if (prefix && prefix_len > 0) {
+			size_t target_len = strlen(target);
+			if (target_len >= prefix_len &&
+			    (target[prefix_len] == '/' || target[prefix_len] == '\0') &&
+			    !strncmp(target, prefix, prefix_len)) {
+				target += prefix_len;
+				if (target[0] == '\0')
+					target = "/";
+			}
+		}
+
 		if (verbose > 2)
-			warnx("create a symlink file: %s", install_path);
+			warnx("create a symlink file: %s -> %s", install_path, target);
 		errno = 0;
-		if (symlink(p->symlink, install_path) < 0) {
+		if (symlink(target, install_path) < 0) {
 			if (errno == EEXIST) {
 				op = "skip";
 				goto end;
