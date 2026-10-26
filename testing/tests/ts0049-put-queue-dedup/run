@@ -1,0 +1,59 @@
+#!/bin/bash -efu
+set -o pipefail
+
+cwd="$(readlink -ev "${0%/*}")"
+
+topdir="$(readlink -ev "$cwd/../../..")"
+for p in usr/bin usr/local/bin bin; do
+	if [ -x "$topdir/.build/dest/$p/initrd-put" ]; then
+		export PATH="$topdir/.build/dest/$p:$PATH"
+		break
+	fi
+done
+
+. "$cwd"/../put-file-sh-functions
+
+make_fs()
+{
+	rm -rf -- "$1"
+	for n in bin lib; do
+		mkdir -p -- "$1/$n"
+	done
+}
+
+make_fs "$cwd/from"
+make_fs "$cwd/to"
+
+cat <<'EOF' > "$cwd/from/bin/hello"
+#!/bin/sh
+echo "hello"
+EOF
+chmod +x "$cwd/from/bin/hello"
+
+cat <<'EOF' > "$cwd/from/bin/world"
+#!/bin/sh
+echo "world"
+EOF
+chmod +x "$cwd/from/bin/world"
+
+log="$cwd/run.log"
+
+# Pass both scripts and their shared parent directory explicitly multiple times
+tools/put-file -vv -r "$cwd/from" "$cwd/to" \
+	"$cwd/from/bin/hello" \
+	"$cwd/from/bin/world" \
+	"$cwd/from/bin/hello" \
+	"$cwd/from/bin" \
+	> "$log" 2>&1
+
+[ -f "$cwd/to/bin/hello" ]
+[ -f "$cwd/to/bin/world" ]
+
+# Check that redundant items are not added to queue multiple times
+count_hello=$(grep -F "add to list: $cwd/from/bin/hello" "$log" | wc -l)
+[ "$count_hello" -eq 1 ]
+
+# Check that duplicate queue elements are eliminated before reaching main loop
+! grep -Fq "has already been processed" "$log"
+
+rm -rf -- "$cwd/from" "$cwd/to" "$log"

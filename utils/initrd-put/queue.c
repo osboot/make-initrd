@@ -10,9 +10,11 @@
 #include <sysexits.h>
 #include <err.h>
 #include <regex.h>
+#include <search.h>
 
 #include "memory.h"
 #include "queue.h"
+#include "tree.h"
 
 extern int verbose;
 extern char *prefix;
@@ -21,6 +23,26 @@ extern size_t exclude_match_nr;
 
 static struct file *inqueue = NULL;
 static size_t queue_nr = 0;
+static void *queued_files = NULL;
+
+static int compare_file(const void *a, const void *b)
+{
+	return strcmp(((const struct file *)a)->src, ((const struct file *)b)->src);
+}
+
+static struct file *queue_find(const char *path)
+{
+	struct file key = { .src = (char *) path };
+	void *res = tfind(&key, &queued_files, compare_file);
+	if (!res)
+		return NULL;
+	return *(struct file **) res;
+}
+
+bool is_path_queued(const char *path)
+{
+	return queue_find(path) != NULL;
+}
 
 struct file *get_queue(size_t *nr)
 {
@@ -33,39 +55,46 @@ struct file *get_queue(size_t *nr)
 struct file *enqueue_item(const char *str, ssize_t len)
 {
 	struct file *new;
+	char buf[PATH_MAX + 1];
+	const char *src_str = str;
+
+	if (len >= 0) {
+		size_t n = (size_t) len;
+
+		if (n > PATH_MAX)
+			n = PATH_MAX;
+
+		memcpy(buf, str, n);
+		buf[n] = '\0';
+		src_str = buf;
+	}
 
 	if (exclude_match_nr) {
-		char buf[PATH_MAX + 1];
-
-		if (len > 0) {
-			size_t n = (size_t) len;
-
-			if (n > PATH_MAX)
-				n = PATH_MAX;
-
-			memcpy(buf, str, n);
-			buf[n] = '\0';
-		} else {
-			strlcpy(buf, str, sizeof(buf));
-		}
-
 		for (size_t i = 0; i < exclude_match_nr; i++) {
-			if (!regexec(&exclude_match[i], buf, 0, NULL, 0)) {
+			if (!regexec(&exclude_match[i], src_str, 0, NULL, 0)) {
 				if (verbose > 1)
-					warnx("exclude path: %s", buf);
+					warnx("exclude path: %s", src_str);
 				return NULL;
 			}
 		}
 	}
 
-	new = xcalloc(1, sizeof(*new));
+	new = queue_find(src_str);
+	if (new)
+		return new;
 
-	new->src = (len < 0)
-	           ? xstrdup(str)
-	           : xstrndup(str, (size_t) len);
+	if (is_path_added(src_str))
+		return NULL;
+
+	new = xcalloc(1, sizeof(*new));
+	new->src = xstrdup(src_str);
 
 	if (verbose > 1)
 		warnx("add to list: %s", new->src);
+
+	void *ptr = tsearch(new, &queued_files, compare_file);
+	if (!ptr)
+		err(EX_OSERR, "tsearch");
 
 	if (inqueue) {
 		if (inqueue->prev)
@@ -84,6 +113,9 @@ void dequeue_item(struct file *ptr)
 {
 	if (!ptr)
 		return;
+
+	tdelete(ptr, &queued_files, compare_file);
+
 	if (ptr->prev)
 		ptr->prev->next = ptr->next;
 	if (ptr->next)
@@ -91,6 +123,16 @@ void dequeue_item(struct file *ptr)
 	if (inqueue == ptr)
 		inqueue = ptr->next;
 	queue_nr--;
+}
+
+void queue_destroy(void)
+{
+#ifdef HAVE_TDESTROY
+	tdestroy(queued_files, free_file);
+#endif
+	queued_files = NULL;
+	inqueue = NULL;
+	queue_nr = 0;
 }
 
 void free_file(void *ptr)

@@ -986,6 +986,7 @@ int main(int argc, char **argv)
 	}
 
 	tree_destroy();
+	queue_destroy();
 	elf_cache_destroy();
 	free(destdir);
 

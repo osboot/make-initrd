@@ -27,7 +27,7 @@ bool is_path_added(const char *path)
 {
 	struct file v = { 0 };
 	v.src = (char *) path;
-	return tfind(&v, &files, compare) != NULL;
+	return (tfind(&v, &files, compare) != NULL) || is_path_queued(path);
 }
 
 bool tree_add_file(struct file *file)
