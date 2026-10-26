@@ -986,6 +986,7 @@ int main(int argc, char **argv)
 	}
 
 	tree_destroy();
+	elf_cache_destroy();
 	free(destdir);
 
 	for (size_t i = 0; i < exclude_match_nr; i++)

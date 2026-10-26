@@ -1,0 +1,123 @@
+#!/bin/bash -efu
+set -o pipefail
+
+cwd="$(readlink -ev "${0%/*}")"
+
+topdir="$(readlink -ev "$cwd/../../..")"
+for p in usr/bin usr/local/bin bin; do
+	if [ -x "$topdir/.build/dest/$p/initrd-put" ]; then
+		export PATH="$topdir/.build/dest/$p:$PATH"
+		break
+	fi
+done
+
+. "$cwd"/../put-file-sh-functions
+
+make_fs()
+{
+	rm -rf -- "$1"
+	for n in bin lib lib32 lib64 libx32 custom; do
+		if [ -L /$n ]; then
+			mkdir -p -- "$1/usr/$n"
+			ln -s -- "usr/$n" "$1/$n"
+		else
+			mkdir -p -- "$1/$n"
+		fi
+	done
+}
+
+srcdir="$cwd/src"
+rm -rf -- "$srcdir"
+mkdir -p -- "$srcdir/custom"
+
+cat <<'EOF' > "$srcdir/libcommon.c"
+int common_func(void) { return 42; }
+EOF
+
+cat <<'EOF' > "$srcdir/libcustom.c"
+int custom_func(void) { return 100; }
+EOF
+
+cat <<'EOF' > "$srcdir/bin1.c"
+extern int common_func(void);
+int main(void) { return common_func(); }
+EOF
+
+cat <<'EOF' > "$srcdir/bin2.c"
+extern int common_func(void);
+int main(void) { return common_func() + 1; }
+EOF
+
+cat <<'EOF' > "$srcdir/bin_rpath.c"
+extern int custom_func(void);
+int main(void) { return custom_func(); }
+EOF
+
+${CC:-gcc} -fPIC -shared -o "$srcdir/libcommon.so" "$srcdir/libcommon.c"
+${CC:-gcc} -fPIC -shared -o "$srcdir/custom/libcustom.so" "$srcdir/libcustom.c"
+${CC:-gcc} -o "$srcdir/bin1" "$srcdir/bin1.c" -L"$srcdir" -lcommon
+${CC:-gcc} -o "$srcdir/bin2" "$srcdir/bin2.c" -L"$srcdir" -lcommon
+${CC:-gcc} -o "$srcdir/bin_rpath" "$srcdir/bin_rpath.c" -L"$srcdir/custom" -lcustom -Wl,-rpath,'$ORIGIN/../custom:$ORIGIN/../../custom'
+
+make_fs "$cwd/from"
+cp -a -- "$srcdir/bin1" "$cwd/from/bin/"
+cp -a -- "$srcdir/bin2" "$cwd/from/bin/"
+cp -a -- "$srcdir/libcommon.so" "$cwd/from/lib/"
+cp -a -- "$srcdir/bin_rpath" "$cwd/from/bin/"
+cp -a -- "$srcdir/custom/libcustom.so" "$cwd/from/custom/"
+
+mockbin="$cwd/mockbin"
+rm -rf -- "$mockbin"
+mkdir -p -- "$mockbin"
+logfile="$cwd/ldd.log"
+rm -f -- "$logfile"
+
+cat <<EOF > "$mockbin/ldd"
+#!/bin/bash
+echo "\$*" >> "$logfile"
+exec /usr/bin/ldd "\$@"
+EOF
+chmod +x -- "$mockbin/ldd"
+
+export PATH="$mockbin:$PATH"
+export LD_LIBRARY_PATH="$cwd/from/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+# Test 1: Cache enabled by default. bin1 invokes ldd, bin2 must hit cache and skip ldd.
+make_fs "$cwd/to"
+rm -f -- "$logfile"
+
+tools/put-file -r "$cwd/from" "$cwd/to" "$cwd/from/bin/bin1" "$cwd/from/bin/bin2"
+
+[ -f "$cwd/to/bin/bin1" ]
+[ -f "$cwd/to/bin/bin2" ]
+[ -f "$cwd/to/lib/libcommon.so" ]
+
+grep -q "bin1" "$logfile"
+! grep -q "bin2" "$logfile"
+
+# Test 2: IGNORE_PUT_ELF_CACHE=1 disables cache. Both bin1 and bin2 must invoke ldd.
+make_fs "$cwd/to"
+rm -f -- "$logfile"
+
+IGNORE_PUT_ELF_CACHE=1 tools/put-file -r "$cwd/from" "$cwd/to" "$cwd/from/bin/bin1" "$cwd/from/bin/bin2"
+
+[ -f "$cwd/to/bin/bin1" ]
+[ -f "$cwd/to/bin/bin2" ]
+[ -f "$cwd/to/lib/libcommon.so" ]
+
+grep -q "bin1" "$logfile"
+grep -q "bin2" "$logfile"
+
+# Test 3: Binary with RPATH must bypass cache and resolve its custom library.
+make_fs "$cwd/to"
+rm -f -- "$logfile"
+
+tools/put-file -r "$cwd/from" "$cwd/to" "$cwd/from/bin/bin_rpath"
+
+[ -f "$cwd/to/bin/bin_rpath" ]
+[ -f "$cwd/to/custom/libcustom.so" ]
+
+grep -q "bin_rpath" "$logfile"
+
+# Cleanup
+rm -rf -- "$cwd/from" "$cwd/to" "$cwd/src" "$cwd/mockbin" "$logfile"

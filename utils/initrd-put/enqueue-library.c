@@ -12,6 +12,9 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <search.h>
+#include <sysexits.h>
+#include <stdint.h>
 
 #include <gelf.h>
 
@@ -32,9 +35,8 @@
 
 extern int verbose;
 
-static bool is_dynamic_elf_file(const char *filename, int fd) __attribute__((__nonnull__ (1)));
 static int enqueue_elf_dlopen(const char *filename, int fd) __attribute__((__nonnull__ (1)));
-static int enqueue_shared_libraries(const char *filename) __attribute__((__nonnull__ (1)));
+static int enqueue_shared_libraries(const char *filename, uint8_t elf_class, uint16_t elf_machine, bool can_cache) __attribute__((__nonnull__ (1)));
 static FILE *pipe_command(char *const argv[], pid_t *pid_out);
 static int pipe_command_close(FILE *stream, pid_t pid);
 
@@ -107,50 +109,82 @@ static int pipe_command_close(FILE *stream, pid_t pid)
 }
 
 
-bool is_dynamic_elf_file(const char *filename, int fd)
+struct elf_cache_entry {
+	uint8_t elf_class;
+	uint16_t elf_machine;
+	char *soname;
+	char *path;
+};
+
+static void *elf_cache_root = NULL;
+
+static int elf_cache_compare(const void *a, const void *b)
 {
-	bool is_dynamic = false;
-	Elf *e;
-	Elf_Scn *scn;
-	size_t shstrndx;
+	const struct elf_cache_entry *ea = a;
+	const struct elf_cache_entry *eb = b;
 
-	if ((e = elf_begin(fd, ELF_C_READ, NULL)) == NULL) {
-		warnx("%s: elf_begin: %s", filename, elf_errmsg(-1));
-		goto err;
+	if (ea->elf_class != eb->elf_class)
+		return (int)ea->elf_class - (int)eb->elf_class;
+	if (ea->elf_machine != eb->elf_machine)
+		return (int)ea->elf_machine - (int)eb->elf_machine;
+	return strcmp(ea->soname, eb->soname);
+}
+
+static const char *elf_cache_lookup(uint8_t elf_class, uint16_t elf_machine, const char *soname)
+{
+	struct elf_cache_entry key = {
+		.elf_class = elf_class,
+		.elf_machine = elf_machine,
+		.soname = (char *) soname,
+	};
+	void *res = tfind(&key, &elf_cache_root, elf_cache_compare);
+	if (!res)
+		return NULL;
+	return (*(struct elf_cache_entry **)res)->path;
+}
+
+static void elf_cache_insert(uint8_t elf_class, uint16_t elf_machine, const char *soname, const char *path)
+{
+	struct elf_cache_entry *entry = xcalloc(1, sizeof(*entry));
+	entry->elf_class = elf_class;
+	entry->elf_machine = elf_machine;
+	entry->soname = xstrdup(soname);
+	entry->path = xstrdup(path);
+
+	void *res = tsearch(entry, &elf_cache_root, elf_cache_compare);
+	if (!res)
+		err(EX_OSERR, "tsearch");
+	if (*(struct elf_cache_entry **)res != entry) {
+		free(entry->soname);
+		free(entry->path);
+		free(entry);
 	}
+}
 
-	switch (elf_kind(e)) {
-		case  ELF_K_NONE:
-		case  ELF_K_AR:
-		case ELF_K_COFF:
-		case  ELF_K_ELF:
-			break;
-		default:
-			goto end;
+static void free_elf_cache_entry(void *nodep)
+{
+	struct elf_cache_entry *e = nodep;
+	free(e->soname);
+	free(e->path);
+	free(e);
+}
+
+void elf_cache_destroy(void)
+{
+#ifdef HAVE_TDESTROY
+	tdestroy(elf_cache_root, free_elf_cache_entry);
+#endif
+	elf_cache_root = NULL;
+}
+
+static bool is_elf_cache_disabled(void)
+{
+	static int disabled = -1;
+	if (disabled == -1) {
+		const char *env = getenv("IGNORE_PUT_ELF_CACHE");
+		disabled = (env && *env && strcmp(env, "0") != 0) ? 1 : 0;
 	}
-
-	if (elf_getshdrstrndx(e, &shstrndx) != 0) {
-		warnx("%s: elf_getshdrstrndx: %s", filename, elf_errmsg(-1));
-		goto end;
-	}
-
-	for (scn = NULL; (scn = elf_nextscn(e, scn)) != NULL;) {
-		GElf_Shdr  shdr;
-
-		if (gelf_getshdr(scn, &shdr) != &shdr) {
-			warnx("%s: gelf_getshdr: %s", filename, elf_errmsg(-1));
-			goto end;
-		}
-
-		if (shdr.sh_type == SHT_DYNAMIC) {
-			is_dynamic = true;
-			break;
-		}
-	}
-end:
-	elf_end(e);
-err:
-	return is_dynamic;
+	return disabled == 1;
 }
 
 int enqueue_elf_dlopen(const char *filename, int fd)
@@ -215,7 +249,12 @@ err:
 	return ret;
 }
 
-int enqueue_shared_libraries(const char *filename)
+struct pending_cache {
+	char *soname;
+	char *path;
+};
+
+static int enqueue_shared_libraries(const char *filename, uint8_t elf_class, uint16_t elf_machine, bool can_cache)
 {
 	int ret = 0;
 	pid_t pid = -1;
@@ -223,7 +262,9 @@ int enqueue_shared_libraries(const char *filename)
 	char *line = NULL;
 	size_t len = 0;
 	ssize_t n;
-	char *const argv[] = { "ldd", "--", (char *) filename, NULL };
+	char *const argv[] = { (char *) "ldd", (char *) "--", (char *) filename, NULL };
+	struct pending_cache *pending = NULL;
+	size_t pending_cnt = 0, pending_cap = 0;
 
 	pfd = pipe_command(argv, &pid);
 	if (!pfd) {
@@ -233,6 +274,7 @@ int enqueue_shared_libraries(const char *filename)
 
 	while ((n = getline(&line, &len, pfd)) != -1) {
 		char *p;
+		char *soname = NULL;
 
 		if (line[n - 1] == '\n')
 			line[n - 1] = '\0';
@@ -247,17 +289,40 @@ int enqueue_shared_libraries(const char *filename)
 			*p = '\0';
 		}
 
-		p = strstr(line, " => ");
-		if (p)
-			p += 4;
-		else
+		char *sep = strstr(line, " => ");
+		if (sep) {
+			soname = line;
+			while (*soname != '\0' && isspace((unsigned char)*soname))
+				soname++;
+			char *end_soname = sep;
+			while (end_soname > soname && isspace((unsigned char)end_soname[-1]))
+				end_soname--;
+			*end_soname = '\0';
+			p = sep + 4;
+		} else {
 			p = line;
+		}
 
-		while (*p != '\0' && isspace(*p))
+		while (*p != '\0' && isspace((unsigned char)*p))
 			*p++ = '\0';
 
 		if (*p != '/')
 			continue;
+
+		if (can_cache) {
+			const char *key_soname = (soname && *soname) ? soname : strrchr(p, '/');
+			if (key_soname && *key_soname == '/')
+				key_soname++;
+			if (key_soname && *key_soname) {
+				if (pending_cnt == pending_cap) {
+					pending_cap = pending_cap ? pending_cap * 2 : 8;
+					pending = xrealloc(pending, pending_cap, sizeof(*pending));
+				}
+				pending[pending_cnt].soname = xstrdup(key_soname);
+				pending[pending_cnt].path = xstrdup(p);
+				pending_cnt++;
+			}
+		}
 
 		if (verbose > 1)
 			warnx("shared object '%s' depends on '%s'", filename, p);
@@ -273,7 +338,17 @@ int enqueue_shared_libraries(const char *filename)
 	if (pipe_command_close(pfd, pid) < 0) {
 		warn("pipe_command_close(ldd): %s", filename);
 		ret = -1;
+	} else if (can_cache) {
+		for (size_t i = 0; i < pending_cnt; i++) {
+			elf_cache_insert(elf_class, elf_machine, pending[i].soname, pending[i].path);
+		}
 	}
+
+	for (size_t i = 0; i < pending_cnt; i++) {
+		free(pending[i].soname);
+		free(pending[i].path);
+	}
+	free(pending);
 
 	return ret;
 }
@@ -295,11 +370,137 @@ bool is_elf_file(char buf[LINE_MAX])
 int enqueue_libraries(const char *filename, int fd)
 {
 	int ret = 0;
+	Elf *e;
+	GElf_Ehdr ehdr;
+	Elf_Scn *scn;
+	Elf_Scn *dynamic_scn = NULL;
+	GElf_Shdr dynamic_shdr;
+	uint8_t elf_class;
+	uint16_t elf_machine;
+	char interp[PATH_MAX + 1] = { 0 };
 
-	if (is_dynamic_elf_file(filename, fd)) {
-		ret = enqueue_shared_libraries(filename);
-		if (!ret)
-			ret = enqueue_elf_dlopen(filename, fd);
+	if ((e = elf_begin(fd, ELF_C_READ, NULL)) == NULL) {
+		warnx("%s: elf_begin: %s", filename, elf_errmsg(-1));
+		return 0;
 	}
+
+	switch (elf_kind(e)) {
+		case ELF_K_NONE:
+		case ELF_K_AR:
+		case ELF_K_COFF:
+		case ELF_K_ELF:
+			break;
+		default:
+			goto end;
+	}
+
+	if (gelf_getehdr(e, &ehdr) != &ehdr)
+		goto end;
+
+	elf_class = ehdr.e_ident[EI_CLASS];
+	elf_machine = ehdr.e_machine;
+
+	size_t phnum = 0;
+	if (elf_getphdrnum(e, &phnum) == 0 && phnum > 0) {
+		for (size_t i = 0; i < phnum; i++) {
+			GElf_Phdr phdr;
+			if (gelf_getphdr(e, (int) i, &phdr) != &phdr)
+				continue;
+			if (phdr.p_type == PT_INTERP) {
+				if (phdr.p_filesz > 0 && phdr.p_filesz < sizeof(interp)) {
+					if (TEMP_FAILURE_RETRY(pread(fd, interp, (size_t) phdr.p_filesz, (off_t) phdr.p_offset)) == (ssize_t) phdr.p_filesz) {
+						interp[phdr.p_filesz] = '\0';
+						char *end = interp + strlen(interp);
+						while (end > interp && isspace((unsigned char)end[-1]))
+							*--end = '\0';
+					}
+				}
+				break;
+			}
+		}
+	}
+
+	for (scn = NULL; (scn = elf_nextscn(e, scn)) != NULL;) {
+		GElf_Shdr shdr;
+		if (gelf_getshdr(scn, &shdr) != &shdr)
+			continue;
+		if (shdr.sh_type == SHT_DYNAMIC) {
+			dynamic_scn = scn;
+			dynamic_shdr = shdr;
+			break;
+		}
+	}
+
+	if (!dynamic_scn)
+		goto end;
+
+	bool has_rpath = false;
+	char **needed_names = NULL;
+	size_t needed_cnt = 0, needed_cap = 0;
+
+	Elf_Data *data = elf_getdata(dynamic_scn, NULL);
+	if (data && dynamic_shdr.sh_entsize > 0) {
+		size_t num_dyn = dynamic_shdr.sh_size / dynamic_shdr.sh_entsize;
+		for (size_t i = 0; i < num_dyn; i++) {
+			GElf_Dyn dyn;
+			if (gelf_getdyn(data, (int) i, &dyn) != &dyn)
+				break;
+			if (dyn.d_tag == DT_NULL)
+				break;
+			if (dyn.d_tag == DT_RPATH || dyn.d_tag == DT_RUNPATH) {
+				has_rpath = true;
+			} else if (dyn.d_tag == DT_NEEDED) {
+				const char *soname = elf_strptr(e, dynamic_shdr.sh_link, dyn.d_un.d_val);
+				if (soname && *soname) {
+					if (needed_cnt == needed_cap) {
+						needed_cap = needed_cap ? needed_cap * 2 : 8;
+						needed_names = xrealloc(needed_names, needed_cap, sizeof(*needed_names));
+					}
+					needed_names[needed_cnt++] = xstrdup(soname);
+				}
+			}
+		}
+	}
+
+	bool can_use_cache = !has_rpath && !is_elf_cache_disabled();
+	bool all_in_cache = can_use_cache;
+
+	if (can_use_cache) {
+		for (size_t i = 0; i < needed_cnt; i++) {
+			if (!elf_cache_lookup(elf_class, elf_machine, needed_names[i])) {
+				all_in_cache = false;
+				break;
+			}
+		}
+	}
+
+	if (all_in_cache) {
+		for (size_t i = 0; i < needed_cnt; i++) {
+			const char *path = elf_cache_lookup(elf_class, elf_machine, needed_names[i]);
+			if (verbose > 1)
+				warnx("shared object '%s' depends on '%s'", filename, path);
+			if (!is_path_added(path))
+				enqueue_item(path, -1);
+		}
+		if (interp[0] == '/') {
+			if (verbose > 1)
+				warnx("shared object '%s' depends on '%s'", filename, interp);
+			if (!is_path_added(interp))
+				enqueue_item(interp, -1);
+		}
+	} else {
+		ret = enqueue_shared_libraries(filename, elf_class, elf_machine, can_use_cache);
+	}
+
+	for (size_t i = 0; i < needed_cnt; i++)
+		free(needed_names[i]);
+	free(needed_names);
+
+end:
+	elf_end(e);
+
+	if (!ret && dynamic_scn)
+		ret = enqueue_elf_dlopen(filename, fd);
+
 	return ret;
 }

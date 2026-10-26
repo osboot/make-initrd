@@ -11,6 +11,7 @@ int enqueue_shebang(const char *filename, char buf[LINE_MAX]);
 void init_elf_library(void);
 bool is_elf_file(char buf[LINE_MAX]);
 int enqueue_libraries(const char *filename, int fd);
+void elf_cache_destroy(void);
 
 #endif // __INITRD_PUT_ENQUEUE_H__
 

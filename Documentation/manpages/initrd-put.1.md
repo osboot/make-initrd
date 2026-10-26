@@ -41,6 +41,12 @@ binary dependencies and copies them along with the specified files.
 *-h, --help*
 	Show this text and exit.
 
+# ENVIRONMENT
+
+*IGNORE_PUT_ELF_CACHE*
+	If set to a non-zero value, disables ELF soname dependency resolution
+	caching, forcing ldd to be invoked for every dynamic ELF binary and library.
+
 # AUTHOR
 
 Written by Alexey Gladkov.
