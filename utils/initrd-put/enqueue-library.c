@@ -240,10 +240,12 @@ int enqueue_shared_libraries(const char *filename)
 		p = strstr(line, "(0x");
 		if (!p)
 			continue;
-		*p-- = '\0';
+		*p = '\0';
 
-		while (line != p && isspace(*p))
-			*p-- = '\0';
+		while (p > line && isspace((unsigned char)p[-1])) {
+			p--;
+			*p = '\0';
+		}
 
 		p = strstr(line, " => ");
 		if (p)
