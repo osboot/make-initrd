@@ -99,6 +99,8 @@ void enqueue_directory(char *path)
 				errno = p->fts_errno;
 				warn("fts_read: %s", p->fts_path);
 				continue;
+			case FTS_DP:
+				continue;
 		}
 
 		if (is_path_added(p->fts_path))
