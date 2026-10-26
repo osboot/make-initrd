@@ -48,6 +48,7 @@ static int in_envvar(const char *envname, const char *filename, const char *valu
 
 	int regex_err;
 	regex_t regex = { 0 };
+	bool regex_compiled = false;
 
 	if (!(list = getenv(envname)))
 		return 0;
@@ -62,7 +63,7 @@ static int in_envvar(const char *envname, const char *filename, const char *valu
 
 	for (; p < e; s = p + 1) {
 		if (!(p = strchr(s, ',')))
-			p = e + 1;
+			p = e;
 
 		sz = (size_t) (p - s);
 
@@ -82,7 +83,10 @@ static int in_envvar(const char *envname, const char *filename, const char *valu
 
 		if (file_regex) {
 			// Release the previous regex if any.
-			regfree(&regex);
+			if (regex_compiled) {
+				regfree(&regex);
+				regex_compiled = false;
+			}
 
 			// Add place for null-byte.
 			file_regex_sz += 1;
@@ -107,18 +111,20 @@ static int in_envvar(const char *envname, const char *filename, const char *valu
 				warnx("in_envvar: bad regex: %s", errbuf);
 				continue;
 			}
+			regex_compiled = true;
 
 			if (regexec(&regex, filename, 0, NULL, 0) == REG_NOMATCH)
 				continue;
 		}
 
-		if (!strncmp(word, value, word_sz)) {
+		if (strlen(value) == word_sz && !strncmp(word, value, word_sz)) {
 			ret = 1;
 			break;
 		}
 	}
 
-	regfree(&regex);
+	if (regex_compiled)
+		regfree(&regex);
 	free(buf);
 
 	return ret;
