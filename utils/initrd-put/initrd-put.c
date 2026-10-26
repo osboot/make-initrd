@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdatomic.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <getopt.h>
 #include <errno.h>
@@ -22,6 +24,7 @@
 #include <ctype.h>
 #include <regex.h>
 #include <string.h>
+#include <search.h>
 
 #include "temp_failure_retry.h"
 #include "memory.h"
@@ -39,7 +42,8 @@ static char *logfile = NULL;
 int verbose = 0;
 static int dry_run = 0;
 static int force = 0;
-static size_t installed = 0;
+int jobs = 0;
+static atomic_size_t installed = 0;
 
 regex_t *exclude_match = NULL;
 size_t exclude_match_nr = 0;
@@ -59,7 +63,9 @@ static void enqueue_canonicalized_path(const char *name, bool add_recursively);
 static int enqueue_regular_file(const char *filename) __attribute__((__nonnull__ (1)));
 static void enqueue_path(struct file *p) __attribute__((__nonnull__ (1)));
 static void print_file(struct file *p) __attribute__((__nonnull__ (1)));
+static void print_uninstalled_file(struct file *p) __attribute__((__nonnull__ (1)));
 static void install_file(struct file *p) __attribute__((__nonnull__ (1)));
+static void install_hardlink(struct file *p) __attribute__((__nonnull__ (1)));
 static void apply_permissions(struct file *p) __attribute__((__nonnull__ (1)));
 
 void fill_stat(struct file *p, struct stat *sb)
@@ -98,6 +104,8 @@ void enqueue_directory(char *path)
 			case FTS_NS:
 				errno = p->fts_errno;
 				warn("fts_read: %s", p->fts_path);
+				continue;
+			case FTS_DP:
 				continue;
 		}
 
@@ -190,12 +198,14 @@ bool dir_check(const char *dir, char *dirend)
 	 * otherwise.  Follow symbolic links.
 	 */
 	struct stat st;
-	return stat(dir, &st) == 0 || errno == EOVERFLOW;
+	bool ret = (stat(dir, &st) == 0 || errno == EOVERFLOW);
+	*dirend = '\0';
+	return ret;
 }
 
 void enqueue_canonicalized_path(const char *name, bool add_recursively)
 {
-	char rname[PATH_MAX + 1];
+	char rname[PATH_MAX + sizeof(dir_suffix) + 1];
 	char link_buffer[PATH_MAX + 1];
 	char extra_buffer[PATH_MAX + 1];
 	int num_links = 0;
@@ -254,6 +264,11 @@ void enqueue_canonicalized_path(const char *name, bool add_recursively)
 		} else {
 			if (!IS_DIR_SEPARATOR(dest[-1]))
 				*dest++ = '/';
+
+			if ((size_t)(rname + sizeof(rname) - dest) < startlen + sizeof(dir_suffix)) {
+				errno = ENAMETOOLONG;
+				goto error;
+			}
 
 			dest = mempcpy(dest, start, startlen);
 			*dest = '\0';
@@ -325,19 +340,20 @@ error:
 
 	errno = 0;
 
-	if (verbose > 0)
+	if (verbose > 0 && num_links > 0)
 		warnx("symlink '%s' points to '%s'", name, rname);
 
 	struct file *f;
 
-	f = enqueue_item(rname, dest - rname);
+	f = enqueue_item(rname, -1);
 	if (f)
 		f->recursive = add_recursively;
 }
 
 int enqueue_regular_file(const char *filename)
 {
-	static char buf[LINE_MAX];
+	char buf[LINE_MAX];
+	ssize_t n;
 	int fd, ret = -1;
 
 	errno = 0;
@@ -349,13 +365,12 @@ int enqueue_regular_file(const char *filename)
 		return -1;
 	}
 
-	buf[0] = 0;
-	if (pread(fd, buf, sizeof(buf), 0) < 0) {
+	n = pread(fd, buf, sizeof(buf) - 1, 0);
+	if (n < 0) {
 		warn("read: %s", filename);
 		goto end;
 	}
-
-	buf[LINE_MAX - 1] = 0;
+	buf[n] = '\0';
 
 	if (!access(filename, X_OK) && is_shebang(buf)) {
 		ret = enqueue_shebang(filename, buf);
@@ -459,12 +474,18 @@ void print_file(struct file *p)
 	        (p->symlink ? p->symlink : ""));
 }
 
-static char install_path[PATH_MAX + 1];
-static int use_copy_file_range = 1;
-static int use_sendfile = 1;
+void print_uninstalled_file(struct file *p)
+{
+	if (!p->installed)
+		print_file(p);
+}
+
+static volatile int use_copy_file_range = 1;
+static volatile int use_sendfile = 1;
 
 void install_file(struct file *p)
 {
+	char install_path[PATH_MAX + 1];
 	const char *ftype;
 	const char *op = "install";
 
@@ -498,6 +519,7 @@ void install_file(struct file *p)
 			break;
 	}
 
+	memcpy(install_path, destdir, destdir_len);
 	size_t avail = sizeof(install_path) - destdir_len;
 
 	if (strlcpy(install_path + destdir_len, p->dst, avail) >= avail)
@@ -542,10 +564,28 @@ void install_file(struct file *p)
 	}
 
 	if (S_IFLNK == (p->stat.st_mode & S_IFMT)) {
+		if (!p->symlink) {
+			warnx("symlink target missing for `%s'", p->src);
+			return;
+		}
+
+		const char *target = p->symlink;
+
+		if (prefix && prefix_len > 0) {
+			size_t target_len = strlen(target);
+			if (target_len >= prefix_len &&
+			    (target[prefix_len] == '/' || target[prefix_len] == '\0') &&
+			    !strncmp(target, prefix, prefix_len)) {
+				target += prefix_len;
+				if (target[0] == '\0')
+					target = "/";
+			}
+		}
+
 		if (verbose > 2)
-			warnx("create a symlink file: %s", install_path);
+			warnx("create a symlink file: %s -> %s", install_path, target);
 		errno = 0;
-		if (symlink(p->symlink, install_path) < 0) {
+		if (symlink(target, install_path) < 0) {
 			if (errno == EEXIST) {
 				op = "skip";
 				goto end;
@@ -592,7 +632,7 @@ void install_file(struct file *p)
 	if (S_IFREG != (p->stat.st_mode & S_IFMT))
 		errx(EXIT_FAILURE, "not implemented (mode=%o): %s", p->stat.st_mode, p->dst);
 
-	if (!access(install_path, X_OK)) {
+	if (!access(install_path, F_OK)) {
 		op = "skip";
 		goto end;
 	}
@@ -624,9 +664,9 @@ void install_file(struct file *p)
 		goto fallback_sendfile;
 	do {
 		errno = 0;
-		ret = copy_file_range(sfd, NULL, dfd, NULL, (size_t) len, 0);
+		ret = TEMP_FAILURE_RETRY(copy_file_range(sfd, NULL, dfd, NULL, (size_t) len, 0));
 		if (ret < 0) {
-			if (errno == EXDEV || errno == ENOSYS) {
+			if (errno == EXDEV || errno == ENOSYS || errno == EOPNOTSUPP || errno == EINVAL) {
 				use_copy_file_range = 0;
 				if (verbose > 2)
 					warnx("copy_file_range not supported");
@@ -643,7 +683,7 @@ end:
 	if (verbose)
 		warnx("%s (%s): %s", op, ftype, install_path);
 	p->installed = true;
-	installed++;
+	atomic_fetch_add(&installed, 1);
 	return;
 
 fallback_sendfile:
@@ -656,9 +696,9 @@ fallback_sendfile:
 	len = p->stat.st_size;
 	do {
 		errno = 0;
-		ret = sendfile(dfd, sfd, NULL, (size_t) len);
+		ret = TEMP_FAILURE_RETRY(sendfile(dfd, sfd, NULL, (size_t) len));
 		if (ret < 0) {
-			if (errno == EINVAL || errno == ENOSYS) {
+			if (errno == EINVAL || errno == ENOSYS || errno == EOPNOTSUPP) {
 				use_sendfile = 0;
 				if (verbose > 2)
 					warnx("sendfile not supported");
@@ -681,19 +721,91 @@ fallback_readwrite:
 		ret = TEMP_FAILURE_RETRY(read(sfd, buf, sizeof(buf)));
 		if (ret < 0)
 			err(EX_IOERR, "read: %s", p->src);
+		if (ret == 0)
+			break;
 
-		ret = TEMP_FAILURE_RETRY(write(dfd, buf, (size_t) ret));
-		if (ret < 0)
-			err(EX_IOERR, "write: %s", p->dst);
+		size_t written = 0;
+		while (written < (size_t) ret) {
+			ssize_t w = TEMP_FAILURE_RETRY(write(dfd, buf + written, (size_t) ret - written));
+			if (w < 0)
+				err(EX_IOERR, "write: %s", p->dst);
+			if (w == 0)
+				errx(EX_IOERR, "write: %s: unexpected end of stream", p->dst);
+			written += (size_t) w;
+		}
 
 		len -= ret;
-	} while (len > 0 && ret > 0);
+	} while (len > 0);
 
 	goto finish;
 }
 
+static void install_hardlink(struct file *p)
+{
+	char install_path[PATH_MAX + 1];
+	char target_path[PATH_MAX + 1];
+	const char *op = "link";
+
+	if (p->installed)
+		return;
+
+	if (!p->hardlink_target || !p->hardlink_target->installed) {
+		install_file(p);
+		return;
+	}
+
+	memcpy(install_path, destdir, destdir_len);
+	size_t avail = sizeof(install_path) - destdir_len;
+	if (strlcpy(install_path + destdir_len, p->dst, avail) >= avail)
+		errx(EXIT_FAILURE, "destination path too long: %s", p->dst);
+
+	memcpy(target_path, destdir, destdir_len);
+	avail = sizeof(target_path) - destdir_len;
+	if (strlcpy(target_path + destdir_len, p->hardlink_target->dst, avail) >= avail)
+		errx(EXIT_FAILURE, "destination path too long: %s", p->hardlink_target->dst);
+
+	if (!strcmp(install_path, target_path)) {
+		op = "skip";
+		goto end;
+	}
+
+	errno = 0;
+	if (force && remove(install_path) < 0 && errno != ENOENT)
+		err(EXIT_FAILURE, "remove: %s", install_path);
+
+	if (verbose > 2)
+		warnx("link regular file: %s -> %s", install_path, target_path);
+
+	errno = 0;
+	if (link(target_path, install_path) < 0) {
+		if (errno == EEXIST) {
+			op = "skip";
+			goto end;
+		}
+		if (errno == EXDEV || errno == EPERM || errno == EACCES || errno == EOPNOTSUPP || errno == EMLINK) {
+			if (verbose > 1)
+				warn("link `%s' -> `%s' failed, falling back to copy", install_path, target_path);
+			install_file(p);
+			return;
+		}
+		err(EX_CANTCREAT, "link: %s -> %s", target_path, install_path);
+	}
+
+end:
+	if (verbose)
+		warnx("%s (hardlink): %s -> %s", op, install_path, target_path);
+	p->installed = true;
+	atomic_fetch_add(&installed, 1);
+}
+
 void apply_permissions(struct file *p)
 {
+	char install_path[PATH_MAX + 1];
+
+	if (!p->installed)
+		return;
+
+	memcpy(install_path, destdir, destdir_len);
 	size_t avail = sizeof(install_path) - destdir_len;
 
 	if (strlcpy(install_path + destdir_len, p->dst, avail) >= avail)
@@ -714,6 +826,133 @@ void apply_permissions(struct file *p)
 	}
 }
 
+struct file_collector {
+	struct file **dirs;
+	size_t dir_count;
+	size_t dir_cap;
+
+	struct file **non_dirs;
+	size_t non_dir_count;
+	size_t non_dir_cap;
+
+	struct file **hardlinks;
+	size_t hardlink_count;
+	size_t hardlink_cap;
+};
+
+static struct file_collector collector = { 0 };
+
+struct hardlink_entry {
+	dev_t dev;
+	ino_t ino;
+	struct file *file;
+};
+
+static void *hardlinks_root = NULL;
+
+static int compare_hardlink_entry(const void *a, const void *b)
+{
+	const struct hardlink_entry *ea = a;
+	const struct hardlink_entry *eb = b;
+
+	if (ea->dev < eb->dev)
+		return -1;
+	if (ea->dev > eb->dev)
+		return 1;
+	if (ea->ino < eb->ino)
+		return -1;
+	if (ea->ino > eb->ino)
+		return 1;
+	return 0;
+}
+
+static void classify_file(struct file *p)
+{
+	if (S_ISDIR(p->stat.st_mode)) {
+		if (collector.dir_count == collector.dir_cap) {
+			collector.dir_cap = collector.dir_cap ? collector.dir_cap * 2 : 64;
+			collector.dirs = xrealloc(collector.dirs, collector.dir_cap, sizeof(*collector.dirs));
+		}
+		collector.dirs[collector.dir_count++] = p;
+		return;
+	}
+
+	if (S_ISREG(p->stat.st_mode) && p->stat.st_nlink > 1) {
+		struct hardlink_entry key = {
+			.dev = p->stat.st_dev,
+			.ino = p->stat.st_ino,
+			.file = p,
+		};
+		void **val = tsearch(&key, &hardlinks_root, compare_hardlink_entry);
+		if (!val)
+			err(EXIT_FAILURE, "tsearch");
+		if (*val != &key) {
+			struct hardlink_entry *orig = *val;
+			p->hardlink_target = orig->file;
+			if (collector.hardlink_count == collector.hardlink_cap) {
+				collector.hardlink_cap = collector.hardlink_cap ? collector.hardlink_cap * 2 : 64;
+				collector.hardlinks = xrealloc(collector.hardlinks, collector.hardlink_cap, sizeof(*collector.hardlinks));
+			}
+			collector.hardlinks[collector.hardlink_count++] = p;
+			return;
+		}
+
+		struct hardlink_entry *entry = xcalloc(1, sizeof(*entry));
+		*entry = key;
+		*val = entry;
+	}
+
+	if (collector.non_dir_count == collector.non_dir_cap) {
+		collector.non_dir_cap = collector.non_dir_cap ? collector.non_dir_cap * 2 : 256;
+		collector.non_dirs = xrealloc(collector.non_dirs, collector.non_dir_cap, sizeof(*collector.non_dirs));
+	}
+	collector.non_dirs[collector.non_dir_count++] = p;
+}
+
+static int compare_dir_order(const void *a, const void *b)
+{
+	const struct file *fa = *(const struct file **) a;
+	const struct file *fb = *(const struct file **) b;
+	size_t la = strlen(fa->dst);
+	size_t lb = strlen(fb->dst);
+	if (la != lb)
+		return (la < lb) ? -1 : 1;
+	return strcmp(fa->dst, fb->dst);
+}
+
+struct worker_pool {
+	struct file **files;
+	size_t count;
+	size_t next_idx;
+	pthread_mutex_t mutex;
+};
+
+static void *install_worker(void *arg)
+{
+	struct worker_pool *pool = arg;
+
+	while (1) {
+		struct file *p = NULL;
+
+		pthread_mutex_lock(&pool->mutex);
+		while (pool->next_idx < pool->count) {
+			struct file *candidate = pool->files[pool->next_idx++];
+			if (!candidate->installed) {
+				p = candidate;
+				break;
+			}
+		}
+		pthread_mutex_unlock(&pool->mutex);
+
+		if (!p)
+			break;
+
+		install_file(p);
+	}
+
+	return NULL;
+}
+
 void show_help(int rc)
 {
 	fprintf(stdout,
@@ -727,12 +966,13 @@ void show_help(int rc)
 	        "along with the specified files.\n"
 	        "\n"
 	        "Options:\n"
-	        "   -n, --dry-run              don't do nothing.\n"
+	        "   -n, --dry-run              perform a trial run without changes.\n"
 	        "   -e, --exclude=REGEXP       exclude files matching REGEXP.\n"
 	        "   -f, --force                overwrite destination file if exists.\n"
-	        "   -l, --log=FILE             white log about what was copied.\n"
+	        "   -j, --jobs=N               run N worker threads (default: number of CPUs).\n"
+	        "   -l, --log=FILE             write log about what was copied.\n"
 	        "   -r, --remove-prefix=PATH   ignore prefix in path.\n"
-	        "   -v, --verbose              print a message for each action/\n"
+	        "   -v, --verbose              print a message for each action.\n"
 	        "   -V, --version              output version information and exit.\n"
 	        "   -h, --help                 display this help and exit.\n"
 	        "\n"
@@ -759,12 +999,13 @@ void show_version(void)
 
 int main(int argc, char **argv)
 {
-	const char *optstring = "efnl:r:vVh";
+	const char *optstring = "e:fnl:r:vVhj:";
 	const struct option longopts[] = {
 		{"exclude", required_argument, 0, 'e' },
 		{"remove-prefix", required_argument, 0, 'r' },
 		{"force", no_argument, 0, 'f' },
 		{"dry-run", no_argument, 0, 'n' },
+		{"jobs", required_argument, 0, 'j' },
 		{"log", required_argument, 0, 'l' },
 		{"verbose", no_argument, 0, 'v' },
 		{"version", no_argument, 0, 'V' },
@@ -795,6 +1036,11 @@ int main(int argc, char **argv)
 			case 'f':
 				force = 1;
 				break;
+			case 'j':
+				jobs = atoi(optarg);
+				if (jobs < 1)
+					errx(EX_USAGE, "invalid number of jobs: %s", optarg);
+				break;
 			case 'l':
 				logfile = optarg;
 				break;
@@ -802,8 +1048,14 @@ int main(int argc, char **argv)
 				dry_run = 1;
 				break;
 			case 'r':
-				prefix = optarg;
-				prefix_len = strlen(optarg);
+				prefix = realpath(optarg, NULL);
+				if (!prefix)
+					prefix = xstrdup(optarg);
+				prefix_len = strlen(prefix);
+				while (prefix_len > 1 && prefix[prefix_len - 1] == '/') {
+					prefix[prefix_len - 1] = '\0';
+					prefix_len--;
+				}
 				break;
 			case 'v':
 				verbose++;
@@ -839,9 +1091,10 @@ int main(int argc, char **argv)
 		enqueue_canonicalized_path(argv[i], true);
 	}
 
-	size_t avail = sizeof(install_path);
+	char check_path[PATH_MAX + 1];
+	size_t avail = sizeof(check_path);
 
-	if (strlcpy(install_path, destdir, avail) >= avail)
+	if (strlcpy(check_path, destdir, avail) >= avail)
 		errx(EXIT_FAILURE, "destination path too long: %s", destdir);
 
 	for (struct file *queue = get_queue(NULL); queue; queue = get_queue(NULL)) {
@@ -850,26 +1103,28 @@ int main(int argc, char **argv)
 
 			queue->dst = queue->src;
 
-			if (prefix) {
+			if (prefix && prefix_len > 0) {
 				size_t dst_len = strlen(queue->dst);
-				if (dst_len >= prefix_len && queue->dst[prefix_len] == '/' &&
-				    !strncmp(queue->dst, prefix, prefix_len - 1))
+				if (dst_len >= prefix_len &&
+				    (queue->dst[prefix_len] == '/' || queue->dst[prefix_len] == '\0') &&
+				    !strncmp(queue->dst, prefix, prefix_len)) {
 					queue->dst += prefix_len;
-				else if (!strcmp(queue->dst, prefix))
-					queue->dst = (char *) "";
+					if (queue->dst[0] == '\0')
+						queue->dst = (char *) "";
+				}
 			}
 
 			if (!force) {
 				struct stat st;
-				avail = sizeof(install_path) - destdir_len;
+				avail = sizeof(check_path) - destdir_len;
 
-				if (strlcpy(install_path + destdir_len, queue->dst, avail) >= avail)
+				if (strlcpy(check_path + destdir_len, queue->dst, avail) >= avail)
 					errx(EXIT_FAILURE, "destination path too long: %s", queue->dst);
 
 				errno = 0;
-				if (lstat(install_path, &st) < 0) {
+				if (lstat(check_path, &st) < 0) {
 					if (errno != ENOENT)
-						err(EX_OSERR, "unable to get access to %s", install_path);
+						err(EX_OSERR, "unable to get access to %s", check_path);
 				} else if (!S_ISDIR(st.st_mode)) {
 					if (verbose > 1)
 						warnx("'%s' is already in the destdir", queue->src);
@@ -900,31 +1155,104 @@ int main(int argc, char **argv)
 		logout = stdout;
 		tree_walk(print_file);
 	} else {
-		size_t queue_nr = 0;
-
 		if (verbose > 1)
 			warnx("copying files ...");
 
 		umask(0);
 
+		memset(&collector, 0, sizeof(collector));
+		tree_walk(classify_file);
+
+		if (collector.dir_count > 1)
+			qsort(collector.dirs, collector.dir_count, sizeof(struct file *), compare_dir_order);
+
+		int n_workers = jobs;
+		if (n_workers <= 0) {
+			long nprocs = sysconf(_SC_NPROCESSORS_ONLN);
+			n_workers = (nprocs > 0) ? (int) nprocs : 1;
+		}
+		if ((size_t) n_workers > collector.non_dir_count)
+			n_workers = (collector.non_dir_count > 0) ? (int) collector.non_dir_count : 1;
+
 		while (1) {
-			size_t prev_installed = installed;
+			size_t prev_installed = atomic_load(&installed);
 
-			tree_walk(install_file);
+			/* Step 1: Create directories ordered by path depth (parents first) */
+			for (size_t i = 0; i < collector.dir_count; i++) {
+				if (!collector.dirs[i]->installed)
+					install_file(collector.dirs[i]);
+			}
 
-			if (prev_installed == installed)
+			/* Step 2: Install non-directory files in parallel */
+			if (n_workers <= 1) {
+				for (size_t i = 0; i < collector.non_dir_count; i++) {
+					if (!collector.non_dirs[i]->installed)
+						install_file(collector.non_dirs[i]);
+				}
+			} else {
+				struct worker_pool pool = {
+					.files = collector.non_dirs,
+					.count = collector.non_dir_count,
+					.next_idx = 0,
+				};
+				pthread_mutex_init(&pool.mutex, NULL);
+
+				pthread_t *threads = xcalloc((size_t) n_workers, sizeof(pthread_t));
+				int n_created = 0;
+
+				for (int i = 0; i < n_workers - 1; i++) {
+					if (pthread_create(&threads[i], NULL, install_worker, &pool) != 0) {
+						warn("pthread_create");
+						break;
+					}
+					n_created++;
+				}
+
+				install_worker(&pool);
+
+				for (int i = 0; i < n_created; i++)
+					pthread_join(threads[i], NULL);
+
+				free(threads);
+				pthread_mutex_destroy(&pool.mutex);
+			}
+
+			/* Step 3: Install hardlinks */
+			for (size_t i = 0; i < collector.hardlink_count; i++) {
+				if (!collector.hardlinks[i]->installed)
+					install_hardlink(collector.hardlinks[i]);
+			}
+
+			if (prev_installed == atomic_load(&installed))
 				break;
 		}
 
-		get_queue(&queue_nr);
+		size_t tree_nr = tree_get_nr();
+		size_t cur_installed = atomic_load(&installed);
 
-		if (queue_nr > installed) {
+		if (tree_nr > cur_installed) {
 			logout = stdout;
-			tree_walk(print_file);
+			tree_walk(print_uninstalled_file);
 			errx(EXIT_FAILURE, "unable to create the files listed above");
 		}
 
-		tree_walk(apply_permissions);
+		/* Step 4: Apply permissions (directories in reverse depth order) */
+		for (size_t i = 0; i < collector.non_dir_count; i++)
+			apply_permissions(collector.non_dirs[i]);
+
+		for (size_t i = 0; i < collector.hardlink_count; i++)
+			apply_permissions(collector.hardlinks[i]);
+
+		for (size_t i = collector.dir_count; i > 0; i--)
+			apply_permissions(collector.dirs[i - 1]);
+
+		free(collector.dirs);
+		free(collector.non_dirs);
+		free(collector.hardlinks);
+#ifdef HAVE_TDESTROY
+		tdestroy(hardlinks_root, free);
+#endif
+		hardlinks_root = NULL;
 	}
 
 	if (logfile) {
@@ -937,10 +1265,14 @@ int main(int argc, char **argv)
 	}
 
 	tree_destroy();
+	queue_destroy();
+	elf_cache_destroy();
 	free(destdir);
+	free(prefix);
 
 	for (size_t i = 0; i < exclude_match_nr; i++)
 		regfree(&exclude_match[i]);
+	free(exclude_match);
 
 	return EXIT_SUCCESS;
 }

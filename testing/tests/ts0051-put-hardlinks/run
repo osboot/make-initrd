@@ -1,0 +1,80 @@
+#!/bin/bash -eu
+set -o pipefail
+
+cwd="$(readlink -ev "${0%/*}")"
+
+topdir="$(readlink -ev "$cwd/../../..")"
+for p in usr/bin usr/local/bin bin; do
+	if [ -x "$topdir/.build/dest/$p/initrd-put" ]; then
+		export PATH="$topdir/.build/dest/$p:$PATH"
+		break
+	fi
+done
+
+. "$cwd"/../put-file-sh-functions
+
+make_fs()
+{
+	rm -rf -- "$1"
+	for n in bin lib; do
+		mkdir -p -- "$1/$n"
+	done
+}
+
+make_fs "$cwd/from"
+make_fs "$cwd/to"
+
+echo "hardlink test content" > "$cwd/from/bin/file1"
+ln "$cwd/from/bin/file1" "$cwd/from/bin/file2"
+ln "$cwd/from/bin/file1" "$cwd/from/lib/file3"
+
+# Verify source hardlinks
+ino_src1=$(stat -c %i "$cwd/from/bin/file1")
+ino_src2=$(stat -c %i "$cwd/from/bin/file2")
+ino_src3=$(stat -c %i "$cwd/from/lib/file3")
+[ "$ino_src1" = "$ino_src2" ]
+[ "$ino_src1" = "$ino_src3" ]
+
+# Single-threaded install
+tools/put-file -j 1 -r "$cwd/from" "$cwd/to" "$cwd/from/bin"/* "$cwd/from/lib"/*
+
+[ -f "$cwd/to/bin/file1" ]
+[ -f "$cwd/to/bin/file2" ]
+[ -f "$cwd/to/lib/file3" ]
+
+ino1=$(stat -c %i "$cwd/to/bin/file1")
+ino2=$(stat -c %i "$cwd/to/bin/file2")
+ino3=$(stat -c %i "$cwd/to/lib/file3")
+[ "$ino1" = "$ino2" ]
+[ "$ino1" = "$ino3" ]
+
+nlink=$(stat -c %h "$cwd/to/bin/file1")
+[ "$nlink" -eq 3 ]
+
+# Multi-threaded install
+make_fs "$cwd/to_j4"
+tools/put-file -j 4 -r "$cwd/from" "$cwd/to_j4" "$cwd/from/bin"/* "$cwd/from/lib"/*
+
+[ -f "$cwd/to_j4/bin/file1" ]
+[ -f "$cwd/to_j4/bin/file2" ]
+[ -f "$cwd/to_j4/lib/file3" ]
+
+ino_j1=$(stat -c %i "$cwd/to_j4/bin/file1")
+ino_j2=$(stat -c %i "$cwd/to_j4/bin/file2")
+ino_j3=$(stat -c %i "$cwd/to_j4/lib/file3")
+[ "$ino_j1" = "$ino_j2" ]
+[ "$ino_j1" = "$ino_j3" ]
+
+nlink_j=$(stat -c %h "$cwd/to_j4/bin/file1")
+[ "$nlink_j" -eq 3 ]
+
+# Force overwrite into existing target directory
+tools/put-file -f -r "$cwd/from" "$cwd/to" "$cwd/from/bin"/* "$cwd/from/lib"/*
+
+ino_f1=$(stat -c %i "$cwd/to/bin/file1")
+ino_f2=$(stat -c %i "$cwd/to/bin/file2")
+ino_f3=$(stat -c %i "$cwd/to/lib/file3")
+[ "$ino_f1" = "$ino_f2" ]
+[ "$ino_f1" = "$ino_f3" ]
+
+rm -rf -- "$cwd/from" "$cwd/to" "$cwd/to_j4"

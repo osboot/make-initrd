@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <limits.h>
 #include <regex.h>
 #include <errno.h>
 #include <err.h>
@@ -21,6 +22,8 @@
 
 #include "temp_failure_retry.h"
 #include "memory.h"
+#include "queue.h"
+#include "tree.h"
 #include "elf_dlopen.h"
 
 extern int verbose;
@@ -47,6 +50,7 @@ static int in_envvar(const char *envname, const char *filename, const char *valu
 
 	int regex_err;
 	regex_t regex = { 0 };
+	bool regex_compiled = false;
 
 	if (!(list = getenv(envname)))
 		return 0;
@@ -61,7 +65,7 @@ static int in_envvar(const char *envname, const char *filename, const char *valu
 
 	for (; p < e; s = p + 1) {
 		if (!(p = strchr(s, ',')))
-			p = e + 1;
+			p = e;
 
 		sz = (size_t) (p - s);
 
@@ -81,7 +85,10 @@ static int in_envvar(const char *envname, const char *filename, const char *valu
 
 		if (file_regex) {
 			// Release the previous regex if any.
-			regfree(&regex);
+			if (regex_compiled) {
+				regfree(&regex);
+				regex_compiled = false;
+			}
 
 			// Add place for null-byte.
 			file_regex_sz += 1;
@@ -106,18 +113,20 @@ static int in_envvar(const char *envname, const char *filename, const char *valu
 				warnx("in_envvar: bad regex: %s", errbuf);
 				continue;
 			}
+			regex_compiled = true;
 
 			if (regexec(&regex, filename, 0, NULL, 0) == REG_NOMATCH)
 				continue;
 		}
 
-		if (!strncmp(word, value, word_sz)) {
+		if (strlen(value) == word_sz && !strncmp(word, value, word_sz)) {
 			ret = 1;
 			break;
 		}
 	}
 
-	regfree(&regex);
+	if (regex_compiled)
+		regfree(&regex);
 	free(buf);
 
 	return ret;
@@ -136,6 +145,8 @@ static int resolve_soname(const char **soname, size_t len, char *outbuf)
 	pid_t pid;
 	void *handle;
 	int ret = -1;
+
+	outbuf[0] = '\0';
 
 	if (pipe(pipefd) < 0) {
 		warn("pipe");
@@ -161,6 +172,11 @@ static int resolve_soname(const char **soname, size_t len, char *outbuf)
 		}
 		if (!siz) {
 			ret = 0;
+			goto out_parent;
+		}
+
+		if (siz > PATH_MAX + 1) {
+			warnx("resolved library path too long");
 			goto out_parent;
 		}
 
@@ -193,46 +209,47 @@ out_parent:
 	handle = NULL;
 	ret = EXIT_FAILURE;
 
+	struct link_map *map = NULL;
+
 	for (size_t i = 0; i < len; i++) {
-		struct link_map *map = NULL;
-
-		if (handle)
+		if (handle) {
 			dlclose(handle);
-
-		offset = 0;
-		siz = 0;
+			handle = NULL;
+		}
 
 		if ((handle = dlopen(soname[i], RTLD_LAZY)) != NULL) {
-			if (dlinfo(handle, RTLD_DI_LINKMAP, &map) == 0) {
-				siz = strlen(map->l_name) + 1;
+			if (dlinfo(handle, RTLD_DI_LINKMAP, &map) == 0 && map && map->l_name) {
+				break;
 			} else {
-				warnx("dladdr(%s) failed: %s", soname[i], dlerror());
+				warnx("dlinfo(%s) failed: %s", soname[i], dlerror());
+				map = NULL;
 			}
 		}
+	}
 
+	offset = 0;
+	siz = map ? strlen(map->l_name) + 1 : 0;
+
+	errno = 0;
+	n = TEMP_FAILURE_RETRY(write(pipefd[1], &siz, sizeof(siz)));
+	if (n < 0) {
+		if (errno != EPIPE)
+			warn("write(size)");
+		goto out_child;
+	}
+
+	while (siz > 0) {
 		errno = 0;
-		n = TEMP_FAILURE_RETRY(write(pipefd[1], &siz, sizeof(siz)));
+		n = TEMP_FAILURE_RETRY(write(pipefd[1], map->l_name + offset, siz));
 		if (n < 0) {
 			if (errno != EPIPE)
-				warn("write(size)");
+				warn("write(library)");
 			goto out_child;
 		}
-
-		while (siz > 0) {
-			errno = 0;
-			n = TEMP_FAILURE_RETRY(write(pipefd[1], map->l_name + offset, siz));
-			if (n < 0) {
-				if (errno != EPIPE)
-					warn("write(library)");
-				goto out_child;
-			}
-			siz -= (size_t) n;
-			offset += (size_t) n;
-		}
-
-		if (map)
-			break;
+		siz -= (size_t) n;
+		offset += (size_t) n;
 	}
+
 	ret = EXIT_SUCCESS;
 out_child:
 	if (handle)
@@ -310,11 +327,16 @@ static int visit_userfunc(json_object *jso, int flags, json_object *,
 		data->retcode = resolve_soname(soname, array_len, data->outbuf);
 		free(soname);
 
-		if (verbose > 0) {
-			warnx("(elf dlopen): feature=%s: priority=%s: shared object '%s' depends on '%s'",
-			      elf_metadata.feature,
-			      elf_metadata.priority,
-			      data->filename, data->outbuf);
+		if (data->retcode == 0 && data->outbuf[0] == '/') {
+			if (verbose > 0) {
+				warnx("(elf dlopen): feature=%s: priority=%s: shared object '%s' depends on '%s'",
+				      elf_metadata.feature,
+				      elf_metadata.priority,
+				      data->filename, data->outbuf);
+			}
+
+			if (!is_path_added(data->outbuf))
+				enqueue_item(data->outbuf, -1);
 		}
 	}
 

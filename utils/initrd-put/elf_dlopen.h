@@ -6,7 +6,7 @@
 #ifdef HAVE_LIBJSON_C
 int process_json_metadata(const char *filename, const char *json, char *buf);
 #else
-inline int process_json_metadata(const char *, const char *, char *)
+static inline int process_json_metadata(const char *, const char *, char *)
 {
 	return 0;
 }

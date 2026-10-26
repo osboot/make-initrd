@@ -26,6 +26,9 @@ binary dependencies and copies them along with the specified files.
 *-f, --force*
 	overwrite destination file if exists.
 
+*-j, --jobs=*_N_
+	run _N_ worker threads in parallel (default: number of CPUs).
+
 *-l, --log=*_FILE_
 	white log about what was copied.
 
@@ -40,6 +43,12 @@ binary dependencies and copies them along with the specified files.
 
 *-h, --help*
 	Show this text and exit.
+
+# ENVIRONMENT
+
+*IGNORE_PUT_ELF_CACHE*
+	If set to a non-zero value, disables ELF soname dependency resolution
+	caching, forcing ldd to be invoked for every dynamic ELF binary and library.
 
 # AUTHOR
 
