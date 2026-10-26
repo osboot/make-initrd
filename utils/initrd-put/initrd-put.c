@@ -24,6 +24,7 @@
 #include <ctype.h>
 #include <regex.h>
 #include <string.h>
+#include <search.h>
 
 #include "temp_failure_retry.h"
 #include "memory.h"
@@ -64,6 +65,7 @@ static void enqueue_path(struct file *p) __attribute__((__nonnull__ (1)));
 static void print_file(struct file *p) __attribute__((__nonnull__ (1)));
 static void print_uninstalled_file(struct file *p) __attribute__((__nonnull__ (1)));
 static void install_file(struct file *p) __attribute__((__nonnull__ (1)));
+static void install_hardlink(struct file *p) __attribute__((__nonnull__ (1)));
 static void apply_permissions(struct file *p) __attribute__((__nonnull__ (1)));
 
 void fill_stat(struct file *p, struct stat *sb)
@@ -738,6 +740,64 @@ fallback_readwrite:
 	goto finish;
 }
 
+static void install_hardlink(struct file *p)
+{
+	char install_path[PATH_MAX + 1];
+	char target_path[PATH_MAX + 1];
+	const char *op = "link";
+
+	if (p->installed)
+		return;
+
+	if (!p->hardlink_target || !p->hardlink_target->installed) {
+		install_file(p);
+		return;
+	}
+
+	memcpy(install_path, destdir, destdir_len);
+	size_t avail = sizeof(install_path) - destdir_len;
+	if (strlcpy(install_path + destdir_len, p->dst, avail) >= avail)
+		errx(EXIT_FAILURE, "destination path too long: %s", p->dst);
+
+	memcpy(target_path, destdir, destdir_len);
+	avail = sizeof(target_path) - destdir_len;
+	if (strlcpy(target_path + destdir_len, p->hardlink_target->dst, avail) >= avail)
+		errx(EXIT_FAILURE, "destination path too long: %s", p->hardlink_target->dst);
+
+	if (!strcmp(install_path, target_path)) {
+		op = "skip";
+		goto end;
+	}
+
+	errno = 0;
+	if (force && remove(install_path) < 0 && errno != ENOENT)
+		err(EXIT_FAILURE, "remove: %s", install_path);
+
+	if (verbose > 2)
+		warnx("link regular file: %s -> %s", install_path, target_path);
+
+	errno = 0;
+	if (link(target_path, install_path) < 0) {
+		if (errno == EEXIST) {
+			op = "skip";
+			goto end;
+		}
+		if (errno == EXDEV || errno == EPERM || errno == EACCES || errno == EOPNOTSUPP || errno == EMLINK) {
+			if (verbose > 1)
+				warn("link `%s' -> `%s' failed, falling back to copy", install_path, target_path);
+			install_file(p);
+			return;
+		}
+		err(EX_CANTCREAT, "link: %s -> %s", target_path, install_path);
+	}
+
+end:
+	if (verbose)
+		warnx("%s (hardlink): %s -> %s", op, install_path, target_path);
+	p->installed = true;
+	atomic_fetch_add(&installed, 1);
+}
+
 void apply_permissions(struct file *p)
 {
 	char install_path[PATH_MAX + 1];
@@ -774,9 +834,37 @@ struct file_collector {
 	struct file **non_dirs;
 	size_t non_dir_count;
 	size_t non_dir_cap;
+
+	struct file **hardlinks;
+	size_t hardlink_count;
+	size_t hardlink_cap;
 };
 
 static struct file_collector collector = { 0 };
+
+struct hardlink_entry {
+	dev_t dev;
+	ino_t ino;
+	struct file *file;
+};
+
+static void *hardlinks_root = NULL;
+
+static int compare_hardlink_entry(const void *a, const void *b)
+{
+	const struct hardlink_entry *ea = a;
+	const struct hardlink_entry *eb = b;
+
+	if (ea->dev < eb->dev)
+		return -1;
+	if (ea->dev > eb->dev)
+		return 1;
+	if (ea->ino < eb->ino)
+		return -1;
+	if (ea->ino > eb->ino)
+		return 1;
+	return 0;
+}
 
 static void classify_file(struct file *p)
 {
@@ -786,13 +874,39 @@ static void classify_file(struct file *p)
 			collector.dirs = xrealloc(collector.dirs, collector.dir_cap, sizeof(*collector.dirs));
 		}
 		collector.dirs[collector.dir_count++] = p;
-	} else {
-		if (collector.non_dir_count == collector.non_dir_cap) {
-			collector.non_dir_cap = collector.non_dir_cap ? collector.non_dir_cap * 2 : 256;
-			collector.non_dirs = xrealloc(collector.non_dirs, collector.non_dir_cap, sizeof(*collector.non_dirs));
-		}
-		collector.non_dirs[collector.non_dir_count++] = p;
+		return;
 	}
+
+	if (S_ISREG(p->stat.st_mode) && p->stat.st_nlink > 1) {
+		struct hardlink_entry key = {
+			.dev = p->stat.st_dev,
+			.ino = p->stat.st_ino,
+			.file = p,
+		};
+		void **val = tsearch(&key, &hardlinks_root, compare_hardlink_entry);
+		if (!val)
+			err(EXIT_FAILURE, "tsearch");
+		if (*val != &key) {
+			struct hardlink_entry *orig = *val;
+			p->hardlink_target = orig->file;
+			if (collector.hardlink_count == collector.hardlink_cap) {
+				collector.hardlink_cap = collector.hardlink_cap ? collector.hardlink_cap * 2 : 64;
+				collector.hardlinks = xrealloc(collector.hardlinks, collector.hardlink_cap, sizeof(*collector.hardlinks));
+			}
+			collector.hardlinks[collector.hardlink_count++] = p;
+			return;
+		}
+
+		struct hardlink_entry *entry = xcalloc(1, sizeof(*entry));
+		*entry = key;
+		*val = entry;
+	}
+
+	if (collector.non_dir_count == collector.non_dir_cap) {
+		collector.non_dir_cap = collector.non_dir_cap ? collector.non_dir_cap * 2 : 256;
+		collector.non_dirs = xrealloc(collector.non_dirs, collector.non_dir_cap, sizeof(*collector.non_dirs));
+	}
+	collector.non_dirs[collector.non_dir_count++] = p;
 }
 
 static int compare_dir_order(const void *a, const void *b)
@@ -1103,6 +1217,12 @@ int main(int argc, char **argv)
 				pthread_mutex_destroy(&pool.mutex);
 			}
 
+			/* Step 3: Install hardlinks */
+			for (size_t i = 0; i < collector.hardlink_count; i++) {
+				if (!collector.hardlinks[i]->installed)
+					install_hardlink(collector.hardlinks[i]);
+			}
+
 			if (prev_installed == atomic_load(&installed))
 				break;
 		}
@@ -1116,15 +1236,23 @@ int main(int argc, char **argv)
 			errx(EXIT_FAILURE, "unable to create the files listed above");
 		}
 
-		/* Step 3: Apply permissions (directories in reverse depth order) */
+		/* Step 4: Apply permissions (directories in reverse depth order) */
 		for (size_t i = 0; i < collector.non_dir_count; i++)
 			apply_permissions(collector.non_dirs[i]);
+
+		for (size_t i = 0; i < collector.hardlink_count; i++)
+			apply_permissions(collector.hardlinks[i]);
 
 		for (size_t i = collector.dir_count; i > 0; i--)
 			apply_permissions(collector.dirs[i - 1]);
 
 		free(collector.dirs);
 		free(collector.non_dirs);
+		free(collector.hardlinks);
+#ifdef HAVE_TDESTROY
+		tdestroy(hardlinks_root, free);
+#endif
+		hardlinks_root = NULL;
 	}
 
 	if (logfile) {

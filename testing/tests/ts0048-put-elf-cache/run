@@ -1,7 +1,7 @@
 #!/bin/bash -efu
 set -o pipefail
 
-cwd="$(readlink -ev "${0%/*}")"
+cwd="${0%/*}"
 
 topdir="$(readlink -ev "$cwd/../../..")"
 for p in usr/bin usr/local/bin bin; do

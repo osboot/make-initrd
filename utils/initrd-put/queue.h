@@ -13,6 +13,7 @@ struct file {
 	char *src;
 	char *dst;
 	char *symlink;
+	struct file *hardlink_target;
 	bool recursive;
 	bool installed;
 };
