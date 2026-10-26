@@ -6,6 +6,7 @@
 
 bool is_path_added(const char *path) __attribute__((__nonnull__ (1)));
 bool tree_add_file(struct file *file) __attribute__((__nonnull__ (1)));
+size_t tree_get_nr(void);
 void tree_walk(void (*handler)(struct file *)) __attribute__((__nonnull__ (1)));
 void tree_destroy(void);
 

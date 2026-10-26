@@ -13,6 +13,7 @@
 #include "tree.h"
 
 static void *files = NULL;
+static size_t tree_files_nr = 0;
 
 static int compare(const void *a, const void *b) __attribute__((__nonnull__ (1, 2)));
 static void walk_action(const void *nodep, VISIT which, void *closure) __attribute__((__nonnull__ (1, 3)));;
@@ -36,7 +37,16 @@ bool tree_add_file(struct file *file)
 	if (!ptr)
 		err(EX_OSERR, "tsearch");
 
-	return ((*(struct file **)ptr) == file);
+	bool added = ((*(struct file **)ptr) == file);
+	if (added)
+		tree_files_nr++;
+
+	return added;
+}
+
+size_t tree_get_nr(void)
+{
+	return tree_files_nr;
 }
 
 void tree_destroy(void)
@@ -44,6 +54,8 @@ void tree_destroy(void)
 #ifdef HAVE_TDESTROY
 	tdestroy(files, free_file);
 #endif
+	files = NULL;
+	tree_files_nr = 0;
 }
 
 void walk_action(const void *nodep, VISIT which, void *closure)

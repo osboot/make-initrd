@@ -59,6 +59,7 @@ static void enqueue_canonicalized_path(const char *name, bool add_recursively);
 static int enqueue_regular_file(const char *filename) __attribute__((__nonnull__ (1)));
 static void enqueue_path(struct file *p) __attribute__((__nonnull__ (1)));
 static void print_file(struct file *p) __attribute__((__nonnull__ (1)));
+static void print_uninstalled_file(struct file *p) __attribute__((__nonnull__ (1)));
 static void install_file(struct file *p) __attribute__((__nonnull__ (1)));
 static void apply_permissions(struct file *p) __attribute__((__nonnull__ (1)));
 
@@ -459,6 +460,12 @@ void print_file(struct file *p)
 	        p->src,
 	        destdir, p->dst,
 	        (p->symlink ? p->symlink : ""));
+}
+
+void print_uninstalled_file(struct file *p)
+{
+	if (!p->installed)
+		print_file(p);
 }
 
 static char install_path[PATH_MAX + 1];
@@ -919,8 +926,6 @@ int main(int argc, char **argv)
 		logout = stdout;
 		tree_walk(print_file);
 	} else {
-		size_t queue_nr = 0;
-
 		if (verbose > 1)
 			warnx("copying files ...");
 
@@ -935,11 +940,11 @@ int main(int argc, char **argv)
 				break;
 		}
 
-		get_queue(&queue_nr);
+		size_t tree_nr = tree_get_nr();
 
-		if (queue_nr > installed) {
+		if (tree_nr > installed) {
 			logout = stdout;
-			tree_walk(print_file);
+			tree_walk(print_uninstalled_file);
 			errx(EXIT_FAILURE, "unable to create the files listed above");
 		}
 
