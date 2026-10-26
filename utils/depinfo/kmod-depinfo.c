@@ -24,7 +24,13 @@
 #include <libkmod.h>
 #include <err.h>
 
+#include "cleanup.h"
 #include "temp_failure_retry.h"
+
+DEFINE_FREE(kmod_unref, struct kmod_ctx *, if (_t) kmod_unref(_t))
+DEFINE_FREE(kmod_module_unref, struct kmod_module *, if (_t) kmod_module_unref(_t))
+DEFINE_FREE(kmod_module_info_free_list, struct kmod_list *, if (_t) kmod_module_info_free_list(_t))
+DEFINE_FREE(file_close, FILE *, if (_t && _t != stdin) fclose(_t))
 
 enum alias_need {
 	ALIAS_OPTIONAL = 0,
@@ -206,7 +212,7 @@ free_kernel_builtin(void)
 static int
 read_kernel_builtin(char *module_dir, const char *modinfo)
 {
-	int fd;
+	int fd __free(close) = -1;
 	char filename[MAXPATHLEN];
 	struct stat st;
 
@@ -222,16 +228,14 @@ read_kernel_builtin(char *module_dir, const char *modinfo)
 
 	if (fstat(fd, &st) < 0) {
 		warn("fstat: %s", filename);
-		close(fd);
 		return -1;
 	}
 
-	char *addr, *p, *s;
+	char *addr, *p;
 
 	addr = mmap(NULL, (size_t) st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
 	if (addr == MAP_FAILED) {
 		warn("mmap: %s", filename);
-		close(fd);
 		return -1;
 	}
 
@@ -239,14 +243,13 @@ read_kernel_builtin(char *module_dir, const char *modinfo)
 	p = addr;
 
 	while (bytes < (size_t) st.st_size) {
-		s = strdup(p);
+		char *s __free(free) = strdup(p);
 		if (!s)
 			errx(EXIT_FAILURE, "memory allocation failed");
 
 		char *value = strchr(s, '=');
 		if (!value) {
 			warnx("ERROR: Unexpected file format: %s (ignored).", filename);
-			free(s);
 			goto ignore;
 		}
 		*value = '\0';
@@ -255,7 +258,6 @@ read_kernel_builtin(char *module_dir, const char *modinfo)
 		char *field = strrchr(s, '.');
 		if (!field) {
 			warnx("ERROR: Unexpected file format: %s (ignored).", filename);
-			free(s);
 			goto ignore;
 		}
 		*field = '\0';
@@ -268,19 +270,15 @@ read_kernel_builtin(char *module_dir, const char *modinfo)
 		else if (!strcmp(field, "firmware"))
 			append_string_entry(&b->firmware, value);
 
-		free(s);
-
 		bytes += strlen(p) + 1;
 		p = addr + bytes;
 	}
 
 	munmap(addr, (size_t) st.st_size);
-	close(fd);
 
 	return 0;
 ignore:
 	munmap(addr, (size_t) st.st_size);
-	close(fd);
 
 	free_kernel_builtin();
 
@@ -585,21 +583,21 @@ static int
 __process_depends(struct kmod_ctx *ctx, const char *depends, const char *delim, enum alias_need req)
 {
 	int ret = 0;
-	char *s, *str, *token, *saveptr = NULL;
+	char *str, *token, *saveptr = NULL;
 
 	if (!depends || !*depends)
 		return 0;
 
-	s = str = strdup(depends);
+	char *s __free(free) = strdup(depends);
 	if (!s)
 		errx(EXIT_FAILURE, "memory allocation failed");
+	str = s;
 
 	while ((token = strtok_r(str, delim, &saveptr)) != NULL) {
 		if (depinfo_alias(ctx, token, req) < 0)
 			ret = -1;
 		str = NULL;
 	}
-	free(s);
 	return ret;
 }
 
@@ -613,14 +611,15 @@ static int
 process_soft_depends(struct kmod_ctx *ctx, const char *depends)
 {
 	int ret = 0;
-	char *s, *str, *token, *saveptr = NULL;
+	char *str, *token, *saveptr = NULL;
 
 	if (!depends || !*depends)
 		return 0;
 
-	s = str = strdup(depends);
+	char *s __free(free) = strdup(depends);
 	if (!s)
 		errx(EXIT_FAILURE, "memory allocation failed");
+	str = s;
 
 	while ((token = strtok_r(str, " \t\r\n", &saveptr)) != NULL) {
 		str = NULL;
@@ -640,7 +639,6 @@ process_soft_depends(struct kmod_ctx *ctx, const char *depends)
 			ret = -1;
 	}
 
-	free(s);
 	return ret;
 }
 
@@ -653,7 +651,8 @@ process_weak_depends(struct kmod_ctx *ctx, const char *depends)
 static int
 depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 {
-	struct kmod_list *l, *list = NULL;
+	struct kmod_list *l;
+	struct kmod_list *list __free(kmod_module_info_free_list) = NULL;
 	int ret;
 
 	ret = tracked_module(mod);
@@ -699,8 +698,6 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 			process_firmware(val);
 	}
 
-	kmod_module_info_free_list(list);
-
 	if ((opts & SHOW_DEPS) && (opts & SHOW_MODULES)) {
 		if (process_soft_deps(ctx, mod) < 0)
 			ret = -1;
@@ -717,18 +714,14 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 static int
 depinfo_path(struct kmod_ctx *ctx, const char *path)
 {
-	int ret = -1;
-	struct kmod_module *mod;
+	struct kmod_module *mod __free(kmod_module_unref) = NULL;
 
 	if (kmod_module_new_from_path(ctx, path, &mod) < 0) {
 		warnx("ERROR: Module file %s not found.", path);
-		return ret;
+		return -1;
 	}
 
-	ret = depinfo(ctx, mod);
-	kmod_module_unref(mod);
-
-	return ret;
+	return depinfo(ctx, mod);
 }
 
 static int
@@ -759,7 +752,7 @@ process_name(struct kmod_ctx *ctx, const char *arg)
 static int
 read_names(struct kmod_ctx *ctx, const char *file)
 {
-	FILE *stream;
+	FILE *stream __free(file_close) = NULL;
 
 	if (!file)
 		return 0;
@@ -775,7 +768,7 @@ read_names(struct kmod_ctx *ctx, const char *file)
 	}
 
 	int ret = 0;
-	char *line = NULL;
+	char *line __free(free) = NULL;
 	size_t len = 0;
 	ssize_t nread;
 
@@ -802,11 +795,6 @@ read_names(struct kmod_ctx *ctx, const char *file)
 			ret = -1;
 	}
 
-	free(line);
-
-	if (stream != stdin)
-		fclose(stream);
-
 	return ret;
 }
 
@@ -830,7 +818,7 @@ static const struct option cmdopts[] = {
 	{ NULL, 0, 0, 0 }
 };
 
-static void __attribute__((noreturn))
+static void __noreturn
 print_help(const char *progname)
 {
 	printf("Usage: %s [options] [module|filename|alias]...\n"
@@ -859,7 +847,7 @@ print_help(const char *progname)
 	exit(EXIT_SUCCESS);
 }
 
-static void __attribute__((noreturn))
+static void __noreturn
 print_version(const char *progname)
 {
 	printf("%s version " PACKAGE_VERSION "\n"
@@ -876,7 +864,7 @@ print_version(const char *progname)
 int
 main(int argc, char **argv)
 {
-	struct kmod_ctx *ctx;
+	struct kmod_ctx *ctx __free(kmod_unref) = NULL;
 	struct utsname u;
 	char module_dir[MAXPATHLEN];
 	const char *base_dir = NULL;
@@ -944,10 +932,9 @@ main(int argc, char **argv)
 	}
 
 	if (!access(SYS_FIRMWARE_CLASS_PATH, F_OK)) {
-		int fd = open(SYS_FIRMWARE_CLASS_PATH, O_RDONLY | O_CLOEXEC);
+		int fd __free(close) = open(SYS_FIRMWARE_CLASS_PATH, O_RDONLY | O_CLOEXEC);
 		if (fd != -1) {
 			ssize_t len = TEMP_FAILURE_RETRY(read(fd, firmware_class_path, PATH_MAX));
-			close(fd);
 
 			if (len > 0) {
 				firmware_class_path[len] = '\0';
@@ -979,7 +966,6 @@ main(int argc, char **argv)
 			ret = EXIT_FAILURE;
 	}
 
-	kmod_unref(ctx);
 	free_modules();
 	free_kernel_builtin();
 
