@@ -193,12 +193,14 @@ bool dir_check(const char *dir, char *dirend)
 	 * otherwise.  Follow symbolic links.
 	 */
 	struct stat st;
-	return stat(dir, &st) == 0 || errno == EOVERFLOW;
+	bool ret = (stat(dir, &st) == 0 || errno == EOVERFLOW);
+	*dirend = '\0';
+	return ret;
 }
 
 void enqueue_canonicalized_path(const char *name, bool add_recursively)
 {
-	char rname[PATH_MAX + 1];
+	char rname[PATH_MAX + sizeof(dir_suffix) + 1];
 	char link_buffer[PATH_MAX + 1];
 	char extra_buffer[PATH_MAX + 1];
 	int num_links = 0;
@@ -257,6 +259,11 @@ void enqueue_canonicalized_path(const char *name, bool add_recursively)
 		} else {
 			if (!IS_DIR_SEPARATOR(dest[-1]))
 				*dest++ = '/';
+
+			if ((size_t)(rname + sizeof(rname) - dest) < startlen + sizeof(dir_suffix)) {
+				errno = ENAMETOOLONG;
+				goto error;
+			}
 
 			dest = mempcpy(dest, start, startlen);
 			*dest = '\0';
@@ -328,12 +335,12 @@ error:
 
 	errno = 0;
 
-	if (verbose > 0)
+	if (verbose > 0 && num_links > 0)
 		warnx("symlink '%s' points to '%s'", name, rname);
 
 	struct file *f;
 
-	f = enqueue_item(rname, dest - rname);
+	f = enqueue_item(rname, -1);
 	if (f)
 		f->recursive = add_recursively;
 }
