@@ -8,13 +8,15 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#include "compiler.h"
+
 void rd_logging_init(int log_fd, int level, const char *progname);
 void rd_logging_close(void);
-int rd_logging_level(const char *lvl)                           __attribute__((nonnull(1)));
-void rd_vmessage(const char *fmt, va_list ap)                   __attribute__((format(printf, 1, 0)));
-void rd_log_vmessage(int priority, const char *fmt, va_list ap) __attribute__((format(printf, 2, 0)));
-void rd_log_message(int priority, const char *fmt, ...)         __attribute__((format(printf, 2, 3)));
-void rd_log_setup_stderr(const char *logfile)                   __attribute__((nonnull(1)));
+int rd_logging_level(const char *lvl)                           __nonnull(1);
+void rd_vmessage(const char *fmt, va_list ap)                   __printf(1, 0);
+void rd_log_vmessage(int priority, const char *fmt, va_list ap) __printf(2, 0);
+void rd_log_message(int priority, const char *fmt, ...)         __printf(2, 3);
+void rd_log_setup_stderr(const char *logfile)                   __nonnull(1);
 
 #define rd_fatal(format, arg...)                    \
 	do {                                        \
