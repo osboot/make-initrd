@@ -10,6 +10,7 @@
 #include <alloca.h>
 #include <inttypes.h>
 
+#include "cleanup.h"
 #include "name_to_dev.h"
 
 #define BUF_SZ		65536
@@ -23,25 +24,23 @@ static dev_t try_name(char *name, unsigned long int part)
 	dev_t res;
 	char *s;
 	ssize_t len;
-	int fd;
 
 	/* read device number from /sys/block/.../dev */
 	snprintf(path, sizeof(path), "/sys/block/%s/dev", name);
-	fd = open(path, 0, 0);
+	int fd __free(close) = open(path, 0, 0);
 	if (fd < 0)
-		goto fail;
+		return (dev_t) 0;
 	len = read(fd, buf, BUF_SZ);
-	close(fd);
 
 	if (len <= 0 || len == BUF_SZ || buf[len - 1] != '\n')
-		goto fail;
+		return (dev_t) 0;
 	buf[len - 1] = '\0';
 	major_num = strtoul(buf, &s, 10);
 	if (*s != ':')
-		goto fail;
+		return (dev_t) 0;
 	minor_num = strtoul(s + 1, &s, 10);
 	if (*s)
-		goto fail;
+		return (dev_t) 0;
 	res = makedev((unsigned int) major_num, (unsigned int) minor_num);
 
 	/* if it's there and we are not looking for a partition - that's it */
@@ -50,24 +49,22 @@ static dev_t try_name(char *name, unsigned long int part)
 
 	/* otherwise read range from .../range */
 	snprintf(path, sizeof(path), "/sys/block/%s/range", name);
-	fd = open(path, 0, 0);
-	if (fd < 0)
-		goto fail;
-	len = read(fd, buf, 32);
-	close(fd);
+	int rfd __free(close) = open(path, 0, 0);
+	if (rfd < 0)
+		return (dev_t) 0;
+	len = read(rfd, buf, 32);
 	if (len <= 0 || len == 32 || buf[len - 1] != '\n')
-		goto fail;
+		return (dev_t) 0;
 	buf[len - 1] = '\0';
 	range = strtoul(buf, &s, 10);
 	if (*s)
-		goto fail;
+		return (dev_t) 0;
 
 	/* if partition is within range - we got it */
 	if (part < range) {
 		return res + part;
 	}
 
-fail:
 	return (dev_t) 0;
 }
 
