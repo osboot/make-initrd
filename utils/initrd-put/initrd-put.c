@@ -337,7 +337,8 @@ error:
 
 int enqueue_regular_file(const char *filename)
 {
-	static char buf[LINE_MAX];
+	char buf[LINE_MAX];
+	ssize_t n;
 	int fd, ret = -1;
 
 	errno = 0;
@@ -349,13 +350,12 @@ int enqueue_regular_file(const char *filename)
 		return -1;
 	}
 
-	buf[0] = 0;
-	if (pread(fd, buf, sizeof(buf), 0) < 0) {
+	n = pread(fd, buf, sizeof(buf) - 1, 0);
+	if (n < 0) {
 		warn("read: %s", filename);
 		goto end;
 	}
-
-	buf[LINE_MAX - 1] = 0;
+	buf[n] = '\0';
 
 	if (!access(filename, X_OK) && is_shebang(buf)) {
 		ret = enqueue_shebang(filename, buf);

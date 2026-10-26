@@ -27,6 +27,9 @@ int enqueue_shebang(const char *filename, char buf[LINE_MAX])
 	for (q = p; *q && (!isspace(*q)); q++);
 	*q = '\0';
 
+	if (!*p)
+		return 0;
+
 	if (verbose > 1)
 		warnx("shell script '%s' uses the '%s' interpreter", filename, p);
 
