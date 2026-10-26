@@ -8,6 +8,11 @@
 #include <unistd.h>
 #include <dirent.h>
 
+#include "compiler.h"
+#include "cleanup.h"
+
+DEFINE_FREE(closedir, DIR *, if (_t) closedir(_t))
+
 #define F_ROOT_DIR  (1 << 0)
 #define F_QUEUE_DIR (1 << 1)
 #define F_PAUSE_DIR (1 << 2)
@@ -33,16 +38,16 @@ extern char *handler_file;
 extern uint64_t session;
 
 /* queue-processor.c */
-extern void process_events(struct watch *queue) __attribute__((nonnull(1), noreturn));
+extern void process_events(struct watch *queue) __nonnull(1) __noreturn;
 
 /* path.c */
-extern int is_dot_dir(struct dirent *ent)                           __attribute__((nonnull(1)));
-extern DIR *xopendir(const char *path)                              __attribute__((nonnull(1)));
-extern struct dirent *xreaddir(DIR *d, const char *path)            __attribute__((nonnull(1, 2)));
-extern int empty_directory(const char *path)                        __attribute__((nonnull(1)));
-extern ssize_t read_retry(int fd, void *buf, size_t count)          __attribute__((nonnull(2)));
-extern ssize_t write_retry(int fd, const void *buf, size_t count)   __attribute__((nonnull(2)));
-extern ssize_t write_loop(int fd, const char *buffer, size_t count) __attribute__((nonnull(2)));
+extern int is_dot_dir(struct dirent *ent)                           __nonnull(1);
+extern DIR *xopendir(const char *path)                              __nonnull(1);
+extern struct dirent *xreaddir(DIR *d, const char *path)            __nonnull(1, 2);
+extern int empty_directory(const char *path)                        __nonnull(1);
+extern ssize_t read_retry(int fd, void *buf, size_t count)          __nonnull(2);
+extern ssize_t write_retry(int fd, const void *buf, size_t count)   __nonnull(2);
+extern ssize_t write_loop(int fd, const char *buffer, size_t count) __nonnull(2);
 
 /* process.c */
 extern pid_t waitpid_retry(pid_t pid, int *wstatus, int options);

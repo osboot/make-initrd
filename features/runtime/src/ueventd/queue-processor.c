@@ -18,9 +18,9 @@
 #include "rd/logging.h"
 #include "ueventd.h"
 
-static void event_handler(struct watch *queue, char *path) __attribute__((nonnull(1, 2)));
-static void move_files(char *srcdir, char *dstdir)         __attribute__((nonnull(1, 2)));
-static void signal_unhandled_events(struct watch *queue)   __attribute__((nonnull(1)));
+static void event_handler(struct watch *queue, char *path) __nonnull(1, 2);
+static void move_files(char *srcdir, char *dstdir)         __nonnull(1, 2);
+static void signal_unhandled_events(struct watch *queue)   __nonnull(1);
 
 void event_handler(struct watch *queue, char *path)
 {
@@ -48,7 +48,8 @@ void event_handler(struct watch *queue, char *path)
 void move_files(char *srcdir, char *dstdir)
 {
 	struct dirent *ent;
-	int srcfd, dstfd;
+	int srcfd;
+	int dstfd __free(close) = -1;
 
 	if ((srcfd = open(srcdir, O_RDONLY | O_CLOEXEC)) < 0)
 		rd_fatal("open: %s: %m", srcdir);
@@ -64,7 +65,7 @@ void move_files(char *srcdir, char *dstdir)
 			rd_fatal("open: %s: %m", dstdir);
 	}
 
-	DIR *d = fdopendir(srcfd);
+	DIR *d __free(closedir) = fdopendir(srcfd);
 	if (!d)
 		rd_fatal("fdopendir: %m");
 
@@ -73,9 +74,6 @@ void move_files(char *srcdir, char *dstdir)
 		    renameat(srcfd, ent->d_name, dstfd, ent->d_name) < 0)
 			rd_fatal("rename `%s/%s' -> `%s/%s': %m", srcdir, ent->d_name, dstdir, ent->d_name);
 	}
-
-	closedir(d);
-	close(dstfd);
 }
 
 void signal_unhandled_events(struct watch *queue)
@@ -97,8 +95,8 @@ void process_events(struct watch *queue)
 	char *numenv = rd_asprintf_or_die("SESSION=%lu", session);
 	putenv(numenv);
 
-	char *srcdir = rd_asprintf_or_die("%s/%s", filter_dir, queue->q_name);
-	char *dstdir = rd_asprintf_or_die("%s/%s", uevent_dir, queue->q_name);
+	char *srcdir __free(free) = rd_asprintf_or_die("%s/%s", filter_dir, queue->q_name);
+	char *dstdir __free(free) = rd_asprintf_or_die("%s/%s", uevent_dir, queue->q_name);
 
 	move_files(srcdir, dstdir);
 
@@ -108,9 +106,6 @@ void process_events(struct watch *queue)
 		if (!empty_directory(dstdir))
 			signal_unhandled_events(queue);
 	}
-
-	free(srcdir);
-	free(dstdir);
 
 	exit(0);
 }
