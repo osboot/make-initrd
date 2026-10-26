@@ -594,7 +594,7 @@ void install_file(struct file *p)
 	if (S_IFREG != (p->stat.st_mode & S_IFMT))
 		errx(EXIT_FAILURE, "not implemented (mode=%o): %s", p->stat.st_mode, p->dst);
 
-	if (!access(install_path, X_OK)) {
+	if (!access(install_path, F_OK)) {
 		op = "skip";
 		goto end;
 	}
