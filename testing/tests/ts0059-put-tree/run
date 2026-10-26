@@ -1,0 +1,17 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+mkdir -p "$tmpdir/src1/subdir" "$tmpdir/src2" "$tmpdir/dest"
+echo "data1" > "$tmpdir/src1/file1"
+echo "data2" > "$tmpdir/src1/subdir/file2"
+echo "data3" > "$tmpdir/src2/file3"
+
+export PATH="$PWD/.build/dest/usr/bin:$PWD/.build/dest/usr/sbin:$PWD/tools:$PATH"
+
+tools/put-tree "$tmpdir/dest" "$tmpdir/src1" "$tmpdir/src2" "$tmpdir/nonexistent"
+
+echo "=== destination contents ==="
+find "$tmpdir/dest" -type f | sort | sed "s#$tmpdir/dest##g"

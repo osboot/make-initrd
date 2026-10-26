@@ -1,0 +1,30 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+mkdir -p "$tmpdir/root/etc" "$tmpdir/root/bin"
+echo "hello world" > "$tmpdir/root/etc/test.conf"
+echo "#!/bin/sh" > "$tmpdir/root/bin/app"
+chmod +x "$tmpdir/root/bin/app"
+
+mkdir -p "$tmpdir/first/early"
+echo "early init" > "$tmpdir/first/early/data"
+
+export ROOTDIR="$tmpdir/root"
+export OUTFILE="$tmpdir/initrd.img"
+export FIRSTCPIODIR="$tmpdir/first"
+export FIRSTCPIO="$tmpdir/early.cpio"
+export PATH="$(printf '%s' "$PWD/.build/dest/usr/bin:$PWD/tools:$PATH" | tr ':' '\n' | grep '^/' | paste -sd ':' -)"
+
+tools/pack-image
+
+echo "early exists: $([ -f "$FIRSTCPIO" ] && echo yes)"
+echo "main exists: $([ -f "$OUTFILE" ] && echo yes)"
+
+echo "=== early cpio contents ==="
+cpio -it -F "$FIRSTCPIO" 2>/dev/null | sort
+
+echo "=== main cpio contents ==="
+cpio -it -F "$OUTFILE" 2>/dev/null | sort

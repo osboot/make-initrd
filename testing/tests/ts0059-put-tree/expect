@@ -1,0 +1,5 @@
+=== destination contents ===
+/file1
+/file3
+/subdir/file2
+rc=0

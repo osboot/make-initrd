@@ -1,0 +1,12 @@
+=== test standard installation info ===
+Used features: base udev
+Packed modules: e1000e ext4
+Unpacked size: SIZE
+Image size: SIZE
+=== test compressed fs installation info ===
+Used features: base udev compressed-fs
+Packed modules inside squashfs: ext4
+Top packed modules: overlay
+Unpacked size: SIZE
+Image size: SIZE
+rc=0

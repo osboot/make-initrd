@@ -1,0 +1,11 @@
+early exists: yes
+main exists: yes
+=== early cpio contents ===
+early
+early/data
+=== main cpio contents ===
+bin
+bin/app
+etc
+etc/test.conf
+rc=0
