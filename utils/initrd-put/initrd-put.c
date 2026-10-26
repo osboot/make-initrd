@@ -640,9 +640,9 @@ void install_file(struct file *p)
 		goto fallback_sendfile;
 	do {
 		errno = 0;
-		ret = copy_file_range(sfd, NULL, dfd, NULL, (size_t) len, 0);
+		ret = TEMP_FAILURE_RETRY(copy_file_range(sfd, NULL, dfd, NULL, (size_t) len, 0));
 		if (ret < 0) {
-			if (errno == EXDEV || errno == ENOSYS) {
+			if (errno == EXDEV || errno == ENOSYS || errno == EOPNOTSUPP || errno == EINVAL) {
 				use_copy_file_range = 0;
 				if (verbose > 2)
 					warnx("copy_file_range not supported");
@@ -672,9 +672,9 @@ fallback_sendfile:
 	len = p->stat.st_size;
 	do {
 		errno = 0;
-		ret = sendfile(dfd, sfd, NULL, (size_t) len);
+		ret = TEMP_FAILURE_RETRY(sendfile(dfd, sfd, NULL, (size_t) len));
 		if (ret < 0) {
-			if (errno == EINVAL || errno == ENOSYS) {
+			if (errno == EINVAL || errno == ENOSYS || errno == EOPNOTSUPP) {
 				use_sendfile = 0;
 				if (verbose > 2)
 					warnx("sendfile not supported");
