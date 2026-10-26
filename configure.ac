@@ -93,6 +93,31 @@ AS_CASE([$enable_ubsan],
 	[no], [],
 	[AC_MSG_ERROR([bad value '$enable_ubsan' for --enable-ubsan])])
 
+AC_ARG_ENABLE([coverage],
+	[AS_HELP_STRING([--enable-coverage],
+			[build with code coverage instrumentation])],
+	[], [enable_coverage=no])
+
+AS_CASE([$enable_coverage],
+	[yes], [
+		AC_MSG_CHECKING([whether $CC supports code coverage instrumentation])
+		saved_CFLAGS=$CFLAGS
+		saved_LDFLAGS=$LDFLAGS
+		CFLAGS="$CFLAGS -O0 --coverage"
+		LDFLAGS="$LDFLAGS --coverage"
+		AC_LINK_IFELSE(
+			[AC_LANG_PROGRAM([], [return 0;])],
+			[AC_MSG_RESULT([yes])],
+			[CFLAGS=$saved_CFLAGS
+			 LDFLAGS=$saved_LDFLAGS
+			 AC_MSG_RESULT([no])
+			 AC_MSG_FAILURE([$CC does not support code coverage instrumentation])])
+	],
+	[no], [],
+	[AC_MSG_ERROR([bad value '$enable_coverage' for --enable-coverage])])
+
+AC_SUBST([ENABLE_COVERAGE], [$enable_coverage])
+
 m4_ifndef([PKG_PROG_PKG_CONFIG],
   [m4_fatal([Could not locate the pkg-config autoconf
     macros. These are usually located in /usr/share/aclocal/pkg.m4.
