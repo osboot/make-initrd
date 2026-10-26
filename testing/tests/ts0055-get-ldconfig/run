@@ -1,0 +1,33 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+mkdir -p "$tmpdir/bin"
+cat > "$tmpdir/bin/ldd" <<EOF
+#!/bin/sh
+echo " libc.so => /lib/ld-musl-x86_64.so.1 (0x123)"
+EOF
+chmod +x "$tmpdir/bin/ldd"
+
+export PATH="$PWD/.build/dest/usr/bin:$PATH"
+
+echo "=== test help ==="
+tools/get-ldconfig --help
+
+echo "=== test invalid ==="
+rc=0; tools/get-ldconfig --bogus || rc=$?
+echo "rc=$rc"
+
+echo "=== test glibc libdirs ==="
+dirs="$(tools/get-ldconfig --libdirs)"
+[ -n "$dirs" ] && echo "glibc_libdirs=ok"
+
+echo "=== test glibc libs ==="
+libs="$(tools/get-ldconfig --libs | head -n 5)"
+[ -n "$libs" ] && echo "glibc_libs=ok"
+
+echo "=== test musl libdirs ==="
+musl_dirs="$(PATH="$tmpdir/bin:$PATH" tools/get-ldconfig --libdirs)"
+[ -n "$musl_dirs" ] && echo "musl_libdirs=ok"

@@ -1,0 +1,7 @@
+=== test invalid root ===
+rc=1
+=== test empty root ===
+rc=0
+=== test populated root ===
+matched_dir=ok
+rc=0

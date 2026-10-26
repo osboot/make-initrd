@@ -1,0 +1,29 @@
+=== test help ===
+Usage: get-ldconfig [options]
+
+Options:
+  --libs          Show list for libraries;
+  --libdirs       Show library directories;
+  -h, --help      Give this help list.
+
+Report bugs to authors.
+
+=== test invalid ===
+get-ldconfig: unrecognized option '--bogus'
+Usage: get-ldconfig [options]
+
+Options:
+  --libs          Show list for libraries;
+  --libdirs       Show library directories;
+  -h, --help      Give this help list.
+
+Report bugs to authors.
+
+rc=0
+=== test glibc libdirs ===
+glibc_libdirs=ok
+=== test glibc libs ===
+glibc_libs=ok
+=== test musl libdirs ===
+musl_libdirs=ok
+rc=0

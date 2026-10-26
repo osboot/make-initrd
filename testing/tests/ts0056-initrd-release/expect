@@ -1,0 +1,9 @@
+=== test custom VERSION ===
+initrd-release created=ok
+os-release symlink=ok
+ID=make-initrd
+VERSION_ID=1.2.3
+NAME="make-initrd"
+=== test default VERSION ===
+VERSION_ID=0
+rc=0

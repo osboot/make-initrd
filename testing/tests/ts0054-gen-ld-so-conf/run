@@ -1,0 +1,25 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+root="$(mktemp -d)"
+trap 'rm -rf "$root"' EXIT
+
+echo "=== test invalid root ==="
+rc=0; tools/gen-ld-so-conf "$root/nonexistent" || rc=$?
+echo "rc=$rc"
+
+echo "=== test empty root ==="
+tools/gen-ld-so-conf "$root"
+echo "rc=$?"
+
+echo "=== test populated root ==="
+first_dir="$(grep -h -v -E "^(#|include|$)" /etc/ld.so.conf /etc/ld.so.conf.d/* 2>/dev/null | grep "^/" | head -n 1 ||:)"
+if [ -n "$first_dir" ]; then
+	mkdir -p "$root$first_dir"
+	out="$(tools/gen-ld-so-conf "$root")"
+	if echo "$out" | grep -qx "$first_dir"; then
+		echo "matched_dir=ok"
+	fi
+else
+	echo "matched_dir=ok"
+fi

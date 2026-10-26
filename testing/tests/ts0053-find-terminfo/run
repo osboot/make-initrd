@@ -1,0 +1,42 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+mkdir -p "$tmpdir/bin" "$tmpdir/dir1/t" "$tmpdir/dir2/t"
+touch "$tmpdir/dir1/t/testterm"
+touch "$tmpdir/dir2/t/testterm"
+
+cat > "$tmpdir/bin/infocmp" <<EOF
+#!/bin/sh
+[ "\$1" = "-D" ] && printf '%s\n' "$tmpdir/dir1" "$tmpdir/dir2"
+EOF
+chmod +x "$tmpdir/bin/infocmp"
+
+PATH="$tmpdir/bin:$PWD/.build/dest/usr/bin:$PATH"
+
+echo "=== test --help ==="
+tools/find-terminfo --help
+
+echo "=== test all ==="
+tools/find-terminfo testterm | sed "s#$tmpdir##g"
+
+echo "=== test first ==="
+tools/find-terminfo -f testterm | sed "s#$tmpdir##g"
+tools/find-terminfo --first testterm | sed "s#$tmpdir##g"
+
+echo "=== test default TERM ==="
+TERM=testterm tools/find-terminfo | sed "s#$tmpdir##g"
+
+echo "=== test not found ==="
+rc=0; tools/find-terminfo missingterm || rc=$?
+echo "rc=$rc"
+
+echo "=== test extra arg ==="
+rc=0; tools/find-terminfo term1 term2 || rc=$?
+echo "rc=$rc"
+
+echo "=== test empty arg ==="
+rc=0; tools/find-terminfo "" || rc=$?
+echo "rc=$rc"
