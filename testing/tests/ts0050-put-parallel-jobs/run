@@ -1,0 +1,60 @@
+#!/bin/bash -eu
+set -o pipefail
+
+cwd="$(readlink -ev "${0%/*}")"
+
+topdir="$(readlink -ev "$cwd/../../..")"
+for p in usr/bin usr/local/bin bin; do
+	if [ -x "$topdir/.build/dest/$p/initrd-put" ]; then
+		export PATH="$topdir/.build/dest/$p:$PATH"
+		break
+	fi
+done
+
+. "$cwd"/../put-file-sh-functions
+
+make_fs()
+{
+	rm -rf -- "$1"
+	for n in bin lib; do
+		mkdir -p -- "$1/$n"
+	done
+}
+
+srcdir="$cwd/src"
+rm -rf -- "$srcdir"
+mkdir -p -- "$srcdir"
+
+# Generate 10 test files with random sizes
+for i in $(seq 1 10); do
+	echo "content $i" > "$srcdir/file$i"
+done
+ln -s file1 "$srcdir/link1"
+
+make_fs "$cwd/from"
+cp -a "$srcdir"/* "$cwd/from/bin/"
+
+# Test invalid jobs values
+! initrd-put -j 0 "$cwd/to" "$cwd/from/bin/file1" >/dev/null 2>&1
+! initrd-put -j -5 "$cwd/to" "$cwd/from/bin/file1" >/dev/null 2>&1
+
+# Run with -j 1 (single-threaded)
+make_fs "$cwd/to_j1"
+tools/put-file -j 1 -r "$cwd/from" "$cwd/to_j1" "$cwd/from/bin"/*
+
+# Run with -j 4 (parallel)
+make_fs "$cwd/to_j4"
+tools/put-file -j 4 -r "$cwd/from" "$cwd/to_j4" "$cwd/from/bin"/*
+
+# Run with default jobs (auto CPUs)
+make_fs "$cwd/to_auto"
+tools/put-file -r "$cwd/from" "$cwd/to_auto" "$cwd/from/bin"/*
+
+[ -f "$cwd/to_j1/bin/file1" ]
+[ -f "$cwd/to_j4/bin/file10" ]
+[ -L "$cwd/to_auto/bin/link1" ]
+
+diff -r "$cwd/to_j1" "$cwd/to_j4"
+diff -r "$cwd/to_j1" "$cwd/to_auto"
+
+rm -rf -- "$cwd/from" "$cwd/to_j1" "$cwd/to_j4" "$cwd/to_auto" "$srcdir"

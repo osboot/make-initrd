@@ -86,20 +86,21 @@ export LD_LIBRARY_PATH="$cwd/from/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 make_fs "$cwd/to"
 rm -f -- "$logfile"
 
-tools/put-file -r "$cwd/from" "$cwd/to" "$cwd/from/bin/bin1" "$cwd/from/bin/bin2"
+tools/put-file -j 1 -r "$cwd/from" "$cwd/to" "$cwd/from/bin/bin1" "$cwd/from/bin/bin2"
 
 [ -f "$cwd/to/bin/bin1" ]
 [ -f "$cwd/to/bin/bin2" ]
 [ -f "$cwd/to/lib/libcommon.so" ]
 
-grep -q "bin1" "$logfile"
-! grep -q "bin2" "$logfile"
+# Exactly one of bin1 or bin2 must invoke ldd, and the other must hit cache.
+{ grep -q "bin1" "$logfile" && ! grep -q "bin2" "$logfile"; } || \
+{ grep -q "bin2" "$logfile" && ! grep -q "bin1" "$logfile"; }
 
 # Test 2: IGNORE_PUT_ELF_CACHE=1 disables cache. Both bin1 and bin2 must invoke ldd.
 make_fs "$cwd/to"
 rm -f -- "$logfile"
 
-IGNORE_PUT_ELF_CACHE=1 tools/put-file -r "$cwd/from" "$cwd/to" "$cwd/from/bin/bin1" "$cwd/from/bin/bin2"
+IGNORE_PUT_ELF_CACHE=1 tools/put-file -j 1 -r "$cwd/from" "$cwd/to" "$cwd/from/bin/bin1" "$cwd/from/bin/bin2"
 
 [ -f "$cwd/to/bin/bin1" ]
 [ -f "$cwd/to/bin/bin2" ]
@@ -112,7 +113,7 @@ grep -q "bin2" "$logfile"
 make_fs "$cwd/to"
 rm -f -- "$logfile"
 
-tools/put-file -r "$cwd/from" "$cwd/to" "$cwd/from/bin/bin_rpath"
+tools/put-file -j 1 -r "$cwd/from" "$cwd/to" "$cwd/from/bin/bin_rpath"
 
 [ -f "$cwd/to/bin/bin_rpath" ]
 [ -f "$cwd/to/custom/libcustom.so" ]

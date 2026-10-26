@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdatomic.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <getopt.h>
 #include <errno.h>
@@ -39,7 +41,8 @@ static char *logfile = NULL;
 int verbose = 0;
 static int dry_run = 0;
 static int force = 0;
-static size_t installed = 0;
+int jobs = 0;
+static atomic_size_t installed = 0;
 
 regex_t *exclude_match = NULL;
 size_t exclude_match_nr = 0;
@@ -475,12 +478,12 @@ void print_uninstalled_file(struct file *p)
 		print_file(p);
 }
 
-static char install_path[PATH_MAX + 1];
-static int use_copy_file_range = 1;
-static int use_sendfile = 1;
+static volatile int use_copy_file_range = 1;
+static volatile int use_sendfile = 1;
 
 void install_file(struct file *p)
 {
+	char install_path[PATH_MAX + 1];
 	const char *ftype;
 	const char *op = "install";
 
@@ -514,6 +517,7 @@ void install_file(struct file *p)
 			break;
 	}
 
+	memcpy(install_path, destdir, destdir_len);
 	size_t avail = sizeof(install_path) - destdir_len;
 
 	if (strlcpy(install_path + destdir_len, p->dst, avail) >= avail)
@@ -677,7 +681,7 @@ end:
 	if (verbose)
 		warnx("%s (%s): %s", op, ftype, install_path);
 	p->installed = true;
-	installed++;
+	atomic_fetch_add(&installed, 1);
 	return;
 
 fallback_sendfile:
@@ -736,9 +740,12 @@ fallback_readwrite:
 
 void apply_permissions(struct file *p)
 {
+	char install_path[PATH_MAX + 1];
+
 	if (!p->installed)
 		return;
 
+	memcpy(install_path, destdir, destdir_len);
 	size_t avail = sizeof(install_path) - destdir_len;
 
 	if (strlcpy(install_path + destdir_len, p->dst, avail) >= avail)
@@ -759,6 +766,79 @@ void apply_permissions(struct file *p)
 	}
 }
 
+struct file_collector {
+	struct file **dirs;
+	size_t dir_count;
+	size_t dir_cap;
+
+	struct file **non_dirs;
+	size_t non_dir_count;
+	size_t non_dir_cap;
+};
+
+static struct file_collector collector = { 0 };
+
+static void classify_file(struct file *p)
+{
+	if (S_ISDIR(p->stat.st_mode)) {
+		if (collector.dir_count == collector.dir_cap) {
+			collector.dir_cap = collector.dir_cap ? collector.dir_cap * 2 : 64;
+			collector.dirs = xrealloc(collector.dirs, collector.dir_cap, sizeof(*collector.dirs));
+		}
+		collector.dirs[collector.dir_count++] = p;
+	} else {
+		if (collector.non_dir_count == collector.non_dir_cap) {
+			collector.non_dir_cap = collector.non_dir_cap ? collector.non_dir_cap * 2 : 256;
+			collector.non_dirs = xrealloc(collector.non_dirs, collector.non_dir_cap, sizeof(*collector.non_dirs));
+		}
+		collector.non_dirs[collector.non_dir_count++] = p;
+	}
+}
+
+static int compare_dir_order(const void *a, const void *b)
+{
+	const struct file *fa = *(const struct file **) a;
+	const struct file *fb = *(const struct file **) b;
+	size_t la = strlen(fa->dst);
+	size_t lb = strlen(fb->dst);
+	if (la != lb)
+		return (la < lb) ? -1 : 1;
+	return strcmp(fa->dst, fb->dst);
+}
+
+struct worker_pool {
+	struct file **files;
+	size_t count;
+	size_t next_idx;
+	pthread_mutex_t mutex;
+};
+
+static void *install_worker(void *arg)
+{
+	struct worker_pool *pool = arg;
+
+	while (1) {
+		struct file *p = NULL;
+
+		pthread_mutex_lock(&pool->mutex);
+		while (pool->next_idx < pool->count) {
+			struct file *candidate = pool->files[pool->next_idx++];
+			if (!candidate->installed) {
+				p = candidate;
+				break;
+			}
+		}
+		pthread_mutex_unlock(&pool->mutex);
+
+		if (!p)
+			break;
+
+		install_file(p);
+	}
+
+	return NULL;
+}
+
 void show_help(int rc)
 {
 	fprintf(stdout,
@@ -775,6 +855,7 @@ void show_help(int rc)
 	        "   -n, --dry-run              perform a trial run without changes.\n"
 	        "   -e, --exclude=REGEXP       exclude files matching REGEXP.\n"
 	        "   -f, --force                overwrite destination file if exists.\n"
+	        "   -j, --jobs=N               run N worker threads (default: number of CPUs).\n"
 	        "   -l, --log=FILE             write log about what was copied.\n"
 	        "   -r, --remove-prefix=PATH   ignore prefix in path.\n"
 	        "   -v, --verbose              print a message for each action.\n"
@@ -804,12 +885,13 @@ void show_version(void)
 
 int main(int argc, char **argv)
 {
-	const char *optstring = "e:fnl:r:vVh";
+	const char *optstring = "e:fnl:r:vVhj:";
 	const struct option longopts[] = {
 		{"exclude", required_argument, 0, 'e' },
 		{"remove-prefix", required_argument, 0, 'r' },
 		{"force", no_argument, 0, 'f' },
 		{"dry-run", no_argument, 0, 'n' },
+		{"jobs", required_argument, 0, 'j' },
 		{"log", required_argument, 0, 'l' },
 		{"verbose", no_argument, 0, 'v' },
 		{"version", no_argument, 0, 'V' },
@@ -840,6 +922,11 @@ int main(int argc, char **argv)
 			case 'f':
 				force = 1;
 				break;
+			case 'j':
+				jobs = atoi(optarg);
+				if (jobs < 1)
+					errx(EX_USAGE, "invalid number of jobs: %s", optarg);
+				break;
 			case 'l':
 				logfile = optarg;
 				break;
@@ -847,8 +934,10 @@ int main(int argc, char **argv)
 				dry_run = 1;
 				break;
 			case 'r':
-				prefix = optarg;
-				prefix_len = strlen(optarg);
+				prefix = realpath(optarg, NULL);
+				if (!prefix)
+					prefix = xstrdup(optarg);
+				prefix_len = strlen(prefix);
 				while (prefix_len > 1 && prefix[prefix_len - 1] == '/') {
 					prefix[prefix_len - 1] = '\0';
 					prefix_len--;
@@ -888,9 +977,10 @@ int main(int argc, char **argv)
 		enqueue_canonicalized_path(argv[i], true);
 	}
 
-	size_t avail = sizeof(install_path);
+	char check_path[PATH_MAX + 1];
+	size_t avail = sizeof(check_path);
 
-	if (strlcpy(install_path, destdir, avail) >= avail)
+	if (strlcpy(check_path, destdir, avail) >= avail)
 		errx(EXIT_FAILURE, "destination path too long: %s", destdir);
 
 	for (struct file *queue = get_queue(NULL); queue; queue = get_queue(NULL)) {
@@ -912,15 +1002,15 @@ int main(int argc, char **argv)
 
 			if (!force) {
 				struct stat st;
-				avail = sizeof(install_path) - destdir_len;
+				avail = sizeof(check_path) - destdir_len;
 
-				if (strlcpy(install_path + destdir_len, queue->dst, avail) >= avail)
+				if (strlcpy(check_path + destdir_len, queue->dst, avail) >= avail)
 					errx(EXIT_FAILURE, "destination path too long: %s", queue->dst);
 
 				errno = 0;
-				if (lstat(install_path, &st) < 0) {
+				if (lstat(check_path, &st) < 0) {
 					if (errno != ENOENT)
-						err(EX_OSERR, "unable to get access to %s", install_path);
+						err(EX_OSERR, "unable to get access to %s", check_path);
 				} else if (!S_ISDIR(st.st_mode)) {
 					if (verbose > 1)
 						warnx("'%s' is already in the destdir", queue->src);
@@ -956,24 +1046,85 @@ int main(int argc, char **argv)
 
 		umask(0);
 
+		memset(&collector, 0, sizeof(collector));
+		tree_walk(classify_file);
+
+		if (collector.dir_count > 1)
+			qsort(collector.dirs, collector.dir_count, sizeof(struct file *), compare_dir_order);
+
+		int n_workers = jobs;
+		if (n_workers <= 0) {
+			long nprocs = sysconf(_SC_NPROCESSORS_ONLN);
+			n_workers = (nprocs > 0) ? (int) nprocs : 1;
+		}
+		if ((size_t) n_workers > collector.non_dir_count)
+			n_workers = (collector.non_dir_count > 0) ? (int) collector.non_dir_count : 1;
+
 		while (1) {
-			size_t prev_installed = installed;
+			size_t prev_installed = atomic_load(&installed);
 
-			tree_walk(install_file);
+			/* Step 1: Create directories ordered by path depth (parents first) */
+			for (size_t i = 0; i < collector.dir_count; i++) {
+				if (!collector.dirs[i]->installed)
+					install_file(collector.dirs[i]);
+			}
 
-			if (prev_installed == installed)
+			/* Step 2: Install non-directory files in parallel */
+			if (n_workers <= 1) {
+				for (size_t i = 0; i < collector.non_dir_count; i++) {
+					if (!collector.non_dirs[i]->installed)
+						install_file(collector.non_dirs[i]);
+				}
+			} else {
+				struct worker_pool pool = {
+					.files = collector.non_dirs,
+					.count = collector.non_dir_count,
+					.next_idx = 0,
+				};
+				pthread_mutex_init(&pool.mutex, NULL);
+
+				pthread_t *threads = xcalloc((size_t) n_workers, sizeof(pthread_t));
+				int n_created = 0;
+
+				for (int i = 0; i < n_workers - 1; i++) {
+					if (pthread_create(&threads[i], NULL, install_worker, &pool) != 0) {
+						warn("pthread_create");
+						break;
+					}
+					n_created++;
+				}
+
+				install_worker(&pool);
+
+				for (int i = 0; i < n_created; i++)
+					pthread_join(threads[i], NULL);
+
+				free(threads);
+				pthread_mutex_destroy(&pool.mutex);
+			}
+
+			if (prev_installed == atomic_load(&installed))
 				break;
 		}
 
 		size_t tree_nr = tree_get_nr();
+		size_t cur_installed = atomic_load(&installed);
 
-		if (tree_nr > installed) {
+		if (tree_nr > cur_installed) {
 			logout = stdout;
 			tree_walk(print_uninstalled_file);
 			errx(EXIT_FAILURE, "unable to create the files listed above");
 		}
 
-		tree_walk(apply_permissions);
+		/* Step 3: Apply permissions (directories in reverse depth order) */
+		for (size_t i = 0; i < collector.non_dir_count; i++)
+			apply_permissions(collector.non_dirs[i]);
+
+		for (size_t i = collector.dir_count; i > 0; i--)
+			apply_permissions(collector.dirs[i - 1]);
+
+		free(collector.dirs);
+		free(collector.non_dirs);
 	}
 
 	if (logfile) {
@@ -989,6 +1140,7 @@ int main(int argc, char **argv)
 	queue_destroy();
 	elf_cache_destroy();
 	free(destdir);
+	free(prefix);
 
 	for (size_t i = 0; i < exclude_match_nr; i++)
 		regfree(&exclude_match[i]);

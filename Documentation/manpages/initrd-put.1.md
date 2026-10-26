@@ -26,6 +26,9 @@ binary dependencies and copies them along with the specified files.
 *-f, --force*
 	overwrite destination file if exists.
 
+*-j, --jobs=*_N_
+	run _N_ worker threads in parallel (default: number of CPUs).
+
 *-l, --log=*_FILE_
 	white log about what was copied.
 
