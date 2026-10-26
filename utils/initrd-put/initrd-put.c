@@ -704,6 +704,9 @@ fallback_readwrite:
 
 void apply_permissions(struct file *p)
 {
+	if (!p->installed)
+		return;
+
 	size_t avail = sizeof(install_path) - destdir_len;
 
 	if (strlcpy(install_path + destdir_len, p->dst, avail) >= avail)
