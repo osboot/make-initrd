@@ -1,19 +1,10 @@
 #!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 cwd="${0%/*}"
 
 . "$cwd"/../../../../testing/tests/guess-rootfs-sh-functions
 
-export GUESS_SUFFIX=add:guess-root
-export TEST_GUESS_ACTIONS="guess/root/action guess-config"
-
-export RESOLVE_MODALIAS=
-export KERNEL_CONFIG=/dev/null
-
-export MAKE_INITRD_TRACE=1
-export MAKE_INITRD_TRACE_PIDS=
-export MAKE_INITRD_TRACE_EXECUTE_PATTERNS='guess/root/action'
-export MAKE_INITRD_TRACE_SRC_PATTERNS='features/overlayfs/guess/* features/rootfs/guess/fstype'
-export MAKE_INITRD_TRACE_RUN_PATTERNS='features/overlayfs/guess/fstype'
-
-guess_rootfs_run_test "$cwd/rootfs.tar.xz"
+guess_rootfs_run_test "$cwd/rootfs.tar.xz" --tsv \
+	--src-patterns="features/overlayfs/guess/* features/rootfs/guess/fstype" \
+	--run-patterns="features/overlayfs/guess/fstype"

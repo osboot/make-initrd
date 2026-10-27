@@ -41,6 +41,21 @@ print_vars() {
 	printf '\n'
 }
 
+print_vars_tsv() {
+	file_is_not_empty "$GUESSDIR/guess:variables":* ||
+		return 0
+
+	for m in "$GUESSDIR/guess:variables":*; do
+		[ -s "$m" ] ||
+			continue
+		n="${m##*:}"
+		while read -r val; do
+			[ -n "$val" ] || continue
+			printf 'variable\t%s\t%s\n' "$n" "$val"
+		done < <(sort -u "$m")
+	done
+}
+
 print_list() {
 	file_is_not_empty "$GUESSDIR/guess:$2":* "$GUESSDIR/guess:$2" ||
 		return 0
@@ -74,6 +89,56 @@ print_list() {
 	printf '\n'
 }
 
+print_list_tsv() {
+	file_is_not_empty "$GUESSDIR/guess:$2":* "$GUESSDIR/guess:$2" ||
+		return 0
+
+	local m fn name type kind group
+	case "$2" in
+		modules:*)     kind="module"; group="${2#modules:}" ;;
+		modalias:*)    kind="modalias"; group="${2#modalias:}" ;;
+		opt-modules:*) kind="opt-module"; group="${2#opt-modules:}" ;;
+		opt-modalias:*)kind="opt-modalias"; group="${2#opt-modalias:}" ;;
+		features)      kind="feature"; group="" ;;
+		*)             kind="$2"; group="" ;;
+	esac
+
+	for m in "$GUESSDIR/guess:$2":* "$GUESSDIR/guess:$2"; do
+		[ -s "$m" ] ||
+			continue
+
+		fn="${m##*/guess:}"
+		name="${fn##*:}"
+		type="${fn%%:*}"
+
+		[ "$type" = 'features' ] ||
+			guess_feature add-modules
+
+		if [ -n "${verbose1-}" ]; then
+			{
+				printf 'Module "%s" propose %s:\n' "$name" "$type"
+				sort -u "$m" | modules_fmt
+				printf '\n'
+			} >&2
+		fi
+
+		cat "$m"
+	done |
+		sort -u |
+		while read -r item; do
+			[ -n "$item" ] || continue
+			if [ "$kind" = "module" ] || [ "$kind" = "opt-module" ]; then
+				item="${item##*/}"
+				item="${item%.ko*}"
+			fi
+			if [ -n "$group" ]; then
+				printf '%s\t%s\t%s\n' "$kind" "$group" "$item"
+			else
+				printf '%s\t%s\n' "$kind" "$item"
+			fi
+		done
+}
+
 if [ -n "${RESOLVE_MODALIAS-}" ]; then
 	for m in "$GUESSDIR"/guess:modalias*; do
 		[ -s "$m" ] ||
@@ -100,11 +165,34 @@ if [ -n "${RESOLVE_MODALIAS-}" ]; then
 	done
 fi
 
-print_vars
-print_list RESCUE_MODULES  modules:rescue
-print_list RESCUE_MODULES  modalias:rescue
-print_list MODULES_ADD     modules:add
-print_list MODULES_ADD     modalias:add
-print_list MODULES_TRY_ADD opt-modules:add
-print_list MODULES_TRY_ADD opt-modalias:add
-print_list FEATURES        features
+GUESS_CONFIG_FORMAT="${GUESS_CONFIG_FORMAT:-make}"
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+		--format=*) GUESS_CONFIG_FORMAT="${1#--format=}" ;;
+		--format) shift; GUESS_CONFIG_FORMAT="${1-}" ;;
+		--tsv) GUESS_CONFIG_FORMAT="tsv" ;;
+		--make) GUESS_CONFIG_FORMAT="make" ;;
+		*) break ;;
+	esac
+	shift
+done
+
+if [ "$GUESS_CONFIG_FORMAT" = "tsv" ]; then
+	print_vars_tsv
+	print_list_tsv RESCUE_MODULES  modules:rescue
+	print_list_tsv RESCUE_MODULES  modalias:rescue
+	print_list_tsv MODULES_ADD     modules:add
+	print_list_tsv MODULES_ADD     modalias:add
+	print_list_tsv MODULES_TRY_ADD opt-modules:add
+	print_list_tsv MODULES_TRY_ADD opt-modalias:add
+	print_list_tsv FEATURES        features
+else
+	print_vars
+	print_list RESCUE_MODULES  modules:rescue
+	print_list RESCUE_MODULES  modalias:rescue
+	print_list MODULES_ADD     modules:add
+	print_list MODULES_ADD     modalias:add
+	print_list MODULES_TRY_ADD opt-modules:add
+	print_list MODULES_TRY_ADD opt-modalias:add
+	print_list FEATURES        features
+fi

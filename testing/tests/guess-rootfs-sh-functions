@@ -37,16 +37,48 @@ guess_rootfs_setup_dir()
 	export BLKID_STATE_FILE="$rootdir/etc/blkid.out1"
 	export DEVLIST_FILE="$rootdir/dev/devlist"
 	export KERNEL_MODULES_DIR="$modulesdir"
+
+	export GUESS_SUFFIX="${GUESS_SUFFIX:-add:guess-root}"
+	export TEST_GUESS_ACTIONS="${TEST_GUESS_ACTIONS:-guess/root/action guess-config}"
+	export RESOLVE_MODALIAS="${RESOLVE_MODALIAS-}"
+	export KERNEL_CONFIG="${KERNEL_CONFIG:-/dev/null}"
+
+	export MAKE_INITRD_TRACE="${MAKE_INITRD_TRACE:-1}"
+	export MAKE_INITRD_TRACE_PIDS="${MAKE_INITRD_TRACE_PIDS-}"
+	export MAKE_INITRD_TRACE_EXECUTE_PATTERNS="${MAKE_INITRD_TRACE_EXECUTE_PATTERNS:-guess/root/action}"
+	export MAKE_INITRD_TRACE_FORMAT="${MAKE_INITRD_TRACE_FORMAT:-text}"
+	export GUESS_CONFIG_FORMAT="${GUESS_CONFIG_FORMAT:-make}"
 }
 
 guess_rootfs_run_test()
 {
-	local make_initrd_args=()
-
-	guess_rootfs_setup "$1"
+	local archive="$1"
 	shift
 
-	[ "$#" -eq 0 ] || make_initrd_args=("$@")
+	local make_initrd_args=()
+	while [ "$#" -gt 0 ]; do
+		case "$1" in
+			--tsv)
+				export GUESS_CONFIG_FORMAT=tsv
+				export MAKE_INITRD_TRACE_FORMAT=tsv
+				;;
+			--src-patterns=*)
+				export MAKE_INITRD_TRACE_SRC_PATTERNS="${1#--src-patterns=}"
+				;;
+			--run-patterns=*)
+				export MAKE_INITRD_TRACE_RUN_PATTERNS="${1#--run-patterns=}"
+				;;
+			--format=*)
+				export GUESS_CONFIG_FORMAT="${1#--format=}"
+				;;
+			*)
+				make_initrd_args+=("$1")
+				;;
+		esac
+		shift
+	done
+
+	guess_rootfs_setup "$archive"
 
 	.build/dest/usr/sbin/make-initrd \
 		--no-checks --no-depmod \
