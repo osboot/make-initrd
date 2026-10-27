@@ -1,0 +1,414 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+from __future__ import annotations
+
+import argparse
+import difflib
+import os
+import re
+import shutil
+import stat
+import subprocess
+import sys
+import tarfile
+import tempfile
+from pathlib import Path
+
+REQUIRED_METADATA_FILES = (
+    "etc/findmnt.out1",
+    "etc/blkid.out1",
+    "etc/fstab",
+    "dev/devlist",
+    "dev/list",
+    "proc/mounts",
+    "proc/self/mounts",
+    "proc/filesystems",
+)
+
+
+def repo_root() -> Path:
+    return Path(__file__).resolve().parent.parent
+
+
+def find_report_root(base: Path) -> Path | None:
+    for candidate in (base / "report", base):
+        if (candidate / "sys").exists() and (candidate / "proc").exists():
+            return candidate
+    return None
+
+
+def extract_report(src: Path, dst: Path) -> None:
+    if src.is_dir():
+        shutil.copytree(src, dst, dirs_exist_ok=True, symlinks=True)
+        return
+
+    try:
+        with tarfile.open(src, "r:*") as tar:
+            tar.extractall(dst, filter="data")
+            return
+    except Exception:
+        pass
+
+    subprocess.run(["tar", "-xf", str(src), "-C", str(dst)], check=True)
+
+
+def pick_kernel_dir(root: Path, kernel_override: str | None = None) -> tuple[str | None, Path]:
+    if kernel_override:
+        modules_root = root / "lib" / "modules"
+        if modules_root.is_dir() and (modules_root / kernel_override).is_dir():
+            return kernel_override, modules_root / kernel_override
+
+    empty_modules = root / ".coverage-empty-modules"
+    (empty_modules / "kernel").mkdir(parents=True, exist_ok=True)
+    return kernel_override, empty_modules
+
+
+def run_test_guess(
+    report_root: Path,
+    modules_dir: Path,
+    kernel: str | None,
+    src_patterns: str,
+    run_patterns: str,
+    output_format: str,
+    strace_log: Path | None = None,
+) -> tuple[int, str]:
+    root = repo_root()
+    env = os.environ.copy()
+
+    (modules_dir / "kernel").mkdir(parents=True, exist_ok=True)
+
+    etc_dir = report_root / "etc"
+    etc_dir.mkdir(parents=True, exist_ok=True)
+    initrd_mk = etc_dir / "initrd.mk"
+    if not initrd_mk.exists():
+        initrd_mk.write_text("AUTODETECT = all\n", encoding="ascii")
+
+    env.update(
+        {
+            "PATH": f"{root}/.build/dest/usr/bin:{root}/.build/dest/usr/sbin:" + env.get("PATH", ""),
+            "MAKE_INITRD_BUG_REPORT": "2",
+            "MAKE_INITRD_TESTING": "1",
+            "PROCFS_PATH": str(report_root / "proc"),
+            "SYSFS_PATH": str(report_root / "sys"),
+            "FSTAB": str(report_root / "etc" / "fstab"),
+            "INITRD_CONFIG_LIST": str(initrd_mk),
+            "FINDMNT_STATE_FILE": str(report_root / "etc" / "findmnt.out1"),
+            "BLKID_STATE_FILE": str(report_root / "etc" / "blkid.out1"),
+            "DEVLIST_FILE": str(report_root / "dev" / "devlist"),
+            "KERNEL_MODULES_DIR": str(modules_dir),
+            "GUESS_SUFFIX": "add:guess-root",
+            "TEST_GUESS_ACTIONS": "guess/root/action guess-config",
+            "RESOLVE_MODALIAS": "",
+            "KERNEL_CONFIG": "/dev/null",
+            "MAKE_INITRD_TRACE": "1",
+            "MAKE_INITRD_TRACE_PIDS": "",
+            "MAKE_INITRD_TRACE_EXECUTE_PATTERNS": "guess/root/action",
+            "MAKE_INITRD_TRACE_SRC_PATTERNS": src_patterns,
+            "MAKE_INITRD_TRACE_RUN_PATTERNS": run_patterns,
+            "MAKE_INITRD_TRACE_FORMAT": "tsv" if output_format == "tsv" else "text",
+            "GUESS_CONFIG_FORMAT": output_format,
+        }
+    )
+
+    cmd: list[str] = []
+    if strace_log:
+        cmd += ["strace", "-f", "-q", "-o", str(strace_log),
+                "-e", "trace=openat,open,readlink,readlinkat,newfstatat,stat,lstat,access,faccessat",
+        ]
+
+    cmd += [
+        str(root / ".build" / "dest" / "usr" / "sbin" / "make-initrd"),
+        "--no-checks",
+        "--no-depmod",
+    ]
+    if kernel:
+        cmd += ["-k", kernel]
+    cmd += ["test-guess"]
+
+    proc = subprocess.run(
+        cmd,
+        cwd=root,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    return proc.returncode, proc.stdout
+
+
+def collect_accessed_files(report_root: Path, strace_log: Path) -> set[str]:
+    prefix = str(report_root.resolve())
+    accessed = set()
+
+    with open(strace_log, "r", encoding="utf-8", errors="replace") as f:
+        for line in f:
+            for m in re.finditer(r'"([^"]+)"', line):
+                p = m.group(1)
+                resolved_p = None
+                if p.startswith(prefix):
+                    resolved_p = p
+                elif p.startswith("/") and os.path.exists(p):
+                    try:
+                        rp = os.path.realpath(p)
+                        if rp.startswith(prefix):
+                            resolved_p = rp
+                    except OSError:
+                        pass
+                if resolved_p:
+                    rel = os.path.relpath(resolved_p, prefix)
+                    if not rel.startswith(".."):
+                        accessed.add(rel)
+
+    for item in REQUIRED_METADATA_FILES:
+        target = report_root / item
+        if target.exists() or target.is_symlink():
+            accessed.add(item)
+
+    return accessed
+
+
+def copy_tree_subset(report_root: Path, dest_root: Path, rel_paths: set[str]) -> int:
+    copied_count = 0
+
+    def copy_single(rel: str) -> None:
+        nonlocal copied_count
+        src = report_root / rel
+        dst = dest_root / rel
+
+        if dst.exists() or dst.is_symlink():
+            return
+
+        if src.is_symlink():
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            link_target = os.readlink(src)
+            os.symlink(link_target, dst)
+            copied_count += 1
+
+            # Follow target if it points within report_root
+            if link_target.startswith("/"):
+                target_path = report_root / link_target.lstrip("/")
+            else:
+                target_path = (src.parent / link_target).resolve()
+
+            try:
+                target_rel = os.path.relpath(target_path, report_root)
+                if not target_rel.startswith("..") and (target_path.exists() or target_path.is_symlink()):
+                    parts = Path(target_rel).parts
+                    for i in range(1, len(parts)):
+                        copy_single(str(Path(*parts[:i])))
+                    copy_single(target_rel)
+            except ValueError:
+                pass
+        elif src.is_file():
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+            copied_count += 1
+        elif src.is_dir():
+            dst.mkdir(parents=True, exist_ok=True)
+
+    for rel in sorted(rel_paths):
+        src = report_root / rel
+        if src.exists() or src.is_symlink():
+            parts = Path(rel).parts
+            for i in range(1, len(parts)):
+                copy_single(str(Path(*parts[:i])))
+            copy_single(rel)
+
+    return copied_count
+
+
+def create_tarball(source_dir: Path, tar_path: Path) -> None:
+    tar_path.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["tar", "-cJf", str(tar_path), "-C", str(source_dir), "."], check=True)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Create a minimal test suite from a make-initrd bugreport archive or directory."
+    )
+    parser.add_argument("bugreport", type=Path, help="Path to bug-report archive or extracted directory")
+    parser.add_argument("dest_dir", type=Path, help="Destination directory for the test suite")
+    parser.add_argument("-F", "--feature", help="Feature name (e.g. lvm, mdadm, overlayfs)")
+    parser.add_argument(
+        "-s",
+        "--src-patterns",
+        help="MAKE_INITRD_TRACE_SRC_PATTERNS (default: features/<feature>/guess/* guess/root/action)",
+    )
+    parser.add_argument(
+        "-r",
+        "--run-patterns",
+        help="MAKE_INITRD_TRACE_RUN_PATTERNS (default: same as src-patterns)",
+    )
+    parser.add_argument(
+        "--format",
+        choices=["tsv", "make"],
+        default="tsv",
+        help="Test output format (default: tsv)",
+    )
+    parser.add_argument("-f", "--force", action="store_true", help="Overwrite existing destination directory")
+    parser.add_argument(
+        "--include",
+        action="append",
+        default=[],
+        help="Additional glob pattern to include from report root",
+    )
+    parser.add_argument("-k", "--kernel", help="Kernel version to test with")
+    parser.add_argument("--no-verify", action="store_true", help="Skip running test runner verification")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    root = repo_root()
+
+    bugreport_path = args.bugreport.resolve()
+    if not bugreport_path.exists():
+        sys.exit(f"Error: bugreport not found: {bugreport_path}")
+
+    dest_dir = args.dest_dir.resolve()
+    if dest_dir.exists():
+        if not args.force:
+            sys.exit(f"Error: destination directory {dest_dir} already exists (use -f/--force to overwrite)")
+        shutil.rmtree(dest_dir)
+
+    src_patterns = args.src_patterns
+    if not src_patterns:
+        if args.feature:
+            src_patterns = f"features/{args.feature}/guess/* guess/root/action"
+        else:
+            src_patterns = "features/*/guess/* guess/root/action"
+
+    run_patterns = args.run_patterns or src_patterns
+
+    with tempfile.TemporaryDirectory(prefix="create-guess-test-") as temp_dir_str:
+        temp_dir = Path(temp_dir_str)
+        extracted_dir = temp_dir / "extracted"
+        extracted_dir.mkdir()
+
+        if args.verbose:
+            print(f"Extracting bug report from {bugreport_path} ...")
+        extract_report(bugreport_path, extracted_dir)
+
+        report_root = find_report_root(extracted_dir)
+        if not report_root:
+            sys.exit(f"Error: could not find valid report root in {bugreport_path}")
+
+        kernel, modules_dir = pick_kernel_dir(report_root, args.kernel)
+
+        strace_log = temp_dir / "strace.log"
+        if args.verbose:
+            print("Replaying test-guess under strace to record file accesses ...")
+
+        rc, output = run_test_guess(
+            report_root=report_root,
+            modules_dir=modules_dir,
+            kernel=kernel,
+            src_patterns=src_patterns,
+            run_patterns=run_patterns,
+            output_format=args.format,
+            strace_log=strace_log,
+        )
+
+        if rc != 0:
+            print("Error: test-guess failed during initial run on bug report:", file=sys.stderr)
+            print(output, file=sys.stderr)
+            sys.exit(rc)
+
+        accessed_files = collect_accessed_files(report_root, strace_log)
+
+        for pat in args.include:
+            for matched in report_root.glob(pat):
+                rel = str(matched.relative_to(report_root))
+                accessed_files.add(rel)
+
+        min_root = temp_dir / "min_root"
+        min_root.mkdir()
+        num_copied = copy_tree_subset(report_root, min_root, accessed_files)
+
+        if args.verbose:
+            print(f"Copied {num_copied} minimal paths to fixture rootfs.")
+
+        # Verify replay on trimmed rootfs before packing
+        verify_rc, verify_out = run_test_guess(
+            report_root=min_root,
+            modules_dir=temp_dir / "empty-modules",
+            kernel=None,
+            src_patterns=src_patterns,
+            run_patterns=run_patterns,
+            output_format=args.format,
+        )
+
+        if verify_rc != 0 or verify_out != output:
+            print("Warning: replay on minimal rootfs produced differing output!", file=sys.stderr)
+            diff = "".join(
+                difflib.unified_diff(
+                    output.splitlines(True),
+                    verify_out.splitlines(True),
+                    fromfile="original",
+                    tofile="minimal",
+                )
+            )
+            print(diff, file=sys.stderr)
+            sys.exit(1)
+
+        # Create destination directory structure
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        tar_path = dest_dir / "rootfs.tar.xz"
+        create_tarball(min_root, tar_path)
+
+        tar_size = tar_path.stat().st_size
+        if args.verbose:
+            print(f"Created {tar_path} ({tar_size} bytes)")
+
+        # Generate run script
+        rel_sh_funcs = os.path.relpath(root / "testing" / "tests" / "guess-rootfs-sh-functions", dest_dir)
+        run_file = dest_dir / "run"
+
+        run_lines = [
+            "#!/bin/bash -eu",
+            "# SPDX-License-Identifier: GPL-3.0-or-later",
+            "",
+            'cwd="${0%/*}"',
+            "",
+            f'. "$cwd"/{rel_sh_funcs}',
+            "",
+            f'guess_rootfs_run_test "$cwd/rootfs.tar.xz" --{args.format} \\',
+            f'\t--src-patterns="{src_patterns}" \\',
+            f'\t--run-patterns="{run_patterns}"',
+            "",
+        ]
+        run_file.write_text("\n".join(run_lines), encoding="utf-8")
+        run_file.chmod(run_file.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+        # Generate expect file
+        expect_file = dest_dir / "expect"
+        expect_file.write_text(output + "rc=0\n", encoding="utf-8")
+
+        if not args.no_verify:
+            if args.verbose:
+                print(f"Running test runner on {dest_dir} ...")
+            test_run_cmd = [str(root / "testing" / "tests" / "run"), str(dest_dir.parent)]
+            proc = subprocess.run(
+                test_run_cmd,
+                cwd=root,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+            if proc.returncode != 0:
+                print(f"Error: test runner failed on {dest_dir}:", file=sys.stderr)
+                print(proc.stdout, file=sys.stderr)
+                sys.exit(proc.returncode)
+
+        print(f"Successfully created test suite at {dest_dir}")
+        print(f"  Archive size: {tar_size} bytes ({num_copied} files/symlinks)")
+        if not args.no_verify:
+            print("  Verification: PASSED")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,45 @@
+RUN: guess/root/action
+TRACE	execute		0	guess/root/action	main		Processing ...
+TRACE	function		1	guess/root/action	main guess_device	guess_device	/dev/block/252:0
+TRACE	function		2	guess/root/action	main guess_device guess_device	guess_device	/devices/virtual/block/dm-0/..
+TRACE	function		3	guess/root/action	main guess_device guess_device guess_device	guess_device	/devices/virtual/block/..
+TRACE	function		4	guess/root/action	main guess_device guess_device guess_device guess_device	guess_device	/devices/virtual/..
+TRACE	run		3	guess/root/action	main guess_device guess_device guess_device	features/lvm/guess/device	/devices/virtual
+TRACE	run		2	guess/root/action	main guess_device guess_device	features/lvm/guess/device	/devices/virtual/block
+TRACE	function		2	guess/root/action	main guess_device guess_device	guess_device	/devices/virtual/block/dm-0/slaves/sda3
+TRACE	function		3	guess/root/action	main guess_device guess_device guess_device	guess_device	/devices/pci0000:02/0000:02:00.0/host2/target2:0:0/2:0:0:0/block/sda/sda3/..
+TRACE	function		4	guess/root/action	main guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:02/0000:02:00.0/host2/target2:0:0/2:0:0:0/block/sda/..
+TRACE	function		5	guess/root/action	main guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:02/0000:02:00.0/host2/target2:0:0/2:0:0:0/block/..
+TRACE	function		6	guess/root/action	main guess_device guess_device guess_device guess_device guess_device guess_modalias	guess_modalias	scsi:t-0x00
+TRACE	function		6	guess/root/action	main guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:02/0000:02:00.0/host2/target2:0:0/2:0:0:0/..
+TRACE	function		7	guess/root/action	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:02/0000:02:00.0/host2/target2:0:0/..
+TRACE	function		8	guess/root/action	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:02/0000:02:00.0/host2/..
+TRACE	function		9	guess/root/action	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_modalias	guess_modalias	pci:v000015ADd000007C0sv000015ADsd000007C0bc01sc07i00
+TRACE	function		9	guess/root/action	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:02/0000:02:00.0/..
+TRACE	function		10	guess/root/action	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:02/..
+TRACE	run		9	guess/root/action	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:02
+TRACE	run		8	guess/root/action	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:02/0000:02:00.0
+TRACE	run		7	guess/root/action	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:02/0000:02:00.0/host2
+TRACE	run		6	guess/root/action	main guess_device guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:02/0000:02:00.0/host2/target2:0:0
+TRACE	run		5	guess/root/action	main guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:02/0000:02:00.0/host2/target2:0:0/2:0:0:0
+TRACE	run		4	guess/root/action	main guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:02/0000:02:00.0/host2/target2:0:0/2:0:0:0/block
+TRACE	run		3	guess/root/action	main guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:02/0000:02:00.0/host2/target2:0:0/2:0:0:0/block/sda
+TRACE	run		2	guess/root/action	main guess_device guess_device	features/lvm/guess/device	/devices/pci0000:02/0000:02:00.0/host2/target2:0:0/2:0:0:0/block/sda/sda3
+TRACE	run		1	guess/root/action	main guess_device	features/lvm/guess/device	/devices/virtual/block/dm-0
+TRACE	function		1	features/lvm/guess/device	main guess_feature	guess_feature	lvm
+TRACE	function		1	guess/root/action	main guess_fstype	guess_fstype	/dev/mapper/ubuntu--vg-ubuntu--lv ext4 /
+TRACE	function		1	guess/root/action	main guess_feature	guess_feature	rootfs
+TRACE	function		1	guess/root/action	main guess_feature	guess_feature	add-udev-rules
+TRACE	function		1	guess/root/action	main guess_variable	guess_variable	MOUNTPOINTS /
+RUN: guess-config
+variable	MOUNTPOINTS	/
+module	add	sd_mod
+modalias	add	fs-ext4
+modalias	add	pci:v000015ADd000007C0sv000015ADsd000007C0bc01sc07i00
+modalias	add	scsi:t-0x00
+feature	add-modules
+feature	add-udev-rules
+feature	devmapper
+feature	lvm
+feature	rootfs
+rc=0
