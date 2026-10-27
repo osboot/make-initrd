@@ -1,0 +1,39 @@
+#!/bin/bash -efu
+
+export LANG=C
+export LC_ALL=C
+
+cwd="${0%/*}"
+
+# Append a bootconfig section to ts0023 multi-archive image
+python3 - "$cwd/data.img" << 'EOF'
+import sys
+import struct
+
+content = b"root=UUID=1234\n"
+hdr = struct.pack("<II", len(content), sum(content) & 0xffffffff)
+bc = content + hdr + b"#BOOTCONFIG\n"
+
+with open(sys.argv[1], "wb") as f:
+    with open("utils/initrd-ls/tests/ts0023/data.img", "rb") as orig:
+        f.write(orig.read())
+    f.write(bc)
+EOF
+
+trap 'rm -f -- "$cwd/data.img"' EXIT
+
+echo "=== brief ==="
+.build/dest/usr/sbin/initrd-ls -b "$cwd/data.img"
+
+echo "=== name only ==="
+.build/dest/usr/sbin/initrd-ls -n "$cwd/data.img"
+
+echo "=== compression only ==="
+.build/dest/usr/sbin/initrd-ls -C --no-mtime "$cwd/data.img"
+
+echo "=== name and compression ==="
+.build/dest/usr/sbin/initrd-ls -n -C "$cwd/data.img"
+
+echo "=== help and version ==="
+.build/dest/usr/sbin/initrd-ls -h | head -n 1
+.build/dest/usr/sbin/initrd-ls -V | head -n 1 | sed -e 's/version [0-9.]\+/version VERSION/'

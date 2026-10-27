@@ -1,0 +1,33 @@
+=== standard ===
+module /lib/modules/6.6.1/kernel/net/dummy.ko
+module /lib/modules/6.6.1/kernel/net/depmod1.ko
+firmware /lib/firmware/test.bin
+=== tree ===
+module /lib/modules/6.6.1/kernel/net/dummy.ko
+   \_ module /lib/modules/6.6.1/kernel/net/depmod1.ko
+   \_ firmware /lib/firmware/test.bin
+=== no prefix ===
+/lib/modules/6.6.1/kernel/net/dummy.ko
+/lib/modules/6.6.1/kernel/net/depmod1.ko
+/lib/firmware/test.bin
+=== no deps ===
+module /lib/modules/6.6.1/kernel/net/dummy.ko
+firmware /lib/firmware/test.bin
+=== no firmware ===
+module /lib/modules/6.6.1/kernel/net/dummy.ko
+module /lib/modules/6.6.1/kernel/net/depmod1.ko
+=== no modules ===
+firmware /lib/firmware/test.bin
+=== missing firmware ===
+module /lib/modules/6.6.1/kernel/net/dummy.ko
+firmware /lib/firmware/test.bin
+missing-firmware missing.bin
+=== input file ===
+module /lib/modules/6.6.1/kernel/net/dummy.ko
+firmware /lib/firmware/test.bin
+=== builtin ===
+builtin ext4
+=== help and version ===
+Usage: depinfo [options] [module|filename|alias]...
+depinfo version VERSION
+rc=0

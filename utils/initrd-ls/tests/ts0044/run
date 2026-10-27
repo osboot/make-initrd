@@ -1,0 +1,59 @@
+#!/bin/bash -efu
+
+export LANG=C
+export LC_ALL=C
+export TZ=UTC
+
+cwd="${0%/*}"
+
+python3 - "$cwd/data.cpio" << 'EOF'
+import sys
+import io
+import stat
+
+def make_cpio_entry(name, mode, content=b"", rdev_maj=0, rdev_min=0, uid=1000, gid=1000, nlink=1, mtime=1700000000):
+    namesize = len(name.encode()) + 1
+    filesize = len(content)
+    hdr = f"070701{1:08x}{mode:08x}{uid:08x}{gid:08x}{nlink:08x}{mtime:08x}{filesize:08x}{0:08x}{0:08x}{rdev_maj:08x}{rdev_min:08x}{namesize:08x}{0:08x}".encode()
+    out = io.BytesIO()
+    out.write(hdr)
+    out.write(name.encode() + b"\0")
+    pad = (4 - (out.tell() % 4)) % 4
+    out.write(b"\0" * pad)
+    if content:
+        out.write(content)
+        pad = (4 - (out.tell() % 4)) % 4
+        out.write(b"\0" * pad)
+    return out.getvalue()
+
+trailer = make_cpio_entry("TRAILER!!!", 0)
+
+entries = [
+    make_cpio_entry("regfile", stat.S_IFREG | 0o644, b"hello"),
+    make_cpio_entry("symlink", stat.S_IFLNK | 0o777, b"regfile"),
+    make_cpio_entry("chardev", stat.S_IFCHR | 0o660, rdev_maj=1, rdev_min=3),
+    make_cpio_entry("blkdev", stat.S_IFBLK | 0o660, rdev_maj=8, rdev_min=1),
+    make_cpio_entry("fifonod", stat.S_IFIFO | 0o644),
+    make_cpio_entry("socknod", stat.S_IFSOCK | 0o660),
+    make_cpio_entry("suidfile", stat.S_IFREG | stat.S_ISUID | 0o755, b"x"),
+    make_cpio_entry("sgidfile", stat.S_IFREG | stat.S_ISGID | 0o755, b"y"),
+    make_cpio_entry("stickydir", stat.S_IFDIR | stat.S_ISVTX | 0o777),
+    make_cpio_entry("stickyfile", stat.S_IFREG | stat.S_ISVTX | 0o644),
+    trailer
+]
+
+archive = b"".join(entries)
+pad = (512 - (len(archive) % 512)) % 512
+archive += b"\0" * pad
+
+with open(sys.argv[1], "wb") as f:
+    f.write(archive)
+EOF
+
+trap 'rm -f -- "$cwd/data.cpio"' EXIT
+
+echo "=== special file types without mtime ==="
+.build/dest/usr/sbin/initrd-ls --no-mtime "$cwd/data.cpio"
+
+echo "=== special file types with mtime ==="
+.build/dest/usr/sbin/initrd-ls "$cwd/data.cpio"

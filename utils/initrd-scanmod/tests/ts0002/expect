@@ -1,0 +1,5 @@
+initrd-scanmod: rules file required
+initrd-scanmod: open: nonexistent_rules: No such file or directory
+initrd-scanmod: bad.rules:1: bad line format
+.build/dest/usr/sbin/initrd-scanmod: invalid option -- 'z'
+rc=0

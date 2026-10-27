@@ -1,0 +1,11 @@
+=== rules 1 ===
+/lib/modules/6.6.1/kernel/drivers/net/mocknet.ko
+=== rules 2 ===
+/lib/modules/6.6.1/kernel/drivers/block/mockblk.ko
+=== verbose ===
+initrd-scanmod: kernel directory: /lib/modules/6.6.1
+/lib/modules/6.6.1/kernel/drivers/net/mocknet.ko
+=== help and version ===
+Usage: initrd-scanmod [options] [--] rules-file [rules-file ...]
+initrd-scanmod version VERSION
+rc=0

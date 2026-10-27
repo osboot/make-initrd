@@ -1,0 +1,16 @@
+#!/bin/bash -eu
+
+export LANG=C
+export LC_ALL=C
+
+cwd="${0%/*}"
+PROG=".build/dest/usr/sbin/initrd-scanmod"
+
+$PROG 2>&1 | head -n 1 ||:
+$PROG nonexistent_rules 2>&1 ||:
+
+printf 'invalid_rule_line\n' > "$cwd/bad.rules"
+$PROG "$cwd/bad.rules" 2>&1 | sed "s#$cwd/##" ||:
+rm -f "$cwd/bad.rules"
+
+$PROG -z 2>&1 | head -n 1 ||:

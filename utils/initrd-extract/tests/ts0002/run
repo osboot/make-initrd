@@ -1,0 +1,44 @@
+#!/bin/bash -efu
+
+export LANG=C
+export LC_ALL=C
+
+cwd="${0%/*}"
+
+cat \
+	"$cwd"/empty.cpio \
+	"$cwd"/data.cpio \
+	"$cwd"/empty.cpio \
+	> "$cwd"/data.img
+
+# Test 1: extract with -o / --output option
+.build/dest/usr/sbin/initrd-extract -a2 -o "$cwd"/part2.cpio "$cwd"/data.img
+cmp "$cwd"/part2.cpio "$cwd"/data.cpio
+rm -f -- "$cwd"/part2.cpio
+
+# Test 2: multiple -o options (previous file is closed, final file receives output)
+.build/dest/usr/sbin/initrd-extract -a2 -o "$cwd"/unused.cpio -o "$cwd"/part2.cpio "$cwd"/data.img
+cmp "$cwd"/part2.cpio "$cwd"/data.cpio
+[ ! -s "$cwd"/unused.cpio ]
+rm -f -- "$cwd"/part2.cpio "$cwd"/unused.cpio
+
+# Test 3: extract all archives when -a is not specified
+.build/dest/usr/sbin/initrd-extract -o "$cwd"/all.cpio "$cwd"/data.img
+cmp "$cwd"/all.cpio "$cwd"/data.cpio
+rm -f -- "$cwd"/all.cpio
+
+# Test 4: extract from an initrd containing a bootconfig section (non-CPIO_ARCHIVE)
+python3 -c '
+import struct
+content = b"param=1\n"
+hdr = struct.pack("<II", len(content), sum(content) & 0xffffffff)
+with open("'"$cwd"'/bootconfig.img", "wb") as f:
+    with open("'"$cwd"'/data.cpio", "rb") as cpio:
+        f.write(cpio.read())
+    f.write(content + hdr + b"#BOOTCONFIG\n")
+'
+.build/dest/usr/sbin/initrd-extract -o "$cwd"/extracted.cpio "$cwd"/bootconfig.img
+cmp "$cwd"/extracted.cpio "$cwd"/data.cpio
+rm -f -- "$cwd"/extracted.cpio "$cwd"/bootconfig.img
+
+rm -f -- "$cwd"/data.img

@@ -1,0 +1,22 @@
+#!/bin/bash -efu
+
+export LANG=C
+export LC_ALL=C
+
+cwd="${0%/*}"
+
+# Test 1: extract from gzip compressed stream
+gzip -c "$cwd"/data.cpio > "$cwd"/data.cpio.gz
+cat "$cwd"/empty.cpio "$cwd"/data.cpio.gz > "$cwd"/data.img
+
+.build/dest/usr/sbin/initrd-extract -a2 -o "$cwd"/part2.cpio "$cwd"/data.img
+cmp "$cwd"/part2.cpio "$cwd"/data.cpio
+rm -f -- "$cwd"/part2.cpio "$cwd"/data.cpio.gz "$cwd"/data.img
+
+# Test 2: extract from zstd compressed stream
+zstd -q -c "$cwd"/data.cpio > "$cwd"/data.cpio.zst
+cat "$cwd"/empty.cpio "$cwd"/data.cpio.zst > "$cwd"/data.img
+
+.build/dest/usr/sbin/initrd-extract -a2 -o "$cwd"/part2.cpio "$cwd"/data.img
+cmp "$cwd"/part2.cpio "$cwd"/data.cpio
+rm -f -- "$cwd"/part2.cpio "$cwd"/data.cpio.zst "$cwd"/data.img

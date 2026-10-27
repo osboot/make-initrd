@@ -1,0 +1,20 @@
+#!/bin/bash -eu
+
+export LANG=C
+export LC_ALL=C
+
+PROG=".build/dest/usr/sbin/initrd-extract"
+
+# Informational options
+$PROG -h | head -n 1
+$PROG -V | head -n 1 | sed -e 's/version [0-9.]\+/version VERSION/'
+
+# Error cases
+$PROG 2>&1 ||:
+$PROG -a 0 nonexistent 2>&1 ||:
+$PROG -a -1 nonexistent 2>&1 ||:
+$PROG -a abc nonexistent 2>&1 ||:
+$PROG -a "" nonexistent 2>&1 ||:
+$PROG -z nonexistent 2>&1 ||:
+$PROG nonexistent 2>&1 ||:
+$PROG -o /nonexistent/dir/output nonexistent 2>&1 ||:

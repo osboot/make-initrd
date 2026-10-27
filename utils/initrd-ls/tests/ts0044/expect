@@ -1,0 +1,23 @@
+=== special file types without mtime ===
+1 -rw-r--r-- 1 1000 1000   5 regfile
+1 lrwxrwxrwx 1 1000 1000   7 symlink -> regfile
+1 crw-rw---- 1 1000 1000 1,3 chardev
+1 brw-rw---- 1 1000 1000 8,1 blkdev
+1 prw-r--r-- 1 1000 1000   0 fifonod
+1 srw-rw---- 1 1000 1000   0 socknod
+1 -rwSr-xr-x 1 1000 1000   1 suidfile
+1 -rwxr-Sr-x 1 1000 1000   1 sgidfile
+1 drwxrwxrwt 1 1000 1000   0 stickydir
+1 -rw-r--r-T 1 1000 1000   0 stickyfile
+=== special file types with mtime ===
+1 -rw-r--r-- 1 1000 1000   5 Nov 14 22:13:20 2023 regfile
+1 lrwxrwxrwx 1 1000 1000   7 Nov 14 22:13:20 2023 symlink -> regfile
+1 crw-rw---- 1 1000 1000 1,3 Nov 14 22:13:20 2023 chardev
+1 brw-rw---- 1 1000 1000 8,1 Nov 14 22:13:20 2023 blkdev
+1 prw-r--r-- 1 1000 1000   0 Nov 14 22:13:20 2023 fifonod
+1 srw-rw---- 1 1000 1000   0 Nov 14 22:13:20 2023 socknod
+1 -rwSr-xr-x 1 1000 1000   1 Nov 14 22:13:20 2023 suidfile
+1 -rwxr-Sr-x 1 1000 1000   1 Nov 14 22:13:20 2023 sgidfile
+1 drwxrwxrwt 1 1000 1000   0 Nov 14 22:13:20 2023 stickydir
+1 -rw-r--r-T 1 1000 1000   0 Nov 14 22:13:20 2023 stickyfile
+rc=0

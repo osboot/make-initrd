@@ -1,0 +1,11 @@
+Usage: initrd-extract [options] initramfs
+initrd-extract version VERSION
+initrd-extract: Missing initrd file
+initrd-extract: invalid value for "archive" option: 0
+initrd-extract: invalid value for "archive" option: -1
+initrd-extract: invalid value for "archive" option: abc
+initrd-extract: invalid value for "archive" option: 
+.build/dest/usr/sbin/initrd-extract: invalid option -- 'z'
+initrd-extract: ERROR: stat: nonexistent: No such file or directory
+initrd-extract: ERROR: fopen: /nonexistent/dir/output: No such file or directory
+rc=0

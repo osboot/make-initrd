@@ -1,0 +1,40 @@
+#!/bin/bash -efu
+
+export LANG=C
+export LC_ALL=C
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+kver="6.6.1"
+moddir="$tmpdir/lib/modules/$kver"
+mkdir -p "$moddir/kernel/drivers/net" "$moddir/kernel/drivers/block"
+
+printf '%s\n' 'char modinfo[] __attribute__((section(".modinfo"))) = "alias=pci:v1234\0description=Mock Net Driver\0license=GPL\0author=Tester\0";' | gcc -c -x c - -o "$moddir/kernel/drivers/net/mocknet.ko"
+printf '%s\n' 'char modinfo[] __attribute__((section(".modinfo"))) = "alias=block-mock\0description=Mock Block Driver\0license=GPL\0";' | gcc -c -x c - -o "$moddir/kernel/drivers/block/mockblk.ko"
+
+cat > "$tmpdir/rules1" << "EOF"
+# Match network modules by alias
+alias ^pci:v1234
+EOF
+
+cat > "$tmpdir/rules2" << "EOF"
+# Match block modules by filename and not net
+filename .*/block/.*
+not-filename .*/net/.*
+EOF
+
+PROG=".build/dest/usr/sbin/initrd-scanmod"
+
+echo "=== rules 1 ==="
+$PROG -b "$tmpdir" -k "$kver" -j1 "$tmpdir/rules1" | sed "s#$tmpdir##g"
+
+echo "=== rules 2 ==="
+$PROG -b "$tmpdir" -k "$kver" -j2 "$tmpdir/rules2" | sed "s#$tmpdir##g"
+
+echo "=== verbose ==="
+$PROG -b "$tmpdir" -k "$kver" -j1 -v "$tmpdir/rules1" 2>&1 | sed "s#$tmpdir##g"
+
+echo "=== help and version ==="
+$PROG -h | head -n 1
+$PROG -V | head -n 1 | sed -e 's/version [0-9.]\+/version VERSION/'
