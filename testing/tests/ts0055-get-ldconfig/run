@@ -25,7 +25,7 @@ dirs="$(tools/get-ldconfig --libdirs)"
 [ -n "$dirs" ] && echo "glibc_libdirs=ok"
 
 echo "=== test glibc libs ==="
-libs="$(tools/get-ldconfig --libs | head -n 5)"
+libs="$(tools/get-ldconfig --libs)"
 [ -n "$libs" ] && echo "glibc_libs=ok"
 
 echo "=== test musl libdirs ==="
