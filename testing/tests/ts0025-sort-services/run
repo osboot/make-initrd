@@ -1,5 +1,10 @@
 #!/bin/bash -eu
 
+set -o pipefail
+
 cwd="${0%/*}"
 
-tools/sort-services --dry-run "$cwd"/data* 2>&1
+tools/sort-services --dry-run "$cwd"/data* 2>&1 | {
+	read -r header && echo "$header"
+	sort -d
+}
