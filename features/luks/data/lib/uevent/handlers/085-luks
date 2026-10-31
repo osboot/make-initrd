@@ -17,6 +17,7 @@ mnt="/mnt/luks-key"
 tab='	'
 pkcs11_luks_key="/tmp/pkcs11-luks.key"
 crypttab=/etc/crypttab
+lukskeys="${lukskeys:-/etc/luks.keys}"
 
 match_dev_in_array() {
 	[ "$#" = 2 ] || return 2
@@ -93,9 +94,21 @@ freekey() {
 }
 
 findkey() {
-	local path keydev luksdev prefix rc=0
+	local path keydev luksdev prefix rc=0 s v
 
-	while IFS="$tab" read -u 3 -r path keydev luksdev; do
+	while IFS='' read -u 3 -r s; do
+		for n in path keydev luksdev; do
+			v=
+			if [ -n "$s" ] && [ -z "${s##*$tab*}" ]; then
+				v="${s%%$tab*}"
+				s="${s#*$tab}"
+			else
+				v="$s"
+				s=
+			fi
+			eval "$n=\"\$v\""
+		done
+
 		if [ -z "$path" ]; then
 			message "ERROR: keypath required."
 			return 1
@@ -130,7 +143,7 @@ findkey() {
 
 		message "Found keyfile '$path' for '${LUKS_ROOT#/dev/}' encrypted partition."
 		return 0
-	done 3< /etc/luks.keys
+	done 3< "$lukskeys"
 
 	# Keyfile not found yet.
 	return 2
@@ -284,8 +297,8 @@ handler() {
 	# First of all, we check /etc/luks.keys, which is usually created from
 	# /proc/cmdline.
 	#
-	if [ -f /etc/luks.keys ]; then
-		message "$LUKS_ROOT: trying to find the keyfile in the '/etc/luks.keys'."
+	if [ -f "$lukskeys" ]; then
+		message "$LUKS_ROOT: trying to find the keyfile in the '$lukskeys'."
 		findkey
 		[ "${LUKS_KEY_FORMAT:-plain}" != plain ] ||
 			luks_pipekey=y

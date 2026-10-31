@@ -1,0 +1,87 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+cwd="${0%/*}"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+tab='	'
+mnt="$tmpdir/mnt"
+mkdir -p "$mnt"
+lukskeys="$tmpdir/luks.keys"
+LUKS_ROOT="/dev/sda2"
+ID_FS_UUID="target-uuid-1234"
+
+pkcs11_luks_key="$tmpdir/pkcs11-luks.key"
+
+# Mock functions needed by findkey
+message() {
+	echo "message: $*" | sed "s#$tmpdir#<TMPDIR>#g"
+}
+
+get_dev() {
+	local val="$1"
+	[ "$val" = "UUID=$ID_FS_UUID" ] || [ "$val" = "$LUKS_ROOT" ]
+}
+
+mount() {
+	echo "mount: $*" | sed "s#$tmpdir#<TMPDIR>#g"
+	return 1
+}
+
+read_pkcs11_key() {
+	echo "read_pkcs11_key: $*"
+	path="$pkcs11_luks_key"
+	touch "$path"
+	return 0
+}
+
+# Extract findkey from 085-luks
+eval "$(sed -n '/^findkey() {/,/^}/p' features/luks/data/lib/uevent/handlers/085-luks)"
+
+run_test() {
+	local desc="$1"
+	echo "=== $desc ==="
+	local rc=0
+	( findkey ) || rc=$?
+	echo "rc=$rc"
+}
+
+mkdir -p "$tmpdir/keys"
+touch "$tmpdir/keys/target.key"
+touch "$tmpdir/keys/other.key"
+
+#
+# Regression tests for commit ba53c151:
+# When keydev is empty (key-path<TAB><TAB>UUID=...), IFS tab-splitting in bash
+# must not collapse consecutive tabs. Otherwise, UUID= is assigned to keydev
+# instead of luksdev, leading to an invalid mount attempt and early abort.
+#
+
+printf '%s\t\tUUID=%s\n' "$tmpdir/keys/target.key" "$ID_FS_UUID" > "$lukskeys"
+run_test "Test 1: Empty keydev with matching luksdev (key-path<TAB><TAB>UUID=...)"
+
+{
+	printf '%s\t\tUUID=%s\n' "$tmpdir/keys/other.key" "other-uuid-9999"
+	printf '%s\t\tUUID=%s\n' "$tmpdir/keys/target.key" "$ID_FS_UUID"
+} > "$lukskeys"
+run_test "Test 2: Skip non-matching entry and find matching (empty keydev)"
+
+printf 'pkcs11:model=test;id=1\t\tUUID=%s\n' "$ID_FS_UUID" > "$lukskeys"
+run_test "Test 3: PKCS#11 key with empty keydev (filters/lukskeys format)"
+
+printf '%s\n' "$tmpdir/keys/target.key" > "$lukskeys"
+run_test "Test 4: Single field (key-path only)"
+
+mount() {
+	echo "mount: $*" | sed "s#$tmpdir#<TMPDIR>#g"
+	return 0
+}
+mkdir -p "$tmpdir/mnt/custom"
+touch "$tmpdir/mnt/custom/key.bin"
+printf 'custom/key.bin\t/dev/sdb1\tUUID=%s\n' "$ID_FS_UUID" > "$lukskeys"
+run_test "Test 5: All 3 fields (key-path, keydev, luksdev)"
+
+printf '\t\tUUID=%s\n' "$ID_FS_UUID" > "$lukskeys"
+run_test "Test 6: Empty keypath error"
