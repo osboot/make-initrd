@@ -1,0 +1,21 @@
+=== Test 1: Empty keydev with matching luksdev (key-path<TAB><TAB>UUID=...) ===
+message: Found keyfile '<TMPDIR>/keys/target.key' for 'sda2' encrypted partition.
+rc=0
+=== Test 2: Skip non-matching entry and find matching (empty keydev) ===
+message: Found keyfile '<TMPDIR>/keys/target.key' for 'sda2' encrypted partition.
+rc=0
+=== Test 3: PKCS#11 key with empty keydev (filters/lukskeys format) ===
+read_pkcs11_key: pkcs11:model=test;id=1
+message: Found keyfile '<TMPDIR>/pkcs11-luks.key' for 'sda2' encrypted partition.
+rc=0
+=== Test 4: Single field (key-path only) ===
+message: Found keyfile '<TMPDIR>/keys/target.key' for 'sda2' encrypted partition.
+rc=0
+=== Test 5: All 3 fields (key-path, keydev, luksdev) ===
+mount: -r /dev/sdb1 <TMPDIR>/mnt
+message: Found keyfile 'custom/key.bin' for 'sda2' encrypted partition.
+rc=0
+=== Test 6: Empty keypath error ===
+message: ERROR: keypath required.
+rc=1
+rc=0
