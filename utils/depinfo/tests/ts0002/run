@@ -1,0 +1,10 @@
+#!/bin/bash -eu
+
+export LANG=C
+export LC_ALL=C
+
+PROG=".build/dest/usr/sbin/depinfo"
+
+$PROG 2>&1 ||:
+$PROG -k 6.6.1 nonexistent 2>&1 ||:
+$PROG -z 2>&1 ||:

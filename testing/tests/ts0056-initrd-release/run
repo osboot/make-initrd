@@ -1,0 +1,21 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+export PATH="$PWD/.build/dest/usr/bin:$PWD/tools:$PATH"
+
+mkdir -p "$tmpdir/root1" "$tmpdir/root2"
+
+echo "=== test custom VERSION ==="
+ROOTDIR="$tmpdir/root1" VERSION=1.2.3 tools/initrd-release
+[ -f "$tmpdir/root1/etc/initrd-release" ] && echo "initrd-release created=ok"
+[ -L "$tmpdir/root1/etc/os-release" ] && echo "os-release symlink=ok"
+grep "^ID=" "$tmpdir/root1/etc/initrd-release"
+grep "^VERSION_ID=" "$tmpdir/root1/etc/initrd-release"
+grep "^NAME=" "$tmpdir/root1/etc/initrd-release"
+
+echo "=== test default VERSION ==="
+ROOTDIR="$tmpdir/root2" tools/initrd-release
+grep "^VERSION_ID=" "$tmpdir/root2/etc/initrd-release"

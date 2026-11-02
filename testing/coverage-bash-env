@@ -1,0 +1,15 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+if [ -n "${SHELL_COVERAGE_FILE-}" ]; then
+	case "$0" in
+		bash|sh|*/mk/tests/*|*/testing/tests/run) ;;
+		*)
+			set +x
+			exec 9>>"$SHELL_COVERAGE_FILE"
+			export BASH_XTRACEFD=9
+			PS4="+COV+ \${BASH_SOURCE[0]:-\$0}:\${LINENO}: "
+			set -x
+			;;
+	esac
+fi

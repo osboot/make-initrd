@@ -62,7 +62,7 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 		const char *eol = memchr(ptr, '\n', (size_t) (end - ptr));
 		size_t linelen = eol ? (size_t) (eol - ptr) : (size_t) (end - ptr);
 
-		char *line = xmalloc(linelen + 1);
+		char *line __free(free) = xmalloc(linelen + 1);
 		memcpy(line, ptr, linelen);
 		line[linelen] = '\0';
 
@@ -73,7 +73,6 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 			p++;
 
 		if (*p == '#' || *p == '\0') {
-			free(line);
 			i++;
 			continue;
 		}
@@ -82,8 +81,8 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 		while (len > 0 && (p[len - 1] == '\r' || isblank(p[len - 1])))
 			p[--len] = '\0';
 
-		char *kw    = NULL;
-		char *value = NULL;
+		char *kw __free(free) = NULL;
+		char *value __free(free) = NULL;
 
 		rule       = xcalloc(1, sizeof(struct rule_pair));
 		rule->type = RULE_NOT_MATCH;
@@ -99,17 +98,14 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 			if (n != 2)
 				errx(EXIT_FAILURE, "%s:%lu: bad line format", rulesfile, i);
 		}
-		free(line);
 
 		if ((rule->keyword = get_keyword(kw)) == KW_UNKNOWN_KEYWORD)
 			errx(EXIT_FAILURE, "%s:%lu: unknown keyword", rulesfile, i);
-		xfree(kw);
 
 		rule->value = xmalloc(sizeof(regex_t));
 
 		if (regcomp(rule->value, value, REG_NOSUB | REG_EXTENDED))
 			errx(EXIT_FAILURE, "%s:%lu: '%s' is not a regular expression", rulesfile, i, value);
-		xfree(value);
 
 		switch (rule->keyword) {
 			case KW_SYMBOL:

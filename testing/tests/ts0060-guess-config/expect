@@ -1,0 +1,16 @@
+TEST_VAR = \
+	val1 val2
+
+RESCUE_MODULES += \
+	e1000e
+
+MODULES_ADD += \
+	e1000e ext4
+
+MODULES_TRY_ADD += \
+	virtio_balloon
+
+FEATURES += \
+	add-modules network
+
+rc=0

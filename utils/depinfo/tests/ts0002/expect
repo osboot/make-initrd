@@ -1,0 +1,5 @@
+depinfo: ERROR: Missing module or filename.
+depinfo: ERROR: Module nonexistent not found.
+.build/dest/usr/sbin/depinfo: invalid option -- 'z'
+depinfo: ERROR: Missing module or filename.
+rc=0

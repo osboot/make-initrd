@@ -136,6 +136,10 @@ LDFLAGS = @LDFLAGS@
 UDEVD		= @UDEVD@
 UDEVADM		= @UDEVADM@
 STRIP		= @STRIP@
+ENABLE_COVERAGE := @ENABLE_COVERAGE@
+ifeq ($(ENABLE_COVERAGE),yes)
+STRIP		:= :
+endif
 USE_BUSYBOX	= @USE_BUSYBOX@
 USE_LIBSHELL	= @USE_LIBSHELL@
 SCDOC		= @SCDOC@
@@ -195,7 +199,35 @@ UNITTEST_DIRS = $(sort \
 				$(wildcard $(srcdir)/$(1)/tests $(srcdir)/$(1)/*/tests)))
 
 check-unit: $(UNITTEST_DIRS)
-	@env PATH="$(CURDIR)/tools:$(srcdir)/tools:$$PATH" $(srcdir)/testing/tests/run $?
+	@env PATH="$(CURDIR)/tools:$(srcdir)/tools:$(CURDIR)/$(dest_sbindir):$(CURDIR)/$(dest_bindir):$$PATH" $(srcdir)/testing/tests/run $?
+
+.PHONY: check-coverage coverage-clean
+
+check-coverage: build
+	@if [ "$(ENABLE_COVERAGE)" != "yes" ]; then \
+		echo >&2 "ERROR: Code coverage is not enabled in this build."; \
+		echo >&2 "Please reconfigure with --enable-coverage:"; \
+		echo >&2 "  ./configure --enable-local-build --enable-coverage"; \
+		exit 1; \
+	fi
+	@rm -rf $(build_prefix)/coverage*
+	@find $(OBJDIR) -name "*.gcda" -delete 2>/dev/null || :
+	@mkdir -p $(build_prefix)
+	@echo "=== Running unit tests with coverage instrumentation ==="
+	@env \
+		BASH_ENV="$(abspath $(srcdir)/testing/coverage-bash-env)" \
+		SHELL_COVERAGE_FILE="$(CURDIR)/$(build_prefix)/coverage-shell.log" \
+		PATH="$(CURDIR)/tools:$(srcdir)/tools:$(CURDIR)/$(dest_sbindir):$(CURDIR)/$(dest_bindir):$$PATH" \
+		$(MAKE) check-unit || :
+	@echo "=== Generating coverage reports ==="
+	@$(srcdir)/testing/coverage-report \
+		--root="$(srcdir)" \
+		--build-dir="$(CURDIR)/$(build_prefix)" \
+		--shell-trace="$(CURDIR)/$(build_prefix)/coverage-shell.log"
+
+coverage-clean:
+	@rm -rf $(build_prefix)/coverage*
+	@find $(OBJDIR) -name "*.gcda" -delete 2>/dev/null || :
 
 check-services:
 	@rc=0; \

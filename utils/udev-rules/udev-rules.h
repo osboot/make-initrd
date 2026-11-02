@@ -3,6 +3,13 @@
 #ifndef __UDEV_RULES_H__
 #define __UDEV_RULES_H__
 
+#include <dirent.h>
+
+#include "compiler.h"
+#include "cleanup.h"
+
+DEFINE_FREE(closedir, DIR *, if (_t) closedir(_t))
+
 typedef enum {
 	OP_MATCH,        /* == */
 	OP_NOMATCH,      /* != */

@@ -47,6 +47,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <getopt.h>
+#include "compiler.h"
 #include "reboot.h"
 
 const char *Version = "@(#)halt  2.86  31-Jul-2004 miquels@cistron.nl";
@@ -54,7 +55,7 @@ const char *progname;
 
 #define KERNEL_MONITOR	1 /* If halt() puts you into the kernel monitor. */
 
-static void usage(void) __attribute__((noreturn));
+static void __noreturn usage(void);
 static int get_runlevel(void);
 static void do_shutdown(const char *fl, const char *pw, const char *tm);
 

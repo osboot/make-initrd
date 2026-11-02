@@ -1,473 +1,471 @@
 RUN: guess/root/action
-TRACE function: source=features/mdadm/guess/device: main guess_variable: MDADM_EXTRA_PROGS mdmon
-TRACE function: source=features/mdadm/guess/device: main guess_device: /devices/virtual/block/md126/md/dev-nvme0n1/block
-TRACE run     : source=features/mdadm/guess/device: main guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_modalias: pci:v00002646d00005017sv00002646sd00005017bc01sc08i02
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_modalias: pci:v00008086d0000464Dsv00000000sd00000000bc06sc04i00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_modalias: pci:v00008086d0000467Fsv00008086sd00000000bc01sc04i00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: modalias /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: parent /devices/pci0000:00
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: slaves /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: supplier /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: loop /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
-TRACE run     : source=features/mdadm/guess/device: main guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
-TRACE function: source=features/mdadm/guess/device: main guess_device: /devices/virtual/block/md126/md/dev-nvme1n1/block
-TRACE run     : source=features/mdadm/guess/device: main guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_modalias: pci:v00002646d00005017sv00002646sd00005017bc01sc08i02
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_modalias: pci:v00008086d00007AC8sv00000000sd00000000bc06sc04i00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_modalias: pci:v00008086d0000467Fsv00008086sd00000000bc01sc04i00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: modalias /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: parent /devices/pci0000:00
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: slaves /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: supplier /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: loop /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
-TRACE function: source=features/mdadm/guess/device: main guess_device: /devices/virtual/block/md126/md/dev-nvme2n1/block
-TRACE run     : source=features/mdadm/guess/device: main guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_modalias: pci:v00002646d0000501Dsv00002646sd0000501Dbc01sc08i02
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_modalias: pci:v00008086d00007AC4sv00000000sd00000000bc06sc04i00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/pci10000:e0/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: modalias /devices/pci0000:00/0000:00:0e.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_modalias: pci:v00008086d0000467Fsv00008086sd00000000bc01sc04i00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: parent /devices/pci0000:00/0000:00:0e.0
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/0000:00:0e.0/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: modalias /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: parent /devices/pci0000:00
-TRACE function: source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: /devices/pci0000:00/..
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: slaves /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: supplier /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: loop /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
-TRACE run     : source=features/mdadm/guess/device: main guess_device: slaves /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: supplier /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: loop /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/bcache/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/clevis/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/devmapper/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/luks/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/lvm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/mdadm/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/multipath/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/nvmf/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/scsi-mode/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/sysfs-dma/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/sysfs-virtio-pci/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE run     : source=features/mdadm/guess/device: main guess_device: features/usb-storage/guess/device /devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
-TRACE function: source=features/mdadm/guess/device: main guess_modalias: md-raid0
-TRACE function: source=features/mdadm/guess/device: main guess_modalias: efivarfs
-TRACE function: source=features/mdadm/guess/device: main guess_feature: mdadm
-TRACE function: source=features/mdadm/guess/device: main guess_variable: GENERATE_UDEV_RULES_FOR_MD_DEVICE 9:126
-TRACE function: source=features/devmapper/guess/device: main guess_feature: devmapper
-TRACE function: source=features/rootfs/guess/fstype: main guess_modalias: fs-ext4
+TRACE	function		1	features/mdadm/guess/device	main guess_variable	guess_variable	MDADM_EXTRA_PROGS mdmon
+TRACE	function		1	features/mdadm/guess/device	main guess_device	guess_device	/devices/virtual/block/md126/md/dev-nvme0n1/block
+TRACE	run		1	features/mdadm/guess/device	main guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	function		2	features/mdadm/guess/device	main guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1/..
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	function		3	features/mdadm/guess/device	main guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/..
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	function		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/..
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	function		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_modalias	guess_modalias	pci:v00002646d00005017sv00002646sd00005017bc01sc08i02
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	function		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/..
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	function		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_modalias	guess_modalias	pci:v00008086d0000464Dsv00000000sd00000000bc06sc04i00
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	function		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/..
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	function		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/..
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0
+TRACE	function		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_modalias	guess_modalias	pci:v00008086d0000467Fsv00008086sd00000000bc01sc04i00
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0
+TRACE	function		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/..
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	modalias	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	parent	/devices/pci0000:00
+TRACE	function		9	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/..
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	slaves	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	supplier	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	loop	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0
+TRACE	run		1	features/mdadm/guess/device	main guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
+TRACE	function		1	features/mdadm/guess/device	main guess_device	guess_device	/devices/virtual/block/md126/md/dev-nvme1n1/block
+TRACE	run		1	features/mdadm/guess/device	main guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	function		2	features/mdadm/guess/device	main guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1/..
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	function		3	features/mdadm/guess/device	main guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/..
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	function		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/..
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	function		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_modalias	guess_modalias	pci:v00002646d00005017sv00002646sd00005017bc01sc08i02
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	function		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/..
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	function		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_modalias	guess_modalias	pci:v00008086d00007AC8sv00000000sd00000000bc06sc04i00
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	function		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/..
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	function		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/..
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0
+TRACE	function		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_modalias	guess_modalias	pci:v00008086d0000467Fsv00008086sd00000000bc01sc04i00
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0
+TRACE	function		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/..
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	modalias	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	parent	/devices/pci0000:00
+TRACE	function		9	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/..
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	slaves	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	supplier	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	loop	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1a.0/10000:e2:00.0/nvme/nvme1/nvme1n1
+TRACE	function		1	features/mdadm/guess/device	main guess_device	guess_device	/devices/virtual/block/md126/md/dev-nvme2n1/block
+TRACE	run		1	features/mdadm/guess/device	main guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	function		2	features/mdadm/guess/device	main guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1/..
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	function		3	features/mdadm/guess/device	main guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/..
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	function		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/..
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	function		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_modalias	guess_modalias	pci:v00002646d0000501Dsv00002646sd0000501Dbc01sc08i02
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	function		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/..
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	function		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_modalias	guess_modalias	pci:v00008086d00007AC4sv00000000sd00000000bc06sc04i00
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	function		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/..
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	function		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/..
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	modalias	/devices/pci0000:00/0000:00:0e.0
+TRACE	function		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_modalias	guess_modalias	pci:v00008086d0000467Fsv00008086sd00000000bc01sc04i00
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	parent	/devices/pci0000:00/0000:00:0e.0
+TRACE	function		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/0000:00:0e.0/..
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	modalias	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	parent	/devices/pci0000:00
+TRACE	function		9	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	guess_device	/devices/pci0000:00/..
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	slaves	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	supplier	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	loop	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00
+TRACE	run		8	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		7	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		6	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	run		5	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	run		4	features/mdadm/guess/device	main guess_device guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		3	features/mdadm/guess/device	main guess_device guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		2	features/mdadm/guess/device	main guess_device guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2
+TRACE	run		1	features/mdadm/guess/device	main guess_device	slaves	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	supplier	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	loop	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/bcache/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/clevis/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/devmapper/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/luks/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/lvm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/mdadm/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/multipath/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/nvmf/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/scsi-mode/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/sysfs-dma/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/sysfs-virtio-pci/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	run		1	features/mdadm/guess/device	main guess_device	features/usb-storage/guess/device	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:1b.4/10000:e3:00.0/nvme/nvme2/nvme2n1
+TRACE	function		1	features/mdadm/guess/device	main guess_modalias	guess_modalias	md-raid0
+TRACE	function		1	features/mdadm/guess/device	main guess_modalias	guess_modalias	efivarfs
+TRACE	function		1	features/mdadm/guess/device	main guess_feature	guess_feature	mdadm
+TRACE	function		1	features/mdadm/guess/device	main guess_variable	guess_variable	GENERATE_UDEV_RULES_FOR_MD_DEVICE 9:126
+TRACE	function		1	features/devmapper/guess/device	main guess_feature	guess_feature	devmapper
+TRACE	function		1	features/rootfs/guess/fstype	main guess_modalias	guess_modalias	fs-ext4
 RUN: guess-config
-GENERATE_UDEV_RULES_FOR_MD_DEVICE = \
-	9:126
-MDADM_EXTRA_PROGS = \
-	mdmon
-MOUNTPOINTS = \
-	/
-
-MODULES_ADD += \
-	efivarfs fs-ext4 md-raid0 \
-	pci:v00002646d00005017sv00002646sd00005017bc01sc08i02 \
-	pci:v00002646d0000501Dsv00002646sd0000501Dbc01sc08i02 \
-	pci:v00008086d0000464Dsv00000000sd00000000bc06sc04i00 \
-	pci:v00008086d0000467Fsv00008086sd00000000bc01sc04i00 \
-	pci:v00008086d00007AC4sv00000000sd00000000bc06sc04i00 \
-	pci:v00008086d00007AC8sv00000000sd00000000bc06sc04i00
-
-FEATURES += \
-	add-modules add-udev-rules devmapper mdadm rootfs
-
+variable	GENERATE_UDEV_RULES_FOR_MD_DEVICE	9:126
+variable	MDADM_EXTRA_PROGS	mdmon
+variable	MOUNTPOINTS	/
+modalias	add	efivarfs
+modalias	add	fs-ext4
+modalias	add	md-raid0
+modalias	add	pci:v00002646d00005017sv00002646sd00005017bc01sc08i02
+modalias	add	pci:v00002646d0000501Dsv00002646sd0000501Dbc01sc08i02
+modalias	add	pci:v00008086d0000464Dsv00000000sd00000000bc06sc04i00
+modalias	add	pci:v00008086d0000467Fsv00008086sd00000000bc01sc04i00
+modalias	add	pci:v00008086d00007AC4sv00000000sd00000000bc06sc04i00
+modalias	add	pci:v00008086d00007AC8sv00000000sd00000000bc06sc04i00
+feature	add-modules
+feature	add-udev-rules
+feature	devmapper
+feature	mdadm
+feature	rootfs
 rc=0

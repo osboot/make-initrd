@@ -1,0 +1,543 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import shutil
+import subprocess
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+
+def is_shell_script(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    if path.suffix in {
+        ".c", ".h", ".o", ".d", ".mk", ".in", ".md", ".json",
+        ".txt", ".png", ".svg", ".html", ".css", ".info",
+        ".gcda", ".gcno", ".tar", ".xz", ".log", ".out1"
+    }:
+        return False
+    try:
+        with open(path, "rb") as f:
+            header = f.read(128)
+            if header.startswith(b"#!"):
+                first_line = header.split(b"\n")[0]
+                if b"sh" in first_line or b"bash" in first_line:
+                    return True
+            if path.name.endswith(("-functions", ".sh")):
+                return True
+    except Exception:
+        pass
+    return False
+
+
+def is_structural_line(line: str) -> bool:
+    if line in {"then", "else", "do", ";;"}:
+        return True
+    m = re.match(r"^(done|fi|esac|[}{)])(\s*(.*))?$", line)
+    if m:
+        rest = (m.group(3) or "").strip()
+        if not rest or rest == ";":
+            return True
+        if rest in {"|", "|\\", "||", "||\\"}:
+            return True
+        if re.match(r"^([0-9]*[<>]+\s*(\S+|\"[^\"]*\"|'[^']*'|\$\([^)]+\)|<[^>]+>|\S+)|\s*&|\s*;\s*)*$", rest):
+            return True
+    return False
+
+
+def is_case_pattern_line(line: str) -> bool:
+    cleaned = re.sub(r"\)\s*#.*$", ")", line).strip()
+    if not cleaned.endswith(")"):
+        return False
+    if re.search(r"(\+=|=)\s*\(", cleaned):
+        return False
+    if "$(" in cleaned or "<(" in cleaned:
+        return False
+    if re.match(r"^[a-zA-Z0-9_-]+\s*\(\)\s*\{?$", cleaned):
+        return False
+    if cleaned in {")", ");"}:
+        return False
+    if cleaned.startswith("(") and not cleaned.endswith("))"):
+        if ";" in cleaned or "&&" in cleaned or "||" in cleaned:
+            return False
+    return True
+
+
+def analyze_shell_script(path: Path) -> tuple[list[str], set[int]]:
+    with open(path, "r", encoding="utf-8", errors="replace") as f:
+        lines = [l.rstrip("\n") for l in f]
+
+    executable_lines = set()
+    in_heredoc = False
+    heredoc_marker = ""
+    in_case = 0
+
+    for idx, raw_line in enumerate(lines, start=1):
+        line = raw_line.strip()
+
+        if in_heredoc:
+            if line == heredoc_marker:
+                in_heredoc = False
+            continue
+
+        if not line or line.startswith("#"):
+            continue
+
+        hd = re.search(r"<<-?\s*['\"]?([A-Za-z0-9_]+)['\"]?", line)
+        if hd:
+            in_heredoc = True
+            heredoc_marker = hd.group(1)
+            executable_lines.add(idx)
+            continue
+
+        # Ignore pure structural delimiters / keywords
+        if is_structural_line(line):
+            if line == "esac" or line.startswith("esac ") or line.startswith("esac;"):
+                in_case = max(0, in_case - 1)
+            continue
+        if re.match(r"^[a-zA-Z0-9_-]+\s*\(\)\s*\{?$", line):
+            continue
+
+        if line.startswith("case ") and " in" in line:
+            in_case += 1
+            executable_lines.add(idx)
+            continue
+
+        # Ignore pure case pattern labels (e.g. 'foo)' or '-S|--start)' or ''### BEGIN INIT INFO')')
+        if (in_case > 0 or line.endswith(")")) and is_case_pattern_line(line):
+            continue
+
+        executable_lines.add(idx)
+
+    return lines, executable_lines
+
+
+def get_cmd_token(cmd: str) -> str:
+    tokens = cmd.split()
+    if not tokens:
+        return ""
+    tok = tokens[0].strip("'\"`:")
+    if "=" in tok:
+        return tok.split("=")[0] + "="
+    return tok.rsplit("/", 1)[-1]
+
+
+CMD_PREFIX = r"(?:^|[;&|()!]\s*|\b(?:if|elif|then|else|while|until|do|time)\s*)"
+
+
+def match_line(line_text: str, token: str) -> bool:
+    line_clean = line_text.strip()
+    if not line_clean or line_clean.startswith("#"):
+        return False
+    if token == ".":
+        return bool(re.search(CMD_PREFIX + r"\.\s+\S", line_clean))
+    if token == ":":
+        return bool(re.search(CMD_PREFIX + r":\s*(?:$|[;&|)#])", line_clean))
+    if token == "[":
+        return bool(re.search(CMD_PREFIX + r"\[\[?\s+", line_clean))
+    if token.endswith("="):
+        return bool(re.search(CMD_PREFIX + re.escape(token), line_clean))
+    pattern = r"\b" + re.escape(token) + r"\b"
+    return bool(re.search(pattern, line_clean))
+
+
+def resolve_script_hits(
+    source_lines: list[str],
+    events: list[tuple[int, str]],
+    executable_lines: set[int]
+) -> set[int]:
+    hits = set()
+    for reported_line, cmd in events:
+        token = get_cmd_token(cmd)
+        matched_line = None
+
+        # 1. Check if reported line matches token
+        if 1 <= reported_line <= len(source_lines):
+            if not token or match_line(source_lines[reported_line - 1], token):
+                matched_line = reported_line
+
+        # 2. Window search for shifted line numbers (process substitutions <(...) or command substitutions $(...))
+        if matched_line is None and token:
+            for dist in range(1, 20):
+                # Check backwards (for $() / multiline blocks) and forwards (for <() subshells)
+                for cand in (reported_line - dist, reported_line + dist):
+                    if 1 <= cand <= len(source_lines):
+                        if match_line(source_lines[cand - 1], token):
+                            matched_line = cand
+                            break
+                if matched_line is not None:
+                    break
+
+        # Fallback to reported line if within bounds
+        if matched_line is None and 1 <= reported_line <= len(source_lines):
+            matched_line = reported_line
+
+        if matched_line is not None:
+            hits.add(matched_line)
+
+    # Continuation lines expansion (trailing \)
+    for i in range(1, len(source_lines)):
+        if i in hits:
+            line_text = source_lines[i - 1].strip()
+            if line_text.endswith("\\"):
+                hits.add(i + 1)
+
+    # Command substitution expansion:
+    # If a line starts $( and closes at or before a hit line, mark the block as hit
+    for i in range(len(source_lines)):
+        line_text = source_lines[i].strip()
+        if "$(" in line_text or "`" in line_text:
+            for j in range(i, min(len(source_lines), i + 40)):
+                if (j + 1) in hits:
+                    for k in range(i + 1, j + 2):
+                        hits.add(k)
+                    break
+                if (
+                    source_lines[j].strip().endswith(')"')
+                    or source_lines[j].strip().endswith(")")
+                    or source_lines[j].strip().endswith('`"')
+                    or source_lines[j].strip().endswith("`")
+                ):
+                    break
+
+    return hits & executable_lines
+
+
+def collect_c_coverage(
+    root: Path, build_dir: Path
+) -> dict[str, tuple[int, int, int, int]]:
+    c_stats: dict[str, tuple[int, int, int, int]] = {}
+    obj_dir = build_dir / "obj"
+    info_file = build_dir / "coverage-c.info"
+
+    if not shutil.which("lcov") or not obj_dir.is_dir():
+        return c_stats
+
+    gcda_files = list(obj_dir.rglob("*.gcda"))
+    if not gcda_files:
+        return c_stats
+
+    try:
+        subprocess.run(
+            [
+                "lcov",
+                "--capture",
+                "--directory", str(obj_dir),
+                "--base-directory", str(root),
+                "--output-file", str(info_file),
+                "--ignore-errors", "gcov,source",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        subprocess.run(
+            [
+                "lcov",
+                "--ignore-errors", "unused",
+                "--remove", str(info_file),
+                "/usr/include/*",
+                "*/external/*",
+                "*/testing/*",
+                "*/tests/*",
+                "-o", str(info_file),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError:
+        return c_stats
+
+    if not info_file.is_file():
+        return c_stats
+
+    current_file = None
+    lines_total = 0
+    lines_hit = 0
+    funcs_total = 0
+    funcs_hit = 0
+
+    with open(info_file, "r", encoding="utf-8", errors="replace") as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("SF:"):
+                current_file = line[3:]
+                try:
+                    rel_path = str(Path(current_file).resolve().relative_to(root.resolve()))
+                except ValueError:
+                    rel_path = current_file
+                current_file = rel_path
+                lines_total = 0
+                lines_hit = 0
+                funcs_total = 0
+                funcs_hit = 0
+            elif line.startswith("LF:"):
+                lines_total = int(line[3:])
+            elif line.startswith("LH:"):
+                lines_hit = int(line[3:])
+            elif line.startswith("FNF:"):
+                funcs_total = int(line[4:])
+            elif line.startswith("FNH:"):
+                funcs_hit = int(line[4:])
+            elif line == "end_of_record" and current_file:
+                c_stats[current_file] = (lines_hit, lines_total, funcs_hit, funcs_total)
+                current_file = None
+
+    return c_stats
+
+
+def collect_shell_coverage(
+    root: Path, build_dir: Path, trace_log: Path | None
+) -> dict[str, tuple[int, int]]:
+    shell_stats: dict[str, tuple[int, int]] = {}
+    if trace_log is None or not trace_log.is_file():
+        return shell_stats
+
+    trace_events: dict[str, list[tuple[int, str]]] = defaultdict(list)
+    root_resolved = root.resolve()
+    root_prefix = str(root_resolved) + "/"
+    path_cache: dict[str, str | None] = {}
+
+    with open(trace_log, "r", encoding="utf-8", errors="replace") as f:
+        for line in f:
+            if not line.startswith("+"):
+                continue
+            cov_idx = line.find("COV+ ")
+            if cov_idx == -1:
+                continue
+
+            content = line[cov_idx + 5:]
+            parts = content.split(":", 2)
+            if len(parts) < 2:
+                continue
+
+            raw_path = parts[0].strip()
+            try:
+                lineno = int(parts[1])
+            except ValueError:
+                continue
+
+            cmd_str = parts[2].strip() if len(parts) > 2 else ""
+
+            if not raw_path or raw_path in {"bash", "subshell"}:
+                continue
+
+            if raw_path not in path_cache:
+                if raw_path.startswith(root_prefix):
+                    path_cache[raw_path] = raw_path[len(root_prefix):]
+                elif not raw_path.startswith("/"):
+                    p = (root_resolved / raw_path).resolve()
+                    try:
+                        path_cache[raw_path] = str(p.relative_to(root_resolved))
+                    except ValueError:
+                        path_cache[raw_path] = None
+                else:
+                    try:
+                        path_cache[raw_path] = str(Path(raw_path).resolve().relative_to(root_resolved))
+                    except ValueError:
+                        path_cache[raw_path] = None
+
+            rel = path_cache[raw_path]
+            if rel:
+                trace_events[rel].append((lineno, cmd_str))
+
+    candidate_scripts: list[Path] = []
+    for dir_name in ["tools", "guess", "features"]:
+        target_dir = root / dir_name
+        if not target_dir.is_dir():
+            continue
+        for p in target_dir.rglob("*"):
+            if "tests/" in str(p) or "/tests/" in str(p):
+                continue
+            if is_shell_script(p):
+                candidate_scripts.append(p)
+
+    sh_info_file = build_dir / "coverage-sh.info"
+    with open(sh_info_file, "w", encoding="utf-8") as f_out:
+        for script in sorted(candidate_scripts):
+            abs_script = script.resolve()
+            rel = str(abs_script.relative_to(root_resolved))
+            source_lines, executable = analyze_shell_script(script)
+            if not executable:
+                continue
+
+            events = trace_events.get(rel, [])
+            hits = resolve_script_hits(source_lines, events, executable)
+            shell_stats[rel] = (len(hits), len(executable))
+
+            f_out.write("TN:\n")
+            f_out.write(f"SF:{abs_script}\n")
+            for lineno in sorted(executable):
+                count = 1 if lineno in hits else 0
+                f_out.write(f"DA:{lineno},{count}\n")
+            f_out.write(f"LF:{len(executable)}\n")
+            f_out.write(f"LH:{len(hits)}\n")
+            f_out.write("end_of_record\n")
+
+    return shell_stats
+
+
+def generate_html_report(root: Path, build_dir: Path) -> bool:
+    if not shutil.which("genhtml"):
+        return False
+
+    c_info = build_dir / "coverage-c.info"
+    sh_info = build_dir / "coverage-sh.info"
+    combined_info = build_dir / "coverage-all.info"
+
+    info_files_to_merge = []
+    if c_info.is_file():
+        info_files_to_merge.append(c_info)
+    if sh_info.is_file():
+        info_files_to_merge.append(sh_info)
+
+    if not info_files_to_merge:
+        return False
+
+    with open(combined_info, "w", encoding="utf-8") as outfile:
+        for inf in info_files_to_merge:
+            with open(inf, "r", encoding="utf-8", errors="replace") as infile:
+                outfile.write(infile.read())
+
+    html_dir = build_dir / "coverage-html"
+    try:
+        subprocess.run(
+            [
+                "genhtml",
+                str(combined_info),
+                "--output-directory", str(html_dir),
+                "--prefix", str(root.resolve()),
+                "--legend",
+                "--title", "make-initrd coverage (C & Shell)",
+                "--ignore-errors", "source,empty",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
+def print_table(
+    title: str,
+    items: list[tuple[str, int, int]],
+    show_subtotals: bool = True
+) -> tuple[int, int]:
+    if not items:
+        print(f"\n{title}: No files tracked.\n")
+        return 0, 0
+
+    print(f"\n{title}")
+    print("=" * 78)
+    print(f"{'File':<54} {'Lines':>12} {'Coverage':>10}")
+    print("-" * 78)
+
+    total_hit = 0
+    total_lines = 0
+
+    for path, hit, total in items:
+        total_hit += hit
+        total_lines += total
+        pct = (hit / total * 100.0) if total > 0 else 0.0
+        print(f"{path:<54} {hit:>5}/{total:<6} {pct:>9.1f}%")
+
+    if show_subtotals:
+        print("-" * 78)
+        overall_pct = (total_hit / total_lines * 100.0) if total_lines > 0 else 0.0
+        print(f"{'Subtotal':<54} {total_hit:>5}/{total_lines:<6} {overall_pct:>9.1f}%")
+
+    return total_hit, total_lines
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Generate make-initrd coverage report.")
+    parser.add_argument("--root", type=Path, default=Path("."), help="Project root directory")
+    parser.add_argument("--build-dir", type=Path, default=Path(".build"), help="Build directory")
+    parser.add_argument("--shell-trace", type=Path, default=None, help="Shell trace log file")
+    parser.add_argument("--no-html", action="store_true", help="Do not generate HTML report")
+    args = parser.parse_args()
+
+    root = args.root.resolve()
+    build_dir = args.build_dir.resolve()
+
+    c_stats = collect_c_coverage(root, build_dir)
+    shell_stats = collect_shell_coverage(root, build_dir, args.shell_trace)
+
+    html_ok = False
+    if not args.no_html:
+        html_ok = generate_html_report(root, build_dir)
+
+    c_items = sorted(
+        [(k, v[0], v[1]) for k, v in c_stats.items()],
+        key=lambda x: x[0]
+    )
+
+    tools_items = sorted(
+        [(k, v[0], v[1]) for k, v in shell_stats.items() if k.startswith("tools/")],
+        key=lambda x: x[0]
+    )
+    guess_items = sorted(
+        [(k, v[0], v[1]) for k, v in shell_stats.items() if k.startswith("guess/")],
+        key=lambda x: x[0]
+    )
+    features_items = sorted(
+        [(k, v[0], v[1]) for k, v in shell_stats.items() if k.startswith("features/")],
+        key=lambda x: x[0]
+    )
+
+    print("\n" + "#" * 78)
+    print(" " * 26 + "MAKE-INITRD COVERAGE REPORT")
+    print("#" * 78)
+
+    c_hit, c_total = print_table("C Code Coverage", c_items)
+    tools_hit, tools_total = print_table("Shell Tools Coverage (tools/)", tools_items)
+    guess_hit, guess_total = print_table("Shell Guess Modules Coverage (guess/)", guess_items)
+    features_hit, features_total = print_table("Shell Features Coverage (features/)", features_items)
+
+    sh_hit = tools_hit + guess_hit + features_hit
+    sh_total = tools_total + guess_total + features_total
+
+    print("\n" + "=" * 78)
+    print("OVERALL SUMMARY")
+    print("=" * 78)
+    if c_total > 0:
+        c_pct = c_hit / c_total * 100.0
+        print(f"  C Code:         {c_hit:>5} / {c_total:<5} lines ({c_pct:.1f}%)")
+    else:
+        print("  C Code:         No coverage data (recompile with --enable-coverage)")
+
+    if sh_total > 0:
+        sh_pct = sh_hit / sh_total * 100.0
+        print(f"  Shell Scripts:  {sh_hit:>5} / {sh_total:<5} lines ({sh_pct:.1f}%)")
+        print(f"    - tools/:     {tools_hit:>5} / {tools_total:<5} lines ({(tools_hit/tools_total*100.0 if tools_total else 0):.1f}%)")
+        print(f"    - guess/:     {guess_hit:>5} / {guess_total:<5} lines ({(guess_hit/guess_total*100.0 if guess_total else 0):.1f}%)")
+        print(f"    - features/:  {features_hit:>5} / {features_total:<5} lines ({(features_hit/features_total*100.0 if features_total else 0):.1f}%)")
+    else:
+        print("  Shell Scripts:  No coverage data")
+
+    grand_hit = c_hit + sh_hit
+    grand_total = c_total + sh_total
+    if grand_total > 0:
+        grand_pct = grand_hit / grand_total * 100.0
+        print("-" * 78)
+        print(f"  TOTAL COVERAGE: {grand_hit:>5} / {grand_total:<5} lines ({grand_pct:.1f}%)")
+    print("=" * 78)
+
+    if html_ok:
+        html_dir = build_dir / "coverage-html"
+        print(f"\nHTML report generated: {html_dir}/index.html\n")
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

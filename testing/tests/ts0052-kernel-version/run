@@ -1,0 +1,19 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+get_kv() {
+	local k="$1" part="$2"
+	KERNEL="$k" tools/kernel-version "$part"
+}
+
+for k in "6.6.1-alt1" "5.10.0-rc1" "6.12" "6" "foo.bar.baz"; do
+	echo "kernel=$k"
+	echo "major=$(get_kv "$k" major)"
+	echo "minor=$(get_kv "$k" minor)"
+	echo "patch=$(get_kv "$k" patch)"
+done
+
+def_major="$(tools/kernel-version major)"
+case "$def_major" in
+	[0-9]*) echo "default_major=ok" ;;
+esac

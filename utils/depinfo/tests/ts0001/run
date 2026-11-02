@@ -1,0 +1,57 @@
+#!/bin/bash -efu
+
+export LANG=C
+export LC_ALL=C
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+kver="6.6.1"
+moddir="$tmpdir/lib/modules/$kver"
+mkdir -p "$moddir/kernel/net" "$tmpdir/lib/firmware"
+
+echo "firmware content" > "$tmpdir/lib/firmware/test.bin"
+
+printf '%s\n' 'char modinfo[] __attribute__((section(".modinfo"))) = "depends=depmod1\0firmware=test.bin\0firmware=missing.bin\0";' | gcc -c -x c - -o "$moddir/kernel/net/dummy.ko"
+printf '%s\n' 'char modinfo[] __attribute__((section(".modinfo"))) = "depends=\0";' | gcc -c -x c - -o "$moddir/kernel/net/depmod1.ko"
+
+touch "$moddir/modules.order"
+touch "$moddir/modules.builtin"
+echo "kernel/fs/ext4.ko" >> "$moddir/modules.builtin"
+
+depmod -b "$tmpdir" "$kver" 2>/dev/null
+
+PROG=".build/dest/usr/sbin/depinfo"
+
+echo "=== standard ==="
+$PROG -b "$tmpdir" -f "$tmpdir/lib/firmware" -k "$kver" dummy | sed "s#$tmpdir##g"
+
+echo "=== tree ==="
+$PROG -b "$tmpdir" -f "$tmpdir/lib/firmware" -k "$kver" -t dummy | sed "s#$tmpdir##g"
+
+echo "=== no prefix ==="
+$PROG -b "$tmpdir" -f "$tmpdir/lib/firmware" -k "$kver" -P dummy | sed "s#$tmpdir##g"
+
+echo "=== no deps ==="
+$PROG -b "$tmpdir" -f "$tmpdir/lib/firmware" -k "$kver" -D dummy | sed "s#$tmpdir##g"
+
+echo "=== no firmware ==="
+$PROG -b "$tmpdir" -f "$tmpdir/lib/firmware" -k "$kver" -F dummy | sed "s#$tmpdir##g"
+
+echo "=== no modules ==="
+$PROG -b "$tmpdir" -f "$tmpdir/lib/firmware" -k "$kver" -M dummy | sed "s#$tmpdir##g"
+
+echo "=== missing firmware ==="
+$PROG -b "$tmpdir" -f "$tmpdir/lib/firmware" -k "$kver" -D --missing-firmware dummy | sed "s#$tmpdir##g"
+
+echo "=== input file ==="
+echo "dummy" > "$tmpdir/input.txt"
+$PROG -b "$tmpdir" -f "$tmpdir/lib/firmware" -k "$kver" -D -i "$tmpdir/input.txt" | sed "s#$tmpdir##g"
+
+echo "=== builtin ==="
+$PROG -b "$tmpdir" -k "$kver" ext4
+$PROG -b "$tmpdir" -k "$kver" -B ext4 || echo "filtered"
+
+echo "=== help and version ==="
+$PROG -h | head -n 1
+$PROG -V | head -n 1 | sed -e 's/version [0-9.]\+/version VERSION/'

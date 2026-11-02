@@ -1,0 +1,26 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+mkdir -p "$tmpdir/bin" "$tmpdir/guess"
+cat > "$tmpdir/bin/depinfo" <<EOF
+#!/bin/sh
+echo "e1000e"
+EOF
+chmod +x "$tmpdir/bin/depinfo"
+
+export GUESSDIR="$tmpdir/guess"
+export RESOLVE_MODALIAS=1
+export KERNEL=6.6.1
+export PATH="$tmpdir/bin:$PWD/.build/dest/usr/bin:$PWD/.build/dest/usr/sbin:$PWD/tools:$PATH"
+
+echo "val1 val2" > "$GUESSDIR/guess:variables:TEST_VAR"
+echo "ext4" > "$GUESSDIR/guess:modules:add:storage"
+echo "pci:v00008086d000010D3sv*sd*bc*sc*i*" > "$GUESSDIR/guess:modalias:add:nic"
+echo "usb:v1234p5678" > "$GUESSDIR/guess:modalias:rescue:hid"
+echo "virtio_balloon" > "$GUESSDIR/guess:opt-modules:add:mem"
+echo "network" > "$GUESSDIR/guess:features:net"
+
+tools/guess-config

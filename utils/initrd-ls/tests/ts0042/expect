@@ -1,0 +1,33 @@
+=== brief ===
+1	bzip2 compressed cpio archive, size 1024 bytes
+2	xz compressed cpio archive, size 512 bytes
+3	cpio archive, size 512 bytes
+4	bootconfig, size 15 bytes
+=== name only ===
+1 ./ddd
+1 ./aaa
+1 ./bbb
+1 ./ccc
+2 eee
+2 fff
+2 ggg
+=== compression only ===
+1 bzip2 drwxr-xr-x 2 0 0 0 ./ddd
+1 bzip2 -rw-r--r-- 1 0 0 2 ./aaa
+1 bzip2 -rw-r--r-- 1 0 0 3 ./bbb
+1 bzip2 -rw-r--r-- 1 0 0 4 ./ccc
+2    xz -rw-r--r-- 1 0 0 0 eee
+2    xz -rw-r--r-- 1 0 0 0 fff
+2    xz -rw-r--r-- 1 0 0 0 ggg
+=== name and compression ===
+1 bzip2 ./ddd
+1 bzip2 ./aaa
+1 bzip2 ./bbb
+1 bzip2 ./ccc
+2    xz eee
+2    xz fff
+2    xz ggg
+=== help and version ===
+Usage: initrd-ls [options] initramfs
+initrd-ls version VERSION
+rc=0

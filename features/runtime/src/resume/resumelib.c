@@ -13,6 +13,7 @@
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
 
+#include "cleanup.h"
 #include "name_to_dev.h"
 #include "resume.h"
 
@@ -52,7 +53,7 @@ int do_resume(int argc, char *argv[])
 int resume(const char *resume_file, unsigned long long resume_offset)
 {
 	dev_t resume_device;
-	int powerfd = -1;
+	int powerfd __free(close) = -1;
 	char device_string[64];
 	ssize_t len;
 
@@ -82,8 +83,6 @@ int resume(const char *resume_file, unsigned long long resume_offset)
 
 	/* Okay, what are we still doing alive... */
 failure:
-	if (powerfd >= 0)
-		close(powerfd);
 	dbg_printf("kinit: No resume image, doing normal boot...\n");
 	return -1;
 

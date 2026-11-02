@@ -1,0 +1,32 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+export ROOTDIR="$tmpdir/root"
+export WORKDIR="$tmpdir/work"
+export KERNEL=6.6.1
+export PATH="$PWD/.build/dest/usr/bin:$PWD/.build/dest/usr/sbin:$PWD/tools:$PATH"
+
+echo "=== test standard installation info ==="
+export USED_FEATURES="base udev"
+mkdir -p "$ROOTDIR/lib/modules/$KERNEL"
+touch "$ROOTDIR/lib/modules/$KERNEL/ext4.ko"
+touch "$ROOTDIR/lib/modules/$KERNEL/e1000e.ko.xz"
+touch "$tmpdir/image.img"
+
+tools/show-install-info "$tmpdir/image.img" | sed -E "s/size: [0-9.]+[KMG]?/size: SIZE/g"
+
+echo "=== test compressed fs installation info ==="
+export RUNTIME_COMPRESSED_FS="squashfs.img"
+export USED_FEATURES="base udev compressed-fs"
+
+rm -rf "$ROOTDIR/lib/modules/$KERNEL"
+mkdir -p "$ROOTDIR/lib/modules/$KERNEL"
+mkdir -p "$WORKDIR" "$ROOTDIR.$RUNTIME_COMPRESSED_FS/lib/modules/$KERNEL"
+echo "squashfs" > "$WORKDIR/$RUNTIME_COMPRESSED_FS"
+touch "$ROOTDIR/lib/modules/$KERNEL/overlay.ko"
+touch "$ROOTDIR.$RUNTIME_COMPRESSED_FS/lib/modules/$KERNEL/ext4.ko"
+
+tools/show-install-info "$tmpdir/image.img" | sed -E "s/size: [0-9.]+[KMG]?/size: SIZE/g"

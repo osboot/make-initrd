@@ -20,11 +20,14 @@
 #include <json-c/json.h>
 #include <json-c/json_visit.h>
 
+#include "cleanup.h"
 #include "temp_failure_retry.h"
 #include "memory.h"
 #include "queue.h"
 #include "tree.h"
 #include "elf_dlopen.h"
+
+DEFINE_FREE(json_object_put, struct json_object *, if (_t) json_object_put(_t))
 
 extern int verbose;
 
@@ -300,7 +303,6 @@ static int visit_userfunc(json_object *jso, int flags, json_object *,
 	if (json_object_object_get_ex(jso, "soname", &value)) {
 		size_t array_len = json_object_array_length(value);
 		size_t i;
-		const char **soname;
 
 		if (!elf_metadata.feature)
 			elf_metadata.feature = "-";
@@ -312,7 +314,7 @@ static int visit_userfunc(json_object *jso, int flags, json_object *,
 		    in_envvar("IGNORE_PUT_DLOPEN_PRIORITY", data->filename, elf_metadata.priority))
 			return JSON_C_VISIT_RETURN_SKIP;
 
-		soname = xcalloc(array_len, sizeof(char *));
+		const char **soname __free(free) = xcalloc(array_len, sizeof(char *));
 
 		for (i = 0; i < array_len; i++) {
 			json_object *child = json_object_array_get_idx(value, i);
@@ -325,7 +327,6 @@ static int visit_userfunc(json_object *jso, int flags, json_object *,
 		}
 
 		data->retcode = resolve_soname(soname, array_len, data->outbuf);
-		free(soname);
 
 		if (data->retcode == 0 && data->outbuf[0] == '/') {
 			if (verbose > 0) {
@@ -345,7 +346,7 @@ static int visit_userfunc(json_object *jso, int flags, json_object *,
 
 int process_json_metadata(const char *filename, const char *json, char *outbuf)
 {
-	struct json_object *obj = json_tokener_parse(json);
+	struct json_object *obj __free(json_object_put) = json_tokener_parse(json);
 	struct visit_data data = { 0 };
 
 	if (!obj)
@@ -355,7 +356,6 @@ int process_json_metadata(const char *filename, const char *json, char *outbuf)
 	data.outbuf = outbuf;
 
 	json_c_visit(obj, 0, visit_userfunc, &data);
-	json_object_put(obj);
 
 	return data.retcode;
 }

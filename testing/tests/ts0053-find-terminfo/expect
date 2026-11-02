@@ -1,0 +1,30 @@
+=== test --help ===
+Usage: find-terminfo [options] [termname]
+
+The utility shows the path to terminfo entry.
+
+Options:
+  -f, --first   show only first found result;
+  -h, --help    show this text and exit.
+
+Report bugs to authors.
+
+=== test all ===
+/dir1/t/testterm
+/dir2/t/testterm
+=== test first ===
+/dir1/t/testterm
+/dir1/t/testterm
+=== test default TERM ===
+/dir1/t/testterm
+/dir2/t/testterm
+=== test not found ===
+find-terminfo: 'missingterm' not found
+rc=1
+=== test extra arg ===
+find-terminfo: one argument expected
+rc=1
+=== test empty arg ===
+find-terminfo: a non-empty argument is expected
+rc=1
+rc=0

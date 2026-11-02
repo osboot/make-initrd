@@ -60,8 +60,7 @@ xstrdup(const char *s)
 	return r;
 }
 
-int __attribute__((__format__(__printf__, 2, 3)))
-__attribute__((__nonnull__(2)))
+int __printf(2, 3) __nonnull(2)
 xasprintf(char **ptr, const char *fmt, ...)
 {
 	int ret;

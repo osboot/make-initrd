@@ -10,9 +10,11 @@
 #include <limits.h>
 #include <err.h>       /* err */
 
+#include "compiler.h"
+
 static char *prog;
 
-static void show_usage(int rc)
+static void __noreturn show_usage(int rc)
 {
 	fprintf(stderr, "Usage: %s -h\n", prog);
 	fprintf(stderr, "   or: %s <rootdir> test -{b|c|d|e|f|p|s|L} <path>\n", prog);

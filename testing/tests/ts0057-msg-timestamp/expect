@@ -1,0 +1,13 @@
+=== test standard message ===
+Normal message
+=== test -n flag ===
+Inline message (after)
+=== test timed output format ===
+[ timestamp ] Timed message
+=== test duration intervals ===
+unit=ok
+unit=ok
+unit=ok
+unit=ok
+unit=ok
+rc=0

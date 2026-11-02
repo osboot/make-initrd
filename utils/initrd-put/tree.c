@@ -15,8 +15,8 @@
 static void *files = NULL;
 static size_t tree_files_nr = 0;
 
-static int compare(const void *a, const void *b) __attribute__((__nonnull__ (1, 2)));
-static void walk_action(const void *nodep, VISIT which, void *closure) __attribute__((__nonnull__ (1, 3)));;
+static int compare(const void *a, const void *b) __nonnull(1, 2);
+static void walk_action(const void *nodep, VISIT which, void *closure) __nonnull(1, 3);
 
 int compare(const void *a, const void *b)
 {
@@ -84,7 +84,7 @@ static void *twalk_r_closure;
 static void (*twalk_r_action)(const void *nodep, VISIT which, void *closure);
 
 static void twalk_handler(const void *nodep, VISIT which,
-                          int depth __attribute__((unused)))
+                          int depth __maybe_unused)
 {
 	twalk_r_action(nodep, which, twalk_r_closure);
 }

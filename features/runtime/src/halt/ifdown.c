@@ -23,6 +23,7 @@ const char *v_ifdown = "@(#)ifdown.c  1.11  02-Jun-1998  miquels@cistron.nl";
 #include <net/if.h>
 #include <netinet/in.h>
 
+#include "cleanup.h"
 #include "reboot.h"
 
 #define MAX_IFS	64
@@ -37,11 +38,12 @@ int ifdown(void)
 {
 	struct ifreq ifr[MAX_IFS];
 	struct ifconf ifc;
-	int i, fd;
+	int i;
 	int numif;
 	int shaper;
+	int fd __free(close) = socket(AF_INET, SOCK_DGRAM, 0);
 
-	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+	if (fd < 0) {
 		fprintf(stderr, "ifdown: ");
 		perror("socket");
 		return -1;
@@ -52,7 +54,6 @@ int ifdown(void)
 	if (ioctl(fd, SIOCGIFCONF, &ifc) < 0) {
 		fprintf(stderr, "ifdown: ");
 		perror("SIOCGIFCONF");
-		close(fd);
 		return -1;
 	}
 	numif = (unsigned long) ifc.ifc_len / sizeof(struct ifreq);
@@ -89,7 +90,6 @@ int ifdown(void)
 #endif
 		}
 	}
-	close(fd);
 
 	return 0;
 }

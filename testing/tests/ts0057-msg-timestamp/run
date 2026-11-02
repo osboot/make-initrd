@@ -1,0 +1,24 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+echo "=== test standard message ==="
+tools/msg-timestamp "Normal message"
+
+echo "=== test -n flag ==="
+tools/msg-timestamp -n "Inline message"
+echo " (after)"
+
+echo "=== test timed output format ==="
+STARTUP_TIME=1 tools/msg-timestamp "Timed message" | sed "s/^\[ [^]]* \] /\[ timestamp \] /"
+
+echo "=== test duration intervals ==="
+now_us=$(( ${EPOCHREALTIME//./} ))
+
+for delta_us in 7200000000 120000000 5000000 50000 500; do
+	st=$(( (now_us - delta_us) * 1000 ))
+	out="$(STARTUP_TIME=$st tools/msg-timestamp "interval test")"
+	case "$out" in
+		*h\ \]*|*m\ \]*|*s\ \]*|*ms\ \]*|*us\ \]*) echo "unit=ok" ;;
+		*) echo "unit=fail ($out)" ;;
+	esac
+done

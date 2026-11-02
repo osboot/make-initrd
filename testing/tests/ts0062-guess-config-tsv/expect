@@ -1,0 +1,8 @@
+variable	TEST_VAR	val1 val2
+module	rescue	e1000e
+module	add	e1000e
+module	add	ext4
+opt-module	add	virtio_balloon
+feature	add-modules
+feature	network
+rc=0

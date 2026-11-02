@@ -1,0 +1,4 @@
+initrd-ls: ERROR: Missing initrd file
+initrd-ls: ERROR: initrd does not exist: nonexistent
+.build/dest/usr/sbin/initrd-ls: invalid option -- 'z'
+rc=0

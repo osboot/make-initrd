@@ -15,11 +15,15 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include "cleanup.h"
 #include "initrd-common.h"
 #include "initrd-cpio.h"
 #include "initrd-decompress.h"
 #include "initrd-parse.h"
 #include "initrd-ls.h"
+
+DEFINE_FREE(free_streams, struct list_tail *, if (_t) free_streams(_t))
+DEFINE_FREE(free_cpios, struct list_tail *, if (_t) free_cpios(_t))
 
 int opts = 0;
 
@@ -34,7 +38,7 @@ static const struct option cmdopts[] = {
 	{ NULL, 0, 0, 0 }
 };
 
-static void __attribute__((noreturn))
+static void __noreturn
 print_help(const char *progname)
 {
 	printf("Usage: %s [options] initramfs\n"
@@ -55,7 +59,7 @@ print_help(const char *progname)
 	exit(EXIT_SUCCESS);
 }
 
-static void __attribute__((noreturn))
+static void __noreturn
 print_version(const char *progname)
 {
 	printf("%s version " PACKAGE_VERSION "\n"
@@ -72,7 +76,8 @@ print_version(const char *progname)
 int
 main(int argc, char **argv)
 {
-	int c, fd;
+	int c;
+	int fd __free(close) = -1;
 	struct stat st;
 
 	while ((c = getopt_long(argc, argv, cmdopts_s, cmdopts, NULL)) != -1) {
@@ -119,10 +124,7 @@ main(int argc, char **argv)
 	unsigned long n_cpio = 0;
 	struct stream *s;
 	struct list_tail *l, *h;
-	struct result res;
-
-	res.streams = NULL;
-	res.cpios   = NULL;
+	struct result res = { 0 };
 
 	l = list_append(&res.streams, sizeof(struct stream));
 	if (l == NULL)
@@ -134,10 +136,12 @@ main(int argc, char **argv)
 	s->allocated = 0;
 
 	read_stream("raw", s, &res);
+	struct list_tail *streams __free(free_streams) = res.streams;
+	struct list_tail *cpios __free(free_cpios) = res.cpios;
 
 	int bytes;
 	int max_compress_name = 3;
-	char *fmt             = NULL;
+	char *fmt __free(free) = NULL;
 	struct cpio *part     = NULL;
 
 	l = res.cpios;
@@ -218,11 +222,6 @@ main(int argc, char **argv)
 		l = l->next;
 		c++;
 	}
-
-	free(fmt);
-
-	free_cpios(res.cpios);
-	free_streams(res.streams);
 
 	munmap(addr, (size_t) st.st_size);
 

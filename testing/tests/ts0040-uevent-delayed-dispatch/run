@@ -26,7 +26,8 @@ chmod +x "$handler"
 
 export PATH="$PWD/.build/dest/usr/bin:$PATH"
 export TIMESTAMP="$PWD/.build/dest/lib/initrd/sbin/timestamp"
-export LD_LIBRARY_PATH="$PWD/.build/dest/lib/initrd/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+libcdir="$(tools/get-libc-dir 2>/dev/null ||:)"
+export LD_LIBRARY_PATH="$PWD/.build/dest/lib/initrd$libcdir:$PWD/.build/dest/lib/initrd/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export TEST_LOG="$log"
 export RDLOG_STDERR=1
 
