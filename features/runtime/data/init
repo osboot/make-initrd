@@ -41,6 +41,55 @@ x=/sbin/init-bin
 
 trap : INT TSTP QUIT HUP
 
+[ ! -f /etc/sysconfig/init ] ||
+	. /etc/sysconfig/init
+
+# Fix console loglevel
+dmesg -n "${LOGLEVEL:-1}"
+
+[ -d /proc ] ||
+	mkdir -m 755 /proc
+[ -f /proc/cmdline ] ||
+	mount -n -t proc -o nodev,noexec,nosuid proc /proc
+
+. shell-cmdline
+. shell-var
+
+quiet=n
+__early_cmdline() {
+	case "${1,,}" in
+		rdlog)
+			export RDLOG="${2-}"
+			;;
+		stop)
+			[ -z "${2-}" ] || export STOP=",$2,"
+			;;
+		quiet)
+			quiet=y
+			[ -z "${2-}" ] || ! shell_var_is_no "$2" || quiet=n
+			;;
+	esac
+}
+
+CMDLINE=''
+read -r CMDLINE < /proc/cmdline
+cmdline_foreach "$CMDLINE" __early_cmdline
+unset CMDLINE
+unset -f __early_cmdline
+
+echo "QUIET=$quiet" >>/etc/sysconfig/init
+
+if shell_var_is_no "$quiet"; then
+	[ ! -f /etc/initrd-release ] ||
+		. /etc/initrd-release
+
+	[ -z "${VERSION_ID-}" ] || {
+		[ ! -x /sbin/timestamp ] || /sbin/timestamp boottime
+		echo "INITRAMFS: version $VERSION_ID"
+	}
+fi
+
+# Backward compatibility hook
 x=/etc/rc.d/rc.sysinit
 [ ! -x "$x" ] || setsid "$x" ||:
 

@@ -1,0 +1,12 @@
+=== test early cmdline parsing ===
+RDLOG=unset STOP=unset
+RDLOG=unset STOP=unset
+RDLOG=console STOP=unset
+RDLOG=console STOP=unset
+RDLOG=unset STOP=,cmdline,
+RDLOG=unset STOP=,rootdelay,cmdline,
+RDLOG=console STOP=,all,
+=== test cmdline STOP preservation after continue ===
+case 1: STOP=,all,
+case 2: STOP=empty
+rc=0

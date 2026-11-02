@@ -204,7 +204,11 @@ parse()
 	cmdline_foreach "$CMDLINE" __set
 
 	[ -z "$DEBUG" ] || QUIET=
-	STOP=",$STOP,"
+	if [ -f /.initrd/initenv ] && grep -qs '^STOP=$' /.initrd/initenv; then
+		STOP=
+	elif [ -n "$STOP" ]; then
+		STOP=",$STOP,"
+	fi
 
 	if [ -z "$IP" ] || [ "$IP" = 0 ]; then
 		# Special case for nfsroot.

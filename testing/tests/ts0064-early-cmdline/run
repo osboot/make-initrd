@@ -1,0 +1,57 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+export PATH="$PWD/.build/dest/usr/bin:$PWD/tools:$PATH"
+. shell-cmdline
+
+echo "=== test early cmdline parsing ==="
+parse_early() {
+	unset RDLOG STOP
+	local cmdline="$1"
+	__early_cmdline() {
+		case "${1,,}" in
+			rdlog)
+				export RDLOG="${2-}"
+				;;
+			stop)
+				[ -z "${2-}" ] || export STOP=",$2,"
+				;;
+		esac
+	}
+	cmdline_foreach "$cmdline" __early_cmdline
+	unset -f __early_cmdline
+	echo "RDLOG=${RDLOG-unset} STOP=${STOP-unset}"
+}
+
+parse_early ""
+parse_early "quiet root=/dev/sda1"
+parse_early "rdlog=console"
+parse_early "RDLOG=console"
+parse_early "STOP=cmdline"
+parse_early "stop=rootdelay,cmdline"
+parse_early "STOP=all rdlog=console"
+
+echo "=== test cmdline STOP preservation after continue ==="
+initenv="$tmpdir/initenv"
+
+# Case 1: normal parse without previous continue
+STOP="all"
+if [ -f "$initenv" ] && grep -qs '^STOP=$' "$initenv"; then
+	STOP=
+elif [ -n "$STOP" ]; then
+	STOP=",$STOP,"
+fi
+echo "case 1: STOP=$STOP"
+
+# Case 2: previous continue wrote STOP= to initenv
+echo "STOP=" > "$initenv"
+STOP="all"
+if [ -f "$initenv" ] && grep -qs '^STOP=$' "$initenv"; then
+	STOP=
+elif [ -n "$STOP" ]; then
+	STOP=",$STOP,"
+fi
+echo "case 2: STOP=${STOP:-empty}"

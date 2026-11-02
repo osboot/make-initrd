@@ -33,7 +33,11 @@ run_scripts() {
 run_runlevel() {
 	msg "INIT: Entering runlevel: $runlevel"
 
-	export INITLOG_FILE='/var/log/boot.log'
+	if [ "${RDLOG-}" = 'console' ]; then
+		export INITLOG_FILE=/dev/console
+	else
+		export INITLOG_FILE='/var/log/boot.log'
+	fi
 
 	if [ -f "$rc_order" ]; then
 		local file_version=""
@@ -100,7 +104,8 @@ run_runlevel() {
 					read -r answer < /dev/console
 					case "${answer,,}" in
 						c|continue)
-							printf 'STOP=,,\n' >> /.initrd/initenv
+							STOP=
+							printf 'STOP=\n' >> /.initrd/initenv
 							break
 							;;
 						s|shell)
@@ -179,7 +184,8 @@ run_runlevel() {
 				read -r answer < /dev/console
 				case "${answer,,}" in
 					c|continue)
-						printf 'STOP=,,\n' >> /.initrd/initenv
+						STOP=
+						printf 'STOP=\n' >> /.initrd/initenv
 						break
 						;;
 					s|shell)
