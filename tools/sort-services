@@ -273,40 +273,82 @@ create_deps()
 
 order_services()
 {
-	local deps i
-	for (( i=0; i < $services; i++ )); do
+	local i dep dep_id u v
+	local -A in_degree=()
+	local -A successors=()
+	local -a active=()
+	local -a queue=()
+	local -a order=()
+
+	for (( i=0; i < services; i++ )); do
 		if in_levels "$level" "svc${i}_${lvltype}_level"; then
-			declare -n "deps=deps${i}"
-			printf "svc$i %s\n" "${deps[@]}" .
+			active+=( "$i" )
+			in_degree["$i"]=0
+			successors["$i"]=""
 		fi
-	done |
-		tsort
+	done
+
+	for i in "${active[@]}"; do
+		declare -n "deps=deps${i}"
+		local -A seen_deps=()
+		for dep in "${deps[@]}"; do
+			dep_id="${dep#svc}"
+			if [ -z "${seen_deps[$dep_id]:-}" ]; then
+				seen_deps["$dep_id"]=1
+				in_degree["$dep_id"]=$(( ${in_degree["$dep_id"]} + 1 ))
+				successors["$i"]+="${successors["$i"]:+ }$dep_id"
+			fi
+		done
+	done
+
+	for i in "${active[@]}"; do
+		if [ "${in_degree["$i"]}" -eq 0 ]; then
+			queue+=( "$i" )
+		fi
+	done
+
+	while [ "${#queue[@]}" -gt 0 ]; do
+		u="${queue[0]}"
+		queue=( "${queue[@]:1}" )
+		order+=( "$u" )
+
+		for v in ${successors["$u"]:-}; do
+			in_degree["$v"]=$(( ${in_degree["$v"]} - 1 ))
+			if [ "${in_degree["$v"]}" -eq 0 ]; then
+				queue+=( "$v" )
+			fi
+		done
+	done
+
+	if [ "${#order[@]}" -lt "${#active[@]}" ]; then
+		message "input contains a loop:"
+		for i in "${active[@]}"; do
+			if [ "${in_degree["$i"]}" -gt 0 ]; then
+				eval "local n=\${svc${i}_name##*/}"
+				message "$n"
+			fi
+		done
+		exit 1
+	fi
+
+	case "$lvltype" in
+		S)
+			for (( i=${#order[@]}-1; i >= 0; i-- )); do
+				printf "svc%s\n" "${order[i]}"
+			done
+			;;
+		K)
+			for (( i=0; i < ${#order[@]}; i++ )); do
+				printf "svc%s\n" "${order[i]}"
+			done
+			;;
+	esac
 }
 
 sort_runlevel()
 {
 	create_deps
-
-	if ! order_services > "$workdir/tsort.out" 2>"$workdir/tsort.err"; then
-		while read -r prefix rest; do
-			case "$rest" in
-				'-: '*)
-					rest="${rest#-: }"
-					;;
-				svc*)
-					eval "rest=\"\$${rest}_name\""
-					rest="${rest##*/}"
-					;;
-			esac
-			message "$rest"
-		done < "$workdir/tsort.err"
-		exit 1
-	fi
-
-	case  "$lvltype" in
-		S) tac "$workdir/tsort.out" ;;
-		K) cat "$workdir/tsort.out" ;;
-	esac
+	order_services
 }
 
 make_symlinks()
