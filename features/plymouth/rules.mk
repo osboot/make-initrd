@@ -12,6 +12,7 @@ PLYMOUTH_EXCLUDE_RENDERERS ?= %/x11.so
 
 PLYMOUTH_PACK_FILES ?= \
 	$(wildcard $(SYSCONFDIR)/plymouth/plymouthd.conf) \
+	$(wildcard $(SYSCONFDIR)/vconsole.conf) \
 	$(wildcard $(SYSCONFDIR)/*-release) \
 	$(wildcard /var/lib/plymouth/boot-duration) \
 	$(wildcard $(DATADIR)/plymouth/plymouthd.defaults) \
@@ -19,6 +20,8 @@ PLYMOUTH_PACK_FILES ?= \
 	$(filter-out $(PLYMOUTH_EXCLUDE_RENDERERS),$(foreach d,$(PLYMOUTH_DIRS),$(wildcard $(d)/renderers/*.so))) \
 	$(DATADIR)/plymouth/themes/details/details.plymouth \
 	$(DATADIR)/plymouth/themes/text/text.plymouth \
+	$(DATADIR)/xkeyboard-config-2 \
+	$(DATADIR)/X11/locale \
 	$(PLYMOUTH_PACK_FONT) \
 	$(PLYMOUTH_PACK_THEME)
 
