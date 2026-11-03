@@ -15,10 +15,11 @@
 	export runlevel="$1"
 
 locksys="/var/lock/subsys"
+rc_order="/etc/rc.d/rc.order"
 rcd="/etc/rc.d/rc$runlevel.d"
 
-# Is there an rc directory for this new runlevel?
-[ -d "$rcd" ] ||
+# Is there an rc.order file or directory for this runlevel?
+[ -f "$rc_order" ] || [ -d "$rcd" ] ||
 	exit 0
 
 run_scripts() {
@@ -32,7 +33,108 @@ run_scripts() {
 run_runlevel() {
 	msg "INIT: Entering runlevel: $runlevel"
 
-	export INITLOG_FILE='/var/log/boot.log'
+	if [ "${RDLOG-}" = 'console' ]; then
+		export INITLOG_FILE=/dev/console
+	else
+		export INITLOG_FILE='/var/log/boot.log'
+	fi
+
+	if [ -f "$rc_order" ]; then
+		local file_version=""
+		read -r file_version < "$rc_order" || exit 0
+		case "$file_version" in
+			version=1) ;;
+			*)
+				msg "rc: unsupported rc.order version: $file_version"
+				exit 1
+				;;
+		esac
+
+		local lvl act tier subsys svc
+
+		# First, run the KILL scripts.
+		while read -r lvl act tier subsys || [ -n "$subsys" ]; do
+			[ -n "$lvl" ] && [ "${lvl###*}" = "$lvl" ] && [ "${lvl#version=}" = "$lvl" ] || continue
+			[ "$lvl" = "$runlevel" ] && [ "$act" = "K" ] || continue
+
+			# Check if the subsystem is already up.
+			[ -f "$locksys/$subsys" ] ||
+				continue
+
+			svc="/etc/rc.d/init.d/$subsys"
+			[ -x "$svc" ] ||
+				continue
+
+			SourceIfExists /.initrd/initenv
+
+			[ "${RDLOG-}" != 'console' ] ||
+				export INITLOG_FILE=/dev/console
+
+			run_scripts "pre/$subsys" stop "$subsys"
+
+			"$svc" stop
+			rc="$?"
+
+			run_scripts "post/$subsys" stop "$subsys" "$rc"
+		done < "$rc_order"
+
+		# Now run the START scripts.
+		while read -r lvl act tier subsys || [ -n "$subsys" ]; do
+			[ -n "$lvl" ] && [ "${lvl###*}" = "$lvl" ] && [ "${lvl#version=}" = "$lvl" ] || continue
+			[ "$lvl" = "$runlevel" ] && [ "$act" = "S" ] || continue
+
+			svc="/etc/rc.d/init.d/$subsys"
+			[ -x "$svc" ] ||
+				continue
+
+			SourceIfExists /.initrd/initenv
+
+			[ "${RDLOG-}" != 'console' ] ||
+				export INITLOG_FILE=/dev/console
+
+			interactive=
+			[ -z "${STOP-}" ] ||
+				for n in all "$subsys"; do
+					[ -n "${STOP##*,$n,*}" ] || interactive=1
+				done
+
+			if [ -n "$interactive" ]; then
+				while :; do
+					printf 'Start service %s (Y)es/(N)o/(C)ontinue/(S)hell? [Y] ' "$subsys"
+					read -r answer < /dev/console
+					case "${answer,,}" in
+						c|continue)
+							STOP=
+							printf 'STOP=\n' >> /.initrd/initenv
+							break
+							;;
+						s|shell)
+							rdshell 'This shell remains here for debug purposes. Press Ctrl-D to continue.'
+							;;
+						n|no)
+							continue 2
+							;;
+						y|yes|'')
+							break
+							;;
+					esac
+				done
+			fi
+
+			# Check if the subsystem is already up.
+			[ ! -f "$locksys/$subsys" ] ||
+				continue
+
+			run_scripts "pre/$subsys" start "$subsys"
+
+			"$svc" start
+			rc="$?"
+
+			run_scripts "post/$subsys" start "$subsys" "$rc"
+		done < "$rc_order"
+
+		return 0
+	fi
 
 	# First, run the KILL scripts.
 	for i in "$rcd"/K*; do
@@ -82,7 +184,8 @@ run_runlevel() {
 				read -r answer < /dev/console
 				case "${answer,,}" in
 					c|continue)
-						printf 'STOP=,,\n' >> /.initrd/initenv
+						STOP=
+						printf 'STOP=\n' >> /.initrd/initenv
 						break
 						;;
 					s|shell)

@@ -6,7 +6,7 @@
 
 known_levels=( 0 1 2 3 4 5 6 )
 
-lvl_types=( S K )
+lvl_types=( K S )
 run_levels=( "${known_levels[@]}" )
 rc_dir=/etc/rc.d
 do_json=
@@ -273,65 +273,87 @@ create_deps()
 
 order_services()
 {
-	local deps i
-	for (( i=0; i < $services; i++ )); do
+	local i dep dep_id u v
+	local -A in_degree=()
+	local -A successors=()
+	local -A tier=()
+	local -a active=()
+	local -a queue=()
+	local -a order=()
+
+	for (( i=0; i < services; i++ )); do
 		if in_levels "$level" "svc${i}_${lvltype}_level"; then
-			declare -n "deps=deps${i}"
-			printf "svc$i %s\n" "${deps[@]}" .
+			active+=( "$i" )
+			in_degree["$i"]=0
+			successors["$i"]=""
+			tier["$i"]=0
 		fi
-	done |
-		tsort
+	done
+
+	for i in "${active[@]}"; do
+		declare -n "deps=deps${i}"
+		local -A seen_deps=()
+		for dep in "${deps[@]}"; do
+			dep_id="${dep#svc}"
+			[ -n "${in_degree[$dep_id]+_}" ] || continue
+			if [ -z "${seen_deps[$dep_id]:-}" ]; then
+				seen_deps["$dep_id"]=1
+				if [ "$lvltype" = "S" ]; then
+					u="$dep_id"
+					v="$i"
+				else
+					u="$i"
+					v="$dep_id"
+				fi
+				in_degree["$v"]=$(( ${in_degree["$v"]} + 1 ))
+				successors["$u"]+="${successors["$u"]:+ }$v"
+			fi
+		done
+	done
+
+	for i in "${active[@]}"; do
+		if [ "${in_degree["$i"]}" -eq 0 ]; then
+			queue+=( "$i" )
+		fi
+	done
+
+	while [ "${#queue[@]}" -gt 0 ]; do
+		u="${queue[0]}"
+		queue=( "${queue[@]:1}" )
+		order+=( "$u" )
+
+		for v in ${successors["$u"]:-}; do
+			if [ "${tier["$v"]}" -lt $(( ${tier["$u"]} + 1 )) ]; then
+				tier["$v"]=$(( ${tier["$u"]} + 1 ))
+			fi
+			in_degree["$v"]=$(( ${in_degree["$v"]} - 1 ))
+			if [ "${in_degree["$v"]}" -eq 0 ]; then
+				queue+=( "$v" )
+			fi
+		done
+	done
+
+	if [ "${#order[@]}" -lt "${#active[@]}" ]; then
+		message "input contains a loop:"
+		for i in "${active[@]}"; do
+			if [ "${in_degree["$i"]}" -gt 0 ]; then
+				eval "local n=\${svc${i}_name##*/}"
+				message "$n"
+			fi
+		done
+		exit 1
+	fi
+
+	for i in "${order[@]}"; do
+		eval "local n=\${svc${i}_name##*/}"
+		printf "%s %s %s %s\n" "$level" "$lvltype" "${tier[$i]}" "$n"
+	done
 }
 
 sort_runlevel()
 {
 	create_deps
-
-	if ! order_services > "$workdir/tsort.out" 2>"$workdir/tsort.err"; then
-		while read -r prefix rest; do
-			case "$rest" in
-				'-: '*)
-					rest="${rest#-: }"
-					;;
-				svc*)
-					eval "rest=\"\$${rest}_name\""
-					rest="${rest##*/}"
-					;;
-			esac
-			message "$rest"
-		done < "$workdir/tsort.err"
-		exit 1
-	fi
-
-	case  "$lvltype" in
-		S) tac "$workdir/tsort.out" ;;
-		K) cat "$workdir/tsort.out" ;;
-	esac
-}
-
-make_symlinks()
-{
-	local name priority link
-
-	[ -n "$dry_run" ] ||
-		mkdir -p -- "$rc_dir/rc$level.d"
-
-	priority=1
-	while read -r svc; do
-		[ "$svc" != . ] ||
-			continue
-
-		declare -n "name=${svc}_name"
-		printf -v link "%s/rc%s.d/${lvltype}%0${#services}d:%s" "$rc_dir" "$level" "$priority" "${name##*/}"
-
-		if [ -z "$dry_run" ]; then
-			ln -s -r -- "$name" "$link"
-		else
-			message "create symlink: $link"
-		fi
-
-		priority=$(($priority + 1))
-	done
+	order_services
 }
 
 TEMP=`getopt -n "$PROG" -o "S,K,l:,h" -l "json,dry-run,start,stop,level:,rcdir:,help" -- "$@"` ||
@@ -416,9 +438,28 @@ fi
 
 create_temporary workdir
 
-for lvltype in "${lvl_types[@]}"; do
+order_file="$workdir/order"
+{
+	echo "version=1"
+	echo "# <runlevel> <action> <tier> <service>"
 	for level in "${run_levels[@]}"; do
-		sort_runlevel > "$workdir/order"
-		make_symlinks < "$workdir/order"
+		for lvltype in "${lvl_types[@]}"; do
+			sort_runlevel
+		done
 	done
-done
+} > "$order_file"
+
+if [ -n "$dry_run" ]; then
+	while read -r line; do
+		case "$line" in
+			'#'*|version=*)
+				;;
+			*)
+				message "order: $line"
+				;;
+		esac
+	done < "$order_file"
+else
+	mkdir -p -- "$rc_dir"
+	mv -f -- "$order_file" "$rc_dir/rc.order"
+fi
