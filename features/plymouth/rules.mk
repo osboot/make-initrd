@@ -20,8 +20,8 @@ PLYMOUTH_PACK_FILES ?= \
 	$(filter-out $(PLYMOUTH_EXCLUDE_RENDERERS),$(foreach d,$(PLYMOUTH_DIRS),$(wildcard $(d)/renderers/*.so))) \
 	$(DATADIR)/plymouth/themes/details/details.plymouth \
 	$(DATADIR)/plymouth/themes/text/text.plymouth \
-	$(DATADIR)/xkeyboard-config-2 \
-	$(DATADIR)/X11/locale \
+	$(wildcard $(DATADIR)/xkeyboard-config-2) \
+	$(wildcard $(DATADIR)/X11/locale) \
 	$(PLYMOUTH_PACK_FONT) \
 	$(PLYMOUTH_PACK_THEME)
 
