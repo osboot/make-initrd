@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <poll.h>
-#include <mntent.h>
 #include <time.h>
 #include <errno.h>
 
@@ -16,35 +15,13 @@
 #include "rd/memory.h"
 #include "rd/logging.h"
 #include "rd/list.h"
+#include "ueventd-mounts.h"
 
-#define MOUNT_PROC "/proc/self/mounts"
 #define DEFAULT_LOGFILE "/var/log/ueventd-mounts.log"
 
 #define QUEUE_TMPNAME ".tmp"
 #define QUEUE_NAME "mount"
 #define EVENT_TEMP_NAME "." QUEUE_NAME ".event.new"
-
-enum mount_entry_t {
-	MOUNT_ENTRY_OLD,
-	MOUNT_ENTRY_NEW,
-	MOUNT_ENTRY_CUR,
-};
-
-struct mounts {
-	struct list_head list;
-	enum mount_entry_t ent_flag;
-	char *ent_name;
-	char *ent_path;
-	char *ent_type;
-	char *ent_opts;
-};
-
-static void reset_state(void);
-static void read_mounts(void);
-static void diff_mounts(void);
-static struct mounts *find_mounts(const struct mntent *mnt)     __nonnull(1);
-static void create_event(const char *action, struct mounts *m)  __nonnull(1, 2);
-static inline char *get_param_dir(const char *name)             __nonnull(1);
 
 static char *filter_dir;
 static int queue_dirfd;
@@ -52,51 +29,66 @@ static int temp_dirfd;
 
 LIST_HEAD(mounts);
 
-void reset_state(void)
+struct mounts *mount_new(uint64_t mnt_id, const char *source,
+                         const char *target, const char *fstype,
+                         const char *opts)
 {
-	struct mounts *mount;
-	list_for_each_entry(mount, &mounts, list) {
-		mount->ent_flag = MOUNT_ENTRY_OLD;
-	}
+	struct mounts *m = rd_calloc_or_die(1, sizeof(*m));
+	m->mnt_id = mnt_id;
+	m->ent_name = rd_strdup_or_die(source ? source : "");
+	m->ent_path = rd_strdup_or_die(target ? target : "");
+	m->ent_type = rd_strdup_or_die(fstype ? fstype : "");
+	m->ent_opts = rd_strdup_or_die(opts ? opts : "");
+	m->ent_flag = MOUNT_ENTRY_CUR;
+	return m;
 }
 
-struct mounts *find_mounts(const struct mntent *mnt)
+void free_mount(struct mounts *m)
 {
-	struct mounts *mount;
-	list_for_each_entry(mount, &mounts, list) {
-		if (!strcmp(mount->ent_path, mnt->mnt_dir) &&
-		    !strcmp(mount->ent_name, mnt->mnt_fsname) &&
-		    !strcmp(mount->ent_type, mnt->mnt_type))
-			return mount;
+	if (!m)
+		return;
+	free(m->ent_name);
+	free(m->ent_path);
+	free(m->ent_type);
+	free(m->ent_opts);
+	free(m);
+}
+
+struct mounts *mount_find(uint64_t mnt_id, const char *target,
+                          const char *source, const char *fstype)
+{
+	struct mounts *m;
+	list_for_each_entry(m, &mounts, list) {
+		if (mnt_id && m->mnt_id) {
+			if (m->mnt_id == mnt_id)
+				return m;
+		} else if (target && source && fstype) {
+			if (!strcmp(m->ent_path, target) &&
+			    !strcmp(m->ent_name, source) &&
+			    !strcmp(m->ent_type, fstype))
+				return m;
+		}
 	}
 	return NULL;
 }
 
-void read_mounts(void)
+void mount_emit(const char *action, struct mounts *m)
 {
-	struct mntent *mnt;
-	FILE *fp __free(fclose) = fopen(MOUNT_PROC, "r");
+	rd_info("%s: %s", action, m->ent_path);
+	create_event(action, m);
+}
 
-	if (!fp)
-		rd_fatal("fopen: %s: %m", MOUNT_PROC);
+void mount_attach(struct mounts *m)
+{
+	list_add_tail(&m->list, &mounts);
+	mount_emit("mount", m);
+}
 
-	while ((mnt = getmntent(fp))) {
-		struct mounts *mount = find_mounts(mnt);
-		if (mount) {
-			mount->ent_flag = MOUNT_ENTRY_CUR;
-			continue;
-		}
-
-		mount = rd_calloc_or_die(1, sizeof(*mount));
-
-		mount->ent_name = rd_strdup_or_die(mnt->mnt_fsname);
-		mount->ent_path = rd_strdup_or_die(mnt->mnt_dir);
-		mount->ent_type = rd_strdup_or_die(mnt->mnt_type);
-		mount->ent_opts = rd_strdup_or_die(mnt->mnt_opts);
-		mount->ent_flag = MOUNT_ENTRY_NEW;
-
-		list_add_tail(&mount->list, &mounts);
-	}
+void mount_detach(struct mounts *m)
+{
+	mount_emit("umount", m);
+	list_del(&m->list);
+	free_mount(m);
 }
 
 void create_event(const char *action, struct mounts *m)
@@ -130,34 +122,7 @@ void create_event(const char *action, struct mounts *m)
 		         filter_dir, fname);
 }
 
-void diff_mounts(void)
-{
-	struct mounts *pos, *tmp;
-
-	list_for_each_entry_safe(pos, tmp, &mounts, list) {
-		switch (pos->ent_flag) {
-			case MOUNT_ENTRY_NEW:
-				rd_info("mount: %s", pos->ent_path);
-				create_event("mount", pos);
-				break;
-			case MOUNT_ENTRY_OLD:
-				rd_info("umount: %s", pos->ent_path);
-				create_event("umount", pos);
-
-				list_del(&pos->list);
-
-				free(pos->ent_name);
-				free(pos->ent_path);
-				free(pos->ent_type);
-				free(pos->ent_opts);
-				free(pos);
-				break;
-			default:
-		}
-	}
-}
-
-char *get_param_dir(const char *name)
+static char *get_param_dir(const char *name)
 {
 	char *value = getenv(name);
 	if (!value)
@@ -165,10 +130,28 @@ char *get_param_dir(const char *name)
 	return value;
 }
 
+static struct mount_backend *backends[] = {
+	&fanotify_backend,
+	&procfs_backend,
+};
+
+static struct mount_backend *backend_select(void)
+{
+	for (size_t i = 0; i < sizeof(backends) / sizeof(backends[0]); i++) {
+		struct mount_backend *b = backends[i];
+		if (b->init(b) == 0) {
+			rd_info("using %s mount monitoring backend", b->name);
+			return b;
+		}
+		rd_info("%s backend not available; falling back", b->name);
+	}
+	rd_fatal("no mount monitoring backend available");
+	return NULL;
+}
+
 int main(int argc, char **argv)
 {
-	int c, fd;
-	struct pollfd fds[1];
+	int c;
 	int loglevel = LOG_INFO;
 
 	while ((c = getopt(argc, argv, "hl:")) != -1) {
@@ -187,7 +170,13 @@ int main(int argc, char **argv)
 		}
 	}
 
-	rd_log_setup_stderr(DEFAULT_LOGFILE);
+	const char *logfile = getenv("UEVENTD_MOUNTS_LOGFILE");
+	if (!logfile || !*logfile)
+		logfile = getenv("LOGFILE");
+	if (!logfile || !*logfile)
+		logfile = DEFAULT_LOGFILE;
+
+	rd_log_setup_stderr(logfile);
 	rd_logging_init(fileno(stderr), loglevel, program_invocation_short_name);
 
 	rd_info("starting server ...");
@@ -206,13 +195,14 @@ int main(int argc, char **argv)
 	if ((temp_dirfd = openat(queue_dirfd, QUEUE_TMPNAME, O_PATH | O_DIRECTORY | O_CLOEXEC)) < 0)
 		rd_fatal("open: %s/" QUEUE_TMPNAME ": %m", filter_dir);
 
-	read_mounts();
+	struct mount_backend *b = backend_select();
 
-	if ((fd = open(MOUNT_PROC, O_RDONLY | O_LARGEFILE | O_CLOEXEC)) < 0)
-		rd_fatal("open: %s: %m", MOUNT_PROC);
-
-	fds[0].fd = fd;
-	fds[0].events = POLLERR | POLLPRI;
+	struct pollfd fds[1] = {
+		{
+			.fd = b->fd,
+			.events = b->poll_events,
+		},
+	};
 
 	while (1) {
 		int ready;
@@ -224,14 +214,10 @@ int main(int argc, char **argv)
 			rd_fatal("poll: %m");
 		}
 
-		if (fds[0].revents & POLLERR) {
-			reset_state();
-			read_mounts();
-			diff_mounts();
-		}
+		if (fds[0].revents & b->poll_events)
+			b->dispatch(b);
 	}
 
-	close(fd);
-
+	b->cleanup(b);
 	return EXIT_SUCCESS;
 }
