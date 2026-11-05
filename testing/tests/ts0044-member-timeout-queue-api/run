@@ -11,7 +11,7 @@ mkdir -p -- \
 	"$root/queues" \
 	"$root/timers"
 
-export PATH="$PWD/.build/dest/usr/bin:$PATH"
+export PATH="$PWD/.build/dest/usr/bin:$PWD/external/libshell/upstream:$PATH"
 export TIMESTAMP="$PWD/.build/dest/lib/initrd/sbin/timestamp"
 export TEST_FILTERDIR="$root/queues"
 export TEST_TIMERDIR="$root/timers"
@@ -33,10 +33,6 @@ prepare_handler()
 	local src="$1" dst="$2" patch_btrfs="${3:-}"
 
 	awk -v patch_btrfs="$patch_btrfs" '
-		$0 == ". shell-error" {
-			print ". .build/dest/usr/bin/shell-error"
-			next
-		}
 		$0 == ". initrd-sh-functions" {
 			print ". features/runtime/data/bin/initrd-sh-functions"
 			next

@@ -1,16 +1,35 @@
 #!/bin/bash -efu
 
-cwd="${0%/*}"
+cwd="$(readlink -ev "${0%/*}")"
+
+export PATH="$PWD/.build/dest/usr/bin:$PWD/tools:$PATH"
 
 . "$cwd"/../put-file-sh-functions
 
 make_fs()
 {
 	rm -rf -- "$1"
+	mkdir -p -- "$1/usr"
+	local n target
 	for n in bin lib lib32 lib64 libx32; do
-		if [ -L /$n ]; then
+		if [ -L "/usr/$n" ]; then
+			target="$(readlink "/usr/$n")"
+			case "$target" in
+				/usr/*) target="${target#/usr/}" ;;
+				/*) target="..$target" ;;
+			esac
+			ln -s -- "$target" "$1/usr/$n"
+		else
 			mkdir -p -- "$1/usr/$n"
-			ln -s -- "usr/$n" "$1/$n"
+		fi
+	done
+	for n in bin lib lib32 lib64 libx32; do
+		if [ -L "/$n" ]; then
+			target="$(readlink "/$n")"
+			case "$target" in
+				/*) target="${target#/}" ;;
+			esac
+			ln -s -- "$target" "$1/$n"
 		else
 			mkdir -p -- "$1/$n"
 		fi
