@@ -1,0 +1,196 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+trap : INT TSTP QUIT HUP
+
+is_leaf_blockdev() {
+	local bdev="$1"
+	local h
+
+	for h in "$bdev"/holders/*; do
+		[ ! -e "$h" ] || return 1
+	done
+	return 0
+}
+
+run_hooks() {
+	local hook_type="$1"
+	local action="$2"
+	shift 2
+
+	local target="${1-}"
+	local hook rc=1
+
+	for hook in "/lib/initrd/shutdown/${hook_type}.d"/*; do
+		[ -x "$hook" ] ||
+			continue
+
+		if "$hook" "$hook_type" "$action" "$@"; then
+			rc=0
+			if [ "$hook_type" = "post-umount" ] && [ -n "$target" ] && [ ! -e "$target" ]; then
+				break
+			fi
+		fi
+	done
+
+	return "$rc"
+}
+
+teardown_blockdevs() {
+	local action="$1"
+	local progress=1
+	local bdev
+
+	while [ "$progress" -eq 1 ]; do
+		progress=0
+
+		for bdev in /sys/class/block/*; do
+			[ -e "$bdev" ] ||
+				continue
+
+			# Skip partitions: they are cleaned up with their parent device
+			[ ! -f "$bdev/partition" ] ||
+				continue
+
+			# Check if device has holders (must be a leaf in the block layer)
+			if ! is_leaf_blockdev "$bdev"; then
+				continue
+			fi
+
+			local majmin="" major=""
+
+			read -r majmin < "$bdev/dev" 2>/dev/null ||
+				continue
+
+			major="${majmin%%:*}"
+
+			# Run post-umount hooks for this leaf device
+			if run_hooks "post-umount" "$action" "$bdev" "$major"; then
+				progress=1
+			fi
+		done
+	done
+}
+
+main() {
+	export TERM=linux
+	export PATH="/sbin:/usr/sbin:/bin:/usr/bin"
+
+	local ACTION="${1:-reboot}"
+
+	# Remount root as read-write if it is in tmpfs or ramfs
+	local root_fs
+	root_fs="$(stat -c '%T' -f / 2>/dev/null ||:)"
+
+	if [ "$root_fs" = "tmpfs" ] || [ "$root_fs" = "ramfs" ]; then
+		mount -o remount,rw / 2>/dev/null ||:
+	fi
+
+	# Ensure essential virtual filesystems are mounted
+	[ -d /proc ] || mkdir -m 755 /proc
+	[ -d /sys  ] || mkdir -m 755 /sys
+	[ -d /dev  ] || mkdir -m 755 /dev
+
+	mountpoint -q /proc 2>/dev/null || mount -n -t proc proc /proc 2>/dev/null ||:
+	mountpoint -q /sys  2>/dev/null || mount -n -t sysfs sysfs /sys 2>/dev/null ||:
+	mountpoint -q /dev  2>/dev/null || mount -n -t devtmpfs devtmpfs /dev 2>/dev/null ||:
+
+	# Redirect stdio to /dev/console once /dev is mounted
+	if [ -w /dev/console ] && (: < /dev/console) 2>/dev/null; then
+		exec < /dev/console >> /dev/console 2>> /dev/console
+	fi
+
+	if [ -d /oldroot ]; then
+		# Move nested virtual filesystems out of /oldroot
+		mkdir -p /oldsys
+
+		local d
+		for d in sys proc run dev; do
+			if mountpoint -q "/oldroot/$d" 2>/dev/null; then
+				mkdir -p "/oldsys/$d"
+				mount --move "/oldroot/$d" "/oldsys/$d" 2>/dev/null ||:
+			fi
+		done
+
+		# Terminate any remaining processes holding files on /oldroot
+		fuser -s -k -9 -m /oldroot 2>/dev/null ||:
+
+		# Run pre-umount hooks (e.g. mdmon takeover, storage prep)
+		run_hooks "pre-umount" "$ACTION" "/oldroot"
+
+		# Unmount everything under /oldroot
+		local cnt=0 lines fstype mp did_umount i line
+		while [ "$cnt" -le 30 ]; do
+			mapfile -t lines < <(findmnt -rno FSTYPE,TARGET -R /oldroot 2>/dev/null ||:)
+
+			[ "${#lines[@]}" -gt 0 ] ||
+				break
+
+			did_umount=0
+
+			for (( i=${#lines[@]}-1; i>=0; i-- )); do
+				line="${lines[i]}"
+				fstype="${line%% *}"
+				mp="${line#* }"
+
+				# Run per-mountpoint hook
+				run_hooks "umount" "$ACTION" "$mp" "$fstype"
+
+				if ! mountpoint -q "$mp" 2>/dev/null; then
+					did_umount=1
+					continue
+				fi
+
+				if timeout -s KILL 5 umount -d "$mp" 2>/dev/null; then
+					did_umount=1
+				fi
+			done
+
+			[ "$did_umount" -eq 1 ] ||
+				break
+
+			cnt=$(( cnt + 1 ))
+		done
+	fi
+
+	# Dismantle underlying storage stack layer by layer
+	teardown_blockdevs "$ACTION"
+
+	# Run final shutdown hooks before syncing and rebooting
+	run_hooks "shutdown" "$ACTION"
+
+	# Clean up /oldsys mounts if present
+	if [ -d /oldsys ]; then
+		local d
+		for d in dev run proc sys; do
+			if mountpoint -q "/oldsys/$d" 2>/dev/null; then
+				umount -l "/oldsys/$d" 2>/dev/null ||:
+			fi
+		done
+	fi
+
+	sync
+
+	case "$ACTION" in
+		poweroff)
+			poweroff -f 2>/dev/null || halt -f -p 2>/dev/null || reboot -f
+			;;
+		halt)
+			halt -f 2>/dev/null || reboot -f
+			;;
+		kexec)
+			if command -v kexec >/dev/null 2>&1; then
+				kexec -e 2>/dev/null || reboot -f
+			else
+				reboot -f
+			fi
+			;;
+		reboot|*)
+			reboot -f
+			;;
+	esac
+}
+
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+	main "$@"
+fi
