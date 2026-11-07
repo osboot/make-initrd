@@ -1,0 +1,145 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+bash -n features/shutdown/shutdown/shutdown
+echo "syntax shutdown: ok"
+
+bash -n utils/make-initrd-shutdown-restore/make-initrd-shutdown-restore.in
+echo "syntax make-initrd-shutdown-restore: ok"
+
+bash -n features/shutdown/shutdown/lib/initrd/shutdown/post-umount.d/10-loop.sh
+echo "syntax 10-loop.sh: ok"
+
+bash -n features/shutdown/guess/common
+echo "syntax guess/common: ok"
+
+PROG="${PROG:-utils/make-initrd-shutdown-restore/make-initrd-shutdown-restore.in}"
+export PATH="$PWD/.build/dest/usr/sbin:$PWD/.build/dest/usr/bin:$PATH"
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' EXIT
+
+# Helper to build mock initramfs archive
+create_mock_initrd() {
+	local outfile="$1"
+	local id="${2:-make-initrd}"
+	local with_shutdown="${3:-1}"
+	local mock_src="$tmpdir/mock_initrd_src"
+	rm -rf "$mock_src"
+	mkdir -p "$mock_src/etc"
+	cat <<- EOF > "$mock_src/etc/initrd-release"
+	ID=$id
+	VERSION_ID=test
+	NAME="make-initrd"
+	EOF
+	if [ "$with_shutdown" = "1" ]; then
+		cat <<- 'EOF' > "$mock_src/shutdown"
+		#!/bin/sh
+		exit 0
+		EOF
+		chmod +x "$mock_src/shutdown"
+		( cd "$mock_src" && printf "etc\netc/initrd-release\nshutdown\n" | cpio -o -H newc --quiet > "$outfile" )
+	else
+		( cd "$mock_src" && printf "etc\netc/initrd-release\n" | cpio -o -H newc --quiet > "$outfile" )
+	fi
+}
+
+# 1. Test exit 0 when target shutdown is already executable
+mkdir -p "$tmpdir/target0"
+touch "$tmpdir/target0/shutdown"
+chmod +x "$tmpdir/target0/shutdown"
+TARGET_DIR="$tmpdir/target0" "$PROG"
+echo "already restored: ok"
+
+# 2. Test traditional layout restore
+mkdir -p "$tmpdir/boot1"
+create_mock_initrd "$tmpdir/boot1/initrd-test-kver.img"
+TARGET_DIR="$tmpdir/target1" SYS_KVER="test-kver" BOOT_DIRS="$tmpdir/boot1" "$PROG"
+[ -x "$tmpdir/target1/shutdown" ] && echo "traditional restore: ok"
+
+# 3. Test BLS Type #1 config entry restore
+mkdir -p "$tmpdir/boot2/loader/entries" "$tmpdir/boot2/my-token/test-kver"
+create_mock_initrd "$tmpdir/boot2/my-token/test-kver/initrd"
+cat << 'EOF' > "$tmpdir/boot2/loader/entries/test.conf"
+title Test OS
+version test-kver
+initrd /my-token/test-kver/initrd
+EOF
+TARGET_DIR="$tmpdir/target2" SYS_KVER="test-kver" BOOT_DIRS="$tmpdir/boot2" "$PROG"
+[ -x "$tmpdir/target2/shutdown" ] && echo "bls type1 conf restore: ok"
+
+# 4. Test BLS Type #1 directory structure restore
+mkdir -p "$tmpdir/boot3/Default/test-kver"
+create_mock_initrd "$tmpdir/boot3/Default/test-kver/initrd"
+TARGET_DIR="$tmpdir/target3" SYS_KVER="test-kver" BOOT_DIRS="$tmpdir/boot3" "$PROG"
+[ -x "$tmpdir/target3/shutdown" ] && echo "bls type1 dir restore: ok"
+
+# 5. Test foreign initrd rejection (e.g. ID=ubuntu is ignored, make-initrd picked)
+mkdir -p "$tmpdir/boot4"
+create_mock_initrd "$tmpdir/boot4/initrd-test-kver.img" "ubuntu"
+create_mock_initrd "$tmpdir/boot4/initramfs-test-kver.img" "make-initrd"
+TARGET_DIR="$tmpdir/target4" SYS_KVER="test-kver" BOOT_DIRS="$tmpdir/boot4" "$PROG"
+[ -x "$tmpdir/target4/shutdown" ] && echo "foreign initrd ignored: ok"
+
+# 6. Test make-initrd without shutdown feature is cleanly skipped (exit 0, target not restored)
+mkdir -p "$tmpdir/boot5"
+create_mock_initrd "$tmpdir/boot5/initrd-test-kver.img" "make-initrd" "0"
+TARGET_DIR="$tmpdir/target5" SYS_KVER="test-kver" BOOT_DIRS="$tmpdir/boot5" "$PROG"
+[ ! -e "$tmpdir/target5/shutdown" ] && echo "shutdown not included skipped: ok"
+
+# Test leaf detection, run_hooks, and hook exit code convention
+(
+	# shellcheck source=features/shutdown/shutdown/shutdown
+	source features/shutdown/shutdown/shutdown
+
+	# Mock sysfs block device tree
+	mkdir -p "$tmpdir/sys/class/block/dm-0/holders"
+	mkdir -p "$tmpdir/sys/class/block/dm-0/dm"
+	echo "253:0" > "$tmpdir/sys/class/block/dm-0/dev"
+	echo "my-luks" > "$tmpdir/sys/class/block/dm-0/dm/name"
+
+	mkdir -p "$tmpdir/sys/class/block/sda/holders"
+	echo "8:0" > "$tmpdir/sys/class/block/sda/dev"
+	ln -s ../../dm-0 "$tmpdir/sys/class/block/sda/holders/dm-0"
+
+	is_leaf_blockdev "$tmpdir/sys/class/block/dm-0" && echo "dm-0 is leaf: ok"
+	! is_leaf_blockdev "$tmpdir/sys/class/block/sda" && echo "sda has holders: ok"
+
+	# Test run_hooks with nonexistent directory
+	! run_hooks "nonexistent" "reboot" && echo "run_hooks nonexistent dir: ok"
+
+	# Test hook exit code convention:
+	# exit 0 -> progress
+	# exit 2 -> skip
+	# exit 1 -> error
+	mock_hooks_dir="$tmpdir/lib/initrd/shutdown/post-umount.d"
+	mkdir -p "$mock_hooks_dir"
+
+	cat << 'EOF' > "$mock_hooks_dir/10-loop.sh"
+#!/bin/bash
+major="$4"
+[ "$major" = 7 ] || [ -d "$3/loop" ] || exit 2
+exit 0
+EOF
+	chmod +x "$mock_hooks_dir/10-loop.sh"
+
+	cat << 'EOF' > "$mock_hooks_dir/50-dm.sh"
+#!/bin/bash
+[ -d "$3/dm" ] || exit 2
+exit 0
+EOF
+	chmod +x "$mock_hooks_dir/50-dm.sh"
+
+	# Test calling loop hook on dm device (should skip with exit code 2)
+	rc=0
+	"$mock_hooks_dir/10-loop.sh" "post-umount" "reboot" "$tmpdir/sys/class/block/dm-0" "253" || rc=$?
+	[ "$rc" -eq 2 ] && echo "loop hook skip on dm: ok"
+
+	# Test calling dm hook on dm device (should succeed with exit code 0)
+	"$mock_hooks_dir/50-dm.sh" "post-umount" "reboot" "$tmpdir/sys/class/block/dm-0" "253"
+	echo "dm hook handle on dm: ok"
+
+	# Test calling dm hook on sda (no dm dir, should skip with exit code 2)
+	rc=0
+	"$mock_hooks_dir/50-dm.sh" "post-umount" "reboot" "$tmpdir/sys/class/block/sda" "8" || rc=$?
+	[ "$rc" -eq 2 ] && echo "dm hook skip on sda: ok"
+)

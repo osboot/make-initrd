@@ -1,0 +1,17 @@
+syntax shutdown: ok
+syntax make-initrd-shutdown-restore: ok
+syntax 10-loop.sh: ok
+syntax guess/common: ok
+already restored: ok
+traditional restore: ok
+bls type1 conf restore: ok
+bls type1 dir restore: ok
+foreign initrd ignored: ok
+shutdown not included skipped: ok
+dm-0 is leaf: ok
+sda has holders: ok
+run_hooks nonexistent dir: ok
+loop hook skip on dm: ok
+dm hook handle on dm: ok
+dm hook skip on sda: ok
+rc=0

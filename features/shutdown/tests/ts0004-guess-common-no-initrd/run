@@ -1,0 +1,16 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+cwd="${0%/*}"
+
+. "$cwd"/../../../../testing/tests/guess-feature-sh-functions
+
+guess_feature_test_init "$0"
+
+export KERNEL="99.99.99"
+empty_boot="$GUESS_TEST_TMPDIR/empty_boot"
+mkdir -p "$empty_boot"
+export BOOT_DIRS="$empty_boot"
+
+features/shutdown/guess/common
+guess_feature_test_dump

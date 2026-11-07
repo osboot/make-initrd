@@ -1,0 +1,27 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+cwd="${0%/*}"
+
+. "$cwd"/../../../../testing/tests/guess-feature-sh-functions
+
+guess_feature_test_init "$0"
+
+export KERNEL="6.6.1"
+boot_dir="$GUESS_TEST_TMPDIR/boot"
+mkdir -p "$boot_dir"
+mock_img="$boot_dir/initrd-6.6.1.img"
+
+mock_src="$GUESS_TEST_TMPDIR/mock_src"
+mkdir -p "$mock_src/etc"
+cat <<- EOF > "$mock_src/etc/initrd-release"
+ID=make-initrd
+VERSION_ID=test
+NAME="make-initrd"
+EOF
+( cd "$mock_src" && printf "etc\netc/initrd-release\n" | cpio -o -H newc --quiet > "$mock_img" )
+
+export BOOT_DIRS="$boot_dir"
+
+features/shutdown/guess/common
+guess_feature_test_dump
