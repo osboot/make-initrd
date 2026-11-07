@@ -32,6 +32,7 @@ kernelconfdir    = $(prefix)/lib/kernel/install.conf.d
 
 libcdir := $(shell $(srcdir)/tools/get-libc-dir)
 completionsdir := $(shell pkg-config --variable=completionsdir bash-completion 2>/dev/null ||:)
+systemdunitdir ?= $(shell pkg-config --variable=systemdsystemunitdir systemd 2>/dev/null ||:)
 
 runtime_srcdir = $(srcdir)/runtime/src
 utils_srcdir = $(srcdir)/utils
@@ -611,6 +612,9 @@ install: build installdirs
 	    $(INSTALL) -d -m 755 -- "$(DESTDIR)$(kernelinstalldir)" "$(DESTDIR)$(kernelconfdir)" && \
 	    $(INSTALL_SCRIPT) -m 755 -t "$(DESTDIR)$(kernelinstalldir)" -- $(wildcard $(srcdir)/contrib/kernel-install/*.install) && \
 	    $(INSTALL_DATA) -t "$(DESTDIR)$(kernelconfdir)" -- $(wildcard $(srcdir)/contrib/kernel-install/*.conf); }
+	$(Q)[ -z "$(systemdunitdir)" ] || { \
+	    $(INSTALL) -d -m 755 -- "$(DESTDIR)$(systemdunitdir)" && \
+	    $(INSTALL_DATA) -t "$(DESTDIR)$(systemdunitdir)" -- $(srcdir)/features/shutdown/system/make-initrd-shutdown.service; }
 ifneq ($(SCDOC),)
 	$(Q)$(INSTALL_DATA) -t "$(DESTDIR)$(man1dir)" -- $(addprefix $(dest_man1dir)/,$(MANPAGE_NAMES))
 endif
@@ -634,6 +638,8 @@ uninstall:
 	done
 	$(Q)[ -z "$(completionsdir)" ] || \
 	    rm -f -- $(addprefix $(DESTDIR)$(completionsdir)/,$(notdir $(wildcard $(srcdir)/contrib/bash-completion/*)))
+	$(Q)[ -z "$(systemdunitdir)" ] || \
+	    rm -f -- "$(DESTDIR)$(systemdunitdir)/make-initrd-shutdown.service"
 	$(Q)[ -z "$(kernelinstalldir)" ] || \
 	    rm -f -- $(addprefix $(DESTDIR)$(kernelinstalldir)/,$(notdir $(wildcard $(srcdir)/contrib/kernel-install/*.install))) \
 	          $(addprefix $(DESTDIR)$(kernelconfdir)/,$(notdir $(wildcard $(srcdir)/contrib/kernel-install/*.conf)))

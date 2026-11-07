@@ -1,0 +1,32 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. guess-functions
+
+get_sys_command initrd-find
+get_sys_command initrd-ls
+
+initrd=""
+if [ -n "${IMAGEFILE-}" ] && [ -f "$IMAGEFILE" ]; then
+	initrd="$IMAGEFILE"
+fi
+
+if [ -z "$initrd" ]; then
+	for k in "${KERNEL-}" "$(uname -r)"; do
+		[ -n "$k" ] || continue
+		if initrd="$(sys_initrd_find "$k" 2>/dev/null)" && [ -n "$initrd" ] && [ -f "$initrd" ]; then
+			break
+		fi
+		initrd=""
+	done
+fi
+
+[ -n "$initrd" ] || exit 0
+
+has_shutdown() {
+	sys_initrd_ls "$1" 2>/dev/null | grep -qsE '(1970 \./shutdown|[[:space:]](\./)?shutdown$)'
+}
+
+if has_shutdown "$initrd"; then
+	guess_feature shutdown
+fi

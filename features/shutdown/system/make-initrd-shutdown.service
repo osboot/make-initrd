@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[Unit]
+Description=Restore /run/initramfs on shutdown
+Documentation=man:make-initrd(8)
+After=local-fs.target boot.mount boot.automount
+Wants=local-fs.target
+ConditionPathExists=!/run/initramfs/shutdown
+
+[Service]
+RemainAfterExit=yes
+Type=oneshot
+Environment=VERBOSE=1
+ExecStart=/bin/true
+ExecStop=/usr/sbin/make-initrd-shutdown-restore
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=sysinit.target

@@ -1,0 +1,124 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+PROG="${PROG:-utils/initrd-find/initrd-find.in}"
+export PATH="$PWD/.build/dest/usr/sbin:$PWD/.build/dest/usr/bin:$PATH"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' EXIT
+
+create_mock_initrd() {
+	local outfile="$1"
+	local id="${2:-make-initrd}"
+	local mock_src="$tmpdir/mock_initrd_src"
+	rm -rf "$mock_src"
+	mkdir -p "$mock_src/etc"
+	cat <<- EOF > "$mock_src/etc/initrd-release"
+	ID=$id
+	VERSION_ID=test
+	NAME="make-initrd"
+	EOF
+	( cd "$mock_src" && printf "etc\netc/initrd-release\n" | cpio -o -H newc --quiet > "$outfile" )
+}
+
+# 1. Test help flag
+"$PROG" --help | head -n 1
+echo "help flag: ok"
+
+# 2. Test traditional layout
+mkdir -p "$tmpdir/boot1"
+create_mock_initrd "$tmpdir/boot1/initrd-6.6.1.img"
+found="$("$PROG" -b "$tmpdir/boot1" 6.6.1)"
+[ "$found" = "$tmpdir/boot1/initrd-6.6.1.img" ] && echo "traditional layout: ok"
+
+# 3. Test BLS Type #1 conf entry
+mkdir -p "$tmpdir/boot2/loader/entries"
+cat << 'EOF' > "$tmpdir/boot2/loader/entries/test.conf"
+title Test OS
+version 6.6.1
+initrd /images/initrd-custom
+EOF
+mkdir -p "$tmpdir/boot2/images"
+create_mock_initrd "$tmpdir/boot2/images/initrd-custom"
+found="$("$PROG" -b "$tmpdir/boot2" 6.6.1)"
+[ "$found" = "$tmpdir/boot2/images/initrd-custom" ] && echo "bls conf: ok"
+
+# 4. Test BLS Type #1 directory structure
+mkdir -p "$tmpdir/boot3/Default/6.6.1"
+create_mock_initrd "$tmpdir/boot3/Default/6.6.1/initrd"
+found="$("$PROG" -b "$tmpdir/boot3" 6.6.1)"
+[ "$found" = "$tmpdir/boot3/Default/6.6.1/initrd" ] && echo "bls dir: ok"
+
+# 5. Non-matching kernel returns 1
+rc=0
+"$PROG" -b "$tmpdir/boot1" 9.9.9 >/dev/null 2>&1 || rc=$?
+[ "$rc" -eq 1 ] && echo "non-matching kernel: ok"
+
+# 6. Foreign initrd rejection without --any and acceptance with --any
+mkdir -p "$tmpdir/boot4"
+create_mock_initrd "$tmpdir/boot4/initrd-6.6.1.img" "ubuntu"
+rc=0
+"$PROG" -b "$tmpdir/boot4" 6.6.1 >/dev/null 2>&1 || rc=$?
+[ "$rc" -eq 1 ] && echo "foreign initrd rejected: ok"
+
+found="$("$PROG" --any -b "$tmpdir/boot4" 6.6.1)"
+[ "$found" = "$tmpdir/boot4/initrd-6.6.1.img" ] && echo "foreign initrd accepted with --any: ok"
+
+# 7. BLS Type #2 UKI discovery
+mkdir -p "$tmpdir/boot5/EFI/Linux"
+python3 - "$tmpdir/boot5/EFI/Linux/linux-6.6.1.efi" << 'EOF'
+import sys, io, struct
+def make_cpio_entry(name, content=b""):
+    namesize = len(name.encode()) + 1
+    filesize = len(content)
+    hdr = f"070701{1:08x}{0o100644:08x}{0:08x}{0:08x}{1:08x}{0:08x}{filesize:08x}{0:08x}{0:08x}{0:08x}{0:08x}{namesize:08x}{0:08x}".encode()
+    out = io.BytesIO()
+    out.write(hdr)
+    out.write(name.encode() + b"\0")
+    pad = (4 - (out.tell() % 4)) % 4
+    out.write(b"\0" * pad)
+    if content:
+        out.write(content)
+        pad = (4 - (out.tell() % 4)) % 4
+        out.write(b"\0" * pad)
+    return out.getvalue()
+
+trailer = make_cpio_entry("TRAILER!!!")
+entries = [make_cpio_entry("etc/initrd-release", b"ID=make-initrd\n"), trailer]
+cpio_data = b"".join(entries)
+pad = (512 - (len(cpio_data) % 512)) % 512
+cpio_data += b"\0" * pad
+
+dos_header = b'MZ' + b'\0' * 58 + struct.pack('<I', 64)
+pe_sig = b'PE\0\0'
+coff_header = struct.pack('<HHIIIHH', 0x8664, 1, 0, 0, 0, 0, 2)
+headers = dos_header + pe_sig + coff_header
+raw_ptr = 512
+raw_size = len(cpio_data)
+vsize = len(cpio_data)
+sec_hdr = struct.pack('<8sIIIIIIHHI', b'.initrd\0', vsize, 0x1000, raw_size, raw_ptr, 0, 0, 0, 0, 0x40000040)
+headers += sec_hdr
+pe = headers + b'\0' * (512 - len(headers)) + cpio_data
+
+with open(sys.argv[1], "wb") as f:
+    f.write(pe)
+EOF
+
+found="$("$PROG" -b "$tmpdir/boot5" 6.6.1)"
+[ "$found" = "$tmpdir/boot5/EFI/Linux/linux-6.6.1.efi" ] && echo "bls type 2 uki: ok"
+
+# 8. Test --root-dir and ROOTDIR/ROOT_DIR
+mkdir -p "$tmpdir/sysroot/boot"
+create_mock_initrd "$tmpdir/sysroot/boot/initramfs-6.6.1.img"
+
+found="$("$PROG" --root-dir="$tmpdir/sysroot" 6.6.1)"
+[ "$found" = "$tmpdir/sysroot/boot/initramfs-6.6.1.img" ] && echo "root-dir option: ok"
+
+found="$("$PROG" -r "$tmpdir/sysroot" -b /boot 6.6.1)"
+[ "$found" = "$tmpdir/sysroot/boot/initramfs-6.6.1.img" ] && echo "root-dir with -b: ok"
+
+found="$(ROOTDIR="$tmpdir/sysroot" "$PROG" 6.6.1)"
+[ "$found" = "$tmpdir/sysroot/boot/initramfs-6.6.1.img" ] && echo "ROOTDIR env: ok"
+
+found="$(ROOT_DIR="$tmpdir/sysroot" "$PROG" 6.6.1)"
+[ "$found" = "$tmpdir/sysroot/boot/initramfs-6.6.1.img" ] && echo "ROOT_DIR env: ok"

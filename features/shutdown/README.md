@@ -58,10 +58,24 @@ Shutdown hooks are organized into the following stages:
      been torn down, immediately before `sync` and reboot/poweroff.
    - Arguments: `"$hook_type"` `"$action"`
 
+## Auto-detection (guess)
+
+This feature provides `guess/common`:
+When generating a new initramfs, `guess/common` queries `initrd-find` to locate
+the previous or current kernel's initramfs image. If that image contains
+`/shutdown`, `features/shutdown` is automatically guessed (`guess_feature shutdown`)
+for the new image.
+
 ## Systemd integration
 
-The `system/` directory provides files for host system integration:
-- `make-initrd-shutdown-restore`: script executed upon shutdown to unpack the
-  initramfs into `/run/initramfs`.
-- `make-initrd-shutdown.service`: systemd unit triggering
+Host system components handle exitrd restoration:
+- `initrd-find` (installed into `/usr/sbin/` from `utils/`):
+  utility used to locate the active or matching initramfs image across BLS Type #1
+  configurations, BLS directory trees, BLS Type #2 UKIs, `/proc/cmdline`,
+  `/lib/modules/$kver/initrd`, and standard boot directories.
+- `make-initrd-shutdown-restore` (installed into `/usr/sbin/` from `utils/`):
+  utility executed upon shutdown to unpack the initramfs into `/run/initramfs`.
+  It locates the initramfs via `initrd-find` and only unpacks if `/shutdown`
+  is present in the archive (meaning feature `shutdown` was included).
+- `make-initrd-shutdown.service` (in `system/`): systemd unit triggering
   `make-initrd-shutdown-restore` on shutdown.
