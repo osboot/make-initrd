@@ -18,6 +18,63 @@
 
 static int stream_level = 0;
 
+static void
+find_pe_initrd(struct stream *arv)
+{
+	if (arv->size < 0x40)
+		return;
+
+	if (arv->addr[0] != 'M' || arv->addr[1] != 'Z')
+		return;
+
+	uint32_t pe_offset;
+	memcpy(&pe_offset, arv->addr + 0x3c, sizeof(pe_offset));
+	pe_offset = le32toh(pe_offset);
+
+	if ((unsigned long)pe_offset + 24 > arv->size)
+		return;
+
+	if (memcmp(arv->addr + pe_offset, "PE\0\0", 4) != 0)
+		return;
+
+	uint16_t num_sections, opt_hdr_size;
+	memcpy(&num_sections, arv->addr + pe_offset + 6, sizeof(num_sections));
+	memcpy(&opt_hdr_size, arv->addr + pe_offset + 20, sizeof(opt_hdr_size));
+	num_sections = le16toh(num_sections);
+	opt_hdr_size = le16toh(opt_hdr_size);
+
+	unsigned long sec_table = (unsigned long)pe_offset + 24 + opt_hdr_size;
+
+	for (uint16_t i = 0; i < num_sections; i++) {
+		unsigned long sec_offset = sec_table + (unsigned long)i * 40;
+		if (sec_offset + 40 > arv->size)
+			break;
+
+		if (!memcmp(arv->addr + sec_offset, ".initrd\0", 8)) {
+			uint32_t vsize, raw_size, raw_ptr;
+			memcpy(&vsize, arv->addr + sec_offset + 8, sizeof(vsize));
+			memcpy(&raw_size, arv->addr + sec_offset + 16, sizeof(raw_size));
+			memcpy(&raw_ptr, arv->addr + sec_offset + 20, sizeof(raw_ptr));
+			vsize = le32toh(vsize);
+			raw_size = le32toh(raw_size);
+			raw_ptr = le32toh(raw_ptr);
+
+			if ((unsigned long)raw_ptr + raw_size > arv->size)
+				errx(EXIT_FAILURE, "ERROR: .initrd section extends beyond file size");
+
+			uint32_t sec_size = raw_size;
+			if (vsize > 0 && vsize <= raw_size)
+				sec_size = vsize;
+
+			arv->addr += raw_ptr;
+			arv->size = sec_size;
+			return;
+		}
+	}
+
+	errx(EXIT_FAILURE, "ERROR: PE image does not contain .initrd section");
+}
+
 void
 read_stream(const char *compress, struct stream *arv, struct result *res)
 {
@@ -35,19 +92,23 @@ read_stream(const char *compress, struct stream *arv, struct result *res)
 	stream_level++;
 
 	if (stream_level == 1) {
+		find_pe_initrd(arv);
+
 		/*
 		 * Check bootconfig first.
 		 */
-		data = arv->addr + arv->size - BOOTCONFIG_MAGIC_LEN;
+		if (arv->size >= BOOTCONFIG_MAGIC_LEN) {
+			data = arv->addr + arv->size - BOOTCONFIG_MAGIC_LEN;
 
-		/*
-		 * Since Grub may align the size of initrd to 4, we must
-		 * check the preceding 3 bytes as well.
-		 */
-		for (int i = 0; i < 4; i++) {
-			if (!memcmp(data, BOOTCONFIG_MAGIC, BOOTCONFIG_MAGIC_LEN))
-				goto bootconfig;
-			data--;
+			/*
+			 * Since Grub may align the size of initrd to 4, we must
+			 * check the preceding 3 bytes as well.
+			 */
+			for (int i = 0; i < 4; i++) {
+				if (!memcmp(data, BOOTCONFIG_MAGIC, BOOTCONFIG_MAGIC_LEN))
+					goto bootconfig;
+				data--;
+			}
 		}
 
 		data = NULL;

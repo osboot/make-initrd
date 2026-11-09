@@ -1,0 +1,62 @@
+#!/bin/bash -efu
+
+export LANG=C
+export LC_ALL=C
+export TZ=UTC
+
+cwd="${0%/*}"
+
+python3 - "$cwd" << 'EOF'
+import sys
+import io
+import stat
+import struct
+
+def make_cpio_entry(name, mode, content=b"", uid=0, gid=0, nlink=1, mtime=0):
+    namesize = len(name.encode()) + 1
+    filesize = len(content)
+    hdr = f"070701{1:08x}{mode:08x}{uid:08x}{gid:08x}{nlink:08x}{mtime:08x}{filesize:08x}{0:08x}{0:08x}{0:08x}{0:08x}{namesize:08x}{0:08x}".encode()
+    out = io.BytesIO()
+    out.write(hdr)
+    out.write(name.encode() + b"\0")
+    pad = (4 - (out.tell() % 4)) % 4
+    out.write(b"\0" * pad)
+    if content:
+        out.write(content)
+        pad = (4 - (out.tell() % 4)) % 4
+        out.write(b"\0" * pad)
+    return out.getvalue()
+
+trailer = make_cpio_entry("TRAILER!!!", 0)
+
+entries = [
+    make_cpio_entry("file1", stat.S_IFREG | 0o644, b"test content"),
+    trailer
+]
+
+cpio_data = b"".join(entries)
+pad = (512 - (len(cpio_data) % 512)) % 512
+cpio_data += b"\0" * pad
+
+dos_header = b'MZ' + b'\0' * 58 + struct.pack('<I', 64)
+pe_sig = b'PE\0\0'
+coff_header = struct.pack('<HHIIIHH', 0x8664, 1, 0, 0, 0, 0, 2)
+headers = dos_header + pe_sig + coff_header
+
+raw_ptr = 512
+raw_size = len(cpio_data)
+vsize = len(cpio_data)
+sec_hdr = struct.pack('<8sIIIIIIHHI', b'.initrd\0', vsize, 0x1000, raw_size, raw_ptr, 0, 0, 0, 0, 0x40000040)
+headers += sec_hdr
+
+pe = headers + b'\0' * (512 - len(headers)) + cpio_data
+
+with open(sys.argv[1] + "/uki.efi", "wb") as f:
+    f.write(pe)
+EOF
+
+trap 'rm -f -- "$cwd/uki.efi" "$cwd/extracted.cpio"' EXIT
+
+echo "=== extract cpio from UKI ==="
+.build/dest/usr/sbin/initrd-extract "$cwd/uki.efi" > "$cwd/extracted.cpio"
+cpio -it --quiet < "$cwd/extracted.cpio"

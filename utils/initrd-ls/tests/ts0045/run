@@ -1,0 +1,83 @@
+#!/bin/bash -efu
+
+export LANG=C
+export LC_ALL=C
+export TZ=UTC
+
+cwd="${0%/*}"
+
+python3 - "$cwd" << 'EOF'
+import sys
+import io
+import stat
+import struct
+
+def make_cpio_entry(name, mode, content=b"", uid=0, gid=0, nlink=1, mtime=0):
+    namesize = len(name.encode()) + 1
+    filesize = len(content)
+    hdr = f"070701{1:08x}{mode:08x}{uid:08x}{gid:08x}{nlink:08x}{mtime:08x}{filesize:08x}{0:08x}{0:08x}{0:08x}{0:08x}{namesize:08x}{0:08x}".encode()
+    out = io.BytesIO()
+    out.write(hdr)
+    out.write(name.encode() + b"\0")
+    pad = (4 - (out.tell() % 4)) % 4
+    out.write(b"\0" * pad)
+    if content:
+        out.write(content)
+        pad = (4 - (out.tell() % 4)) % 4
+        out.write(b"\0" * pad)
+    return out.getvalue()
+
+trailer = make_cpio_entry("TRAILER!!!", 0)
+
+entries = [
+    make_cpio_entry("file1", stat.S_IFREG | 0o644, b"hello from uki"),
+    make_cpio_entry("shutdown", stat.S_IFREG | 0o755, b"#!/bin/sh\nexit 0\n"),
+    trailer
+]
+
+cpio_data = b"".join(entries)
+pad = (512 - (len(cpio_data) % 512)) % 512
+cpio_data += b"\0" * pad
+
+def make_pe(sections):
+    dos_header = b'MZ' + b'\0' * 58 + struct.pack('<I', 64)
+    pe_sig = b'PE\0\0'
+    num_sec = len(sections)
+    coff_header = struct.pack('<HHIIIHH', 0x8664, num_sec, 0, 0, 0, 0, 2)
+
+    headers = dos_header + pe_sig + coff_header
+    sec_hdrs = []
+    raw_ptr = 512
+    for name, data in sections:
+        raw_size = ((len(data) + 511) // 512) * 512
+        vsize = len(data)
+        vaddr = 0x1000 * (len(sec_hdrs) + 1)
+        sec_hdrs.append((struct.pack('<8sIIIIIIHHI', name, vsize, vaddr, raw_size, raw_ptr, 0, 0, 0, 0, 0x40000040), data, raw_size))
+        raw_ptr += raw_size
+
+    for hdr, _, _ in sec_hdrs:
+        headers += hdr
+
+    pe = headers + b'\0' * (512 - len(headers))
+    for _, data, raw_size in sec_hdrs:
+        pe += data + b'\0' * (raw_size - len(data))
+    return pe
+
+uki = make_pe([(b'.initrd\0', cpio_data)])
+with open(sys.argv[1] + "/uki.efi", "wb") as f:
+    f.write(uki)
+
+no_initrd = make_pe([(b'.text\0\0\0', b'\x90' * 64)])
+with open(sys.argv[1] + "/no-initrd.efi", "wb") as f:
+    f.write(no_initrd)
+EOF
+
+trap 'rm -f -- "$cwd/uki.efi" "$cwd/no-initrd.efi"' EXIT
+
+echo "=== list contents of PE UKI ==="
+.build/dest/usr/sbin/initrd-ls --no-mtime "$cwd/uki.efi"
+
+echo "=== PE image without .initrd ==="
+rc=0
+.build/dest/usr/sbin/initrd-ls "$cwd/no-initrd.efi" 2>&1 || rc=$?
+echo "rc=$rc"
