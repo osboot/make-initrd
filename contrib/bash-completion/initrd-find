@@ -1,0 +1,39 @@
+_initrd_find()
+{
+	local cur prev opts
+	_init_completion || return
+
+	opts="
+	-k --kernel=
+	-b --boot-dir=
+	-r --root-dir= --rootdir=
+	-m --mount
+	--no-mount
+	-a --any
+	-v --verbose
+	-q --quiet
+	-V --version
+	-h --help
+	"
+
+	case "$prev" in
+		-k|--kernel)
+			local kernels=$(find /lib/modules -mindepth 1 -maxdepth 1 -type d -printf '%f ' 2>/dev/null)
+			COMPREPLY=( $(compgen -W "$kernels" -- "$cur") )
+			return 0
+			;;
+		-b|--boot-dir|-r|--root-dir|--rootdir)
+			COMPREPLY=( $(compgen -d -- "$cur") )
+			return 0
+			;;
+	esac
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+		return 0
+	fi
+
+	local kernels=$(find /lib/modules -mindepth 1 -maxdepth 1 -type d -printf '%f ' 2>/dev/null)
+	COMPREPLY=( $(compgen -W "$kernels" -- "$cur") )
+}
+complete -F _initrd_find initrd-find
