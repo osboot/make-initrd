@@ -24,12 +24,27 @@ get_device() {
 	return 1
 }
 
+log_guess() {
+	local kind="$1" name="$2" val="${3:--}"
+	local suffix="${GUESS_SUFFIX-}"
+	local source="${GUESS_MODULE_NAME:-${suffix##*:}}"
+	source="${source:--}"
+	local context="${GUESS_CONTEXT:--}"
+	printf '%s\t%s\t%s\t%s\t%s\n' "$kind" "$name" "$val" "$source" "$context" >> "$GUESSDIR/guess.tsv"
+}
+
+has_guessed_modalias() {
+	[ -f "$GUESSDIR/guess.tsv" ] && grep -qs -E '^(modalias|opt-modalias)\b' "$GUESSDIR/guess.tsv"
+}
+
 guess_modalias() {
 	$TRACE_ENTER "$@" || {
 		$TRACE_ENTER_RETCODE $?
 		return $?
 	}
-	printf '%s\n' "$1" >> "$GUESSDIR/guess:modalias${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
+	local suffix="${GUESS_SUFFIX-}"
+	local group="${suffix%%:*}"
+	log_guess "modalias" "${group:-add}" "$1"
 }
 
 guess_module() {
@@ -37,7 +52,9 @@ guess_module() {
 		$TRACE_ENTER_RETCODE $?
 		return $?
 	}
-	printf '%s\n' "$1" >> "$GUESSDIR/guess:modules${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
+	local suffix="${GUESS_SUFFIX-}"
+	local group="${suffix%%:*}"
+	log_guess "module" "${group:-add}" "$1"
 }
 
 guess_optional_modalias() {
@@ -45,7 +62,9 @@ guess_optional_modalias() {
 		$TRACE_ENTER_RETCODE $?
 		return $?
 	}
-	printf '%s\n' "$1" >> "$GUESSDIR/guess:opt-modalias${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
+	local suffix="${GUESS_SUFFIX-}"
+	local group="${suffix%%:*}"
+	log_guess "opt-modalias" "${group:-add}" "$1"
 }
 
 guess_optional_module() {
@@ -53,7 +72,9 @@ guess_optional_module() {
 		$TRACE_ENTER_RETCODE $?
 		return $?
 	}
-	printf '%s\n' "$1" >> "$GUESSDIR/guess:opt-modules${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
+	local suffix="${GUESS_SUFFIX-}"
+	local group="${suffix%%:*}"
+	log_guess "opt-module" "${group:-add}" "$1"
 }
 
 guess_feature() {
@@ -61,7 +82,7 @@ guess_feature() {
 		$TRACE_ENTER_RETCODE $?
 		return $?
 	}
-	printf '%s\n' "$1" >> "$GUESSDIR/guess:features${GUESS_SUFFIX:+:$GUESS_SUFFIX}"
+	log_guess "feature" "$1" "${GUESS_SUFFIX-}"
 }
 
 guess_variable() {
@@ -76,7 +97,7 @@ guess_variable() {
 	local var="$1"
 	shift
 
-	printf '%s\n' "$@" >> "$GUESSDIR/guess:variables:$var"
+	log_guess "variable" "$var" "$*"
 }
 
 guess_fstype() {

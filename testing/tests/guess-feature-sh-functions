@@ -27,6 +27,59 @@ guess_feature_test_init() {
 guess_feature_test_dump() {
 	local file first=1
 
+	if [ -f "$GUESSDIR/guess.tsv" ]; then
+		declare -A dump_files
+		local kind name val src ctx fn item suffix
+		while IFS=$'\t' read -r kind name val src ctx; do
+			case "$kind" in
+				feature)
+					[ "$val" != "-" ] || val=""
+					fn="guess:features${val:+:$val}"
+					item="$name"
+					;;
+				variable)
+					fn="guess:variables:$name"
+					item="$val"
+					;;
+				module)
+					suffix=
+					[ -z "${GUESS_SUFFIX-}" ] || suffix=":$GUESS_SUFFIX"
+					fn="guess:modules${suffix}"
+					item="$val"
+					;;
+				modalias)
+					suffix=
+					[ -z "${GUESS_SUFFIX-}" ] || suffix=":$GUESS_SUFFIX"
+					fn="guess:modalias${suffix}"
+					item="$val"
+					;;
+				opt-module)
+					suffix=
+					[ -z "${GUESS_SUFFIX-}" ] || suffix=":$GUESS_SUFFIX"
+					fn="guess:opt-modules${suffix}"
+					item="$val"
+					;;
+				opt-modalias)
+					suffix=
+					[ -z "${GUESS_SUFFIX-}" ] || suffix=":$GUESS_SUFFIX"
+					fn="guess:opt-modalias${suffix}"
+					item="$val"
+					;;
+				*) continue ;;
+			esac
+			dump_files["$fn"]="${dump_files["$fn"]-}"$'\n'"$item"
+		done < "$GUESSDIR/guess.tsv"
+
+		readarray -t sorted_files < <(for f in "${!dump_files[@]}"; do echo "$f"; done | sort)
+		for fn in "${sorted_files[@]}"; do
+			[ "$first" -eq 1 ] || printf '\n'
+			first=0
+			printf '%s\n' "$fn"
+			printf '%s\n' "${dump_files[$fn]}" | sed '/^$/d'
+		done
+		return 0
+	fi
+
 	find "$GUESSDIR" -maxdepth 1 -type f -name 'guess:*' | sort |
 	while read -r file; do
 		[ "$first" -eq 1 ] ||
