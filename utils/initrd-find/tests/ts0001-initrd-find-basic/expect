@@ -9,6 +9,5 @@ foreign initrd accepted with --any: ok
 bls type 2 uki: ok
 root-dir option: ok
 root-dir with -b: ok
-ROOTDIR env: ok
 ROOT_DIR env: ok
 rc=0

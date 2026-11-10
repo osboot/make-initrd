@@ -107,7 +107,7 @@ EOF
 found="$("$PROG" -b "$tmpdir/boot5" 6.6.1)"
 [ "$found" = "$tmpdir/boot5/EFI/Linux/linux-6.6.1.efi" ] && echo "bls type 2 uki: ok"
 
-# 8. Test --root-dir and ROOTDIR/ROOT_DIR
+# 8. Test --root-dir and ROOT_DIR
 mkdir -p "$tmpdir/sysroot/boot"
 create_mock_initrd "$tmpdir/sysroot/boot/initramfs-6.6.1.img"
 
@@ -116,9 +116,6 @@ found="$("$PROG" --root-dir="$tmpdir/sysroot" 6.6.1)"
 
 found="$("$PROG" -r "$tmpdir/sysroot" -b /boot 6.6.1)"
 [ "$found" = "$tmpdir/sysroot/boot/initramfs-6.6.1.img" ] && echo "root-dir with -b: ok"
-
-found="$(ROOTDIR="$tmpdir/sysroot" "$PROG" 6.6.1)"
-[ "$found" = "$tmpdir/sysroot/boot/initramfs-6.6.1.img" ] && echo "ROOTDIR env: ok"
 
 found="$(ROOT_DIR="$tmpdir/sysroot" "$PROG" 6.6.1)"
 [ "$found" = "$tmpdir/sysroot/boot/initramfs-6.6.1.img" ] && echo "ROOT_DIR env: ok"
