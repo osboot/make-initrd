@@ -1,0 +1,110 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. sh-functions
+
+PROG="${0##*/}"
+
+show_usage() {
+	cat <<EOF
+Usage: $PROG [options]
+
+Display explanation of guessed initramfs configuration.
+
+Options:
+  --file=FILE    Path to guess.tsv (default: \$GUESSDIR/guess.tsv)
+  -h, --help     Display this help and exit
+EOF
+	exit 0
+}
+
+tsv_file="${GUESSDIR:-.}/guess.tsv"
+
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+		--file=*) tsv_file="${1#--file=}" ;;
+		--file)   shift; tsv_file="${1-}" ;;
+		-h|--help) show_usage ;;
+		*) fatal "$PROG: unknown option: $1" ;;
+	esac
+	shift
+done
+
+[ -f "$tsv_file" ] || {
+	echo "No guess information available ($tsv_file not found)"
+	exit 0
+}
+
+declare -A features_by_src=()
+declare -A modules_by_src=()
+declare -A vars_by_src=()
+
+while IFS=$'\t' read -r kind col1 col2 src ctx; do
+	[ "$src" != "-" ] || src="unknown"
+	[ -n "$src" ] || src="unknown"
+	[ "$ctx" != "-" ] || ctx=""
+
+	case "$kind" in
+		feature)
+			detail="$col1"
+			[ -z "$ctx" ] || detail="$detail (context: $ctx)"
+			features_by_src["$src"]="${features_by_src["$src"]-}$detail"$'\n'
+			;;
+		module|opt-module)
+			detail="$col2 (group: $col1)"
+			[ -z "$ctx" ] || detail="$detail (context: $ctx)"
+			modules_by_src["$src"]="${modules_by_src["$src"]-}$detail"$'\n'
+			;;
+		modalias|opt-modalias)
+			detail="$col2 (group: $col1)"
+			[ -z "$ctx" ] || detail="$detail (context: $ctx)"
+			modules_by_src["$src"]="${modules_by_src["$src"]-}$detail"$'\n'
+			;;
+		variable)
+			detail="$col1 = $col2"
+			[ -z "$ctx" ] || detail="$detail (context: $ctx)"
+			vars_by_src["$src"]="${vars_by_src["$src"]-}$detail"$'\n'
+			;;
+	esac
+done < "$tsv_file"
+
+printf 'Guessed Configuration Provenance:\n\n'
+
+if [ "${#features_by_src[@]}" -gt 0 ]; then
+	printf 'Features proposed by modules:\n'
+	readarray -t sorted_src < <(for s in "${!features_by_src[@]}"; do echo "$s"; done | sort)
+	for s in "${sorted_src[@]}"; do
+		printf '  [%s]\n' "$s"
+		while read -r line; do
+			[ -n "$line" ] || continue
+			printf '    ├── %s\n' "$line"
+		done < <(printf '%s' "${features_by_src[$s]}" | sort -u)
+	done
+	printf '\n'
+fi
+
+if [ "${#modules_by_src[@]}" -gt 0 ]; then
+	printf 'Kernel modules / modaliases proposed:\n'
+	readarray -t sorted_src < <(for s in "${!modules_by_src[@]}"; do echo "$s"; done | sort)
+	for s in "${sorted_src[@]}"; do
+		printf '  [%s]\n' "$s"
+		while read -r line; do
+			[ -n "$line" ] || continue
+			printf '    ├── %s\n' "$line"
+		done < <(printf '%s' "${modules_by_src[$s]}" | sort -u)
+	done
+	printf '\n'
+fi
+
+if [ "${#vars_by_src[@]}" -gt 0 ]; then
+	printf 'Configuration variables set:\n'
+	readarray -t sorted_src < <(for s in "${!vars_by_src[@]}"; do echo "$s"; done | sort)
+	for s in "${sorted_src[@]}"; do
+		printf '  [%s]\n' "$s"
+		while read -r line; do
+			[ -n "$line" ] || continue
+			printf '    ├── %s\n' "$line"
+		done < <(printf '%s' "${vars_by_src[$s]}" | sort -u)
+	done
+	printf '\n'
+fi
