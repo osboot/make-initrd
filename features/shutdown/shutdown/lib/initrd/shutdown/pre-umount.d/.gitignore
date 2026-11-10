@@ -1,0 +1,1 @@
+# Pre-umount hooks (called before unmounting starts: $ACTION)

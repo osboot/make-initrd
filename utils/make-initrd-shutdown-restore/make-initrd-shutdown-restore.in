@@ -1,0 +1,147 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+target_dir="${TARGET_DIR:-/run/initramfs}"
+
+# If shutdown executable already exists, do nothing
+[ ! -x "$target_dir/shutdown" ] || exit 0
+
+if ! command -v initrd-find >/dev/null 2>&1 || ! command -v initrd-extract >/dev/null 2>&1 || ! command -v initrd-ls >/dev/null 2>&1; then
+	echo "make-initrd-shutdown-restore: required tools (initrd-find, initrd-extract, initrd-ls) not found" >&2
+	exit 1
+fi
+
+kver="${SYS_KVER:-$(uname -r)}"
+boot_override="${BOOT_DIRS:-}"
+
+mounted_by_us=()
+
+cleanup() {
+	if [ "${#mounted_by_us[@]}" -gt 0 ]; then
+		for (( i=${#mounted_by_us[@]}-1; i>=0; i-- )); do
+			umount "${mounted_by_us[i]}" >/dev/null 2>&1 ||:
+		done
+	fi
+}
+
+trap cleanup EXIT
+
+is_mounted() {
+	local d="$1"
+	if command -v mountpoint >/dev/null 2>&1; then
+		mountpoint -q "$d"
+	else
+		grep -qs "[[:space:]]${d}[[:space:]]" /proc/mounts
+	fi
+}
+
+mount_candidate() {
+	local d="$1"
+
+	[ -n "$d" ] && [ -d "$d" ] ||
+		return 0
+
+	if ! is_mounted "$d"; then
+		if mount -o ro "$d" >/dev/null 2>&1 || mount "$d" >/dev/null 2>&1; then
+			mounted_by_us+=("$d")
+		fi
+	fi
+}
+
+boot_dirs=()
+
+add_boot_dir() {
+	local d="$1"
+
+	[ -n "$d" ] && [ -d "$d" ] ||
+		return 0
+
+	local existing
+
+	for existing in "${boot_dirs[@]}"; do
+		[ "$existing" != "$d" ] || return 0
+	done
+
+	boot_dirs+=("$d")
+}
+
+has_shutdown() {
+	initrd-ls "$1" 2>/dev/null | grep -qsE '(1970 \./shutdown|[[:space:]](\./)?shutdown$)'
+}
+
+unpack_initrd() {
+	initrd-extract "$1" |
+		cpio -idu --quiet --no-absolute-filenames
+}
+
+if [ -n "$boot_override" ]; then
+	for d in $boot_override; do
+		add_boot_dir "$d"
+	done
+else
+	# Ensure candidate boot directories are mounted before searching
+	for d in /boot /efi /boot/efi; do
+		mount_candidate "$d"
+	done
+
+	if command -v bootctl >/dev/null 2>&1; then
+		bp="$(bootctl -q --print-boot-path 2>/dev/null || :)"
+		mount_candidate "$bp"
+		add_boot_dir "$bp"
+
+		ep="$(bootctl -q --print-esp-path 2>/dev/null || :)"
+		mount_candidate "$ep"
+		add_boot_dir "$ep"
+	fi
+
+	for d in /boot /efi /boot/efi; do
+		add_boot_dir "$d"
+	done
+fi
+
+find_args=()
+if [ "${#boot_dirs[@]}" -gt 0 ]; then
+	for d in "${boot_dirs[@]}"; do
+		find_args+=("-b" "$d")
+	done
+fi
+
+initrd_image="$(initrd-find "${find_args[@]}" "$kver" 2>/dev/null || :)"
+
+if [ -z "$initrd_image" ] || [ ! -e "$initrd_image" ]; then
+	[ -z "${VERBOSE:-}" ] ||
+		echo "make-initrd-shutdown-restore: no initramfs found for kernel $kver" >&2
+	exit 0
+fi
+
+if ! has_shutdown "$initrd_image"; then
+	[ -z "${VERBOSE:-}" ] ||
+		echo "make-initrd-shutdown-restore: shutdown feature not included in $initrd_image" >&2
+	exit 0
+fi
+
+[ -z "${VERBOSE:-}" ] ||
+	echo "make-initrd-shutdown-restore: restoring initramfs from: $initrd_image" >&2
+
+mkdir -p "$target_dir"
+cd "$target_dir"
+
+unpack_initrd "$initrd_image"
+
+if [ -f "$target_dir/initramfs.img" ]; then
+	if command -v unsquashfs >/dev/null 2>&1; then
+		unsquashfs -f -d "$target_dir" "$target_dir/initramfs.img" >/dev/null 2>&1 ||:
+
+	elif command -v fsck.erofs >/dev/null 2>&1; then
+		fsck.erofs --extract="$target_dir" --overwrite "$target_dir/initramfs.img" >/dev/null 2>&1 ||:
+	fi
+fi
+
+if [ ! -x "$target_dir/shutdown" ]; then
+	echo "make-initrd-shutdown-restore: $target_dir/shutdown missing or not executable" >&2
+	rm -rf "${target_dir:?}"/*
+	exit 1
+fi
+
+[ -z "${VERBOSE:-}" ] ||
+	echo "make-initrd-shutdown-restore: successfully restored initramfs into $target_dir" >&2

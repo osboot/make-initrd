@@ -47,6 +47,7 @@ jobs:
           - raid1-degraded
           - raid5
           - sdcard
+          - shutdown
           - sshfsroot
           - xfs-partition
           - zfs-partition

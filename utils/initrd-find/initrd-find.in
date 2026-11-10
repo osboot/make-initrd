@@ -1,0 +1,448 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. shell-error
+. shell-getopt
+. shell-args
+
+PROG="${0##*/}"
+
+show_help() {
+	cat <<-EOF
+	Usage: $PROG [options] [KERNEL_VERSION]
+
+	Find the active or matching initramfs image for a kernel version.
+
+	Options:
+	  -k, --kernel=VERSION    kernel version (default: current running kernel);
+	  -b, --boot-dir=DIR      directory to search for boot entries and images
+	                          (can be specified multiple times);
+	  -r, --root-dir=DIR      root directory under which to search for boot directories
+	                          and images (default: /);
+	  -m, --mount             mount candidate boot directories read-only if unmounted;
+	      --no-mount          do not attempt to mount filesystems (default);
+	  -a, --any               accept any initramfs image (do not require
+	                          make-initrd signature);
+	  -v, --verbose           print diagnostic information to stderr;
+	  -q, --quiet             suppress diagnostic messages;
+	  -V, --version           print program version and exit;
+	  -h, --help              show this help message and exit.
+
+	Report bugs to authors.
+
+	EOF
+	exit 0
+}
+
+print_version() {
+	cat <<-EOF
+	${1:-$PROG} version @PACKAGE_VERSION@
+	Written by Alexey Gladkov <gladkov.alexey@gmail.com>
+
+	Copyright (C) 2026  Alexey Gladkov <gladkov.alexey@gmail.com>
+	This is free software; see the source for copying conditions.  There is NO
+	warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	EOF
+	exit 0
+}
+
+boot_dirs=()
+raw_boot_dirs=()
+
+kver=""
+root_dir=""
+do_mount=0
+check_make_initrd=1
+
+TEMP=$(getopt -n "$PROG" -o "a,b:,k:,m,r:,$getopt_common_opts" -l "any,boot-dir:,kernel:,mount,no-mount,root-dir:,rootdir:,$getopt_common_longopts" -- "$@") ||
+	show_usage
+eval set -- "$TEMP"
+
+while :; do
+	case "$1" in
+		-a|--any)
+			check_make_initrd=0
+			;;
+		-b|--boot-dir) shift
+			raw_boot_dirs+=("$1")
+			;;
+		-k|--kernel) shift
+			kver="$1"
+			;;
+		-m|--mount)
+			do_mount=1
+			;;
+		--no-mount)
+			do_mount=0
+			;;
+		-r|--root-dir|--rootdir) shift
+			root_dir="$1"
+			;;
+		-q|--quiet|-v|--verbose|-V|--version|-h|--help)
+			parse_common_option "$1"
+			;;
+		--) shift
+			break
+			;;
+		*)
+			fatal "Unrecognized option: $1"
+			;;
+	esac
+	shift
+done
+
+if [ $# -gt 0 ]; then
+	if [ -z "$kver" ]; then
+		kver="$1"
+		shift
+	fi
+fi
+
+[ $# -eq 0 ] ||
+	show_usage "Unexpected argument: $1"
+
+kver="${kver:-${SYS_KVER:-${KERNEL:-$(uname -r)}}}"
+root_dir="${root_dir:-${ROOT_DIR:-}}"
+
+if [ -n "$root_dir" ]; then
+	root_dir="${root_dir%/}"
+	[ -n "$root_dir" ] || root_dir="/"
+fi
+[ "$root_dir" != "/" ] || root_dir=""
+
+add_boot_dir() {
+	local d="$1"
+
+	[ -n "$d" ] || return 0
+
+	if [ -n "$root_dir" ]; then
+		case "$d" in
+			"$root_dir"/*|"$root_dir") ;;
+			/*) d="$root_dir$d" ;;
+			*) d="$root_dir/$d" ;;
+		esac
+	fi
+
+	[ -d "$d" ] || return 0
+
+	local canonical
+	canonical="$(readlink -f "$d" 2>/dev/null || echo "$d")"
+	[ -n "$canonical" ] || canonical="$d"
+
+	local existing
+	for existing in "${boot_dirs[@]}"; do
+		[ "$existing" != "$canonical" ] || return 0
+	done
+
+	boot_dirs+=("$canonical")
+}
+
+if [ "${#raw_boot_dirs[@]}" -gt 0 ]; then
+	for d in "${raw_boot_dirs[@]}"; do
+		add_boot_dir "$d"
+	done
+elif [ -n "${BOOT_DIRS:-}" ]; then
+	for d in $BOOT_DIRS; do
+		add_boot_dir "$d"
+	done
+fi
+
+is_mounted() {
+	local d="$1"
+	if command -v mountpoint >/dev/null 2>&1; then
+		mountpoint -q "$d"
+	else
+		grep -qs "[[:space:]]${d}[[:space:]]" /proc/mounts
+	fi
+}
+
+mount_candidate() {
+	local d="$1"
+
+	[ -n "$d" ] && [ -d "$d" ] ||
+		return 0
+
+	if ! is_mounted "$d"; then
+		mount -o ro "$d" >/dev/null 2>&1 || mount "$d" >/dev/null 2>&1 || :
+	fi
+}
+
+if [ "${#boot_dirs[@]}" -eq 0 ]; then
+	if [ "$do_mount" -eq 1 ]; then
+		for d in "$root_dir"/boot "$root_dir"/efi "$root_dir"/boot/efi; do
+			mount_candidate "$d"
+		done
+	fi
+
+	if [ -z "$root_dir" ]; then
+		if command -v bootctl >/dev/null 2>&1; then
+			bp="$(bootctl -q --print-boot-path 2>/dev/null || :)"
+			[ "$do_mount" -eq 0 ] || mount_candidate "$bp"
+			add_boot_dir "$bp"
+
+			ep="$(bootctl -q --print-esp-path 2>/dev/null || :)"
+			[ "$do_mount" -eq 0 ] || mount_candidate "$ep"
+			add_boot_dir "$ep"
+		fi
+	else
+		if command -v bootctl >/dev/null 2>&1; then
+			bp="$(bootctl --root="$root_dir" -q --print-boot-path 2>/dev/null || :)"
+			[ "$do_mount" -eq 0 ] || mount_candidate "$bp"
+			add_boot_dir "$bp"
+
+			ep="$(bootctl --root="$root_dir" -q --print-esp-path 2>/dev/null || :)"
+			[ "$do_mount" -eq 0 ] || mount_candidate "$ep"
+			add_boot_dir "$ep"
+		fi
+	fi
+
+	for d in "$root_dir"/boot "$root_dir"/efi "$root_dir"/boot/efi; do
+		add_boot_dir "$d"
+	done
+fi
+
+is_matching_initrd() {
+	local img="$1"
+
+	[ -f "$img" ] && [ -s "$img" ] ||
+		return 1
+
+	if [ "$check_make_initrd" -eq 0 ]; then
+		return 0
+	fi
+
+	initrd-extract "$img" 2>/dev/null |
+		cpio -i --to-stdout --quiet '*initrd-release' 2>/dev/null | {
+		while read -r line || [ -n "$line" ]; do
+			line="${line%$'\r'}"
+			case "$line" in
+				ID=make-initrd|ID=\"make-initrd\"|ID=\'make-initrd\')
+					exit 0
+					;;
+			esac
+		done
+		exit 1
+	}
+}
+
+initrd_image=""
+
+set_initrd_image() {
+	local img="$1"
+
+	if is_matching_initrd "$img"; then
+		initrd_image="$(readlink -f "$img" 2>/dev/null || echo "$img")"
+		[ -n "$initrd_image" ] || initrd_image="$img"
+		return 0
+	fi
+	return 1
+}
+
+find_initramfs() {
+	local boot_dir conf matched key val rel_path token entry_token machine_id arg p efi img
+
+	# 1. BLS Type #1: $boot_dir/loader/entries/*.conf
+	for boot_dir in "${boot_dirs[@]}"; do
+		for conf in "$boot_dir"/loader/entries/*.conf; do
+			[ -f "$conf" ] ||
+				continue
+
+			matched=0
+			if grep -Eq "^version[[:space:]]+(\")?${kver}(\")?$" "$conf" 2>/dev/null; then
+				matched=1
+			else
+				case "$(basename "$conf")" in
+					*"$kver"*) matched=1 ;;
+				esac
+				if [ "$matched" -eq 0 ] && grep -Eq "^linux[[:space:]]+.*${kver}" "$conf" 2>/dev/null; then
+					matched=1
+				fi
+			fi
+
+			[ "$matched" -eq 1 ] ||
+				continue
+
+			while read -r key val || [ -n "$key" ]; do
+				[ "$key" = "initrd" ] ||
+					continue
+
+				val="${val%$'\r'}"
+				val="${val#"${val%%[![:space:]]*}"}"
+				val="${val%"${val##*[![:space:]]}"}"
+				val="${val%\"}"
+				val="${val#\"}"
+
+				rel_path="${val#/}"
+
+				if set_initrd_image "$boot_dir/$rel_path"; then
+					return 0
+				fi
+
+				local b
+				for b in "${boot_dirs[@]}"; do
+					if set_initrd_image "$b/$rel_path"; then
+						return 0
+					fi
+				done
+			done < "$conf"
+		done
+	done
+
+	# 2. BLS Type #1 directory structure: $boot_dir/$token/$kver/initrd*
+	entry_token=""
+	if [ -s "$root_dir/etc/kernel/entry-token" ]; then
+		read -r entry_token < "$root_dir/etc/kernel/entry-token" || :
+		entry_token="${entry_token%$'\r'}"
+	fi
+
+	machine_id=""
+	if [ -s "$root_dir/etc/machine-id" ]; then
+		read -r machine_id < "$root_dir/etc/machine-id" || :
+		machine_id="${machine_id%$'\r'}"
+		[ "$machine_id" != "uninitialized" ] || machine_id=""
+	fi
+
+	for boot_dir in "${boot_dirs[@]}"; do
+		for token in "$entry_token" "$machine_id" "Default" "default"; do
+			[ -n "$token" ] ||
+				continue
+
+			for img in \
+				"$boot_dir/$token/$kver/initrd" \
+				"$boot_dir/$token/$kver/initramfs" \
+				"$boot_dir/$token/$kver/initrd.img" \
+				"$boot_dir/$token/$kver/initramfs.img"; do
+				if set_initrd_image "$img"; then
+					return 0
+				fi
+			done
+
+			for img in "$boot_dir/$token/$kver"/initr*; do
+				[ -f "$img" ] || continue
+				if set_initrd_image "$img"; then
+					return 0
+				fi
+			done
+		done
+
+		# Without token: $boot_dir/$kver/initrd*
+		for img in \
+			"$boot_dir/$kver/initrd" \
+			"$boot_dir/$kver/initramfs" \
+			"$boot_dir/$kver/initrd.img" \
+			"$boot_dir/$kver/initramfs.img"; do
+			if set_initrd_image "$img"; then
+				return 0
+			fi
+		done
+
+		for img in "$boot_dir/$kver"/initr*; do
+			[ -f "$img" ] || continue
+			if set_initrd_image "$img"; then
+				return 0
+			fi
+		done
+	done
+
+	# 3. Kernel cmdline: /proc/cmdline
+	if [ -f /proc/cmdline ]; then
+		local cmdline_args=()
+
+		read -r -a cmdline_args < /proc/cmdline 2>/dev/null || :
+
+		for arg in "${cmdline_args[@]}"; do
+			case "$arg" in
+				initrd=*)
+					p="${arg#initrd=}"
+					p="${p//\\//}"
+
+					if [ -n "$root_dir" ]; then
+						case "$p" in
+							"$root_dir"/*|"$root_dir") ;;
+							/*) p="$root_dir$p" ;;
+							*) p="$root_dir/$p" ;;
+						esac
+					fi
+
+					if set_initrd_image "$p"; then
+						return 0
+					fi
+
+					rel_path="${p#/}"
+					for boot_dir in "${boot_dirs[@]}"; do
+						if set_initrd_image "$boot_dir/$rel_path"; then
+							return 0
+						fi
+					done
+					;;
+			esac
+		done
+	fi
+
+	# 4. BLS Type #2: UKI ($boot_dir/EFI/Linux/*.efi)
+	for boot_dir in "${boot_dirs[@]}"; do
+		for efi in "$boot_dir/EFI/Linux"/*"$kver"*.efi "$boot_dir/EFI/Linux"/*.efi; do
+			[ -f "$efi" ] ||
+				continue
+
+			if set_initrd_image "$efi"; then
+				return 0
+			fi
+		done
+	done
+
+	# 5. $root_dir/lib/modules/$kver/initrd
+	if [ -f "$root_dir/lib/modules/$kver/initrd" ]; then
+		if set_initrd_image "$root_dir/lib/modules/$kver/initrd"; then
+			return 0
+		fi
+	fi
+
+	# 6. Traditional paths in boot_dirs
+	for boot_dir in "${boot_dirs[@]}"; do
+		for img in \
+			"$boot_dir/initrd-$kver.img" \
+			"$boot_dir/initramfs-$kver.img" \
+			"$boot_dir/initrd.img-$kver" \
+			"$boot_dir/initrd-$kver" \
+			"$boot_dir/initramfs-$kver"; do
+			if set_initrd_image "$img"; then
+				return 0
+			fi
+		done
+
+		for img in "$boot_dir"/initr*"$kver"*; do
+			[ -f "$img" ] || continue
+			if set_initrd_image "$img"; then
+				return 0
+			fi
+		done
+
+		for img in \
+			"$boot_dir/initramfs-linux.img" \
+			"$boot_dir/initrd.img" \
+			"$boot_dir/initrd"; do
+			if set_initrd_image "$img"; then
+				return 0
+			fi
+		done
+	done
+
+	# 7. Root fallback ($root_dir/initrd.img)
+	if [ -f "$root_dir/initrd.img" ]; then
+		if set_initrd_image "$root_dir/initrd.img"; then
+			return 0
+		fi
+	fi
+
+	return 1
+}
+
+if find_initramfs && [ -n "$initrd_image" ] && [ -e "$initrd_image" ]; then
+	verbose "found initramfs: $initrd_image"
+	printf '%s\n' "$initrd_image"
+	exit 0
+fi
+
+[ -n "$quiet" ] || message "no initramfs found for kernel $kver"
+exit 1

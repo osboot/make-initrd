@@ -1,0 +1,1 @@
+# Per-mountpoint hooks (called for each mountpoint before umount: $FSTYPE $MOUNTPOINT $ACTION)
