@@ -44,14 +44,19 @@ start() {
 	[ "$RETVAL" = 0 ] ||
 		return $RETVAL
 
-	udevadm control --log-priority=info 2>/dev/null
-	[ -z "${DEBUG-}" ] || udevadm control --log-priority=debug 2>/dev/null
+	local logfile=/dev/null
 
-	udevadm control --property=STARTUP=1
-	udevadm control --reload >/dev/null 2>&1 ||:
+	[ -z "${DEBUG-}" ] || logfile=/var/log/udevd_startup.log
+	{
+		udevadm control --log-priority=info
+		[ -z "${DEBUG-}" ] || udevadm control --log-priority=debug
 
-	udevadm trigger --type=subsystems --action=add >/dev/null 2>&1
-	udevadm trigger --type=devices    --action=add >/dev/null 2>&1
+		udevadm control --property=STARTUP=1
+		udevadm control --reload
+
+		udevadm trigger --type=subsystems --action=add
+		udevadm trigger --type=devices    --action=add
+	} >"$logfile" 2>&1 ||:
 
 	post_start
 }
