@@ -209,13 +209,13 @@ for dir in ${MOUNTPOINTS-} ${GUESS_MOUNTPOINTS-} $MORE_MOUNTPOINTS; do
 	out="$($_findmnt "$dir")" ||
 		fatal "Unable to find device for '$dir' mount point"
 
-	printf '%s\n' "$out" |
 	while read -r majmin fstype device; do
+		[ -n "$majmin" ] || continue
 		# kernel >= 2.6.27
 		[ -z "${majmin##0:*}" ] ||
 			guess_device "/dev/block/$majmin"
 		guess_fstype "$device" "$fstype" "$dir"
-	done
+	done <<< "$out"
 
 	guess_feature rootfs
 	guess_feature add-udev-rules
