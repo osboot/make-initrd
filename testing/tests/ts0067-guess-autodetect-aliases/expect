@@ -1,0 +1,4 @@
+=== Test 1: empty modules ===
+=== Test 2: disabled common with net alias ===
+feature	net-driver	add:guess-modules-network	guess-modules-network	-
+rc=0

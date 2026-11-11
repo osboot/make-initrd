@@ -24,10 +24,11 @@ EOF
 initial_modules=
 disabled_list=
 triggers_list=
+common_scripts=
 verbose=
 
 GETOPT_ALLOW_ABBREV=
-TEMP="$(getopt -n "$PROG" -o "v,h" -l "modules:,disabled:,triggers:,guessdir:,detectdir:,verbose,help" -- "$@")" ||
+TEMP="$(getopt -n "$PROG" -o "v,h" -l "modules:,disabled:,triggers:,common-scripts:,guessdir:,detectdir:,features-dir:,verbose,help" -- "$@")" ||
 	show_usage 1
 eval set -- "$TEMP"
 
@@ -42,11 +43,17 @@ while :; do
 		--triggers) shift
 			triggers_list="$1"
 			;;
+		--common-scripts) shift
+			common_scripts="$1"
+			;;
 		--guessdir) shift
 			GUESSDIR="$1"
 			;;
 		--detectdir) shift
 			DETECTDIR="$1"
+			;;
+		--features-dir) shift
+			FEATURESDIR="$1"
 			;;
 		-v|--verbose)
 			verbose=1
@@ -65,12 +72,31 @@ while :; do
 	shift
 done
 
+FEATURESDIR="${FEATURESDIR:-${PROJECTDIR:-.}/features}"
 DETECTDIR="${DETECTDIR:-${PROJECTDIR:-.}/guess}"
+common_scripts="${common_scripts:-${GUESS_COMMON_SCRIPTS-}}"
 
 [ -n "${GUESSDIR-}" ] || fatal "$PROG: GUESSDIR is not set"
 export GUESSDIR
 mkdir -p -- "$GUESSDIR"
 [ -f "$GUESSDIR/guess.tsv" ] || : > "$GUESSDIR/guess.tsv"
+
+declare -A alias_map=(
+	["device"]="modules-blockdev"
+	["device-tree"]="modules-device-tree"
+	["keyboard"]="modules-keyboard"
+	["net"]="modules-network"
+	["root"]="rootfs"
+	["touchscreen"]="modules-touchscreen"
+)
+declare -A rev_alias_map=(
+	["modules-blockdev"]="device"
+	["modules-device-tree"]="device-tree"
+	["modules-keyboard"]="keyboard"
+	["modules-network"]="net"
+	["rootfs"]="root"
+	["modules-touchscreen"]="touchscreen"
+)
 
 declare -A visited_modules=()
 declare -A disabled_modules=()
@@ -81,6 +107,8 @@ declare -a queue=()
 for mod in $disabled_list; do
 	[ -n "$mod" ] || continue
 	disabled_modules["$mod"]=1
+	[ -z "${alias_map[$mod]-}" ] || disabled_modules["${alias_map[$mod]}"]=1
+	[ -z "${rev_alias_map[$mod]-}" ] || disabled_modules["${rev_alias_map[$mod]}"]=1
 done
 
 # triggers_list format: "feat1:mod1,mod2 feat2:mod3" or "feat1:mod1 feat1:mod2"
@@ -100,8 +128,10 @@ done
 
 for mod in $initial_modules; do
 	[ -n "$mod" ] || continue
+	canon_mod="${alias_map[$mod]:-$mod}"
+	[ -z "${disabled_modules[$canon_mod]-}" ] || continue
 	[ -z "${disabled_modules[$mod]-}" ] || continue
-	queue+=("$mod")
+	queue+=("$canon_mod")
 done
 
 # Check if any initially active features trigger modules
@@ -114,8 +144,10 @@ for feat in "${!active_features[@]}"; do
 		if [ "$tparams" != "$trig" ]; then
 			eval "export $tparams"
 		fi
+		canon_tmod="${alias_map[$tmod]:-$tmod}"
+		[ -z "${disabled_modules[$canon_tmod]-}" ] || continue
 		[ -z "${disabled_modules[$tmod]-}" ] || continue
-		queue+=("$tmod")
+		queue+=("$canon_tmod")
 	done
 done
 
@@ -134,22 +166,55 @@ while [ "${#queue[@]}" -gt 0 ]; do
 	export GUESS_ITERATION="$iteration"
 
 	for mod in "${current_batch[@]}"; do
-		[ -z "${visited_modules[$mod]-}" ] || continue
+		canon_mod="${alias_map[$mod]:-$mod}"
+		[ -z "${visited_modules[$canon_mod]-}" ] || continue
+		[ -z "${disabled_modules[$canon_mod]-}" ] || continue
 		[ -z "${disabled_modules[$mod]-}" ] || continue
+		visited_modules["$canon_mod"]=1
 		visited_modules["$mod"]=1
 
-		action_script="$DETECTDIR/$mod/action"
-		if [ ! -x "$action_script" ]; then
+		if [ "$canon_mod" = "common" ]; then
+			if [ -n "$verbose" ]; then
+				msg-timestamp "Processing guess-common ..."
+			fi
+			export GUESS_MODULE_NAME="guess-common"
+			export GUESS_SUFFIX="add:guess-common"
+			for m in $common_scripts; do
+				[ ! -x "$m" ] || "$m"
+			done
 			continue
 		fi
 
-		export GUESS_MODULE_NAME="guess-$mod"
-		export GUESS_SUFFIX="add:guess-$mod"
-		[ "$mod" != "keyboard" ] || export GUESS_SUFFIX="rescue:guess-$mod"
-		[ "$mod" != "touchscreen" ] || export GUESS_SUFFIX="rescue:guess-$mod"
+		action_script=""
+		target_mod="$canon_mod"
+
+		if [ -x "$FEATURESDIR/$canon_mod/guess/action" ]; then
+			action_script="$FEATURESDIR/$canon_mod/guess/action"
+		elif [ -x "$FEATURESDIR/$mod/guess/action" ]; then
+			action_script="$FEATURESDIR/$mod/guess/action"
+			target_mod="$mod"
+		elif [ -x "$DETECTDIR/$mod/action" ]; then
+			action_script="$DETECTDIR/$mod/action"
+			target_mod="$mod"
+		elif [ -n "${rev_alias_map[$mod]-}" ] && [ -x "$DETECTDIR/${rev_alias_map[$mod]}/action" ]; then
+			action_script="$DETECTDIR/${rev_alias_map[$mod]}/action"
+			target_mod="${rev_alias_map[$mod]}"
+		fi
+
+		if [ -z "$action_script" ]; then
+			continue
+		fi
+
+		export GUESS_MODULE_NAME="guess-$target_mod"
+		export GUESS_SUFFIX="add:guess-$target_mod"
+		case "$target_mod" in
+			keyboard|modules-keyboard|touchscreen|modules-touchscreen)
+				export GUESS_SUFFIX="rescue:guess-$target_mod"
+				;;
+		esac
 
 		if [ -n "$verbose" ]; then
-			msg-timestamp "Processing guess-$mod ..."
+			msg-timestamp "Processing guess-$target_mod ..."
 		fi
 
 		"$action_script"
@@ -181,9 +246,12 @@ while [ "${#queue[@]}" -gt 0 ]; do
 			if [ "$tparams" != "$trig" ]; then
 				eval "export $tparams"
 			fi
+			canon_tmod="${alias_map[$tmod]:-$tmod}"
+			[ -z "${disabled_modules[$canon_tmod]-}" ] || continue
 			[ -z "${disabled_modules[$tmod]-}" ] || continue
+			visited_modules["$canon_tmod"]=""
 			visited_modules["$tmod"]=""
-			queue+=("$tmod")
+			queue+=("$canon_tmod")
 		done
 	done
 done

@@ -1,0 +1,226 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. sh-functions
+. guess-functions
+
+$TRACE_SOURCE "Processing ..."
+
+export LIBMOUNT_FSTAB="${FSTAB:-/etc/fstab}"
+export LIBMOUNT_MTAB="${PROC_MOUNTS:-$PROCFS_PATH/mounts}"
+
+if [ "${MAKE_INITRD_BUG_REPORT-}" = 1 ]; then
+
+BLKID_OUT="${BLKID_OUT:-/etc/blkid.out}"
+LIST_FILE="${LIST_FILE:-/dev/list}"
+DEVLIST_FILE="${DEVLIST_FILE:-/dev/devlist}"
+
+unquote()
+{
+	local s="$1"
+	s="${s#\"}"
+	s="${s%\"}"
+	printf '%s' "$s"
+}
+
+report_devlist_majmin()
+{
+	local devname
+
+	devname="$1"; shift
+
+	local perm dev
+
+	while read -r perm maj min dev; do
+		case "$perm" in
+			[bc]*)
+				maj=$(( 0x$maj ))
+				min=$(( 0x$min ))
+
+				#printf '%s %s %s\n' "$maj" "$min" "$dev"
+
+				[ "$devname" != "$dev" ] ||
+					return 0
+				;;
+		esac
+
+	done < "$DEVLIST_FILE"
+	return 1
+}
+
+report_ls_majmin()
+{
+	local devname
+
+	devname="$1"; shift
+
+	local line perm ndev rdev
+
+	while read -r line; do
+		set -- $line
+
+		perm="$1" ndev="" rdev="" maj="" min=""
+		shift 4
+
+		case "$perm" in
+			l*)
+				ndev="${5}"
+				rdev="${7}"
+				;;
+			[bc]*)
+				maj="${1%,}"
+				min="${2}"
+				ndev="${6}"
+				rdev="${6}"
+
+				[ "$devname" != "$ndev" ] ||
+					return 0
+				;;
+		esac
+
+	done < "$LIST_FILE"
+	return 1
+}
+
+report_get_devinfo()
+{
+	local spec line
+
+	spec="$1"; shift
+
+	while read -r line; do
+		set -- $line
+
+		devname="${1%:}"
+		uuid=
+		label=
+		fstype=
+
+		for a; do
+			case "$a" in
+				UUID=*)
+					a="${a#UUID=}"
+					uuid="$(unquote "$a")"
+					;;
+				LABEL=*)
+					a="${a#LABEL=}"
+					label="$(unquote "$a")"
+					;;
+				TYPE=*)
+					a="${a#TYPE=}"
+					fstype="$(unquote "$a")"
+					;;
+			esac
+		done
+
+		case "$spec" in
+			UUID=*)
+				[ "${spec#UUID=}" = "$uuid" ] ||
+					continue
+				;;
+			LABEL=*)
+				[ "${spec#LABEL=}" = "$label" ] ||
+					continue
+				;;
+			/*)
+				[ "$spec" = "$devname" ] ||
+					continue
+				;;
+			*)
+				fatal "not supported: $spec"
+				;;
+		esac
+
+		return 0
+
+	done < "$BLKID_OUT"
+
+	return 1
+}
+
+report_findmnt()
+{
+	local dir
+
+	dir="$1"; shift
+
+	local fs_spec fs_file fs_vfstype fs_mntops fs_freq fs_passno
+
+	while read -r fs_spec fs_file fs_vfstype fs_mntops fs_freq fs_passno; do
+		[ "$dir" = "$fs_file" ] ||
+			continue
+
+		report_get_devinfo "$fs_spec" ||
+			return 1
+
+		maj="" min=""
+
+		if [ -e "$DEVLIST_FILE" ]; then
+			report_devlist_majmin "$devname" ||
+				return 1
+		else
+			report_ls_majmin "$devname" ||
+				return 1
+		fi
+
+		echo "$maj:$min $fstype $devname"
+		return 0
+
+	done < "$LIBMOUNT_FSTAB"
+	return 1
+}
+
+else	# MAKE_INITRD_BUG_REPORT
+
+system_findmnt()
+{
+	sys_findmnt -n -v -o MAJ:MIN,FSTYPE,SOURCE --target "$1"
+}
+
+fi	# MAKE_INITRD_BUG_REPORT
+
+[ "${MOUNTPOINTS-}" == "/" ] ||
+	echo "WARNING: Using MOUNTPOINTS variable for guess module is deprecated. Use GUESS_MOUNTPOINTS instead" 1>&2
+
+MORE_MOUNTPOINTS="/"
+
+if [ "$(sys_findmnt -n -o TARGET -T /usr 2>/dev/null ||:)" = /usr ]; then
+	MORE_MOUNTPOINTS+=" /usr"
+fi
+
+#
+# Search for options:
+#   comment="x-initrd-mount"
+#   x-initrd-mount
+#
+MORE_MOUNTPOINTS+=" $(sys_findmnt -s -O x-initrd-mount -no TARGET 2>/dev/null ||:)"
+
+pass=()
+for dir in ${MOUNTPOINTS-} ${GUESS_MOUNTPOINTS-} $MORE_MOUNTPOINTS; do
+	! in_list "$dir" "${pass[@]}" ||
+		continue
+
+	verbose1 "Processing mount point \`$dir' ..."
+
+	[ "${MAKE_INITRD_BUG_REPORT-}" = 1 ] &&
+		_findmnt='report_findmnt' ||
+		_findmnt='system_findmnt'
+
+	out="$($_findmnt "$dir")" ||
+		fatal "Unable to find device for '$dir' mount point"
+
+	printf '%s\n' "$out" |
+	while read -r majmin fstype device; do
+		# kernel >= 2.6.27
+		[ -z "${majmin##0:*}" ] ||
+			guess_device "/dev/block/$majmin"
+		guess_fstype "$device" "$fstype" "$dir"
+	done
+
+	guess_feature rootfs
+	guess_feature add-udev-rules
+
+	pass+=("$dir")
+done
+
+guess_variable MOUNTPOINTS "${pass[*]}"
