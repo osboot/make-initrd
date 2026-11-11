@@ -3,3 +3,8 @@
 Feature adds a collection of block device modules available to the kernel (pata,
 sata, scsi, firewire, usb, or mmc). These modules are not determined based on
 the current hardware.
+
+## Parameters
+
+- **DEVICES** -- The list of device files for which the required modules and
+  parameters are guessed.

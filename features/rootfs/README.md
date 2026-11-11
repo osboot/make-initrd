@@ -15,4 +15,9 @@ from the mountpoints known to the build.
 ## Guess logic
 
 The feature also adds guessing support for filesystem modules needed by the
-detected root filesystem type.
+detected root filesystem type and underlying block devices.
+
+## Parameters
+
+- **GUESS_MOUNTPOINTS** -- List of mountpoints for which required kernel modules
+  and block device drivers will be guessed.

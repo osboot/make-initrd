@@ -9,6 +9,7 @@ make-initrd - creates initial ramdisk images for preloading modules
 *make-initrd* [<option>]++
 *make-initrd* guess-modules [<device>|<directory>]++
 *make-initrd* guess-config++
+*make-initrd* guess-explain++
 *make-initrd* bug-report
 
 # DESCRIPTION
@@ -25,6 +26,12 @@ Without options, the program generates images for all the configuration files.
 *guess-config*
 
 	Guesses the current configuration and generates the config file.
+
+*guess-explain*
+
+	Guesses the current configuration and explains the provenance of all
+	proposed features, kernel modules, modaliases, and configuration
+	variables.
 
 *guess-modules* [<device>|<directory>]
 

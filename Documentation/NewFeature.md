@@ -83,6 +83,47 @@ PUT_FEATURE_PROGS += $(MDADM_PROGS)
 All binary utilities will be copied along with a libraries with which they are
 linked.
 
+### guess/
+
+The `guess/` directory contains autodetection logic for the feature. A feature can
+provide up to four types of detection scripts:
+
+* `guess/action` - The primary autodetection module. It is executed by `guess-runner`
+  when scheduled by `AUTODETECT` (or triggered by dependencies).
+* `guess/device` - Invoked by `rootfs` while traversing parent block devices in `/sys`
+  (for example, to detect stacked storage like LVM, LUKS, RAID, or bcache).
+* `guess/fstype` - Invoked by `rootfs` to identify filesystem types and propose
+  the necessary filesystem kernel modules.
+* `guess/common` - Unconditional detection hook executed during the `common` detection
+  pass (for example, to detect system locales or compression tools).
+
+Detection scripts use helper functions provided by `guess-functions`:
+
+```bash
+# Propose enabling another feature
+guess_feature lvm
+
+# Propose adding a kernel module
+guess_module scsi_mod
+guess_module rescue hid-generic
+
+# Propose a modalias to resolve to kernel drivers
+guess_modalias "pci:v000015B7d00005009sv*"
+
+# Propose a configuration variable
+guess_variable MOUNTPOINTS "/boot"
+```
+
+If a feature requires additional guess modules to be run when this feature is
+activated, declare it in `config.mk`:
+
+```make
+$(call guess-requires, lvm luks)
+```
+
+When `guess-runner` activates the feature, any required detection modules are
+automatically enqueued into subsequent detection passes.
+
 ### pack.mk
 
 This file contains the targets and variables used to package the generated
