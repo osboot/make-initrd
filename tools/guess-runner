@@ -1,0 +1,189 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. sh-functions
+. guess-functions
+
+PROG="${0##*/}"
+
+show_usage() {
+	local rc="${1:-0}"
+	cat <<EOF
+Usage: $PROG [options]
+
+Options:
+  --modules=LIST       Initial guess modules to run
+  --disabled=LIST      Modules to skip (DISABLE_GUESS)
+  --triggers=LIST      Feature-to-guess-modules trigger mappings
+  -v, --verbose        Verbose output
+  -h, --help           Display this help and exit
+EOF
+	exit "$rc"
+}
+
+initial_modules=
+disabled_list=
+triggers_list=
+verbose=
+
+GETOPT_ALLOW_ABBREV=
+TEMP="$(getopt -n "$PROG" -o "v,h" -l "modules:,disabled:,triggers:,guessdir:,detectdir:,verbose,help" -- "$@")" ||
+	show_usage 1
+eval set -- "$TEMP"
+
+while :; do
+	case "$1" in
+		--modules) shift
+			initial_modules="$1"
+			;;
+		--disabled) shift
+			disabled_list="$1"
+			;;
+		--triggers) shift
+			triggers_list="$1"
+			;;
+		--guessdir) shift
+			GUESSDIR="$1"
+			;;
+		--detectdir) shift
+			DETECTDIR="$1"
+			;;
+		-v|--verbose)
+			verbose=1
+			;;
+		-h|--help)
+			show_usage 0
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			fatal "$PROG: unrecognized option: $1"
+			;;
+	esac
+	shift
+done
+
+DETECTDIR="${DETECTDIR:-${PROJECTDIR:-.}/guess}"
+
+[ -n "${GUESSDIR-}" ] || fatal "$PROG: GUESSDIR is not set"
+export GUESSDIR
+mkdir -p -- "$GUESSDIR"
+[ -f "$GUESSDIR/guess.tsv" ] || : > "$GUESSDIR/guess.tsv"
+
+declare -A visited_modules=()
+declare -A disabled_modules=()
+declare -A active_features=()
+declare -A feature_triggers=()
+declare -a queue=()
+
+for mod in $disabled_list; do
+	[ -n "$mod" ] || continue
+	disabled_modules["$mod"]=1
+done
+
+# triggers_list format: "feat1:mod1,mod2 feat2:mod3" or "feat1:mod1 feat1:mod2"
+for pair in ${triggers_list:-${FEATURE_REQUIRES_GUESS-}}; do
+	[ -n "$pair" ] || continue
+	feat="${pair%%:*}"
+	mods="${pair#*:}"
+	mods="${mods//,/ }"
+	feature_triggers["$feat"]="${feature_triggers[$feat]:+${feature_triggers[$feat]} }$mods"
+done
+
+# Initialize active features from environment
+for feat in ${ALL_ACTIVE_FEATURES-}; do
+	[ -n "$feat" ] || continue
+	active_features["$feat"]=1
+done
+
+for mod in $initial_modules; do
+	[ -n "$mod" ] || continue
+	[ -z "${disabled_modules[$mod]-}" ] || continue
+	queue+=("$mod")
+done
+
+# Check if any initially active features trigger modules
+for feat in "${!active_features[@]}"; do
+	trigs="${feature_triggers[$feat]-}"
+	[ -n "$trigs" ] || continue
+	for trig in $trigs; do
+		tmod="${trig%%:*}"
+		tparams="${trig#*:}"
+		if [ "$tparams" != "$trig" ]; then
+			eval "export $tparams"
+		fi
+		[ -z "${disabled_modules[$tmod]-}" ] || continue
+		queue+=("$tmod")
+	done
+done
+
+iteration=0
+max_iterations=10
+
+while [ "${#queue[@]}" -gt 0 ]; do
+	iteration=$((iteration + 1))
+	if [ "$iteration" -gt "$max_iterations" ]; then
+		fatal "$PROG: Exceeded maximum guess iterations limit ($max_iterations)"
+	fi
+
+	current_batch=("${queue[@]}")
+	queue=()
+
+	export GUESS_ITERATION="$iteration"
+
+	for mod in "${current_batch[@]}"; do
+		[ -z "${visited_modules[$mod]-}" ] || continue
+		[ -z "${disabled_modules[$mod]-}" ] || continue
+		visited_modules["$mod"]=1
+
+		action_script="$DETECTDIR/$mod/action"
+		if [ ! -x "$action_script" ]; then
+			continue
+		fi
+
+		export GUESS_MODULE_NAME="guess-$mod"
+		export GUESS_SUFFIX="add:guess-$mod"
+		[ "$mod" != "keyboard" ] || export GUESS_SUFFIX="rescue:guess-$mod"
+		[ "$mod" != "touchscreen" ] || export GUESS_SUFFIX="rescue:guess-$mod"
+
+		if [ -n "$verbose" ]; then
+			msg-timestamp "Processing guess-$mod ..."
+		fi
+
+		"$action_script"
+	done
+
+	# Check for newly activated features in guess.tsv
+	new_features=()
+	if [ -f "$GUESSDIR/guess.tsv" ]; then
+		while IFS=$'\t' read -r kind feat _; do
+			[ "$kind" = "feature" ] || continue
+			[ -n "$feat" ] || continue
+			[ -z "${active_features[$feat]-}" ] || continue
+			active_features["$feat"]=1
+			new_features+=("$feat")
+		done < "$GUESSDIR/guess.tsv"
+	fi
+
+	# Export updated ALL_ACTIVE_FEATURES for scripts using is_active_feature
+	export ALL_ACTIVE_FEATURES="${!active_features[*]}"
+
+	# Trigger dependent modules
+	for feat in "${new_features[@]}"; do
+		trigs="${feature_triggers[$feat]-}"
+		[ -n "$trigs" ] || continue
+
+		for trig in $trigs; do
+			tmod="${trig%%:*}"
+			tparams="${trig#*:}"
+			if [ "$tparams" != "$trig" ]; then
+				eval "export $tparams"
+			fi
+			[ -z "${disabled_modules[$tmod]-}" ] || continue
+			visited_modules["$tmod"]=""
+			queue+=("$tmod")
+		done
+	done
+done

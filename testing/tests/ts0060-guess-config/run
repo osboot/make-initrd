@@ -16,11 +16,13 @@ export RESOLVE_MODALIAS=1
 export KERNEL=6.6.1
 export PATH="$tmpdir/bin:$PWD/.build/dest/usr/bin:$PWD/.build/dest/usr/sbin:$PWD/tools:$PATH"
 
-echo "val1 val2" > "$GUESSDIR/guess:variables:TEST_VAR"
-echo "ext4" > "$GUESSDIR/guess:modules:add:storage"
-echo "pci:v00008086d000010D3sv*sd*bc*sc*i*" > "$GUESSDIR/guess:modalias:add:nic"
-echo "usb:v1234p5678" > "$GUESSDIR/guess:modalias:rescue:hid"
-echo "virtio_balloon" > "$GUESSDIR/guess:opt-modules:add:mem"
-echo "network" > "$GUESSDIR/guess:features:net"
+cat > "$GUESSDIR/guess.tsv" <<'EOF'
+variable	TEST_VAR	val1 val2	-	-
+module	add	ext4	storage	-
+modalias	add	pci:v00008086d000010D3sv*sd*bc*sc*i*	nic	-
+modalias	rescue	usb:v1234p5678	hid	-
+opt-module	add	virtio_balloon	mem	-
+feature	network	net	-	-
+EOF
 
 tools/guess-config
