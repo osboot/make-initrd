@@ -1,4 +1,4 @@
-RUN: guess/root/action
+RUN: features/rootfs/guess/action
 TRACE	function		1	features/overlayfs/guess/fstype	main guess_fstype	guess_fstype	/dev/loop0 squashfs
 TRACE	run		1	features/overlayfs/guess/fstype	main guess_fstype	features/overlayfs/guess/fstype	/dev/loop0 squashfs
 TRACE	function		1	features/rootfs/guess/fstype	main guess_modalias	guess_modalias	fs-squashfs

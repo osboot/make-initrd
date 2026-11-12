@@ -6,5 +6,5 @@ cwd="${0%/*}"
 . "$cwd"/../../../../testing/tests/guess-rootfs-sh-functions
 
 guess_rootfs_run_test "$cwd/rootfs.tar.xz" --tsv \
-	--src-patterns="features/rootfs/guess/fstype guess/root/action" \
-	--run-patterns="features/rootfs/guess/fstype guess/root/action"
+	--src-patterns="features/rootfs/guess/fstype features/rootfs/guess/action" \
+	--run-patterns="features/rootfs/guess/fstype features/rootfs/guess/action"

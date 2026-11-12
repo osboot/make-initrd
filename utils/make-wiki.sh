@@ -12,6 +12,9 @@ copy_readme()
 	prefix="$1"; shift
 	wikiprefix="$1"; shift
 
+	[ -d "$subname" ] ||
+		return 0
+
 	find "$subname" -mindepth 2 -name README.md -printf '%p\n' |
 		sort |
 	while read -r file; do

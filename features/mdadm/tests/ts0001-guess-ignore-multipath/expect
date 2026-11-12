@@ -1,4 +1,4 @@
-RUN: guess/root/action
+RUN: features/rootfs/guess/action
 TRACE	function		1	features/mdadm/guess/device	main guess_variable	guess_variable	MDADM_EXTRA_PROGS mdmon
 TRACE	function		1	features/mdadm/guess/device	main guess_device	guess_device	/devices/virtual/block/md126/md/dev-nvme0n1/block
 TRACE	run		1	features/mdadm/guess/device	main guess_device	modalias	/devices/pci0000:00/0000:00:0e.0/pci10000:e0/10000:e0:06.0/10000:e1:00.0/nvme/nvme0/nvme0n1
