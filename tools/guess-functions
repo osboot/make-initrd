@@ -112,6 +112,12 @@ guess_fstype() {
 
 declare -g -A visited_sysfs_devices=()
 
+guess_device_filter() {
+	. "$1"
+	shift
+	device_filter "$@"
+}
+
 guess_device() {
 	$TRACE_ENTER "$@" || {
 		$TRACE_ENTER_RETCODE $?
@@ -131,6 +137,10 @@ guess_device() {
 	visited_sysfs_devices["$device_file"]=1
 
 	for m in modalias parent slaves supplier loop ${GUESS_DEVICE_SCRIPTS-}; do
+		if [ -f "$m.filter" ]; then
+			guess_device_filter "$m.filter" "${device_file#$SYSFS_PATH}" ||
+				continue
+		fi
 		$TRACE_RUN "$m" "${device_file#$SYSFS_PATH}"
 	done
 }

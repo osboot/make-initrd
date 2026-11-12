@@ -1,0 +1,6 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+device_filter() {
+	[ -d "$SYSFS_PATH$1/dm" ]
+}

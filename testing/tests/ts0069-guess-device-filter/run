@@ -1,0 +1,37 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+mkdir -p "$tmpdir/guess"
+mkdir -p "$tmpdir/sys/devices/virtual/block/dev1"
+mkdir -p "$tmpdir/sys/devices/virtual/block/dev2/magic"
+
+cat << "EOF" > "$tmpdir/test-hook"
+#!/bin/bash -efu
+echo "HOOK_CALLED: $1" >> "$GUESSDIR/test.log"
+EOF
+chmod 755 "$tmpdir/test-hook"
+
+cat << "EOF" > "$tmpdir/test-hook.filter"
+#!/bin/bash -efu
+device_filter() {
+	[ -d "$SYSFS_PATH$1/magic" ]
+}
+EOF
+chmod 755 "$tmpdir/test-hook.filter"
+
+export PATH="$PWD/.build/dest/usr/bin:$PWD/.build/dest/usr/sbin:$PWD/tools:$PATH"
+export SYSFS_PATH="$tmpdir/sys"
+export GUESSDIR="$tmpdir/guess"
+export GUESS_DEVICE_SCRIPTS="$tmpdir/test-hook"
+
+. guess-functions
+
+guess_device "/devices/virtual/block/dev1"
+guess_device "/devices/virtual/block/dev2"
+
+if [ -f "$GUESSDIR/test.log" ]; then
+	cat "$GUESSDIR/test.log"
+fi

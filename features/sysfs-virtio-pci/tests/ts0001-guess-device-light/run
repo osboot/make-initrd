@@ -5,6 +5,9 @@ cwd="${0%/*}"
 . "$cwd"/../../../../testing/tests/guess-feature-sh-functions
 
 guess_feature_test_init "$0"
+. guess-functions
 
-features/sysfs-virtio-pci/guess/device /devices/virtio-pci
+mkdir -p -- "$SYSFS_PATH/devices/virtio-pci"
+
+GUESS_DEVICE_SCRIPTS="features/sysfs-virtio-pci/guess/device" guess_device /devices/virtio-pci
 guess_feature_test_dump

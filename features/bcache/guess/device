@@ -1,9 +1,6 @@
 #!/bin/bash -efu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-[ -d "$SYSFS_PATH$1"/bcache ] ||
-	exit 0
-
 . guess-functions
 
 guess_module bcache

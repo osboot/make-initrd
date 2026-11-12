@@ -255,7 +255,9 @@ can participate in autodetection:
    when the module is scheduled.
 2. **`guess/device`**: Hook script invoked by `rootfs` while traversing parent devices
    in the `/sys` block device hierarchy. Used to detect block layers like LVM,
-   LUKS, MDADM, bcache, or devmapper.
+   LUKS, MDADM, bcache, or devmapper. An optional `guess/device.filter` script can
+   define a `device_filter` function to fast-path or skip invoking `guess/device` for
+   non-matching sysfs devices without spawning a child process.
 3. **`guess/fstype`**: Hook script invoked by `rootfs` to identify filesystem types
    and propose appropriate filesystem drivers (e.g. ext4, btrfs, xfs, zfs, overlayfs).
 4. **`guess/common`**: Generic hook script executed during the `common` detection pass

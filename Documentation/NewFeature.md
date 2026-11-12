@@ -91,7 +91,9 @@ provide up to four types of detection scripts:
 * `guess/action` - The primary autodetection module. It is executed by `guess-runner`
   when scheduled by `AUTODETECT` (or triggered by dependencies).
 * `guess/device` - Invoked by `rootfs` while traversing parent block devices in `/sys`
-  (for example, to detect stacked storage like LVM, LUKS, RAID, or bcache).
+  (for example, to detect stacked storage like LVM, LUKS, RAID, or bcache). Features
+  can optionally provide a lightweight `guess/device.filter` shell script containing a
+  `device_filter` function to skip invoking the hook script for non-matching sysfs devices.
 * `guess/fstype` - Invoked by `rootfs` to identify filesystem types and propose
   the necessary filesystem kernel modules.
 * `guess/common` - Unconditional detection hook executed during the `common` detection
