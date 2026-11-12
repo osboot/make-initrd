@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 $(call feature-requires,add-modules depmod-image network)
+$(call guess-requires,net:GUESS_NET_IFACE=all smart-card)
 
 SSHFS_DATADIR	= $(FEATURESDIR)/sshfsroot/data
 SSHFS_PRELOAD	= af_packet fs-fuse
