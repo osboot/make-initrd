@@ -1,7 +1,4 @@
-guess:features
-nvmf
-
-guess:modules
-nvme-fabrics
-nvme-tcp
+module	add	nvme-fabrics	-	-
+module	add	nvme-tcp	-	-
+feature	nvmf	-	-	-
 rc=0

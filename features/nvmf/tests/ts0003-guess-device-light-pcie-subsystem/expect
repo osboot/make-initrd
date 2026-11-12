@@ -1,3 +1,2 @@
-guess:modalias
-pci:v00008086d0000F1A5
+modalias	add	pci:v00008086d0000F1A5	-	-
 rc=0

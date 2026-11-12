@@ -1,3 +1,2 @@
-guess:features
-multipath
+feature	multipath	-	-	-
 rc=0

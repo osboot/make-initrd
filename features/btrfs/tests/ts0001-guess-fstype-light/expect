@@ -1,6 +1,3 @@
-guess:features
-btrfs
-
-guess:modalias
-pci:v00001234d00005678
+modalias	add	pci:v00001234d00005678	-	-
+feature	btrfs	-	-	-
 rc=0

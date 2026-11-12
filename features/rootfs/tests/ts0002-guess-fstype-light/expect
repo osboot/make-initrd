@@ -1,3 +1,2 @@
-guess:modalias
-fs-ext4
+modalias	add	fs-ext4	-	-
 rc=0

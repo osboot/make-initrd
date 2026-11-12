@@ -1,6 +1,3 @@
-guess:features
-locales
-
-guess:variables:LOCALES
-ru_RU
+feature	locales	-	-	-
+variable	LOCALES	ru_RU	-	-
 rc=0
