@@ -89,7 +89,7 @@ endef
 
 define get-all-features
 $(strip $(if $(filter get-all-features,$(0)),\
-	$(sort $(filter-out ,$(call expand-features,FEATURE-REQUIRES,$(FEATURES) $(if $(UKI),uki))))))
+	$(sort $(filter-out ,$(call expand-features,FEATURE-REQUIRES,$(RUNTIME_FEATURE) $(FEATURES) $(if $(UKI),uki))))))
 endef
 
 define get-all-disable-features

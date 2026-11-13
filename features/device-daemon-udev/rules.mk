@@ -1,0 +1,3 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+PUT_FEATURE_FILES += $(UDEVD) $(UDEVADM)
+PUT_FEATURE_DIRS  += $(UDEV_DATADIR)
