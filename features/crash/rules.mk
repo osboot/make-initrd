@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+PUT_FEATURE_PROGS          += $(filter-out none,$(CRASH_PROG))
+PUT_FEATURE_PROGS_WILDCARD += $(CRASH_DUMP_PROGS_PATTERNS)
+PUT_FEATURE_FILES          += $(CRASH_EXTRA_PROGS)
+PUT_FEATURE_DIRS           += $(CRASH_DATADIR)

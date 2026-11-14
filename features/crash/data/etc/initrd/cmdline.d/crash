@@ -1,0 +1,11 @@
+register_parameter string RD_CRASH_BOOT
+register_parameter string RD_CRASH_VMLINUX
+register_parameter string RD_CRASH_REPORT "dump"
+register_parameter string RD_CRASH_EXIT "reboot"
+register_parameter string RD_CRASH_VIRTIO
+register_parameter string RD_CRASH_EFI
+register_parameter string RD_CRASH_DISK
+register_parameter string RD_CRASH_DIR
+register_parameter string RD_CRASH_RAW
+register_parameter number RD_CRASH_BOOT_TIMEOUT 10
+register_parameter number RD_CRASH_REBOOT_DELAY 5

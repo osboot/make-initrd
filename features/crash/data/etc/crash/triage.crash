@@ -1,0 +1,6 @@
+sys
+bt -a
+log
+ps -u
+mod
+q
