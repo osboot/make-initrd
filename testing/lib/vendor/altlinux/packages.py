@@ -28,6 +28,7 @@ def get_packages() -> PackageSet:
         sysimage_extra=(
             "pwgen", "mdadm", "lvm2", "cryptsetup", "btrfs-progs", "e2fsprogs",
             "xfsprogs", "dosfstools", "grub-common", "grub-efi", "grub-pc",
+            "kexec-tools", "cpio",
         ),
         kickstart_extra=(
             "util-linux", "rsync", "wget", "cryptsetup", "lvm2", "mdadm", "pwgen",

@@ -62,6 +62,7 @@ TEST_PARAM_KEYS = [
     "boot_prog",
     "boot_bios",
     "boot_logs",
+    "boot_allow_reboot",
     "direct_boot",
     "direct_boot_features",
     "host_services",
@@ -481,7 +482,9 @@ def qemu_sdcard_args(index: int, path: Path, fmt: str) -> list[str]:
 
 def build_qemu_args(ctx: Context, *, kickstart: bool) -> list[str]:
     args = [f"qemu-system-{ctx.vendor.arch}"]
-    args.extend(["-m", ctx.param("qemu_memory", "2G"), "-no-reboot"])
+    args.extend(["-m", ctx.param("qemu_memory", "2G")])
+    if kickstart or not ctx.flag("boot_allow_reboot"):
+        args.append("-no-reboot")
     if kickstart:
         boot_kernel = ctx.top_workdir / "boot-ks-vmlinuz"
         boot_initrd = ctx.top_workdir / "boot-ks-initrd.img"
@@ -529,8 +532,10 @@ def build_qemu_args(ctx: Context, *, kickstart: bool) -> list[str]:
             args.extend(qemu_sdcard_args(i, path, sd_fmt))
     else:
         for i in range(1, int(ctx.param("boot_disks", "0")) + 1):
-            message(ctx, f"attach boot disk {i}: {ctx.top_workdir / f'disk-{i}.img'} ({disk_fmt})")
-            args.extend(qemu_disk_args(i, ctx.top_workdir / f"disk-{i}.img", disk_fmt))
+            path = ctx.top_workdir / f"disk-{i}.img"
+            message(ctx, f"attach boot disk {i}: {path} ({disk_fmt})")
+            ensure_disk(path, disk_fmt)
+            args.extend(qemu_disk_args(i, path, disk_fmt))
         for i in range(1, int(ctx.param("boot_sdcards", "0")) + 1):
             message(ctx, f"attach boot sdcard {i}: {ctx.top_workdir / f'sdcard-{i}.img'} ({sd_fmt})")
             args.extend(qemu_sdcard_args(i, ctx.top_workdir / f"sdcard-{i}.img", sd_fmt))

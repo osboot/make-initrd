@@ -38,7 +38,7 @@ def get_packages() -> PackageSet:
         sysimage_extra=(
             "app-admin/pwgen", "sys-fs/mdadm", "sys-fs/lvm2", "sys-fs/cryptsetup",
             "sys-fs/btrfs-progs", "sys-fs/e2fsprogs", "sys-fs/xfsprogs",
-            "sys-fs/dosfstools", "sys-boot/grub",
+            "sys-fs/dosfstools", "sys-boot/grub", "sys-apps/kexec-tools",
         ),
         kickstart_extra=(
             "sys-fs/e2fsprogs", "sys-fs/btrfs-progs", "sys-fs/xfsprogs",

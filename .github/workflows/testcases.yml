@@ -23,6 +23,7 @@ jobs:
           - btrfs-raid1
           - btrfs-raid1-degraded
           - btrfs-subvol
+          - crash
           - efi-partition
           - efi-reqpartition
           - f2fs-partition
