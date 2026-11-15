@@ -250,6 +250,73 @@ crash_dir="${CRASH_RUNDIR:-/run/crash}"
 
 mkdir -p "$crash_dir"
 
+# Extract dmesg log early to provide log and kernel info
+echo "crash: extracting dmesg log from $VMCORE..."
+vmcore-dmesg "$VMCORE" > "$crash_dir/dmesg.txt" 2>/dev/null ||:
+
+# Detect crashed kernel OSRELEASE from dmesg log
+crashed_osrelease=""
+[ ! -s "$crash_dir/dmesg.txt" ] ||
+	crashed_osrelease="$(sed -n -E '/Linux version [0-9]/{ s/.*Linux version ([^[:space:]]+).*/\1/; p; q; }' "$crash_dir/dmesg.txt" ||:)"
+
+print_meta()
+{
+	local dmesg_file="$1"
+	local kver cmdline panic uptime
+	local crash_date="" crashtime="" cap_epoch cap_up
+
+	kver="$(   sed -n -E '/Linux version [0-9]/{ s/^\[[^]]*\][[:space:]]*//; p; q; }' "$dmesg_file")"
+	cmdline="$(sed -n -E '/(Kernel command line:|Command line:)/{ s/^\[[^]]*\][[:space:]]*(Kernel command line:[[:space:]]*|Command line:[[:space:]]*)//; p; q; }' "$dmesg_file")"
+	panic="$(  sed -n -E '/(Kernel panic|BUG:|Oops:|divide error:)/{ s/^\[[^]]*\][[:space:]]*//; h; }; ${ g; p; }' "$dmesg_file")"
+	uptime="$( sed -n -E '/^\[[[:space:]]*[0-9]+(\.[0-9]+)?\]/{ s/^\[[[:space:]]*([0-9]+(\.[0-9]+)?)\].*/\1/; h; }; ${ g; p; }' "$dmesg_file")"
+
+	[ -n "$crashed_osrelease" ] ||
+		crashed_osrelease="$(echo "$kver" | sed -n -E 's/^Linux version ([^[:space:]]+).*/\1/p')"
+
+	cap_epoch="$(date +%s 2>/dev/null ||:)"
+	cap_up="$(sed -n -E 's/^([0-9]+).*/\1/p' /proc/uptime 2>/dev/null ||:)"
+	if [ -n "$cap_epoch" ] && [ -n "$cap_up" ]; then
+		crashtime=$(( cap_epoch - cap_up ))
+		crash_date="$(date -u -d "@$crashtime" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null ||:)"
+	fi
+
+	printf '%s\n' \
+		"[ Crashed System ]" \
+		"CRASH_DATE: $crash_date" \
+		"CRASH_TIME_EPOCH: $crashtime" \
+		"CRASHED_OSRELEASE: $crashed_osrelease" \
+		"CRASHED_KERNEL: $kver" \
+		"CRASHED_CMDLINE: $cmdline" \
+		"CRASHED_UPTIME: ${uptime:+${uptime}s}" \
+		"PANIC: $panic" \
+		"" \
+		"[ Capture Environment ]" \
+		"CAPTURE_DATE: $(date -u '+%Y-%m-%d %H:%M:%S UTC' || date)" \
+		"CAPTURE_KERNEL: $(uname -a)" \
+		"CAPTURE_CMDLINE: $(< /proc/cmdline)" \
+		"CAPTURE_UPTIME: $(< /proc/uptime)" \
+	#
+	return 0
+}
+
+# Generate meta.txt early
+print_meta "$crash_dir/dmesg.txt" > "$crash_dir/meta.txt" 2>/dev/null ||:
+
+cpio_report()
+{
+	local fn
+
+	for fn in \
+		meta.txt \
+		triage.txt.gz \
+		dmesg.txt.gz; do
+		[ ! -f "$crash_dir/$fn" ] ||
+			cpio-stream add "$fn" "$crash_dir/$fn"
+	done
+
+	cpio-stream finish
+}
+
 # 1. Live crash triage (if crash utility is present and vmlinux can be found)
 vmlinux_path=""
 boot_mnt="$crash_dir/boot"
@@ -271,6 +338,11 @@ if command -v crash >/dev/null 2>&1 && [ -n "$target_boot" ]; then
 				candidates+=(
 					"$boot_mnt/$RD_CRASH_VMLINUX"
 					"$boot_mnt/boot/$RD_CRASH_VMLINUX"
+				)
+			[ -z "$crashed_osrelease" ] ||
+				candidates+=(
+					"$boot_mnt/vmlinux-$crashed_osrelease"
+					"$boot_mnt/boot/vmlinux-$crashed_osrelease"
 				)
 			candidates+=(
 				"$boot_mnt/vmlinux-$(uname -r)"
@@ -320,7 +392,10 @@ fi
 # Clean up boot mount
 mountpoint -q "$boot_mnt" && umount "$boot_mnt" 2>/dev/null ||:
 
-# 2. Independent target destinations
+# 2. Compress dmesg log
+gzip -f "$crash_dir/dmesg.txt" 2>/dev/null ||:
+
+# 3. Independent target destinations
 has_target=0
 
 # Target: virtio-serial
@@ -357,12 +432,7 @@ if [ -n "${RD_CRASH_VIRTIO-}" ]; then
 				cat "$VMCORE" > "$vport"
 			fi
 		else
-			[ ! -f "$crash_dir/triage.txt.gz" ] ||
-				cat "$crash_dir/triage.txt.gz" > "$vport"
-
-			vmcore-dmesg "$VMCORE" 2>/dev/null |
-				gzip -c > "$vport" ||:
-
+			cpio_report > "$vport"
 			echo "crash: dump streamed to virtio successfully"
 		fi
 	else
@@ -404,13 +474,7 @@ if [ -n "${RD_CRASH_EFI-}" ]; then
 			mkdir -p -- "$target_dir"
 
 			echo "crash: writing report ($report_type) directly to EFI ($target_dir)..."
-
-			echo "crash: saving compressed dmesg log..."
-			vmcore-dmesg "$VMCORE" 2>/dev/null |
-				gzip -c > "$target_dir/dmesg-$timestamp.txt.gz" ||:
-
-			[ ! -f "$crash_dir/triage.txt.gz" ] ||
-				cp -f "$crash_dir/triage.txt.gz" "$target_dir/triage-$timestamp.txt.gz"
+			cpio_report > "$target_dir/crash-$timestamp.cpio"
 
 			if [ "$report_type" = "vmcore" ]; then
 				echo "crash: saving compressed vmcore via makedumpfile..."
@@ -445,13 +509,7 @@ if [ -n "${RD_CRASH_DISK-}" ]; then
 			mkdir -p -- "$target_dir"
 
 			echo "crash: writing report ($report_type) directly to disk ($target_dir)..."
-
-			echo "crash: saving compressed dmesg log..."
-			vmcore-dmesg "$VMCORE" 2>/dev/null |
-				gzip -c > "$target_dir/dmesg-$timestamp.txt.gz" ||:
-
-			[ ! -f "$crash_dir/triage.txt.gz" ] ||
-				cp -f "$crash_dir/triage.txt.gz" "$target_dir/triage-$timestamp.txt.gz"
+			cpio_report > "$target_dir/crash-$timestamp.cpio"
 
 			if [ "$report_type" = "vmcore" ]; then
 				echo "crash: saving compressed vmcore via makedumpfile..."
@@ -484,11 +542,7 @@ if [ -n "${RD_CRASH_RAW-}" ]; then
 			makedumpfile -c -d 31 "$VMCORE" "$raw_dev" 2>/dev/null ||
 				cat "$VMCORE" > "$raw_dev"
 		else
-			[ ! -f "$crash_dir/triage.txt.gz" ] ||
-				cat "$crash_dir/triage.txt.gz" > "$raw_dev"
-
-			vmcore-dmesg "$VMCORE" 2>/dev/null |
-				gzip -c >> "$raw_dev" ||:
+			cpio_report > "$raw_dev"
 		fi
 
 		sync
@@ -502,9 +556,7 @@ fi
 # If no target specified, show dmesg on console if triage wasn't run
 if [ "$has_target" = 0 ] && [ ! -f "$crash_dir/triage.txt.gz" ]; then
 	echo "crash: no target specified; dumping dmesg tail to console:"
-
-	vmcore-dmesg "$VMCORE" 2>/dev/null |
-		tail -n 30 ||:
+	[ ! -f "$crash_dir/dmesg.txt.gz" ] || zcat "$crash_dir/dmesg.txt.gz" 2>/dev/null | tail -n 30 ||:
 fi
 
 # 3. Exit action: shell, poweroff, or reboot
