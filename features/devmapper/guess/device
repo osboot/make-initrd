@@ -1,9 +1,6 @@
 #!/bin/bash -efu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-[ -d "$SYSFS_PATH$1"/dm ] ||
-	exit 0
-
 . guess-functions
 
 guess_feature devmapper

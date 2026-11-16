@@ -52,6 +52,10 @@ show_help() {
 	               guesses the current configuration
 	               and generates the config file;
 
+	guess-explain
+	               shows explanation and provenance of guessed
+	               configuration;
+
 	guess-modules [<device>|<directory>]
 	               shows kernel module needed to mount
 	               specified mountpoint or block device;
@@ -179,7 +183,7 @@ done
 set -- "${args[@]}"
 
 case "${1-}" in
-	guess-config|bug-report)
+	guess-config|guess-explain|bug-report)
 		;;
 	guess-modules)
 		[ "$#" -eq 2 ] ||

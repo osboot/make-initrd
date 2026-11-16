@@ -1,0 +1,5 @@
+feature	featA	add:guess-modA	guess-modA	-
+feature	featB	add:guess-modB	guess-modB	-
+feature	featA	add:guess-modA	guess-modA	-
+feature	featB	add:guess-modB	guess-modB	-
+rc=0

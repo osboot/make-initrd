@@ -6,6 +6,6 @@ cwd="${0%/*}"
 . "$cwd"/../../../../testing/tests/guess-rootfs-sh-functions
 
 guess_rootfs_run_test "$cwd/rootfs.tar.xz" --tsv \
-	--src-patterns="features/*/guess/* features/rootfs/guess/fstype" \
+	--src-patterns="features/*/guess/device features/*/guess/fstype" \
 	--run-patterns="*" \
 	-k "6.6.41-un-def-alt0.p11.1"

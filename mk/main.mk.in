@@ -12,7 +12,7 @@ TESTING_PUBLIC_GOALS += test-guess
 endif
 
 ifeq ($(MAKELEVEL),0)
-public-goals  := all guess-config guess-modules feature-info bug-report $(TESTING_PUBLIC_GOALS)
+public-goals  := all guess-config guess-modules guess-explain feature-info bug-report $(TESTING_PUBLIC_GOALS)
 private-goals := $(filter-out $(public-goals),$(MAKECMDGOALS))
 
 ifneq ($(private-goals),)
@@ -20,7 +20,7 @@ $(error You MUST NOT call private goals directly: $(private-goals))
 endif
 endif # MAKELEVEL = 0
 
-PHONY += all guess-config guess-modules feature-info bug-report
+PHONY += all guess-config guess-modules guess-explain feature-info bug-report
 PHONY += check-for-root process-config test-guess
 
 include @projectdir@/mk/config.mk
@@ -38,7 +38,7 @@ check-for-root::
 	}
 endif
 
-ifneq ($(call in-goals,guess guess-config guess-modules test-guess-actions),)
+ifneq ($(call in-goals,guess guess-config guess-modules guess-explain test-guess-actions),)
 include @projectdir@/mk/guess.mk
 endif
 
@@ -74,10 +74,14 @@ guess-config: check-for-root guess
 	@rm $(verbose3) -rf -- "$(GUESSDIR)"
 	@rmdir $(verbose3) -- "$(WORKDIR)"
 
+guess-explain: check-for-root guess
+	@$(TOOLSDIR)/guess-explain >&4
+	@rm $(verbose3) -rf -- "$(GUESSDIR)"
+	@rmdir $(verbose3) -- "$(WORKDIR)"
+
 guess-modules: check-for-root guess
-	@for f in $(GUESSDIR)/guess:modules* $(GUESSDIR)/guess:modalias*; do \
-		[ ! -s "$$f" ] || cat "$$f"; \
-	done | \
+	@[ ! -f "$(GUESSDIR)/guess.tsv" ] || \
+	sed -n -E 's/^(module|modalias)\t[^\t]+\t([^\t]+).*/\2/p' "$(GUESSDIR)/guess.tsv" | \
 	   depinfo \
 	      --input=- \
 	      $(if $(USE_MODPROBE_BLACKLIST),--use-blacklist) \

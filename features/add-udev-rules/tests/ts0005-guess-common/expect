@@ -1,3 +1,2 @@
-guess:features
-add-udev-rules
+feature	add-udev-rules	-	-	-
 rc=0

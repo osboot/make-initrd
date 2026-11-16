@@ -1,3 +1,2 @@
-guess:modules
-sd_mod
+module	add	sd_mod	-	-
 rc=0

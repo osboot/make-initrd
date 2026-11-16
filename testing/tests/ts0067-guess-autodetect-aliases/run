@@ -1,0 +1,46 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+gdir="$tmpdir/guess"
+featdir="$tmpdir/features"
+mkdir -p "$featdir/modules-network/guess"
+
+cat > "$featdir/modules-network/guess/action" <<'EOF'
+#!/bin/bash -efu
+. guess-functions
+guess_feature net-driver
+EOF
+chmod +x "$featdir/modules-network/guess/action"
+
+common_script="$tmpdir/common.sh"
+cat > "$common_script" <<'EOF'
+#!/bin/bash -efu
+. guess-functions
+guess_feature common-feat
+EOF
+chmod +x "$common_script"
+
+export PATH="$PWD/.build/dest/usr/bin:$PWD/.build/dest/usr/sbin:$PWD/tools:$PATH"
+
+# Test 1: Empty modules (AUTODETECT="") produces no output and skips common
+tools/guess-runner \
+	--guessdir="$gdir" \
+	--features-dir="$featdir" \
+	--common-scripts="$common_script" \
+	--modules=""
+echo "=== Test 1: empty modules ==="
+cat "$gdir/guess.tsv"
+
+# Test 2: DISABLE_GUESS=common disables the virtual common module, net alias runs modules-network
+rm -f "$gdir/guess.tsv"
+tools/guess-runner \
+	--guessdir="$gdir" \
+	--features-dir="$featdir" \
+	--common-scripts="$common_script" \
+	--modules="common net" \
+	--disabled="common"
+echo "=== Test 2: disabled common with net alias ==="
+cat "$gdir/guess.tsv"

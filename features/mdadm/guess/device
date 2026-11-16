@@ -1,9 +1,6 @@
 #!/bin/bash -eu
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-[ -d "$SYSFS_PATH$1"/md ] ||
-	exit 0
-
 . guess-functions
 
 level=

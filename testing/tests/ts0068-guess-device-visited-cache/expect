@@ -1,0 +1,3 @@
+modalias	add	scsi:disk	-	-
+modalias	add	pci:parent_bridge	-	-
+rc=0

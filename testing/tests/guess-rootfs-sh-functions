@@ -39,13 +39,13 @@ guess_rootfs_setup_dir()
 	export KERNEL_MODULES_DIR="$modulesdir"
 
 	export GUESS_SUFFIX="${GUESS_SUFFIX:-add:guess-root}"
-	export TEST_GUESS_ACTIONS="${TEST_GUESS_ACTIONS:-guess/root/action guess-config}"
+	export TEST_GUESS_ACTIONS="${TEST_GUESS_ACTIONS:-features/rootfs/guess/action guess-config}"
 	export RESOLVE_MODALIAS="${RESOLVE_MODALIAS-}"
 	export KERNEL_CONFIG="${KERNEL_CONFIG:-/dev/null}"
 
 	export MAKE_INITRD_TRACE="${MAKE_INITRD_TRACE:-1}"
 	export MAKE_INITRD_TRACE_PIDS="${MAKE_INITRD_TRACE_PIDS-}"
-	export MAKE_INITRD_TRACE_EXECUTE_PATTERNS="${MAKE_INITRD_TRACE_EXECUTE_PATTERNS:-guess/root/action}"
+	export MAKE_INITRD_TRACE_EXECUTE_PATTERNS="${MAKE_INITRD_TRACE_EXECUTE_PATTERNS:-features/rootfs/guess/action}"
 	export MAKE_INITRD_TRACE_FORMAT="${MAKE_INITRD_TRACE_FORMAT:-text}"
 	export GUESS_CONFIG_FORMAT="${GUESS_CONFIG_FORMAT:-make}"
 }

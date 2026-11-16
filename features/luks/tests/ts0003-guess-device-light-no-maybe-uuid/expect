@@ -1,3 +1,2 @@
-guess:features
-luks
+feature	luks	-	-	-
 rc=0

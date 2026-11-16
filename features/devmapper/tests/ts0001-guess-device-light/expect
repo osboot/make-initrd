@@ -1,3 +1,2 @@
-guess:features
-devmapper
+feature	devmapper	-	-	-
 rc=0

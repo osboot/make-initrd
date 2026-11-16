@@ -12,6 +12,9 @@ copy_readme()
 	prefix="$1"; shift
 	wikiprefix="$1"; shift
 
+	[ -d "$subname" ] ||
+		return 0
+
 	find "$subname" -mindepth 2 -name README.md -printf '%p\n' |
 		sort |
 	while read -r file; do
@@ -40,16 +43,13 @@ cp -f -- Documentation/README.md .wiki/Home.md
 cp -f -- features/README.md .wiki/Features.md
 
 echo >> .wiki/Features.md
-echo >> .wiki/GuessConfiguration.md
 
 copy_readme features/ "Feature:"      "feature-" >> .wiki/Features.md
-copy_readme guess/    "Guess module:" "guess-"   >> .wiki/GuessConfiguration.md
 
 find .wiki \
 	-name '*.md' \
 	-exec sed -r -i \
 			-e 's,\((\.\./)*Documentation/,(,g' \
-			-e 's,\(guess/,(guess-,g' \
 			-e 's,\(features/,(feature-,g' \
 			-e 's,/README\.md\),),g' \
 			-e 's,\.md\),),g' \

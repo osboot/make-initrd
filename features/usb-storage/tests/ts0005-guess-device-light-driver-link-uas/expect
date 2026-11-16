@@ -1,3 +1,2 @@
-guess:modules
-uas
+module	add	uas	-	-
 rc=0

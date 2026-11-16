@@ -1,3 +1,2 @@
-guess:modules
-usb-storage
+module	add	usb-storage	-	-
 rc=0

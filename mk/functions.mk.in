@@ -51,6 +51,20 @@ $(strip $(if $(filter feature-requires,$(0)),$(if $(1),\
 		$(call __feature-requires,$(strip $(call current-feature-name)),$(1))))))
 endef
 
+define __guess-requires
+$(strip $(if $(filter __guess-requires,$(0)),$(if $(1),$(if $(2),\
+	$(eval FEATURE-REQUIRES-GUESS-$(1) += $(2))\
+	$(foreach m,$(2),$(eval FEATURE_REQUIRES_GUESS += $(1):$(m)))))))
+endef
+
+# $(call guess-requires,<guess-module> ...)
+# Set a list of guess modules required by the current feature.
+define guess-requires
+$(strip $(if $(filter guess-requires,$(0)),$(if $(1),\
+	$(if $(filter %/config.mk,$(lastword $(MAKEFILE_LIST))),\
+		$(call __guess-requires,$(strip $(call current-feature-name)),$(1))))))
+endef
+
 # This is helper to filter a disabled files.
 # $(call wildcard-features,<filename>)
 # Return a space-separated list of full <filename> paths for each feature.
@@ -69,6 +83,7 @@ $(strip $(if $(filter show-feature-dependency,$(0)),$(if $(1),\
 		$(info $(space) requires : $(sort $(FEATURE-REQUIRES-$(n)))) \
 		$(info $(space) disables : $(sort $(FEATURE-DISABLES-$(n)))) \
 		$(info $(space) required : $(sort $(FEATURE-REQUIRED-$(n)))) \
+		$(if $(FEATURE-REQUIRES-GUESS-$(n)),$(info $(space) guess-requires : $(sort $(FEATURE-REQUIRES-GUESS-$(n))))) \
 		$(info $(null))))))
 endef
 

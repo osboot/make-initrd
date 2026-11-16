@@ -1,6 +1,3 @@
-guess:features
-bcache
-
-guess:modules
-bcache
+module	add	bcache	-	-
+feature	bcache	-	-	-
 rc=0

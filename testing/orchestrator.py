@@ -820,16 +820,20 @@ def step_build_sysimage(ctx: Context) -> None:
     with gh_group("packing sysimage"):
         run_sh = ctx.top_workdir / "run.sh"
         write_executable(run_sh, pack_sysimage_script(ctx))
+        mounts = [
+            "--mount", f"type=image,src=localhost/image-{ctx.vendor.name}:sysimage,dst=/image",
+            "--mount", f"type=tmpfs,destination=/image{ctx.builddir}",
+            "--mount", f"type=bind,src={ctx.topdir}/.build/dest,dst=/image{ctx.builddir}/.build/dest",
+            "--mount", f"type=bind,src={ctx.topdir}/features,dst=/image{ctx.builddir}/features",
+            "--mount", f"type=bind,src={ctx.topdir}/tools,dst=/image{ctx.builddir}/tools",
+        ]
+        if (ctx.topdir / "guess").is_dir():
+            mounts += ["--mount", f"type=bind,src={ctx.topdir}/guess,dst=/image{ctx.builddir}/guess"]
         run_command(
             ctx,
             [
                 "podman", "run", "--rm", "-i",
-                "--mount", f"type=image,src=localhost/image-{ctx.vendor.name}:sysimage,dst=/image",
-                "--mount", f"type=tmpfs,destination=/image{ctx.builddir}",
-                "--mount", f"type=bind,src={ctx.topdir}/.build/dest,dst=/image{ctx.builddir}/.build/dest",
-                "--mount", f"type=bind,src={ctx.topdir}/features,dst=/image{ctx.builddir}/features",
-                "--mount", f"type=bind,src={ctx.topdir}/guess,dst=/image{ctx.builddir}/guess",
-                "--mount", f"type=bind,src={ctx.topdir}/tools,dst=/image{ctx.builddir}/tools",
+                *mounts,
                 f"--volume={ctx.topdir}:/host",
                 f"localhost/image-{ctx.vendor.name}:devel",
                 f"/host/{ctx.workdir_rel}/run.sh",

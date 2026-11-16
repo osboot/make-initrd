@@ -8,8 +8,21 @@ endif
 
 -include $(GUESSDIR)/guessed.mk
 
-RECENTLY_ACTIVATED_FEATURES := \
-	$(filter-out $(ALL_ACTIVE_FEATURES),$(call get-all-active-features))
+GUESS_ALIAS_device      = modules-blockdev
+GUESS_ALIAS_device-tree = modules-device-tree
+GUESS_ALIAS_keyboard    = modules-keyboard
+GUESS_ALIAS_net         = modules-network
+GUESS_ALIAS_root        = rootfs
+GUESS_ALIAS_touchscreen = modules-touchscreen
+
+resolve-guess-module = $(or $(GUESS_ALIAS_$(1)),$(1))
+
+RESOLVED_DISABLE_GUESS = $(sort $(DISABLE_GUESS) $(foreach m,$(DISABLE_GUESS),$(GUESS_ALIAS_$(m))))
+
+ALL_FEATURE_GUESS_ACTIONS = $(wildcard $(FEATURESDIR)/*/guess/action)
+ALL_FEATURE_GUESS_MODULES = $(patsubst $(FEATURESDIR)/%/guess/action,%,$(ALL_FEATURE_GUESS_ACTIONS))
+ALL_DETECTDIR_MODULES = $(notdir $(call filter-dirs,$(wildcard $(DETECTDIR)/*)))
+ALL_AVAILABLE_GUESS_MODULES = $(sort common $(ALL_FEATURE_GUESS_MODULES) $(ALL_DETECTDIR_MODULES))
 
 GUESS_CONFIG_MODULES = \
 	$(foreach mod1, \
@@ -19,24 +32,16 @@ GUESS_CONFIG_MODULES = \
 		$(wildcard $(mod1)/config.mk))
 
 GUESS_MODULES = \
-	$(sort $(filter-out $(sort $(PASSED_GUESS_MODULES)), \
+	$(sort $(filter-out $(RESOLVED_DISABLE_GUESS), \
 		$(if $(findstring all,$(AUTODETECT)), \
-			$(notdir $(call filter-dirs,$(wildcard $(DETECTDIR)/*))), \
-			$(AUTODETECT))))
+			$(ALL_AVAILABLE_GUESS_MODULES), \
+			$(foreach mod,$(AUTODETECT),$(call resolve-guess-module,$(mod))))))
 
 -include $(GUESS_CONFIG_MODULES)
 
-ifdef VERBOSE
-$(info GUESS_MODULES        = $(notdir $(GUESS_MODULES)))
-$(info PASSED_GUESS_MODULES = $(notdir $(PASSED_GUESS_MODULES)))
-endif
-
-PHONY += guess
-
-ifneq ($(GUESS_MODULES),)
-
 GUESS_DEVICE_SCRIPTS = $(call wildcard-features,guess/device)
 GUESS_FSTYPE_SCRIPTS = $(call wildcard-features,guess/fstype)
+GUESS_COMMON_SCRIPTS = $(call wildcard-features,guess/common)
 ALL_ACTIVE_FEATURES := $(call get-all-active-features)
 
 PHONY += prepare-guess
@@ -44,24 +49,11 @@ PHONY += prepare-guess
 prepare-guess: check-for-root
 	@mkdir $(verbose3) -m 755 -p -- $(GUESSDIR)
 
-include \
-	$(sort $(filter-out \
-		$(foreach exl,$(DISABLE_GUESS),$(realpath $(exl:%=$(DETECTDIR)/%/rules.mk))), \
-		$(foreach mod,$(GUESS_MODULES),$(realpath $(DETECTDIR)/$(mod)/rules.mk))))
-
 PHONY += test-guess-actions
 
 test-guess-actions: prepare-guess
 	@[ -n "$(TEST_GUESS_ACTIONS)" ] || { printf "TEST_GUESS_ACTIONS not specified\n" >&2; exit 1; }
 	@for exe in $(TEST_GUESS_ACTIONS); do echo "RUN: $$exe"; "$$exe"; done
-
-guess: prepare-guess
-	@$(VMSG) "Collection of guessed parameters ..."
-	@$(TOOLSDIR)/guess-config > $(GUESSDIR)/guessed.mk
-	@$(VMSG) "Guessing config ..."
-	@$(MAKE) $(MFLAGS) -f @projectdir@/mk/main.mk guess PASSED_GUESS_MODULES+="$(GUESS_MODULES)"
-
-else # !GUESS_MODULES
 
 unknown_features = \
 	$(filter-out \
@@ -81,7 +73,18 @@ ifeq ($(IGNORE_DEPMOD),)
 	@depmod -a $(if $(KERNEL_SYSTEM_MAP),-F "$(KERNEL_SYSTEM_MAP)") "$(KERNEL)"
 endif
 
-guess: depmod-host
-	@$(VMSG) "Guessing is complete"
+PHONY += guess guess-run
 
-endif # GUESS_MODULES
+guess-run: prepare-guess
+	@$(VMSG) "Guessing config ..."
+	@$(TOOLSDIR)/guess-runner \
+		$(if $(VERBOSE),-v) \
+		--features-dir="$(FEATURESDIR)" \
+		--common-scripts="$(GUESS_COMMON_SCRIPTS)" \
+		--modules="$(notdir $(GUESS_MODULES))" \
+		--disabled="$(DISABLE_GUESS)"
+	@$(VMSG) "Collection of guessed parameters ..."
+	@$(TOOLSDIR)/guess-config > $(GUESSDIR)/guessed.mk
+
+guess: guess-run depmod-host
+	@$(VMSG) "Guessing is complete"

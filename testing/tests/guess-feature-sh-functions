@@ -25,15 +25,5 @@ guess_feature_test_init() {
 }
 
 guess_feature_test_dump() {
-	local file first=1
-
-	find "$GUESSDIR" -maxdepth 1 -type f -name 'guess:*' | sort |
-	while read -r file; do
-		[ "$first" -eq 1 ] ||
-			printf '\n'
-		first=0
-
-		printf '%s\n' "${file##*/}"
-		sed -n '1,$p' "$file"
-	done
+	[ ! -f "$GUESSDIR/guess.tsv" ] || cat "$GUESSDIR/guess.tsv"
 }

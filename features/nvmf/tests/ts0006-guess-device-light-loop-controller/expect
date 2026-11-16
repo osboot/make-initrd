@@ -1,4 +1,3 @@
-guess:modules
-nvme-fabrics
-nvme-loop
+module	add	nvme-fabrics	-	-
+module	add	nvme-loop	-	-
 rc=0

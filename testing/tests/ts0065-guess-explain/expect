@@ -1,0 +1,23 @@
+Guessed Configuration Provenance:
+
+Features proposed by modules:
+  [guess-common]
+    ├── add-udev-rules
+    ├── cleanup
+    ├── compress
+  [guess-rdshell]
+    ├── rdshell
+  [guess-root]
+    ├── rootfs
+
+Kernel modules / modaliases proposed:
+  [guess-qemu]
+    ├── virtio_balloon (group: add)
+  [guess-root]
+    ├── ext4 (group: add) (context: mount /)
+
+Configuration variables set:
+  [guess-root]
+    ├── MOUNTPOINTS = /
+
+rc=0

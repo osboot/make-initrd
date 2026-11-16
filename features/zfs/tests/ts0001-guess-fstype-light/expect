@@ -1,3 +1,2 @@
-guess:features
-zfs
+feature	zfs	-	-	-
 rc=0

@@ -1,0 +1,6 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+device_filter() {
+	[ -z "${1##/devices/virtio-pci}" ]
+}

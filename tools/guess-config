@@ -5,166 +5,6 @@
 
 $TRACE_SOURCE "Processing ..."
 
-modules_fmt() {
-	while read -r m; do
-		m="${m##*/}"
-		m="${m%.ko*}"
-		printf '%s ' "$m"
-	done |
-		fmt -u -w60
-}
-
-file_is_not_empty() {
-	local m
-	while [ "$#" -gt 0 ]; do
-		[ ! -s "$1" ] || return 0
-		shift
-	done
-	return 1
-}
-
-print_vars() {
-	file_is_not_empty "$GUESSDIR/guess:variables":* ||
-		return 0
-
-	for m in "$GUESSDIR/guess:variables":*; do
-		[ -s "$m" ] ||
-			continue
-		n="${m##*:}"
-		printf '%s = \\\n' "$n"
-		sort -u "$m" |
-			tr '\n' ' ' |
-			fmt |
-			sed -e 's/^/\t/; $ ! s/$/ \\/'
-	done
-
-	printf '\n'
-}
-
-print_vars_tsv() {
-	file_is_not_empty "$GUESSDIR/guess:variables":* ||
-		return 0
-
-	for m in "$GUESSDIR/guess:variables":*; do
-		[ -s "$m" ] ||
-			continue
-		n="${m##*:}"
-		while read -r val; do
-			[ -n "$val" ] || continue
-			printf 'variable\t%s\t%s\n' "$n" "$val"
-		done < <(sort -u "$m")
-	done
-}
-
-print_list() {
-	file_is_not_empty "$GUESSDIR/guess:$2":* "$GUESSDIR/guess:$2" ||
-		return 0
-
-	printf '%s += \\\n' "$1"
-
-	for m in "$GUESSDIR/guess:$2":* "$GUESSDIR/guess:$2"; do
-		[ -s "$m" ] ||
-			continue
-
-		fn="${m##*/guess:}"
-		name="${fn##*:}"
-		type="${fn%%:*}"
-
-		[ "$type" = 'features' ] ||
-			guess_feature add-modules
-
-		if [ -n "${verbose1-}" ]; then
-			{
-				printf 'Module "%s" propose %s:\n' "$name" "$type"
-				sort -u "$m" | modules_fmt
-				printf '\n'
-			} >&2
-		fi
-
-		cat "$m"
-	done |
-		sort -u |
-		modules_fmt |
-		sed -e 's/^/\t/; $ ! s/$/ \\/'
-	printf '\n'
-}
-
-print_list_tsv() {
-	file_is_not_empty "$GUESSDIR/guess:$2":* "$GUESSDIR/guess:$2" ||
-		return 0
-
-	local m fn name type kind group
-	case "$2" in
-		modules:*)     kind="module"; group="${2#modules:}" ;;
-		modalias:*)    kind="modalias"; group="${2#modalias:}" ;;
-		opt-modules:*) kind="opt-module"; group="${2#opt-modules:}" ;;
-		opt-modalias:*)kind="opt-modalias"; group="${2#opt-modalias:}" ;;
-		features)      kind="feature"; group="" ;;
-		*)             kind="$2"; group="" ;;
-	esac
-
-	for m in "$GUESSDIR/guess:$2":* "$GUESSDIR/guess:$2"; do
-		[ -s "$m" ] ||
-			continue
-
-		fn="${m##*/guess:}"
-		name="${fn##*:}"
-		type="${fn%%:*}"
-
-		[ "$type" = 'features' ] ||
-			guess_feature add-modules
-
-		if [ -n "${verbose1-}" ]; then
-			{
-				printf 'Module "%s" propose %s:\n' "$name" "$type"
-				sort -u "$m" | modules_fmt
-				printf '\n'
-			} >&2
-		fi
-
-		cat "$m"
-	done |
-		sort -u |
-		while read -r item; do
-			[ -n "$item" ] || continue
-			if [ "$kind" = "module" ] || [ "$kind" = "opt-module" ]; then
-				item="${item##*/}"
-				item="${item%.ko*}"
-			fi
-			if [ -n "$group" ]; then
-				printf '%s\t%s\t%s\n' "$kind" "$group" "$item"
-			else
-				printf '%s\t%s\n' "$kind" "$item"
-			fi
-		done
-}
-
-if [ -n "${RESOLVE_MODALIAS-}" ]; then
-	for m in "$GUESSDIR"/guess:modalias*; do
-		[ -s "$m" ] ||
-			continue
-
-		suffix=
-		[ -z "${m##*/guess:modalias}" ] ||
-			suffix=":${m##*/guess:modalias:}"
-
-		depinfo \
-				--input="$m" \
-				${USE_MODPROBE_BLACKLIST:+--use-blacklist} \
-				--set-version="$KERNEL" \
-				--no-deps \
-				--no-prefix \
-				--no-firmware \
-				--no-builtin \
-			2>/dev/null |
-			sort -u >> "$GUESSDIR/guess:modules$suffix"
-
-		$TRACE_RESOLVE_MODALIAS "$m" "$GUESSDIR/guess:modules$suffix"
-
-		rm -f "$m"
-	done
-fi
-
 GUESS_CONFIG_FORMAT="${GUESS_CONFIG_FORMAT:-make}"
 while [ "$#" -gt 0 ]; do
 	case "$1" in
@@ -177,22 +17,146 @@ while [ "$#" -gt 0 ]; do
 	shift
 done
 
-if [ "$GUESS_CONFIG_FORMAT" = "tsv" ]; then
-	print_vars_tsv
-	print_list_tsv RESCUE_MODULES  modules:rescue
-	print_list_tsv RESCUE_MODULES  modalias:rescue
-	print_list_tsv MODULES_ADD     modules:add
-	print_list_tsv MODULES_ADD     modalias:add
-	print_list_tsv MODULES_TRY_ADD opt-modules:add
-	print_list_tsv MODULES_TRY_ADD opt-modalias:add
-	print_list_tsv FEATURES        features
-else
-	print_vars
-	print_list RESCUE_MODULES  modules:rescue
-	print_list RESCUE_MODULES  modalias:rescue
-	print_list MODULES_ADD     modules:add
-	print_list MODULES_ADD     modalias:add
-	print_list MODULES_TRY_ADD opt-modules:add
-	print_list MODULES_TRY_ADD opt-modalias:add
-	print_list FEATURES        features
+modules_fmt() {
+	while read -r m; do
+		m="${m##*/}"
+		m="${m%.ko*}"
+		printf '%s ' "$m"
+	done |
+		fmt -u -w60
+}
+
+print_vars() {
+	[ -f "$GUESSDIR/guess.tsv" ] || return 0
+
+	declare -A var_values=()
+	while IFS=$'\t' read -r kind name val rest; do
+		[ "$kind" = "variable" ] || continue
+		[ -n "$name" ] || continue
+		[ "$val" != "-" ] || val=""
+		var_values["$name"]="${var_values["$name"]-}$val"$'\n'
+	done < "$GUESSDIR/guess.tsv"
+
+	[ "${#var_values[@]}" -gt 0 ] || return 0
+
+	readarray -t sorted_vars < <(for v in "${!var_values[@]}"; do echo "$v"; done | sort)
+	for v in "${sorted_vars[@]}"; do
+		if [ "$GUESS_CONFIG_FORMAT" = "tsv" ]; then
+			while read -r val; do
+				[ -n "$val" ] || continue
+				printf 'variable\t%s\t%s\n' "$v" "$val"
+			done < <(printf '%s' "${var_values[$v]}" | sort -u)
+		else
+			printf '%s = \\\n' "$v"
+			printf '%s' "${var_values[$v]}" | sort -u | tr '\n' ' ' | fmt | sed -e 's/^/\t/; $ ! s/$/ \\/'
+		fi
+	done
+	[ "$GUESS_CONFIG_FORMAT" = "tsv" ] || printf '\n'
+}
+
+print_list() {
+	[ -f "$GUESSDIR/guess.tsv" ] || return 0
+
+	local target_var="$1" spec="$2"
+	local target_kind target_group=""
+	case "$spec" in
+		modules:*)     target_kind="module"; target_group="${spec#modules:}" ;;
+		modalias:*)    target_kind="modalias"; target_group="${spec#modalias:}" ;;
+		opt-modules:*) target_kind="opt-module"; target_group="${spec#opt-modules:}" ;;
+		opt-modalias:*)target_kind="opt-modalias"; target_group="${spec#opt-modalias:}" ;;
+		features)      target_kind="feature" ;;
+		*)             target_kind="$spec" ;;
+	esac
+
+	declare -a items=()
+	while IFS=$'\t' read -r kind col1 col2 src ctx; do
+		if [ "$target_kind" = "feature" ]; then
+			[ "$kind" = "feature" ] || continue
+			items+=("$col1")
+		else
+			[ "$kind" = "$target_kind" ] || continue
+			[ -z "$target_group" ] || [ "$col1" = "$target_group" ] || continue
+			items+=("$col2")
+		fi
+	done < "$GUESSDIR/guess.tsv"
+
+	[ "${#items[@]}" -gt 0 ] || return 0
+
+	if [ "$target_kind" != 'feature' ]; then
+		GUESS_MODULE_NAME="guess-config" guess_feature add-modules
+	fi
+
+	if [ "$GUESS_CONFIG_FORMAT" = "tsv" ]; then
+		printf '%s\n' "${items[@]}" | sort -u | while read -r item; do
+			[ -n "$item" ] || continue
+			if [ "$target_kind" = "module" ] || [ "$target_kind" = "opt-module" ]; then
+				item="${item##*/}"
+				item="${item%.ko*}"
+			fi
+			if [ -n "$target_group" ]; then
+				printf '%s\t%s\t%s\n' "$target_kind" "$target_group" "$item"
+			else
+				printf '%s\t%s\n' "$target_kind" "$item"
+			fi
+		done
+	else
+		printf '%s += \\\n' "$target_var"
+		printf '%s\n' "${items[@]}" | sort -u | modules_fmt | sed -e 's/^/\t/; $ ! s/$/ \\/'
+		printf '\n'
+	fi
+}
+
+if [ -n "${RESOLVE_MODALIAS-}" ] && [ -f "$GUESSDIR/guess.tsv" ]; then
+	declare -a modalias_lines=()
+	declare -a remaining_lines=()
+
+	while IFS=$'\t' read -r kind col1 col2 src ctx; do
+		if [ "$kind" = "modalias" ] || [ "$kind" = "opt-modalias" ]; then
+			modalias_lines+=("$kind"$'\t'"$col1"$'\t'"$col2"$'\t'"$src"$'\t'"$ctx")
+		else
+			remaining_lines+=("$kind"$'\t'"$col1"$'\t'"$col2"$'\t'"$src"$'\t'"$ctx")
+		fi
+	done < "$GUESSDIR/guess.tsv"
+
+	if [ "${#modalias_lines[@]}" -gt 0 ]; then
+		declare -A group_aliases=()
+		for line in "${modalias_lines[@]}"; do
+			IFS=$'\t' read -r kind grp alias src ctx <<< "$line"
+			group_aliases["$kind:$grp"]="${group_aliases["$kind:$grp"]-}$alias"$'\n'
+		done
+
+		for kgrp in "${!group_aliases[@]}"; do
+			kind="${kgrp%%:*}"
+			grp="${kgrp#*:}"
+			target_kind="module"
+			[ "$kind" != "opt-modalias" ] || target_kind="opt-module"
+
+			resolved=$(printf '%s' "${group_aliases[$kgrp]}" | \
+				depinfo \
+					--input=- \
+					${USE_MODPROBE_BLACKLIST:+--use-blacklist} \
+					--set-version="$KERNEL" \
+					--no-deps \
+					--no-prefix \
+					--no-firmware \
+					--no-builtin \
+				2>/dev/null | sort -u)
+
+			while read -r mod; do
+				[ -n "$mod" ] || continue
+				remaining_lines+=("$target_kind"$'\t'"$grp"$'\t'"$mod"$'\tdepinfo'$'\t-')
+			done <<< "$resolved"
+		done
+
+		printf '%s\n' "${remaining_lines[@]}" > "$GUESSDIR/guess.tsv"
+	fi
 fi
+
+print_vars
+print_list RESCUE_MODULES  modules:rescue
+print_list RESCUE_MODULES  modalias:rescue
+print_list MODULES_ADD     modules:add
+print_list MODULES_ADD     modalias:add
+print_list MODULES_TRY_ADD opt-modules:add
+print_list MODULES_TRY_ADD opt-modalias:add
+print_list FEATURES        features

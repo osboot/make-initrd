@@ -89,14 +89,14 @@ def run_replay(report_root: Path, kernel: str | None, modules_dir: Path) -> tupl
             "DEVLIST_FILE": str(report_root / "dev" / "devlist"),
             "KERNEL_MODULES_DIR": str(modules_dir),
             "GUESS_SUFFIX": "add:guess-root",
-            "TEST_GUESS_ACTIONS": "guess/root/action guess-config",
+            "TEST_GUESS_ACTIONS": "features/rootfs/guess/action guess-config",
             "RESOLVE_MODALIAS": "",
             "KERNEL_CONFIG": "/dev/null",
             "MAKE_INITRD_TRACE": "1",
             "MAKE_INITRD_TRACE_FORMAT": "tsv",
             "MAKE_INITRD_TRACE_PIDS": "",
-            "MAKE_INITRD_TRACE_EXECUTE_PATTERNS": "guess/root/action",
-            "MAKE_INITRD_TRACE_SRC_PATTERNS": "features/*/guess/* guess/root/action",
+            "MAKE_INITRD_TRACE_EXECUTE_PATTERNS": "features/rootfs/guess/action",
+            "MAKE_INITRD_TRACE_SRC_PATTERNS": "features/*/guess/*",
             "MAKE_INITRD_TRACE_RUN_PATTERNS": "*",
         }
     )

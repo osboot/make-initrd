@@ -1,0 +1,43 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+gdir="$tmpdir/guess"
+modules_dir="$tmpdir/modules"
+mkdir -p "$modules_dir/modA" "$modules_dir/modB"
+
+cat > "$modules_dir/modA/action" <<'EOF'
+#!/bin/bash -efu
+. guess-functions
+guess_feature featA
+EOF
+chmod +x "$modules_dir/modA/action"
+
+cat > "$modules_dir/modB/action" <<'EOF'
+#!/bin/bash -efu
+. guess-functions
+guess_feature featB
+EOF
+chmod +x "$modules_dir/modB/action"
+
+export PATH="$PWD/.build/dest/usr/bin:$PWD/.build/dest/usr/sbin:$PWD/tools:$PATH"
+# Test 1: CLI --triggers option
+tools/guess-runner \
+	--guessdir="$gdir" \
+	--detectdir="$modules_dir" \
+	--triggers="featA:modB" \
+	--modules="modA"
+
+cat "$gdir/guess.tsv"
+
+# Test 2: Triggering via FEATURE_REQUIRES_GUESS environment variable
+rm -f "$gdir/guess.tsv"
+export FEATURE_REQUIRES_GUESS="featA:modB"
+tools/guess-runner \
+	--guessdir="$gdir" \
+	--detectdir="$modules_dir" \
+	--modules="modA"
+
+cat "$gdir/guess.tsv"

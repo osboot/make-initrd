@@ -1,3 +1,2 @@
-guess:features
-shutdown
+feature	shutdown	-	-	-
 rc=0

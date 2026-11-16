@@ -1,3 +1,2 @@
-guess:modules
-virtio_pci
+module	add	virtio_pci	-	-
 rc=0

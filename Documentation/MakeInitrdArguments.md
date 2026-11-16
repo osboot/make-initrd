@@ -8,6 +8,9 @@ the image.
   `AUTODETECT` variable.
 - **guess-modules** - This goal prints list of module needed to mount specified
   mountpoint or block device.
+- **guess-explain** - This goal runs autodetection and prints a human-readable
+  provenance report detailing which modules proposed each feature, kernel driver,
+  modalias, and configuration variable.
 - **bug-report** - This goal collects system configuration data and puts those
   into an archive. If you have any problems with make-initrd this goal will help
   to gather the information necessary for developers to diagnose and fix bugs.
@@ -15,4 +18,5 @@ the image.
 ## See also
 
 - The article about [configuration](Configuration.md).
+- The article about [autodetection](GuessConfiguration.md).
 - The list of [features](Features.md).

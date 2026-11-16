@@ -18,16 +18,21 @@ There are few types of settings:
 
 ### System Detection Settings
 
-- **AUTODETECT** - This variable contains the list of subsystems which add
-  appropriate kernel modules and features automatically.
+- **AUTODETECT** - This variable contains the list of detection modules to run
+  automatically (default: `all`). Setting it empty (`AUTODETECT =`) completely
+  disables autodetection. Both canonical feature names (for example `modules-network`)
+  and legacy short aliases (for example `net`) can be used.
 - **KERNEL** - The variable specifies kernel version for corresponding modules
   in the image. Default: `$(uname -r)`
 - **DISABLE_GUESS** - The variable lists guess modules that should NOT run.
+  Supports canonical feature names, legacy aliases, and `common` (which disables
+  generic detection hooks).
 - **DEVICES** - The variable lists device files (for example `/dev/sda1`) for
   which you want to add modules.
 
-More details on how the guessing mechanism works can be found
-[here](GuessConfiguration.md).
+You can inspect the results and provenance of autodetection using
+`make-initrd guess-explain`. More details on how the guessing mechanism works
+can be found [here](GuessConfiguration.md).
 
 ### Image Generation Settings
 

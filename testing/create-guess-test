@@ -98,12 +98,12 @@ def run_test_guess(
             "DEVLIST_FILE": str(report_root / "dev" / "devlist"),
             "KERNEL_MODULES_DIR": str(modules_dir),
             "GUESS_SUFFIX": "add:guess-root",
-            "TEST_GUESS_ACTIONS": "guess/root/action guess-config",
+            "TEST_GUESS_ACTIONS": "features/rootfs/guess/action guess-config",
             "RESOLVE_MODALIAS": "",
             "KERNEL_CONFIG": "/dev/null",
             "MAKE_INITRD_TRACE": "1",
             "MAKE_INITRD_TRACE_PIDS": "",
-            "MAKE_INITRD_TRACE_EXECUTE_PATTERNS": "guess/root/action",
+            "MAKE_INITRD_TRACE_EXECUTE_PATTERNS": "features/rootfs/guess/action",
             "MAKE_INITRD_TRACE_SRC_PATTERNS": src_patterns,
             "MAKE_INITRD_TRACE_RUN_PATTERNS": run_patterns,
             "MAKE_INITRD_TRACE_FORMAT": "tsv" if output_format == "tsv" else "text",
@@ -235,7 +235,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "-s",
         "--src-patterns",
-        help="MAKE_INITRD_TRACE_SRC_PATTERNS (default: features/<feature>/guess/* guess/root/action)",
+        help="MAKE_INITRD_TRACE_SRC_PATTERNS (default: features/<feature>/guess/* features/rootfs/guess/action)",
     )
     parser.add_argument(
         "-r",
@@ -278,9 +278,9 @@ def main() -> None:
     src_patterns = args.src_patterns
     if not src_patterns:
         if args.feature:
-            src_patterns = f"features/{args.feature}/guess/* guess/root/action"
+            src_patterns = f"features/{args.feature}/guess/* features/rootfs/guess/action"
         else:
-            src_patterns = "features/*/guess/* guess/root/action"
+            src_patterns = "features/*/guess/* features/rootfs/guess/action"
 
     run_patterns = args.run_patterns or src_patterns
 
