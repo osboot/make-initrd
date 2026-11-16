@@ -77,7 +77,7 @@ jobs:
           kver=`uname -r`
           sudo apt-get -qq -y update
           sudo apt-get -qq -y install linux-modules-$kver
-          sudo apt-get -qq -y install git qemu-kvm ovmf
+          sudo apt-get -qq -y install git ovmf qemu-system-x86 qemu-utils
 
       - name: "Prepare Node"
         run: |
