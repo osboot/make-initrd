@@ -16,3 +16,11 @@ CRASH_DUMP_PROGS_PATTERNS ?= \
 	*/findfs
 
 CRASH_EXTRA_PROGS ?= $(wildcard $(shell which makedumpfile vmcore-dmesg findfs 2>/dev/null))
+
+CRASH_CHECK_SIZE       ?= warn
+CRASH_RESERVE_SIZE     ?= 256M
+CRASH_MAX_ROOTFS_RATIO ?= 35
+CRASH_MAX_IMAGE_RATIO  ?= 20
+CRASH_MAX_ROOTFS_SIZE  ?=
+CRASH_MAX_IMAGE_SIZE   ?=
+

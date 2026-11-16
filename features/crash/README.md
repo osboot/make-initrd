@@ -98,6 +98,13 @@ Depending on `rd.crash.report=` and the chosen target destination, data is packa
 
 * `CRASH_ENABLE_LIVE`: Set to `1` (default) to include the `crash` debugger; set to `0`
   to exclude it and build an ultra-lightweight dump-only initramfs.
+* `CRASH_CHECK_SIZE`: Validation policy for capture initramfs size (`warn`, `error`, or `none`; default: `warn`).
+* `CRASH_RESERVE_SIZE`: Expected crashkernel memory reservation (default: `256M`). If unset or default, automatically detected from `/sys/kernel/kexec_crash_size`, `/proc/iomem`, or `/proc/cmdline`.
+* `CRASH_MAX_ROOTFS_RATIO`: Maximum allowed ratio of unpacked rootfs size to crashkernel reserve percentage (default: `35`%).
+* `CRASH_MAX_IMAGE_RATIO`: Maximum allowed ratio of packed initramfs image size to crashkernel reserve percentage (default: `20`%).
+* `CRASH_MAX_ROOTFS_SIZE`: Explicit limit for unpacked rootfs size (e.g. `90M`). Overrides ratio calculation.
+* `CRASH_MAX_IMAGE_SIZE`: Explicit limit for packed image size (e.g. `50M`). Overrides ratio calculation.
+
 * `CRASH_PROG`: Name or path of the crash binary (default: `crash`).
 * `CRASH_DUMP_PROGS_PATTERNS`: Binary patterns for dump tools (`*/makedumpfile */vmcore-dmesg */findfs`).
 * `CRASH_EXTRA_PROGS`: Optional explicit paths to additional binaries.
