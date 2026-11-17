@@ -1,0 +1,97 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+bash -n features/crash/data/etc/rc.d/init.d/crash
+echo "syntax crash init service: ok"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' EXIT
+
+mkdir -p "$tmpdir/bin" "$tmpdir/.initrd" "$tmpdir/etc/init.d"
+touch "$tmpdir/.initrd/initenv"
+touch "$tmpdir/etc/init.d/template"
+
+# Mock vmcore
+truncate -s 10M "$tmpdir/vmcore"
+
+# Mock vmcore-dmesg
+cat <<'EOF' > "$tmpdir/bin/vmcore-dmesg"
+#!/bin/sh
+echo "[    0.000000] Linux version 6.6.0-test (gcc 13) #1 SMP"
+echo "[    0.000000] Kernel command line: BOOT_IMAGE=/vmlinuz root=UUID=1234 quiet"
+echo "[    1.234567] Kernel panic - not syncing: Fatal exception in interrupt"
+EOF
+chmod +x "$tmpdir/bin/vmcore-dmesg"
+
+export RD_CRASH_VIRTIO=""
+export RD_CRASH_EFI=""
+export RD_CRASH_DISK=""
+export RD_CRASH_RAW=""
+export RD_CRASH_EXIT="none"
+export CRASH_PROG="none"
+
+log_file="$tmpdir/hooks.log"
+nfs_cpio="$tmpdir/archive-nfs.cpio"
+second_cpio="$tmpdir/archive-second.cpio"
+
+# Create hook directory
+hooks_dir="$tmpdir/hooks"
+mkdir -p "$hooks_dir/crash.d"
+
+# 1. Full lifecycle hook (crash.d/10-nfs.sh)
+cat <<EOF > "$hooks_dir/crash.d/10-nfs.sh"
+#!/bin/sh
+phase="\$1"
+crash_dir="\$2"
+echo "10-nfs: phase=\$phase dir=\$crash_dir" >> "$log_file"
+
+case "\$phase" in
+	prepare)
+		echo "nfs_mounted" > "\$crash_dir/nfs.txt"
+		;;
+	report)
+		echo "host_inventory_content" > "\$crash_dir/host-info.txt"
+		cpio-stream add "host-info.txt" "\$crash_dir/host-info.txt"
+		;;
+	write)
+		cat > "$nfs_cpio"
+		;;
+	finish)
+		echo "nfs_unmounted" >> "\$log_file"
+		;;
+esac
+EOF
+chmod +x "$hooks_dir/crash.d/10-nfs.sh"
+
+# 2. Secondary write-only streaming hook (crash.d/20-stream.sh)
+cat <<EOF > "$hooks_dir/crash.d/20-stream.sh"
+#!/bin/sh
+[ "\$1" = "write" ] || exit 0
+crash_dir="\$2"
+echo "20-stream: phase=write dir=\$crash_dir" >> "$log_file"
+cat > "$second_cpio"
+EOF
+chmod +x "$hooks_dir/crash.d/20-stream.sh"
+
+# Execute crash service
+CRASH_RUNDIR="$tmpdir/crash" \
+PATH="$tmpdir/bin:$PWD/.build/dest/usr/bin:$PWD/.build/dest/usr/sbin:$PWD/tools:$PATH" \
+VMCORE="$tmpdir/vmcore" \
+CRASH_HOOKS_DIR="$hooks_dir" \
+	bash features/crash/data/etc/rc.d/init.d/crash start > "$tmpdir/service.log" 2>&1
+
+echo "=== Log execution sequence ==="
+sed -e "s|$tmpdir/crash|CRASH_DIR|g" "$log_file"
+
+echo "=== Validate nfs write archive ==="
+mkdir -p "$tmpdir/extract-nfs"
+( cd "$tmpdir/extract-nfs" && cpio -idmv < "$nfs_cpio" >/dev/null 2>&1 )
+[ -f "$tmpdir/extract-nfs/meta.txt" ] && echo "archive contains meta.txt: ok"
+[ -f "$tmpdir/extract-nfs/dmesg.txt.gz" ] && echo "archive contains dmesg.txt.gz: ok"
+[ -f "$tmpdir/extract-nfs/host-info.txt" ] && echo "archive contains host-info.txt: ok"
+
+echo "=== Validate secondary write archive ==="
+mkdir -p "$tmpdir/extract-second"
+( cd "$tmpdir/extract-second" && cpio -idmv < "$second_cpio" >/dev/null 2>&1 )
+[ -f "$tmpdir/extract-second/meta.txt" ] && echo "second archive contains meta.txt: ok"
+[ -f "$tmpdir/extract-second/host-info.txt" ] && echo "second archive contains host-info.txt: ok"

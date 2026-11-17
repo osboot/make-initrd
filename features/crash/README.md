@@ -108,3 +108,104 @@ Depending on `rd.crash.report=` and the chosen target destination, data is packa
 * `CRASH_PROG`: Name or path of the crash binary (default: `crash`).
 * `CRASH_DUMP_PROGS_PATTERNS`: Binary patterns for dump tools (`*/makedumpfile */vmcore-dmesg */findfs`).
 * `CRASH_EXTRA_PROGS`: Optional explicit paths to additional binaries.
+
+## Crash Lifecycle Hooks (`/lib/initrd/crash/crash.d/`)
+
+Administrators can customize or extend crash dump collection by packaging hook
+scripts into `/lib/initrd/crash/crash.d/[0-9][0-9]-*.sh`. Hooks execute in
+alphabetical order and receive the active lifecycle phase as their first argument:
+
+* **`$1`**: Lifecycle phase (`prepare`, `report`, `write`, `finish`).
+* **`$2`**: Crash runtime directory `$crash_dir` (default: `/run/crash`).
+
+Keeping all lifecycle phases within a single hook script avoids fragmenting complex
+logic (such as mounting, uploading, and unmounting remote storage) across multiple
+disconnected files.
+
+### Lifecycle Phases
+
+The capture service invokes each script in `/lib/initrd/crash/crash.d/` across four phases:
+
+| Phase | Invocation & Arguments | Purpose |
+|---|---|---|
+| **`prepare`** | `"$hook" prepare "$crash_dir"` | Bring up network interfaces (DHCP/static), mount network shares (NFS, CIFS), initialize hardware or watchdog. |
+| **`report`** | `"$hook" report "$crash_dir"` | Inject additional diagnostic files into the CPIO stream on the fly via `cpio-stream add`. Runs inside `cpio_report` before archive termination. Diagnostics and logs must be printed to **`stderr`** (`>&2`) to avoid corrupting the stream. |
+| **`write`** | `cpio_report \| "$hook" write "$crash_dir"` | Custom target storage. The hook reads the CPIO archive directly from **`stdin`** and writes or streams it to remote destinations without RAM buffering. Exiting with code `0` marks the target handled. |
+| **`finish`** | `"$hook" finish "$crash_dir"` | Teardown and notification: unmount network shares, send completion webhooks/alerts, execute `sync`. |
+
+### Packaging Hooks
+
+Hooks can be packaged into the initramfs using standard `PUT_FILES`:
+
+```makefile
+PUT_FILES += /lib/initrd/crash/crash.d/50-nfs.sh
+```
+
+### Examples
+
+#### 1. Complete NFS Storage Lifecycle (`crash.d/50-nfs.sh`)
+
+```bash
+#!/bin/sh
+phase="$1"
+crash_dir="$2"
+
+case "$phase" in
+	prepare)
+		mkdir -p /mnt/nfs
+		mount -t nfs -o nolock 192.168.1.100:/srv/crash /mnt/nfs
+		;;
+	report)
+		# Add host inventory into the CPIO archive (diagnostic messages to stderr)
+		[ ! -f /etc/machine-id ] || cpio-stream add "machine-id" /etc/machine-id
+		;;
+	write)
+		# Stream CPIO report from stdin directly to NFS without RAM buffering:
+		mkdir -p /mnt/nfs/dumps
+		cat > "/mnt/nfs/dumps/crash-$(date +%Y%m%d-%H%M%S).cpio"
+
+		# If full memory dump is requested:
+		if [ "${RD_CRASH_REPORT:-dump}" = "vmcore" ]; then
+			makedumpfile -c -d 31 "$VMCORE" "/mnt/nfs/dumps/vmcore-$(date +%Y%m%d-%H%M%S).dump" || :
+		fi
+		;;
+	finish)
+		sync
+		umount /mnt/nfs 2>/dev/null || :
+		;;
+esac
+```
+
+#### 2. Streaming Report via HTTP POST (`crash.d/60-http-upload.sh`)
+
+```bash
+#!/bin/sh
+[ "$1" = "write" ] || exit 0
+crash_dir="$2"
+
+# Upload CPIO report stream directly to an HTTP server via curl:
+curl -s -S -T - "http://crash-collector.corp.internal/upload/$(uname -n)-$(date +%s).cpio"
+```
+
+#### 3. Streaming Report to Remote Socket (`crash.d/60-netcat.sh`)
+
+```bash
+#!/bin/sh
+[ "$1" = "write" ] || exit 0
+crash_dir="$2"
+
+# Stream CPIO archive directly across the network to a listening receiver:
+nc -w 10 192.168.1.50 9999
+```
+
+#### 4. Encrypted Storage on Mounted Share (`crash.d/70-gpg-encrypt.sh`)
+
+```bash
+#!/bin/sh
+[ "$1" = "write" ] || exit 0
+crash_dir="$2"
+
+# Encrypt CPIO archive on the fly with recipient key before saving:
+gpg --batch --recipient admin@corp.internal --encrypt | \
+	cat > "/mnt/nfs/dumps/crash-$(date +%Y%m%d-%H%M%S).cpio.gpg"
+```

@@ -247,6 +247,53 @@ boot_timeout="${RD_CRASH_BOOT_TIMEOUT:-10}"
 report_type="${RD_CRASH_REPORT:-dump}"
 timestamp="$(date +%Y%m%d-%H%M%S 2>/dev/null || echo dump)"
 crash_dir="${CRASH_RUNDIR:-/run/crash}"
+CRASH_HOOKS_DIR="${CRASH_HOOKS_DIR:-/lib/initrd/crash}"
+
+run_crash_hooks()
+{
+	local phase="$1"
+	local dir="${2:-$crash_dir}"
+	local hook rc=0
+
+	for hook in "$CRASH_HOOKS_DIR/crash.d"/[0-9][0-9]-*.sh; do
+		[ -x "$hook" ] ||
+			continue
+
+		echo "crash: running crash.d hook ${hook##*/} ($phase)..." >&2
+
+		if ! "$hook" "$phase" "$dir"; then
+			echo "crash: WARNING: crash.d hook ${hook##*/} ($phase) failed (exit $?)" >&2
+			rc=1
+		fi
+	done
+
+	return "$rc"
+}
+
+run_write_hooks()
+{
+	local dir="${1:-$crash_dir}"
+	local hook rc=1 status
+
+	for hook in "$CRASH_HOOKS_DIR/crash.d"/[0-9][0-9]-*.sh; do
+		[ -x "$hook" ] ||
+			continue
+
+		echo "crash: streaming report to crash.d hook ${hook##*/} (write)..."
+		cpio_report | "$hook" write "$dir"
+
+		status="${PIPESTATUS[1]}"
+
+		if [ "$status" -eq 0 ]; then
+			echo "crash: crash.d hook ${hook##*/} (write) finished successfully"
+			rc=0
+		else
+			echo "crash: WARNING: crash.d hook ${hook##*/} (write) failed (exit $status)"
+		fi
+	done
+
+	return "$rc"
+}
 
 mkdir -p "$crash_dir"
 
@@ -302,6 +349,9 @@ print_meta()
 # Generate meta.txt early
 print_meta "$crash_dir/dmesg.txt" > "$crash_dir/meta.txt" 2>/dev/null ||:
 
+# Phase: prepare hooks (network setup, remote share mounting)
+run_crash_hooks prepare "$crash_dir"
+
 cpio_report()
 {
 	local fn
@@ -313,6 +363,9 @@ cpio_report()
 		[ ! -f "$crash_dir/$fn" ] ||
 			cpio-stream add "$fn" "$crash_dir/$fn"
 	done
+
+	# Phase: report hooks (add extra files via cpio-stream add)
+	run_crash_hooks report "$crash_dir"
 
 	cpio-stream finish
 }
@@ -553,11 +606,19 @@ if [ -n "${RD_CRASH_RAW-}" ]; then
 	fi
 fi
 
+# Target: Custom write hooks
+if run_write_hooks "$crash_dir"; then
+	has_target=1
+fi
+
 # If no target specified, show dmesg on console if triage wasn't run
 if [ "$has_target" = 0 ] && [ ! -f "$crash_dir/triage.txt.gz" ]; then
 	echo "crash: no target specified; dumping dmesg tail to console:"
 	[ ! -f "$crash_dir/dmesg.txt.gz" ] || zcat "$crash_dir/dmesg.txt.gz" 2>/dev/null | tail -n 30 ||:
 fi
+
+# Phase: finish hooks (cleanup, unmount, notifications)
+run_crash_hooks finish "$crash_dir"
 
 # 3. Exit action: shell, poweroff, or reboot
 do_exit
