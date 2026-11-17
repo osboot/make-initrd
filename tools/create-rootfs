@@ -150,6 +150,11 @@ append_progs()
 			continue
 		fi
 
+		if [ -n "$LOCALBUILDDIR" ] && [ -z "${f##$LOCALBUILDDIR/*}" ]; then
+			LOCALFILES["$f"]=1
+			continue
+		fi
+
 		FILES["$f"]=1
 	done
 }
@@ -178,7 +183,7 @@ get_bin_paths()
 	while read -r -d: d; do
 		[ ! -d "$d" ] ||
 			BIN_PATHS+=("$d")
-	done <<<"$BUSYBOX_PATH:$SYSTEM_PATH"
+	done <<<"$BUILDDIR_PATH:$BUSYBOX_PATH:$SYSTEM_PATH"
 }
 
 append_libs()
