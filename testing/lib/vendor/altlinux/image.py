@@ -29,6 +29,8 @@ def render_dockerfiles(ctx: ImageRenderContext) -> tuple[str, str]:
         f"""\
         FROM {ctx.base_image}
         RUN rpm -ql filesystem | xargs -r mkdir -p
+        RUN sed -i -r -e 's/^rpm/#&/' /etc/apt/sources.list.d/*.list
+        RUN sed -i -r -e 's,^#(rpm.* http://distrib-coffee.ipsl.jussieu.fr/),\\1,' /etc/apt/sources.list.d/*.list
         RUN apt-get {APT_ARGS} update
         RUN apt-get {APT_ARGS} install {ctx.packages.joined("kernel")}
         RUN apt-get {APT_ARGS} install {ctx.packages.joined("sysimage")}
@@ -41,6 +43,8 @@ def render_dockerfiles(ctx: ImageRenderContext) -> tuple[str, str]:
     devel = textwrap.dedent(
         f"""\
         FROM localhost/image-{ctx.vendor_name}:sysimage
+        RUN sed -i -r -e 's/^rpm/#&/' /etc/apt/sources.list.d/*.list
+        RUN sed -i -r -e 's,^#(rpm.* http://distrib-coffee.ipsl.jussieu.fr/),\\1,' /etc/apt/sources.list.d/*.list
         RUN apt-get {APT_ARGS} update
         RUN apt-get {APT_ARGS} install {ctx.packages.joined("kernel")}
         RUN apt-get {APT_ARGS} install {ctx.packages.joined("kickstart")}
