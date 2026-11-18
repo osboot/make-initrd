@@ -28,7 +28,6 @@ tmpdir      = /tmp
 projectdir  = @projectdir@
 rulesdir    = ${projectdir}/mk
 kernelinstalldir = $(prefix)/lib/kernel/install.d
-kernelconfdir    = $(prefix)/lib/kernel/install.conf.d
 
 libcdir := $(shell $(srcdir)/tools/get-libc-dir)
 completionsdir := $(shell pkg-config --variable=completionsdir bash-completion 2>/dev/null ||:)
@@ -611,9 +610,8 @@ install: build installdirs
 	$(Q)[ -z "$(completionsdir)" ] || \
 	    $(INSTALL_DATA) -t "$(DESTDIR)$(completionsdir)" -- $(wildcard $(srcdir)/contrib/bash-completion/*)
 	$(Q)[ -z "$(kernelinstalldir)" ] || { \
-	    $(INSTALL) -d -m 755 -- "$(DESTDIR)$(kernelinstalldir)" "$(DESTDIR)$(kernelconfdir)" && \
-	    $(INSTALL_SCRIPT) -m 755 -t "$(DESTDIR)$(kernelinstalldir)" -- $(wildcard $(srcdir)/contrib/kernel-install/*.install) && \
-	    $(INSTALL_DATA) -t "$(DESTDIR)$(kernelconfdir)" -- $(wildcard $(srcdir)/contrib/kernel-install/*.conf); }
+	    $(INSTALL) -d -m 755 -- "$(DESTDIR)$(kernelinstalldir)" && \
+	    $(INSTALL_SCRIPT) -m 755 -t "$(DESTDIR)$(kernelinstalldir)" -- $(wildcard $(srcdir)/contrib/kernel-install/*.install); }
 	$(Q)[ -z "$(systemdunitdir)" ] || { \
 	    $(INSTALL) -d -m 755 -- "$(DESTDIR)$(systemdunitdir)" && \
 	    $(INSTALL_DATA) -t "$(DESTDIR)$(systemdunitdir)" -- $(srcdir)/features/shutdown/system/make-initrd-shutdown.service; }
@@ -643,8 +641,7 @@ uninstall:
 	$(Q)[ -z "$(systemdunitdir)" ] || \
 	    rm -f -- "$(DESTDIR)$(systemdunitdir)/make-initrd-shutdown.service"
 	$(Q)[ -z "$(kernelinstalldir)" ] || \
-	    rm -f -- $(addprefix $(DESTDIR)$(kernelinstalldir)/,$(notdir $(wildcard $(srcdir)/contrib/kernel-install/*.install))) \
-	          $(addprefix $(DESTDIR)$(kernelconfdir)/,$(notdir $(wildcard $(srcdir)/contrib/kernel-install/*.conf)))
+	    rm -f -- $(addprefix $(DESTDIR)$(kernelinstalldir)/,$(notdir $(wildcard $(srcdir)/contrib/kernel-install/*.install)))
 	$(Q)for d in "$(rulesdir)" "$(projectdir)" "$(execdir)" "$(runtimedir)"; do \
 	    [ -n "$$d" ] || continue; \
 	    case "$${d%/}" in \
