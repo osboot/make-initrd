@@ -17,6 +17,8 @@ void rd_vmessage(const char *fmt, va_list ap)                   __printf(1, 0);
 void rd_log_vmessage(int priority, const char *fmt, va_list ap) __printf(2, 0);
 void rd_log_message(int priority, const char *fmt, ...)         __printf(2, 3);
 void rd_log_setup_stderr(const char *logfile)                   __nonnull(1);
+const char *rd_log_resolve_file(const char *env_var,
+                                const char *fallback)           __nonnull(2);
 
 #define rd_fatal(format, arg...)                    \
 	do {                                        \

@@ -26,6 +26,7 @@
 
 #include "rd/memory.h"
 #include "rd/logging.h"
+#include "rd/uevent.h"
 #include "ueventd.h"
 
 #define DEFAULT_LOGFILE "/var/log/ueventd.log"
@@ -90,7 +91,6 @@ static void setup_pipe_fd(struct fd_handler *el)            __nonnull(1);
 static void setup_timer_fd(struct fd_handler *el)           __nonnull(1);
 static int setup_epoll_fd(struct fd_handler list[FD_MAX]);
 static pid_t spawn_worker(int epollfd, struct watch *queue) __nonnull(2);
-static inline char *get_param_dir(const char *name)         __nonnull(1);
 static void update_timerfd(int inotifyfd, int timerfd);
 static struct watch *find_queue_watch(const char *name)     __nonnull(1);
 static void mark_queue_dirty(struct watch *queue)           __nonnull(1);
@@ -631,14 +631,6 @@ pid_t spawn_worker(int epollfd, struct watch *queue)
 	return 0;
 }
 
-char *get_param_dir(const char *name)
-{
-	char *value = getenv(name);
-	if (!value)
-		rd_fatal("please set `%s' env variable", name);
-	return value;
-}
-
 int main(int argc, char **argv)
 {
 	struct watch *e, *n;
@@ -664,16 +656,16 @@ int main(int argc, char **argv)
 	if (optind == argc)
 		rd_fatal("specify handler program");
 
-	rd_log_setup_stderr(DEFAULT_LOGFILE);
+	rd_log_setup_stderr(rd_log_resolve_file("UEVENTD_LOGFILE", DEFAULT_LOGFILE));
 	rd_logging_init(fileno(stderr), loglevel, program_invocation_short_name);
 
 	rd_info("starting server ...");
 
-	filter_dir = get_param_dir("filterdir");
-	uevent_dir = get_param_dir("ueventdir");
-	uevent_confdb = get_param_dir("uevent_confdb");
+	filter_dir = rd_getenv_or_die("filterdir");
+	uevent_dir = rd_getenv_or_die("ueventdir");
+	uevent_confdb = rd_getenv_or_die("uevent_confdb");
 	handler_file = argv[optind++];
-	timer_dir = get_param_dir("timerdir");
+	timer_dir = rd_getenv_or_die("timerdir");
 
 	setup_inotify_fd(&fd_handler_list[FD_INOTIFY]);
 	setup_signal_fd(&fd_handler_list[FD_SIGNAL]);

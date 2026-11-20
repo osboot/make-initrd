@@ -6,26 +6,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <fcntl.h>
 #include <poll.h>
-#include <time.h>
 #include <errno.h>
 
-#include "cleanup.h"
 #include "rd/memory.h"
 #include "rd/logging.h"
 #include "rd/list.h"
+#include "rd/uevent.h"
 #include "ueventd-mounts.h"
 
 #define DEFAULT_LOGFILE "/var/log/ueventd-mounts.log"
-
-#define QUEUE_TMPNAME ".tmp"
 #define QUEUE_NAME "mount"
-#define EVENT_TEMP_NAME "." QUEUE_NAME ".event.new"
 
-static char *filter_dir;
-static int queue_dirfd;
-static int temp_dirfd;
+static struct rd_uevent_queue event_queue;
 
 LIST_HEAD(mounts);
 
@@ -93,41 +86,13 @@ void mount_detach(struct mounts *m)
 
 void create_event(const char *action, struct mounts *m)
 {
-	char *p;
-	struct timespec tp = { 0 };
-
-	clock_gettime(CLOCK_BOOTTIME, &tp);
-
-	int fd __free(close) = openat(temp_dirfd, EVENT_TEMP_NAME,
-	                              O_WRONLY | O_CREAT | O_EXCL,
-	                              S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-	if (fd < 0)
-		rd_fatal("open: %s/" QUEUE_TMPNAME "/%s: %m", filter_dir, EVENT_TEMP_NAME);
-
-	dprintf(fd,
-	        "ACTION='%s'\n" "SOURCE='%s'\n" "TARGET='%s'\n" "FSTYPE='%s'\n" "OPTIONS='%s'\n",
-	        action, m->ent_name, m->ent_path, m->ent_type, m->ent_opts);
-
-	char *fname __free(free) = rd_asprintf_or_die(QUEUE_NAME ".%s.%06lu.%012lu", m->ent_path,
-	                                              (unsigned long) tp.tv_sec, tp.tv_nsec);
-
-	for (p = fname; *p != '\0'; p++) {
-		if (*p == '/')
-			*p = '_';
-	}
-
-	if (renameat(temp_dirfd, EVENT_TEMP_NAME, queue_dirfd, fname) < 0)
-		rd_fatal("rename `%s/" QUEUE_TMPNAME "/%s' -> `%s/%s': %m",
-		         filter_dir, EVENT_TEMP_NAME,
-		         filter_dir, fname);
-}
-
-static char *get_param_dir(const char *name)
-{
-	char *value = getenv(name);
-	if (!value)
-		rd_fatal("please set `%s' env variable", name);
-	return value;
+	rd_uevent_emit(&event_queue, m->ent_path,
+	               "ACTION='%s'\n"
+	               "SOURCE='%s'\n"
+	               "TARGET='%s'\n"
+	               "FSTYPE='%s'\n"
+	               "OPTIONS='%s'\n",
+	               action, m->ent_name, m->ent_path, m->ent_type, m->ent_opts);
 }
 
 static struct mount_backend *backends[] = {
@@ -170,30 +135,12 @@ int main(int argc, char **argv)
 		}
 	}
 
-	const char *logfile = getenv("UEVENTD_MOUNTS_LOGFILE");
-	if (!logfile || !*logfile)
-		logfile = getenv("LOGFILE");
-	if (!logfile || !*logfile)
-		logfile = DEFAULT_LOGFILE;
-
-	rd_log_setup_stderr(logfile);
+	rd_log_setup_stderr(rd_log_resolve_file("UEVENTD_MOUNTS_LOGFILE", DEFAULT_LOGFILE));
 	rd_logging_init(fileno(stderr), loglevel, program_invocation_short_name);
 
 	rd_info("starting server ...");
 
-	filter_dir = get_param_dir("filterdir");
-
-	if (chdir(filter_dir) < 0)
-		rd_fatal("chdir: %s: %m", filter_dir);
-
-	if (chdir(QUEUE_NAME) < 0)
-		rd_fatal("chdir: %s/" QUEUE_NAME ": %m", filter_dir);
-
-	if ((queue_dirfd = open(".", O_PATH | O_DIRECTORY | O_CLOEXEC)) < 0)
-		rd_fatal("open: %s/" QUEUE_NAME ": %m", filter_dir);
-
-	if ((temp_dirfd = openat(queue_dirfd, QUEUE_TMPNAME, O_PATH | O_DIRECTORY | O_CLOEXEC)) < 0)
-		rd_fatal("open: %s/" QUEUE_TMPNAME ": %m", filter_dir);
+	rd_uevent_queue_open(&event_queue, rd_getenv_or_die("filterdir"), QUEUE_NAME);
 
 	struct mount_backend *b = backend_select();
 
@@ -219,5 +166,6 @@ int main(int argc, char **argv)
 	}
 
 	b->cleanup(b);
+	rd_uevent_queue_close(&event_queue);
 	return EXIT_SUCCESS;
 }
