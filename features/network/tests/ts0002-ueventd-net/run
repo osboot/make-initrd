@@ -1,0 +1,157 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+cwd="${0%/*}"
+root="$cwd/root"
+ueventd_net="$PWD/.build/dest/usr/libexec/make-initrd/features/network/sbin/ueventd-net"
+
+[ -x "$ueventd_net" ] || exit 127
+
+if [ -x "$PWD/.build/dest/lib/initrd/bin/busybox" ]; then
+	ip_cmd() { "$PWD/.build/dest/lib/initrd/bin/busybox" ip "$@"; }
+elif command -v ip >/dev/null 2>&1; then
+	ip_cmd() { ip "$@"; }
+else
+	exit 127
+fi
+
+command -v unshare >/dev/null 2>&1 || exit 127
+unshare -r -n true 2>/dev/null || exit 127
+
+libcdir="$(tools/get-libc-dir 2>/dev/null ||:)"
+export LD_LIBRARY_PATH="$PWD/.build/dest/lib/initrd$libcdir:$PWD/.build/dest/lib/initrd/usr/lib/x86_64-linux-gnu:$PWD/.build/dest/lib/initrd/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export RDLOG_STDERR=1
+export ueventd_net
+export root
+
+rm -rf -- "$root"
+mkdir -p -- "$root/queues/network/.tmp"
+
+export -f ip_cmd
+
+unshare -r -n bash -eu <<'EOF'
+export filterdir="$root/queues"
+qdir="$filterdir/network"
+
+wait_events()
+{
+	local expected="$1"
+	local i=0 count=0 f
+
+	while [ "$i" -lt 50 ]; do
+		count=0
+		for f in "$qdir"/network.*; do
+			[ -f "$f" ] || continue
+			count=$(( count + 1 ))
+		done
+		[ "$count" -lt "$expected" ] || return 0
+		sleep 0.05
+		i=$(( i + 1 ))
+	done
+}
+
+flush_events()
+{
+	local step="$1"
+	local f base rest t1 r1 t2
+
+	printf '=== %s ===\n' "$step"
+	for f in "$qdir"/network.*; do
+		[ -f "$f" ] || continue
+		base="${f##*/}"
+		rest="${base#network.}"
+		# extract "<type>.<action>" from "network.<type>.<action>.<sec>.<nsec>.<seq>"
+		t1="${rest%%.*}"
+		r1="${rest#*.}"
+		t2="${r1%%.*}"
+		(
+			NET_IF=''
+			NET_IFINDEX=''
+			IP_VER=''
+			HAS_DEFAULT=''
+			# shellcheck disable=SC1090
+			. "$f"
+			printf '%s.%s if=%s%s%s\n' \
+				"$t1" "$t2" "$NET_IF" \
+				"${IP_VER:+ ipv$IP_VER}" \
+				"${HAS_DEFAULT:+ default=$HAS_DEFAULT}"
+		)
+		rm -f -- "$f"
+	done | LC_ALL=C sort
+}
+
+# Pre-configure lo before starting ueventd-net to test initial dump
+ip_cmd link set lo up
+
+"$ueventd_net" -l error &
+pid="$!"
+trap 'kill "$pid" 2>/dev/null ||:; wait "$pid" 2>/dev/null ||:' EXIT
+
+# Step 1: initial dump sees lo up with ipv4 + ipv6
+wait_events 3
+flush_events "initial dump (lo)"
+
+# Step 2: dummy0 up (carrier up, IPv6 fe80:: link-local must be ignored)
+ip_cmd link add dummy0 type dummy
+ip_cmd link set dummy0 up
+wait_events 1
+sleep 0.1
+flush_events "dummy0 carrier up"
+
+# Step 3: first IPv4 address -> addr.ready + connected route (default=0)
+ip_cmd addr add 192.0.2.10/24 dev dummy0
+wait_events 2
+flush_events "ipv4 addr add"
+
+# Step 4: second IPv4 address in another subnet -> no duplicate addr.ready or route.ready
+ip_cmd addr add 198.51.100.10/24 dev dummy0
+sleep 0.1
+flush_events "ipv4 second addr (dedup)"
+
+# Step 5: default IPv4 route -> route.ready default=1
+ip_cmd route add default via 192.0.2.1 dev dummy0
+wait_events 1
+flush_events "ipv4 default route add"
+
+# Step 6: remove default IPv4 route -> route.ready default=0
+ip_cmd route del default via 192.0.2.1 dev dummy0
+wait_events 1
+flush_events "ipv4 default route del"
+
+# Step 7: remove first IPv4 address (second remains) -> no addr.lost or route.lost
+ip_cmd addr del 192.0.2.10/24 dev dummy0
+sleep 0.1
+flush_events "ipv4 first addr del (still has addr)"
+
+# Step 8: remove last IPv4 address -> addr.lost + route.lost
+ip_cmd addr del 198.51.100.10/24 dev dummy0
+wait_events 2
+flush_events "ipv4 last addr del"
+
+# Step 9: global IPv6 address (after DAD) -> addr.ready + route.ready
+ip_cmd addr add 2001:db8::10/64 dev dummy0
+wait_events 2
+flush_events "ipv6 global addr add"
+
+# Step 10: carrier down -> carrier.down + ipv6 addr/route lost
+ip_cmd link set dummy0 down
+wait_events 3
+flush_events "dummy0 carrier down"
+
+# Step 11: rename dummy0 -> net0 and bring up -> carrier.up under new name
+ip_cmd link set dummy0 name net0
+ip_cmd link set net0 up
+wait_events 1
+flush_events "rename to net0 and carrier up"
+
+# Step 12: delete net0 -> carrier.down
+ip_cmd link del net0
+wait_events 1
+flush_events "delete net0"
+
+kill "$pid"
+wait "$pid" ||:
+trap - EXIT
+EOF
+
+rm -rf -- "$root"

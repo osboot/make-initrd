@@ -1,0 +1,30 @@
+=== initial dump (lo) ===
+addr.ready if=lo ipv4
+addr.ready if=lo ipv6
+carrier.up if=lo
+=== dummy0 carrier up ===
+carrier.up if=dummy0
+=== ipv4 addr add ===
+addr.ready if=dummy0 ipv4
+route.ready if=dummy0 ipv4 default=0
+=== ipv4 second addr (dedup) ===
+=== ipv4 default route add ===
+route.ready if=dummy0 ipv4 default=1
+=== ipv4 default route del ===
+route.ready if=dummy0 ipv4 default=0
+=== ipv4 first addr del (still has addr) ===
+=== ipv4 last addr del ===
+addr.lost if=dummy0 ipv4
+route.lost if=dummy0 ipv4 default=0
+=== ipv6 global addr add ===
+addr.ready if=dummy0 ipv6
+route.ready if=dummy0 ipv6 default=0
+=== dummy0 carrier down ===
+addr.lost if=dummy0 ipv6
+carrier.down if=dummy0
+route.lost if=dummy0 ipv6 default=0
+=== rename to net0 and carrier up ===
+carrier.up if=net0
+=== delete net0 ===
+carrier.down if=net0
+rc=0
