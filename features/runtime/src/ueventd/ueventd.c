@@ -397,7 +397,9 @@ int process_signal_events(int signfd)
 
 	if (fdsi.ssi_signo == SIGCHLD) {
 		while (1) {
-			pid_t pid = waitpid_retry(-1, NULL, WNOHANG);
+			int wstatus = 0;
+			int found = 0;
+			pid_t pid = waitpid_retry(-1, &wstatus, WNOHANG);
 
 			if (pid <= 0) {
 				if (pid < 0 && errno != ECHILD) {
@@ -408,9 +410,14 @@ int process_signal_events(int signfd)
 			}
 
 			for (p = watch_list; p; p = p->next) {
-				if (p->q_pid == pid)
+				if (p->q_pid == pid) {
 					p->q_pid = 0;
+					found = 1;
+				}
 			}
+
+			if (!found)
+				sources_handle_exit(pid, wstatus);
 		}
 		return 0;
 	}
@@ -685,13 +692,19 @@ int main(int argc, char **argv)
 	watch_timer_queues(fd_handler_list[FD_INOTIFY].fd);
 	apply_pause();
 	update_timerfd(fd_handler_list[FD_INOTIFY].fd, fd_handler_list[FD_TIMER].fd);
+	sources_start(getenv("sourcedir"));
 
 	while (1) {
 		struct epoll_event ev[EV_MAX];
 		int fdcount;
+		int timeout = dirty_queues ? 250 : -1;
+		int src_timeout = sources_next_timeout_ms();
+
+		if (src_timeout >= 0 && (timeout < 0 || src_timeout < timeout))
+			timeout = src_timeout;
 
 		errno = 0;
-		fdcount = epoll_wait(epollfd, ev, EV_MAX, (dirty_queues ? 250 : -1));
+		fdcount = epoll_wait(epollfd, ev, EV_MAX, timeout);
 
 		if (fdcount < 0) {
 			if (errno == EINTR)
@@ -708,6 +721,8 @@ int main(int argc, char **argv)
 			if (fde->fd_handler(fde->fd) != 0)
 				goto done;
 		}
+
+		sources_tick();
 
 		if (timer_changed)
 			update_timerfd(fd_handler_list[FD_INOTIFY].fd, fd_handler_list[FD_TIMER].fd);
@@ -726,6 +741,8 @@ int main(int argc, char **argv)
 		}
 	}
 done:
+	sources_stop_all();
+
 	for (e = watch_list, n = NULL; e; e = n) {
 		n = e->next;
 		if (e->q_pid)
