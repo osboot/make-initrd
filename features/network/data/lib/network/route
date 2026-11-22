@@ -114,11 +114,7 @@ update()
 		done
 	done
 
-	[ "$rc" = 0 ] ||
-		return $rc
-
-	message "create event: network.$NET_EV_TYPE.$NET_EV_ACTION -> network.route.updated"
-	net_event "network.route.updated" "$NET_IF"
+	return $rc
 }
 
 remove()
@@ -130,11 +126,7 @@ remove()
 		set_rule  $v del || rc=1
 	done
 
-	[ "$rc" = 0 ] ||
-		return $rc
-
-	message "create event: network.$NET_EV_TYPE.$NET_EV_ACTION -> network.route.removed"
-	net_event "network.route.removed" "$NET_IF"
+	return $rc
 }
 
 case "$NET_EV_ACTION" in
