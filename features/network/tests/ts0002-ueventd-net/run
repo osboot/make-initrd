@@ -3,7 +3,7 @@
 
 cwd="${0%/*}"
 root="$cwd/root"
-ueventd_net="$PWD/.build/dest/usr/libexec/make-initrd/features/network/sbin/ueventd-net"
+ueventd_net="$PWD/.build/dest/usr/libexec/make-initrd/features/network/lib/uevent/sources/ueventd-net"
 
 [ -x "$ueventd_net" ] || exit 127
 

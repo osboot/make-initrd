@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-ueventd_net_DEST = $(dest_featuredir)/network/sbin/ueventd-net
+ueventd_net_DEST = $(dest_featuredir)/network/lib/uevent/sources/ueventd-net
 ueventd_net_SRCDIR = $(features_srcdir)/network/src/ueventd-net
 
 ueventd_net_SRCS = \
