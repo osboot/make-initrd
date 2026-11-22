@@ -26,9 +26,6 @@ defaults()
 	export PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin
 	export RUN_INITRD=1
 	export rootmnt='/root'
-
-	UDEV_VERSION="$(udevd --version)" ||:
-	export UDEV_VERSION
 }
 
 readonly VAR_S=1

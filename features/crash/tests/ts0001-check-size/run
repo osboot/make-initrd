@@ -1,0 +1,52 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+bash -n features/crash/bin/check-crash-size
+echo "syntax check-crash-size: ok"
+
+PROG="features/crash/bin/check-crash-size"
+export PATH="$PWD/.build/dest/usr/bin:$PWD/.build/dest/usr/sbin:$PWD/tools:$PATH"
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' EXIT
+
+rootdir="$tmpdir/rootfs"
+outfile="$tmpdir/initrd.img"
+
+mkdir -p "$rootdir"
+# Create 1M file in rootfs
+truncate -s 1M "$rootdir/file"
+# Create 500K image file
+truncate -s 500K "$outfile"
+
+# 1. Image and rootfs within budget (reserve=100M, max_rootfs=35M, max_img=20M)
+echo "=== test within budget ==="
+CRASH_CHECK_SIZE=warn CRASH_RESERVE_SIZE=100M "$PROG" "$rootdir" "$outfile" 2>&1 |
+	sed -e 's/check-crash-size: //'
+echo "status: $?"
+
+# 2. Exceed limit with policy=warn
+echo "=== test exceed with warn ==="
+CRASH_CHECK_SIZE=warn CRASH_RESERVE_SIZE=2M "$PROG" "$rootdir" "$outfile" 2>&1 |
+	sed -e 's/check-crash-size: //'
+echo "status: $?"
+
+# 3. Exceed limit with policy=error
+echo "=== test exceed with error ==="
+set +e
+CRASH_CHECK_SIZE=error CRASH_RESERVE_SIZE=2M "$PROG" "$rootdir" "$outfile" > "$tmpdir/err.log" 2>&1
+rc=$?
+sed -e 's/check-crash-size: //' "$tmpdir/err.log"
+echo "status: $rc"
+set -e
+
+# 4. Exceed limit with policy=none (disabled)
+echo "=== test exceed with none ==="
+CRASH_CHECK_SIZE=none CRASH_RESERVE_SIZE=2M "$PROG" "$rootdir" "$outfile"
+echo "status: $?"
+
+# 5. Explicit size limits
+echo "=== test explicit size limits ==="
+CRASH_CHECK_SIZE=warn CRASH_MAX_IMAGE_SIZE=200K "$PROG" "$rootdir" "$outfile" 2>&1 |
+	sed -e 's/check-crash-size: //'
+echo "status: $?"
+

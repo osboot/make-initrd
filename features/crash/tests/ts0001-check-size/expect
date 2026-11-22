@@ -1,0 +1,16 @@
+syntax check-crash-size: ok
+=== test within budget ===
+Size of capture initramfs looks sane.
+status: 0
+=== test exceed with warn ===
+WARNING: capture initramfs exceeds safe memory limits for crashkernel reserve 2M: packed image 500K exceeds limit 409K; Secondary kernel may fail to boot or trigger Out Of Memory (OOM) during dump capture. Consider removing AUTODETECT=none, pruning unneeded drivers, or setting CRASH_ENABLE_LIVE=0.
+status: 0
+=== test exceed with error ===
+capture initramfs exceeds safe memory limits for crashkernel reserve 2M: packed image 500K exceeds limit 409K; Secondary kernel may fail to boot or trigger Out Of Memory (OOM) during dump capture. Consider removing AUTODETECT=none, pruning unneeded drivers, or setting CRASH_ENABLE_LIVE=0.
+status: 1
+=== test exceed with none ===
+status: 0
+=== test explicit size limits ===
+WARNING: capture initramfs exceeds safe memory limits: packed image 500K exceeds limit 200K; Secondary kernel may fail to boot or trigger Out Of Memory (OOM) during dump capture. Consider removing AUTODETECT=none, pruning unneeded drivers, or setting CRASH_ENABLE_LIVE=0.
+status: 0
+rc=0

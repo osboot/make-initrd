@@ -1,0 +1,39 @@
+#!/bin/bash -efu
+
+export LANG=C
+export LC_ALL=C
+export TZ=UTC
+
+PROG="${PROG:-cpio-stream}"
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+echo "=== help and version ==="
+$PROG -h | head -n 1
+$PROG -V | head -n 1 | sed -e 's/version [0-9.]\+/version VERSION/'
+
+echo "=== stream add and finish ==="
+mkdir -p "$tmpdir/ext1"
+{
+	echo "hello cpio" | $PROG -t 1700000000 add "msg.txt"
+	printf "world" | gzip -c | $PROG -t 1700000000 add "world.gz"
+	$PROG finish
+} > "$tmpdir/archive1.cpio"
+(cd "$tmpdir/ext1" && cpio -idmv < "$tmpdir/archive1.cpio")
+cat "$tmpdir/ext1/msg.txt"
+zcat "$tmpdir/ext1/world.gz"
+echo
+
+echo "=== disk file add and trailer ==="
+mkdir -p "$tmpdir/ext2"
+echo "from disk" > "$tmpdir/disk.txt"
+$PROG -o "$tmpdir/archive2.cpio" -t 1700000000 add "disk.txt" "$tmpdir/disk.txt"
+$PROG -o "$tmpdir/archive2.cpio" trailer
+(cd "$tmpdir/ext2" && cpio -idmv < "$tmpdir/archive2.cpio")
+cat "$tmpdir/ext2/disk.txt"
+
+echo "=== trailing junk on raw device ==="
+mkdir -p "$tmpdir/ext3"
+printf "GARBAGE%.0s" {1..200} >> "$tmpdir/archive2.cpio"
+(cd "$tmpdir/ext3" && cpio -idmv < "$tmpdir/archive2.cpio")
+cat "$tmpdir/ext3/disk.txt"

@@ -1,0 +1,12 @@
+IMAGE_SUFFIX = -kdump
+
+USE_DEVICE_DAEMON = mdev
+FEATURES += crash runtime-compressed-fs
+DISABLE_GUESS += fstab resume root ucode
+
+# Set to 0 to exclude the crash debugger and build an ultra-lightweight
+# dump-only capture initramfs (~2-3 MB) using makedumpfile / vmcore-dmesg:
+# CRASH_ENABLE_LIVE = 0
+
+# For virtual machines streaming dumps to host via virtio-serial:
+# FEATURES += modules-virtio

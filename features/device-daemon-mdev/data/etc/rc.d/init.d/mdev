@@ -1,0 +1,55 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+### BEGIN INIT INFO
+# Provides:            mdev $device-daemon
+# Required-Start:      cmdline modules mountvirtfs fstab
+# Should-Start:        $syslog
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Populates /dev with device nodes using busybox mdev.
+# Description:         Uses busybox mdev to populate /dev with device nodes.
+### END INIT INFO
+
+. /.initrd/initenv
+. /etc/init.d/template
+
+NAME=mdev
+PIDFILE=/var/run/$NAME.pid
+
+load_modules()
+{
+	[ -d /sys/bus ] || return 0
+
+	find /sys/bus /sys/devices -type f -name uevent 2>/dev/null |
+		sort -d |
+		while read -r uevent; do
+			echo add > "$uevent"
+		done 2>/dev/null ||:
+}
+
+start()
+{
+	[ ! -e /proc/sys/kernel/hotplug ] ||
+		echo /sbin/mdev > /proc/sys/kernel/hotplug 2>/dev/null ||:
+
+	start_daemon --make-pidfile --pidfile "$PIDFILE" --lockfile "$LOCKFILE" \
+		--name "$NAME" -- /sbin/mdev -df ||
+		RETVAL=$?
+
+	[ "$RETVAL" = 0 ] || return $RETVAL
+
+	action_shell 'Loading device modules:' load_modules
+	action 'Populating /dev with mdev:' mdev -s
+}
+
+stop()
+{
+	stop_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --name "$NAME" \
+		-- /sbin/mdev ||
+		RETVAL=$?
+	return $RETVAL
+}
+
+switch "${1-}"

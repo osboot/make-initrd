@@ -1,0 +1,16 @@
+syntax crash init service: ok
+=== Log execution sequence ===
+10-nfs: phase=prepare dir=CRASH_DIR
+10-nfs: phase=write dir=CRASH_DIR
+10-nfs: phase=report dir=CRASH_DIR
+20-stream: phase=write dir=CRASH_DIR
+10-nfs: phase=report dir=CRASH_DIR
+10-nfs: phase=finish dir=CRASH_DIR
+=== Validate nfs write archive ===
+archive contains meta.txt: ok
+archive contains dmesg.txt.gz: ok
+archive contains host-info.txt: ok
+=== Validate secondary write archive ===
+second archive contains meta.txt: ok
+second archive contains host-info.txt: ok
+rc=0

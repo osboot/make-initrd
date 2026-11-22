@@ -1,0 +1,18 @@
+=== help and version ===
+Usage: cpio-stream <command> [options]
+cpio-stream version VERSION
+=== stream add and finish ===
+msg.txt
+world.gz
+1 block
+hello cpio
+world
+=== disk file add and trailer ===
+disk.txt
+1 block
+from disk
+=== trailing junk on raw device ===
+disk.txt
+1 block
+from disk
+rc=0

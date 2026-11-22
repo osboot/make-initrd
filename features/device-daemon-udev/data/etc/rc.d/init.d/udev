@@ -1,6 +1,6 @@
 #!/bin/bash
 ### BEGIN INIT INFO
-# Provides:            udev
+# Provides:            udev $device-daemon
 # Required-Start:      cmdline modules mountvirtfs fstab
 # Should-Start:        $syslog
 # Required-Stop:

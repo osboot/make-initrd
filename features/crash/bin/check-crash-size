@@ -1,0 +1,215 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+PROG="${0##*/}"
+
+. sh-functions
+. shell-error
+
+rootdir="${1:-${ROOTDIR-}}"
+outfile="${2:-${OUTFILE-}}"
+
+[ -n "$rootdir" ] && [ -d "$rootdir" ] || exit 0
+[ -n "$outfile" ] && [ -f "$outfile" ] || exit 0
+
+policy="${CRASH_CHECK_SIZE:-warn}"
+case "${policy,,}" in
+	none|no|0|off|disable|disabled)
+		exit 0
+		;;
+	error|err|fatal|1|yes|on|enable|enabled)
+		policy="error"
+		;;
+	warn|warning)
+		policy="warn"
+		;;
+	*)
+		policy="warn"
+		;;
+esac
+
+to_bytes()
+{
+	local val="$1"
+	local num="${val%[KkMmGgTt]*}"
+	local unit="${val#"$num"}"
+
+	case "${unit,,}" in
+		k|kb) echo $(( $num * 1024 )) ;;
+		m|mb) echo $(( $num * 1024 * 1024 )) ;;
+		g|gb) echo $(( $num * 1024 * 1024 * 1024 )) ;;
+		t|tb) echo $(( $num * 1024 * 1024 * 1024 * 1024 )) ;;
+		*)    echo "$num" ;;
+	esac
+}
+
+human_size()
+{
+	local bytes="$1"
+
+	if [ "$bytes" -ge 1073741824 ]; then
+		printf "%dM" $(( $bytes / 1048576 ))
+	elif [ "$bytes" -ge 1048576 ]; then
+		printf "%dM" $(( $bytes / 1048576 ))
+	elif [ "$bytes" -ge 1024 ]; then
+		printf "%dK" $(( $bytes / 1024 ))
+	else
+		printf "%dB" "$bytes"
+	fi
+}
+
+parse_cmdline_crashkernel()
+{
+	local cmdline="$1"
+	local val b p size=0
+
+	for p in $cmdline; do
+		case "$p" in
+			crashkernel=*)
+				val="${p#crashkernel=}"
+				val="${val%%,high*}"
+				val="${val%%,low*}"
+				val="${val%%@*}"
+
+				if [[ "$val" == *":"* ]]; then
+					local range_val="${val##*:}"
+					val="${range_val%%,*}"
+				fi
+
+				b="$(to_bytes "$val")"
+				size=$(( $size + $b ))
+				;;
+		esac
+	done
+	echo "$size"
+}
+
+get_crash_reserve()
+{
+	# 1. Explicitly configured in config (if overridden from default 256M)
+	if [ -n "${CRASH_RESERVE_SIZE-}" ] && [ "${CRASH_RESERVE_SIZE-}" != "256M" ]; then
+		to_bytes "$CRASH_RESERVE_SIZE"
+		return 0
+	fi
+
+	# 2. Live kernel sysfs attribute
+	if [ -r /sys/kernel/kexec_crash_size ]; then
+		local sz
+
+		sz="$(cat /sys/kernel/kexec_crash_size 2>/dev/null ||:)"
+
+		if [ -n "$sz" ] && [ "$sz" -gt 0 ] 2>/dev/null; then
+			echo "$sz"
+			return 0
+		fi
+	fi
+
+	# 3. Kernel memory map in /proc/iomem
+	if [ -r /proc/iomem ]; then
+		local range
+
+		range="$(sed -n -E '/Crash kernel/{ s/^[[:space:]]*([0-9a-fA-F]+)-([0-9a-fA-F]+).*/\1 \2/; p; q; }' /proc/iomem 2>/dev/null ||:)"
+
+		if [ -n "$range" ]; then
+			local start="${range%% *}"
+			local end="${range##* }"
+			local diff=$(( 16#$end - 16#$start + 1 ))
+
+			if [ "$diff" -gt 0 ] 2>/dev/null; then
+				echo "$diff"
+				return 0
+			fi
+		fi
+	fi
+
+	# 4. Kernel boot parameters in /proc/cmdline
+	if [ -r /proc/cmdline ]; then
+		local cmdline sz
+
+		read -r cmdline < /proc/cmdline 2>/dev/null ||:
+
+		sz="$(parse_cmdline_crashkernel "$cmdline")"
+
+		if [ -n "$sz" ] && [ "$sz" -gt 0 ] 2>/dev/null; then
+			echo "$sz"
+			return 0
+		fi
+	fi
+
+	# 5. Configured or default reserve size
+	if [ -n "${CRASH_RESERVE_SIZE-}" ]; then
+		to_bytes "$CRASH_RESERVE_SIZE"
+		return 0
+	fi
+
+	if [ -z "${CRASH_MAX_ROOTFS_SIZE-}" ] && [ -z "${CRASH_MAX_IMAGE_SIZE-}" ]; then
+		to_bytes "256M"
+		return 0
+	fi
+
+	echo 0
+}
+
+reserve_bytes="$(get_crash_reserve)"
+
+# Determine limit for unpacked rootfs
+max_rootfs=0
+if [ -n "${CRASH_MAX_ROOTFS_SIZE-}" ]; then
+	max_rootfs="$(to_bytes "$CRASH_MAX_ROOTFS_SIZE")"
+elif [ "$reserve_bytes" -gt 0 ]; then
+	max_rootfs=$(( $reserve_bytes * ${CRASH_MAX_ROOTFS_RATIO:-35} / 100 ))
+fi
+
+# Determine limit for compressed/packed image
+max_image=0
+if [ -n "${CRASH_MAX_IMAGE_SIZE-}" ]; then
+	max_image="$(to_bytes "$CRASH_MAX_IMAGE_SIZE")"
+elif [ "$reserve_bytes" -gt 0 ]; then
+	max_image=$(( $reserve_bytes * ${CRASH_MAX_IMAGE_RATIO:-20} / 100 ))
+fi
+
+[ "$max_rootfs" -gt 0 ] || [ "$max_image" -gt 0 ] || exit 0
+
+# Measure actual sizes
+rootfs_bytes="$(du -s -B1 "$rootdir" 2>/dev/null | cut -f1)"
+image_bytes="$(wc -c < "$outfile" 2>/dev/null || stat -c %s "$outfile" 2>/dev/null || echo 0)"
+
+if [ -n "${FIRSTCPIO-}" ] && [ -f "${FIRSTCPIO-}" ]; then
+	firstcpio_bytes="$(wc -c < "$FIRSTCPIO" 2>/dev/null || stat -c %s "$FIRSTCPIO" 2>/dev/null || echo 0)"
+	image_bytes=$(( $image_bytes + $firstcpio_bytes ))
+fi
+
+exceeded=0
+reasons=()
+
+if [ "$max_rootfs" -gt 0 ] && [ "$rootfs_bytes" -gt "$max_rootfs" ]; then
+	exceeded=1
+	reasons+=("unpacked rootfs $(human_size "$rootfs_bytes") exceeds limit $(human_size "$max_rootfs")")
+fi
+
+if [ "$max_image" -gt 0 ] && [ "$image_bytes" -gt "$max_image" ]; then
+	exceeded=1
+	reasons+=("packed image $(human_size "$image_bytes") exceeds limit $(human_size "$max_image")")
+fi
+
+if [ "$exceeded" -eq 1 ]; then
+	reserve_str=""
+	[ "$reserve_bytes" -eq 0 ] ||
+		reserve_str=" for crashkernel reserve $(human_size "$reserve_bytes")"
+
+	msg="capture initramfs exceeds safe memory limits${reserve_str}:"
+
+	for r in "${reasons[@]}"; do
+		msg="$msg $r;"
+	done
+
+	hint="Secondary kernel may fail to boot or trigger Out Of Memory (OOM) during dump capture. Consider removing AUTODETECT=none, pruning unneeded drivers, or setting CRASH_ENABLE_LIVE=0."
+
+	[ "$policy" = "error" ] &&
+		fatal "$msg $hint" ||
+		msg-timestamp "WARNING: $msg $hint"
+else
+	msg-timestamp "Size of capture initramfs looks sane."
+fi
+
+exit 0

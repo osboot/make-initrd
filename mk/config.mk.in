@@ -133,6 +133,7 @@ include @projectdir@/mk/functions.mk
 ifneq ($(MAKELEVEL),0)
 
 # User defaults
+USE_DEVICE_DAEMON	?= udev
 FEATURES		?=
 IMAGE_SUFFIX		?=
 IMAGEFILE		?= $(BOOTDIR)/@imagename@

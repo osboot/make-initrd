@@ -1,0 +1,624 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+### BEGIN INIT INFO
+# Provides:            crash
+# Required-Start:      mountfs cmdline
+# Should-Start:        $device-daemon
+# Required-Stop:
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:
+# Short-Description:   Crash kernel dump and triage service.
+# Description:         Handles /proc/vmcore in capture initramfs.
+### END INIT INFO
+
+[ -s /.initrd/initenv ] && . /.initrd/initenv ||:
+[ -s /etc/init.d/template ] && . /etc/init.d/template ||:
+
+[ "$1" = start ] || exit 0
+
+do_exit()
+{
+	case "${RD_CRASH_EXIT:-reboot}" in
+		none|exit)
+			echo "crash: capture completed"
+			;;
+		shell)
+			echo "crash: entering interactive shell on /dev/console"
+			setsid -c /bin/sh -i </dev/console >/dev/console 2>&1
+			;;
+		poweroff|halt)
+			echo "crash: halting system..."
+			poweroff -f 2>/dev/null || halt -f
+			;;
+		reboot|*)
+			local delay="${RD_CRASH_REBOOT_DELAY:-5}"
+			echo "crash: rebooting system in ${delay}s (rd.crash.exit=shell to inhibit)..."
+			sleep "$delay"
+			sync
+			reboot -f || halt -f
+			;;
+	esac
+	exit 0
+}
+
+VMCORE="${VMCORE:-/proc/vmcore}"
+
+# If vmcore is not present, we are not in a crash/capture environment
+if [ ! -e "$VMCORE" ]; then
+	echo "crash: $VMCORE not found (not a crash capture environment)"
+	do_exit
+fi
+
+echo "=== Crash capture environment detected ($VMCORE present) ==="
+
+get_device()
+{
+	if command -v blkid >/dev/null 2>&1; then
+		blkid -l -t "$1" -o device 2>/dev/null
+	elif command -v findfs >/dev/null 2>&1; then
+		findfs "$1" 2>/dev/null
+	fi
+}
+
+resolve_dev()
+{
+	local spec="$1"
+
+	case "$spec" in
+		UUID=*)
+			local uuid="${spec#UUID=}"
+			if [ -e "/dev/disk/by-uuid/$uuid" ]; then
+				echo "/dev/disk/by-uuid/$uuid"
+				return 0
+			fi
+			;;
+		LABEL=*)
+			local label="${spec#LABEL=}"
+			if [ -e "/dev/disk/by-label/$label" ]; then
+				echo "/dev/disk/by-label/$label"
+				return 0
+			fi
+			;;
+		PARTUUID=*)
+			local partuuid="${spec#PARTUUID=}"
+			if [ -e "/dev/disk/by-partuuid/$partuuid" ]; then
+				echo "/dev/disk/by-partuuid/$partuuid"
+				return 0
+			fi
+			;;
+		PARTLABEL=*)
+			local partlabel="${spec#PARTLABEL=}"
+			if [ -e "/dev/disk/by-partlabel/$partlabel" ]; then
+				echo "/dev/disk/by-partlabel/$partlabel"
+				return 0
+			fi
+			;;
+		/dev/*)
+			if [ -b "$spec" ] || [ -c "$spec" ]; then
+				echo "$spec"
+				return 0
+			fi
+			;;
+		*)
+			if [ -b "/dev/$spec" ] || [ -c "/dev/$spec" ]; then
+				echo "/dev/$spec"
+				return 0
+			fi
+			;;
+	esac
+
+	get_device "$spec"
+}
+
+find_crash_disk()
+{
+	local target="$1" dev=""
+
+	if [ -n "$target" ] && [ "$target" != "auto" ] && [ "$target" != "1" ]; then
+		resolve_dev "$target"
+		return 0
+	fi
+
+	for dev in \
+		/dev/disk/by-label/CRASH \
+		/dev/disk/by-label/KDUMP \
+		/dev/disk/by-label/crash \
+		/dev/disk/by-label/kdump \
+		/dev/disk/by-partlabel/CRASH \
+		/dev/disk/by-partlabel/KDUMP \
+		/dev/disk/by-partlabel/crash \
+		/dev/disk/by-partlabel/kdump; do
+		if [ -b "$dev" ]; then
+			echo "$dev"
+			return 0
+		fi
+	done
+}
+
+wait_for_dev()
+{
+	local spec="$1" timeout="${2:-10}" dev=""
+
+	while [ "$timeout" -gt 0 ]; do
+		if [ "$spec" = "auto" ] || [ "$spec" = "1" ]; then
+			dev="$(find_crash_disk "$spec")"
+		else
+			dev="$(resolve_dev "$spec")"
+		fi
+
+		if [ -n "$dev" ] && [ -e "$dev" ]; then
+			echo "$dev"
+			return 0
+		fi
+
+		mdev -s
+
+		sleep 1
+		timeout=$(( $timeout - 1 ))
+	done
+	return 1
+}
+
+find_virtio_port()
+{
+	local target="$1" port_dev="" p name base
+
+	if [ -c "$target" ]; then
+		echo "$target"
+		return 0
+	fi
+
+	if [ -d /sys/class/virtio-ports ]; then
+		for p in /sys/class/virtio-ports/*; do
+			[ -d "$p" ] ||
+				continue
+
+			name=""
+			[ ! -f "$p/name" ] || name="$(< "$p/name")"
+
+			base="${p##*/}"
+			local dev_node="/dev/$base"
+
+			if [ -n "$name" ]; then
+				mkdir -p /dev/virtio-ports
+				ln -sf -- "$dev_node" "/dev/virtio-ports/$name"
+			fi
+
+			if [ -n "$target" ] && [ "$target" != "auto" ] && [ "$target" != "1" ]; then
+				if [ "$name" = "$target" ] || [ "$base" = "$target" ]; then
+					port_dev="$dev_node"
+					break
+				fi
+			else
+				case "$name" in
+					*dump*|*crash*|*vmcore*)
+						port_dev="$dev_node"
+						break
+						;;
+				esac
+				[ -n "$port_dev" ] ||
+					port_dev="$dev_node"
+			fi
+		done
+	fi
+
+	if [ -z "$port_dev" ]; then
+		if [ -c /dev/vport0p1 ]; then
+			port_dev="/dev/vport0p1"
+		elif [ -c /dev/hvc0 ]; then
+			port_dev="/dev/hvc0"
+		fi
+	fi
+
+	echo "$port_dev"
+}
+
+find_esp_dev()
+{
+	local target="$1" dev=""
+
+	if [ -n "$target" ] && [ "$target" != "auto" ] && [ "$target" != "1" ]; then
+		resolve_dev "$target"
+		return 0
+	fi
+
+	for dev in \
+		/dev/disk/by-partlabel/EFI \
+		/dev/disk/by-partlabel/ESP \
+		/dev/disk/by-label/EFI \
+		/dev/disk/by-label/ESP; do
+		if [ -b "$dev" ]; then
+			echo "$dev"
+			return 0
+		fi
+	done
+
+	dev="$(get_device PARTTYPE=c12a7328-f81f-11d2-ba4b-00a0c93ec93b)"
+
+	if [ -z "$dev" ] && [ -d /sys/firmware/efi ]; then
+		dev="$(get_device TYPE=vfat)"
+	fi
+
+	echo "$dev"
+}
+
+boot_timeout="${RD_CRASH_BOOT_TIMEOUT:-10}"
+report_type="${RD_CRASH_REPORT:-dump}"
+timestamp="$(date +%Y%m%d-%H%M%S 2>/dev/null || echo dump)"
+crash_dir="${CRASH_RUNDIR:-/run/crash}"
+CRASH_HOOKS_DIR="${CRASH_HOOKS_DIR:-/lib/initrd/crash}"
+
+run_crash_hooks()
+{
+	local phase="$1"
+	local dir="${2:-$crash_dir}"
+	local hook rc=0
+
+	for hook in "$CRASH_HOOKS_DIR/crash.d"/[0-9][0-9]-*.sh; do
+		[ -x "$hook" ] ||
+			continue
+
+		echo "crash: running crash.d hook ${hook##*/} ($phase)..." >&2
+
+		if ! "$hook" "$phase" "$dir"; then
+			echo "crash: WARNING: crash.d hook ${hook##*/} ($phase) failed (exit $?)" >&2
+			rc=1
+		fi
+	done
+
+	return "$rc"
+}
+
+run_write_hooks()
+{
+	local dir="${1:-$crash_dir}"
+	local hook rc=1 status
+
+	for hook in "$CRASH_HOOKS_DIR/crash.d"/[0-9][0-9]-*.sh; do
+		[ -x "$hook" ] ||
+			continue
+
+		echo "crash: streaming report to crash.d hook ${hook##*/} (write)..."
+		cpio_report | "$hook" write "$dir"
+
+		status="${PIPESTATUS[1]}"
+
+		if [ "$status" -eq 0 ]; then
+			echo "crash: crash.d hook ${hook##*/} (write) finished successfully"
+			rc=0
+		else
+			echo "crash: WARNING: crash.d hook ${hook##*/} (write) failed (exit $status)"
+		fi
+	done
+
+	return "$rc"
+}
+
+mkdir -p "$crash_dir"
+
+# Extract dmesg log early to provide log and kernel info
+echo "crash: extracting dmesg log from $VMCORE..."
+vmcore-dmesg "$VMCORE" > "$crash_dir/dmesg.txt" 2>/dev/null ||:
+
+# Detect crashed kernel OSRELEASE from dmesg log
+crashed_osrelease=""
+[ ! -s "$crash_dir/dmesg.txt" ] ||
+	crashed_osrelease="$(sed -n -E '/Linux version [0-9]/{ s/.*Linux version ([^[:space:]]+).*/\1/; p; q; }' "$crash_dir/dmesg.txt" ||:)"
+
+print_meta()
+{
+	local dmesg_file="$1"
+	local kver cmdline panic uptime
+	local crash_date="" crashtime="" cap_epoch cap_up
+
+	kver="$(   sed -n -E '/Linux version [0-9]/{ s/^\[[^]]*\][[:space:]]*//; p; q; }' "$dmesg_file")"
+	cmdline="$(sed -n -E '/(Kernel command line:|Command line:)/{ s/^\[[^]]*\][[:space:]]*(Kernel command line:[[:space:]]*|Command line:[[:space:]]*)//; p; q; }' "$dmesg_file")"
+	panic="$(  sed -n -E '/(Kernel panic|BUG:|Oops:|divide error:)/{ s/^\[[^]]*\][[:space:]]*//; h; }; ${ g; p; }' "$dmesg_file")"
+	uptime="$( sed -n -E '/^\[[[:space:]]*[0-9]+(\.[0-9]+)?\]/{ s/^\[[[:space:]]*([0-9]+(\.[0-9]+)?)\].*/\1/; h; }; ${ g; p; }' "$dmesg_file")"
+
+	[ -n "$crashed_osrelease" ] ||
+		crashed_osrelease="$(echo "$kver" | sed -n -E 's/^Linux version ([^[:space:]]+).*/\1/p')"
+
+	cap_epoch="$(date +%s 2>/dev/null ||:)"
+	cap_up="$(sed -n -E 's/^([0-9]+).*/\1/p' /proc/uptime 2>/dev/null ||:)"
+	if [ -n "$cap_epoch" ] && [ -n "$cap_up" ]; then
+		crashtime=$(( cap_epoch - cap_up ))
+		crash_date="$(date -u -d "@$crashtime" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null ||:)"
+	fi
+
+	printf '%s\n' \
+		"[ Crashed System ]" \
+		"CRASH_DATE: $crash_date" \
+		"CRASH_TIME_EPOCH: $crashtime" \
+		"CRASHED_OSRELEASE: $crashed_osrelease" \
+		"CRASHED_KERNEL: $kver" \
+		"CRASHED_CMDLINE: $cmdline" \
+		"CRASHED_UPTIME: ${uptime:+${uptime}s}" \
+		"PANIC: $panic" \
+		"" \
+		"[ Capture Environment ]" \
+		"CAPTURE_DATE: $(date -u '+%Y-%m-%d %H:%M:%S UTC' || date)" \
+		"CAPTURE_KERNEL: $(uname -a)" \
+		"CAPTURE_CMDLINE: $(< /proc/cmdline)" \
+		"CAPTURE_UPTIME: $(< /proc/uptime)" \
+	#
+	return 0
+}
+
+# Generate meta.txt early
+print_meta "$crash_dir/dmesg.txt" > "$crash_dir/meta.txt" 2>/dev/null ||:
+
+# Phase: prepare hooks (network setup, remote share mounting)
+run_crash_hooks prepare "$crash_dir"
+
+cpio_report()
+{
+	local fn
+
+	for fn in \
+		meta.txt \
+		triage.txt.gz \
+		dmesg.txt.gz; do
+		[ ! -f "$crash_dir/$fn" ] ||
+			cpio-stream add "$fn" "$crash_dir/$fn"
+	done
+
+	# Phase: report hooks (add extra files via cpio-stream add)
+	run_crash_hooks report "$crash_dir"
+
+	cpio-stream finish
+}
+
+# 1. Live crash triage (if crash utility is present and vmlinux can be found)
+vmlinux_path=""
+boot_mnt="$crash_dir/boot"
+target_boot="${RD_CRASH_BOOT:-${ROOT-}}"
+
+if command -v crash >/dev/null 2>&1 && [ -n "$target_boot" ]; then
+	echo "crash: waiting up to ${boot_timeout}s for boot device '$target_boot'..."
+	boot_dev="$(wait_for_dev "$target_boot" "$boot_timeout")"
+
+	if [ -n "$boot_dev" ] && [ -b "$boot_dev" ]; then
+		echo "crash: mounting $boot_dev on $boot_mnt (ro,noload)..."
+
+		mkdir -p -- "$boot_mnt"
+
+		if mount -o ro,noload "$boot_dev" "$boot_mnt" 2>/dev/null || mount -o ro "$boot_dev" "$boot_mnt"; then
+			candidates=()
+
+			[ -z "${RD_CRASH_VMLINUX-}" ] ||
+				candidates+=(
+					"$boot_mnt/$RD_CRASH_VMLINUX"
+					"$boot_mnt/boot/$RD_CRASH_VMLINUX"
+				)
+			[ -z "$crashed_osrelease" ] ||
+				candidates+=(
+					"$boot_mnt/vmlinux-$crashed_osrelease"
+					"$boot_mnt/boot/vmlinux-$crashed_osrelease"
+				)
+			candidates+=(
+				"$boot_mnt/vmlinux-$(uname -r)"
+				"$boot_mnt/boot/vmlinux-$(uname -r)"
+				"$boot_mnt/vmlinux"
+				"$boot_mnt/boot/vmlinux"
+			)
+
+			for f in "${candidates[@]}"; do
+				if [ -f "$f" ]; then
+					vmlinux_path="$f"
+					break
+				fi
+			done
+
+			if [ -z "$vmlinux_path" ]; then
+				for f in "$boot_mnt"/vmlinux* "$boot_mnt"/boot/vmlinux*; do
+					if [ -f "$f" ]; then
+						vmlinux_path="$f"
+						break
+					fi
+				done
+			fi
+		else
+			echo "crash: failed to mount boot device $boot_dev"
+		fi
+	else
+		echo "crash: boot device '$target_boot' not found"
+	fi
+fi
+
+if [ -n "$vmlinux_path" ]; then
+	echo "crash: found kernel image at $vmlinux_path"
+
+	if [ -f /etc/crash/triage.crash ]; then
+		echo "crash: generating triage report via crash (compressed)..."
+
+		crash -s -i /etc/crash/triage.crash "$vmlinux_path" "$VMCORE" 2>&1 |
+			gzip -c > "$crash_dir/triage.txt.gz" ||:
+
+		echo "------------------- [ Crash Triage ] -------------------"
+		zcat "$crash_dir/triage.txt.gz" 2>/dev/null | head -n 40 ||:
+		echo "--------------------------------------------------------"
+	fi
+fi
+
+# Clean up boot mount
+mountpoint -q "$boot_mnt" && umount "$boot_mnt" 2>/dev/null ||:
+
+# 2. Compress dmesg log
+gzip -f "$crash_dir/dmesg.txt" 2>/dev/null ||:
+
+# 3. Independent target destinations
+has_target=0
+
+# Target: virtio-serial
+if [ -n "${RD_CRASH_VIRTIO-}" ]; then
+	has_target=1
+
+	echo "crash: target virtio enabled (${RD_CRASH_VIRTIO:-auto})"
+	vport="$(find_virtio_port "${RD_CRASH_VIRTIO:-auto}")"
+
+	if [ -z "$vport" ] || [ ! -c "$vport" ]; then
+		echo "crash: waiting up to ${boot_timeout}s for virtio port..."
+		vtimeout="$boot_timeout"
+
+		while [ "$vtimeout" -gt 0 ]; do
+			mdev -s
+
+			vport="$(find_virtio_port "${RD_CRASH_VIRTIO:-auto}")"
+
+			[ -n "$vport" ] && [ -c "$vport" ] && break
+
+			sleep 1
+			vtimeout=$(( $vtimeout - 1 ))
+		done
+	fi
+
+	if [ -n "$vport" ] && [ -c "$vport" ]; then
+		echo "crash: streaming report ($report_type) to virtio port $vport..."
+
+		if [ "$report_type" = "vmcore" ]; then
+			if makedumpfile -F -c -d 31 "$VMCORE" > "$vport" 2>/dev/null; then
+				echo "crash: vmcore streamed to virtio successfully"
+			else
+				echo "crash: streaming raw $VMCORE to virtio..."
+				cat "$VMCORE" > "$vport"
+			fi
+		else
+			cpio_report > "$vport"
+			echo "crash: dump streamed to virtio successfully"
+		fi
+	else
+		echo "crash: ERROR: virtio port not found"
+	fi
+fi
+
+# Target: EFI System Partition (ESP)
+if [ -n "${RD_CRASH_EFI-}" ]; then
+	has_target=1
+
+	echo "crash: target EFI enabled (${RD_CRASH_EFI:-auto})"
+	esp_dev="$(find_esp_dev "${RD_CRASH_EFI:-auto}")"
+
+	if [ -z "$esp_dev" ] || [ ! -b "$esp_dev" ]; then
+		echo "crash: waiting up to ${boot_timeout}s for EFI partition..."
+
+		etimeout="$boot_timeout"
+
+		while [ "$etimeout" -gt 0 ]; do
+			mdev -s
+
+			esp_dev="$(find_esp_dev "${RD_CRASH_EFI:-auto}")"
+
+			[ -n "$esp_dev" ] && [ -b "$esp_dev" ] && break
+
+			sleep 1
+			etimeout=$(( $etimeout - 1 ))
+		done
+	fi
+
+	if [ -n "$esp_dev" ] && [ -b "$esp_dev" ]; then
+		echo "crash: mounting EFI partition $esp_dev..."
+
+		mkdir -p "$crash_dir/mnt-efi"
+
+		if mount -t vfat -o rw,umask=0077 "$esp_dev" "$crash_dir/mnt-efi" 2>/dev/null || mount -o rw "$esp_dev" "$crash_dir/mnt-efi"; then
+			target_dir="$crash_dir/mnt-efi/${RD_CRASH_DIR:-EFI/crash}"
+			mkdir -p -- "$target_dir"
+
+			echo "crash: writing report ($report_type) directly to EFI ($target_dir)..."
+			cpio_report > "$target_dir/crash-$timestamp.cpio"
+
+			if [ "$report_type" = "vmcore" ]; then
+				echo "crash: saving compressed vmcore via makedumpfile..."
+				makedumpfile -c -d 31 "$VMCORE" "$target_dir/vmcore-$timestamp.dump" ||:
+			fi
+
+			sync
+			umount "$crash_dir/mnt-efi" 2>/dev/null ||:
+
+			echo "crash: report saved to EFI partition successfully"
+		else
+			echo "crash: ERROR: failed to mount EFI partition $esp_dev"
+		fi
+	else
+		echo "crash: ERROR: EFI partition not found"
+	fi
+fi
+
+# Target: Disk filesystem
+if [ -n "${RD_CRASH_DISK-}" ]; then
+	has_target=1
+	echo "crash: target disk enabled (${RD_CRASH_DISK:-auto})"
+
+	disk_dev="$(wait_for_dev "${RD_CRASH_DISK:-auto}" "$boot_timeout")"
+
+	if [ -n "$disk_dev" ] && [ -b "$disk_dev" ]; then
+		echo "crash: mounting disk $disk_dev..."
+		mkdir -p "$crash_dir/mnt-disk"
+
+		if mount -o rw "$disk_dev" "$crash_dir/mnt-disk"; then
+			target_dir="$crash_dir/mnt-disk/${RD_CRASH_DIR:-var/crash}"
+			mkdir -p -- "$target_dir"
+
+			echo "crash: writing report ($report_type) directly to disk ($target_dir)..."
+			cpio_report > "$target_dir/crash-$timestamp.cpio"
+
+			if [ "$report_type" = "vmcore" ]; then
+				echo "crash: saving compressed vmcore via makedumpfile..."
+				makedumpfile -c -d 31 "$VMCORE" "$target_dir/vmcore-$timestamp.dump" ||:
+			fi
+
+			sync
+			umount "$crash_dir/mnt-disk" 2>/dev/null ||:
+
+			echo "crash: report saved to disk successfully"
+		else
+			echo "crash: ERROR: failed to mount disk $disk_dev"
+		fi
+	else
+		echo "crash: ERROR: disk device '${RD_CRASH_DISK:-auto}' not found"
+	fi
+fi
+
+# Target: Raw partition
+if [ -n "${RD_CRASH_RAW-}" ]; then
+	has_target=1
+	echo "crash: target raw disk enabled ($RD_CRASH_RAW)"
+
+	raw_dev="$(wait_for_dev "$RD_CRASH_RAW" "$boot_timeout")"
+
+	if [ -n "$raw_dev" ] && [ -b "$raw_dev" ]; then
+		echo "crash: writing raw report ($report_type) to $raw_dev..."
+
+		if [ "$report_type" = "vmcore" ]; then
+			makedumpfile -c -d 31 "$VMCORE" "$raw_dev" 2>/dev/null ||
+				cat "$VMCORE" > "$raw_dev"
+		else
+			cpio_report > "$raw_dev"
+		fi
+
+		sync
+
+		echo "crash: raw dump written successfully"
+	else
+		echo "crash: ERROR: raw device '$RD_CRASH_RAW' not found"
+	fi
+fi
+
+# Target: Custom write hooks
+if run_write_hooks "$crash_dir"; then
+	has_target=1
+fi
+
+# If no target specified, show dmesg on console if triage wasn't run
+if [ "$has_target" = 0 ] && [ ! -f "$crash_dir/triage.txt.gz" ]; then
+	echo "crash: no target specified; dumping dmesg tail to console:"
+	[ ! -f "$crash_dir/dmesg.txt.gz" ] || zcat "$crash_dir/dmesg.txt.gz" 2>/dev/null | tail -n 30 ||:
+fi
+
+# Phase: finish hooks (cleanup, unmount, notifications)
+run_crash_hooks finish "$crash_dir"
+
+# 3. Exit action: shell, poweroff, or reboot
+do_exit

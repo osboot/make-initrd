@@ -1,0 +1,112 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[ -n "${MDEV-}" ] || exit 0
+
+dev="/dev/$MDEV"
+sysfs="/sys/class/block/$MDEV"
+
+case "${ACTION-add}" in
+	add|change)
+		[ -b "$dev" ] || exit 0
+
+		part_num=""
+		part_suffix=""
+		parent_sysfs="$sysfs"
+		if [ -f "$sysfs/partition" ]; then
+			part_num="$(cat "$sysfs/partition" 2>/dev/null)" ||:
+			if [ -n "$part_num" ]; then
+				part_suffix="-part$part_num"
+				parent_sysfs="$sysfs/.."
+			fi
+		fi
+
+		vars="$(blkid -p -o udev "$dev" 2>/dev/null)" || vars=""
+		if [ -n "$vars" ]; then
+			eval "$vars"
+
+			case "${ID_FS_USAGE-}" in
+				filesystem|other|crypto)
+					if [ -n "${ID_FS_UUID_ENC-}" ]; then
+						mkdir -p /dev/disk/by-uuid
+						ln -sf "../../$MDEV" "/dev/disk/by-uuid/$ID_FS_UUID_ENC"
+					fi
+
+					if [ -n "${ID_FS_LABEL_ENC-}" ]; then
+						mkdir -p /dev/disk/by-label
+						ln -sf "../../$MDEV" "/dev/disk/by-label/$ID_FS_LABEL_ENC"
+					fi
+					;;
+			esac
+
+			if [ -n "${ID_PART_ENTRY_UUID-}" ]; then
+				mkdir -p /dev/disk/by-partuuid
+				ln -sf "../../$MDEV" "/dev/disk/by-partuuid/$ID_PART_ENTRY_UUID"
+			fi
+
+			partname="${ID_PART_ENTRY_NAME_ENC:-${ID_PART_ENTRY_NAME-}}"
+			if [ -n "$partname" ]; then
+				mkdir -p /dev/disk/by-partlabel
+				ln -sf "../../$MDEV" "/dev/disk/by-partlabel/$partname"
+			fi
+		fi
+
+		# Device-Mapper (/dev/mapper/<name> and /dev/disk/by-id/dm-*)
+		if [ -f "$sysfs/dm/name" ]; then
+			dm_name="$(cat "$sysfs/dm/name" 2>/dev/null)" ||:
+			if [ -n "$dm_name" ]; then
+				mkdir -p /dev/mapper /dev/disk/by-id
+				ln -sf "../$MDEV" "/dev/mapper/$dm_name"
+				ln -sf "../../$MDEV" "/dev/disk/by-id/dm-name-$dm_name"
+			fi
+		fi
+		if [ -f "$sysfs/dm/uuid" ]; then
+			dm_uuid="$(cat "$sysfs/dm/uuid" 2>/dev/null)" ||:
+			if [ -n "$dm_uuid" ]; then
+				mkdir -p /dev/disk/by-id
+				ln -sf "../../$MDEV" "/dev/disk/by-id/dm-uuid-$dm_uuid"
+			fi
+		fi
+
+		# Hardware persistent identifiers (/dev/disk/by-id/)
+		case "$MDEV" in
+			vd*)
+				if [ -f "$parent_sysfs/serial" ]; then
+					serial="$(cat "$parent_sysfs/serial" 2>/dev/null)" ||:
+					if [ -n "$serial" ]; then
+						mkdir -p /dev/disk/by-id
+						ln -sf "../../$MDEV" "/dev/disk/by-id/virtio-$serial$part_suffix"
+					fi
+				fi
+				;;
+			nvme*)
+				if [ -f "$parent_sysfs/wwid" ]; then
+					wwid="$(cat "$parent_sysfs/wwid" 2>/dev/null)" ||:
+					if [ -n "$wwid" ]; then
+						mkdir -p /dev/disk/by-id
+						ln -sf "../../$MDEV" "/dev/disk/by-id/nvme-$wwid$part_suffix"
+					fi
+				elif [ -f "$parent_sysfs/device/model" ] && [ -f "$parent_sysfs/device/serial" ]; then
+					model="$(tr -s " " "_" < "$parent_sysfs/device/model" 2>/dev/null)" ||:
+					serial="$(tr -s " " "_" < "$parent_sysfs/device/serial" 2>/dev/null)" ||:
+					if [ -n "$model" ] && [ -n "$serial" ]; then
+						mkdir -p /dev/disk/by-id
+						ln -sf "../../$MDEV" "/dev/disk/by-id/nvme-${model}_${serial}$part_suffix"
+					fi
+				fi
+				;;
+			sr0)
+				ln -sf "$MDEV" /dev/cdrom
+				;;
+		esac
+		;;
+	remove)
+		for link in /dev/disk/by-*/* /dev/mapper/* /dev/cdrom; do
+			[ -L "$link" ] || continue
+			target="$(readlink "$link")" || continue
+			if [ "$target" = "../../$MDEV" ] || [ "$target" = "../$MDEV" ] || [ "$target" = "/dev/$MDEV" ] || [ "$target" = "$MDEV" ] || [ ! -e "$link" ]; then
+				rm -f "$link"
+			fi
+		done
+		;;
+esac
