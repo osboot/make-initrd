@@ -1,0 +1,15 @@
+=== case 1: default config with unplugged eth1 ===
+OK: Network up (eth0):
+OK: Network up (lo):
+OK: all interfaces are up (eth0 lo):
+=== case 2: explicit eth0 + delayed eth1 ===
+OK: Network up (eth0):
+OK: Network up (lo):
+OK: Network up (eth1):
+OK: all interfaces are up (eth0 lo eth1):
+=== case 3: timeout on missing explicit eth1 ===
+OK: Network up (eth0):
+OK: Network up (lo):
+FAIL: Network up (timeout: eth1):
+OK: all interfaces are up (eth0 lo):
+rc=0
