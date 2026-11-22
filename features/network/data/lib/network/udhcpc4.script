@@ -104,6 +104,8 @@ env_to_configs()
 
 gen_net_event()
 {
+	[ -e "$1$suffix" ] ||
+		return 0
 	if [ -e "$1" ] && cmp -s "$1" "$1$suffix" 2>/dev/null; then
 		rm -f -- "$1$suffix"
 		return 0
@@ -116,27 +118,21 @@ handle_state()
 {
 	local logfile
 	logfile=$(
-		. /.initrd/initenv
+		[ ! -f /.initrd/initenv ] || . /.initrd/initenv
 		[ "${RDLOG-}" != 'console' ] &&
-			echo "/var/log/$CMDNAME.$INTERFACE.log" ||
+			echo "${net_logdir:-/var/log}/$CMDNAME.$INTERFACE.log" ||
 			echo "/dev/console"
 	)
 	exec >>"$logfile" 2>&1
 
 	case "$STATE" in
-		renew)
+		bound|renew)
 			env_to_configs
 			gen_net_event "$dir/iplink" "network.link.update"
 			gen_net_event "$dir/ipv${V}address" "network.addr.update"
 			gen_net_event "$dir/ipv${V}route" "network.route.update"
 			gen_net_event "$dir/resolv.conf" "network.resolvconf.update"
 			gen_net_event "$dir/hostname" "network.hostname.update"
-			mkdir -p -- "$statedir"
-			echo ready > "$state"
-			;;
-		bound)
-			suffix=
-			env_to_configs
 			mkdir -p -- "$statedir"
 			echo ready > "$state"
 			;;

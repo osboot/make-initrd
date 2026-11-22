@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. /.initrd/initenv
+[ ! -f /.initrd/initenv ] || . /.initrd/initenv
 
 . shell-error
 . uevent-sh-functions
@@ -11,7 +11,9 @@ message_time=1
 
 dhcp_packets_pause=5
 dhcp_number_packets=3
-piddir=/var/run
+piddir="${net_piddir:-/var/run}"
+logdir="${net_logdir:-/var/log}"
+net_handlerdir="${net_handlerdir:-/lib/network}"
 
 need_dhcp()
 {
@@ -23,11 +25,28 @@ need_dhcp()
 	return 1
 }
 
+is_dhcp_running()
+{
+	local pidfile="$1" pid=''
+
+	[ -f "$pidfile" ] ||
+		return 1
+
+	{ read -r pid < "$pidfile" ||:; } >/dev/null 2>&1
+
+	if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+		return 0
+	fi
+
+	rm -f -- "$pidfile"
+	return 1
+}
+
 run_dhcp()
 {
 	local pidfile="$piddir/udhcpc$ip_version.$NET_IF.pid"
 
-	[ ! -f "$pidfile" ] && need_dhcp ||
+	! is_dhcp_running "$pidfile" && need_dhcp ||
 		return 1
 
 	[ "$ip_version" != 6 ] ||
@@ -36,25 +55,47 @@ run_dhcp()
 	ipv${ip_version}_enabled ||
 		return 1
 
-	if ! is_link_up "$NET_IF"; then
-		message "$NET_IF: trying to obtain configuration from dhcp ..."
-
-		ip_cmd link set dev "$NET_IF" up ||:
-
-		wait_for_link_up "$NET_IF" ||
-			fatal "$NET_IF: could not bring interface up (timeout)"
-	fi
+	mkdir -p -- "$piddir" "$logdir"
 
 	set -- "$1" -v -n \
 		-i "$NET_IF" \
 		-t "$dhcp_number_packets" \
 		-T "$dhcp_packets_pause" \
-		-s "/lib/network/udhcpc$ip_version.script" \
+		-s "$net_handlerdir/udhcpc$ip_version.script" \
 		-p "$pidfile"
 
-	message "run: $*"
+	message "$NET_IF: starting dhcp$ip_version: $*"
 
-	"$@" >>"/var/log/udhcpc$ip_version.$NET_IF.log" 2>&1 &
+	"$@" >>"$logdir/udhcpc$ip_version.$NET_IF.log" 2>&1 &
+}
+
+start_dhcp()
+{
+	local ip_version cmd
+
+	for ip_version in 4 6; do
+		case "$ip_version" in
+			4) cmd=udhcpc ;;
+			6) cmd=udhcpc6 ;;
+		esac
+		run_dhcp "$cmd" ||:
+	done
+}
+
+stop_dhcp()
+{
+	local ip_version pidfile pid
+
+	for ip_version in 4 6; do
+		pidfile="$piddir/udhcpc$ip_version.$NET_IF.pid"
+		pid=
+		{ read -r pid < "$pidfile" ||:; } >/dev/null 2>&1
+
+		[ -z "$pid" ] ||
+			kill "$pid" 2>/dev/null ||:
+
+		rm -f -- "$pidfile"
+	done
 }
 
 handler()
@@ -62,55 +103,27 @@ handler()
 	! is_loopback "$NET_IF" ||
 		return 0
 
-	case "$ev_action" in
-		update)
-			states=
-			for ip_version in 4 6; do
-				case "$ip_version" in
-					4) cmd=udhcpc ;;
-					6) cmd=udhcpc6 ;;
-				esac
-				! run_dhcp "$cmd" ||
-					states="$states $ip_version"
-			done
-
-			[ -n "$states" ] ||
-				return 0
-
-			secs=$((1 + ($dhcp_number_packets * $dhcp_packets_pause) ))
-			message "$NET_IF: waiting $secs seconds for configuration by dhcp ..."
-
-			i=$(($secs * 10))
-			while [ $i -ge 0 ]; do
-				i=$(($i-1))
-				sleep 0.1
-				for v in $states; do
-					[ -e "$net_statedir/dhcp/$NET_IF/ipv$v" ] ||
-						continue 2
-				done
-				i=-1
-			done
-
-			message "$NET_IF: dhcp done"
+	case "$ev_type.$ev_action" in
+		carrier.up)
+			start_dhcp
 			;;
-		remove)
-			for ip_version in 4 6; do
-				pid=
-				{ read -r pid < "$piddir/udhcpc$ip_version.$NET_IF.pid" ||:; } >/dev/null 2>&1
-
-				[ -z "$pid" ] ||
-					kill "$pid" 2>/dev/null ||:
-			done
+		config.update)
+			[ ! -e "$net_statedir/up/$NET_IF/carrier" ] ||
+				start_dhcp
+			;;
+		carrier.down|config.remove)
+			stop_dhcp
 			;;
 	esac
 }
 
-ev_type='config'
-for e in "$1/network.$ev_type".*; do
-	[ -e "$e" ] || break
+for ev_type in carrier config; do
+	for e in "$1/network.$ev_type".*; do
+		[ -e "$e" ] || break
 
-	ev_action="${e##*/network.$ev_type.}"
-	ev_action="${ev_action%%.*}"
+		ev_action="${e##*/network.$ev_type.}"
+		ev_action="${ev_action%%.*}"
 
-	( . "$e"; handler; ) ||:
+		( . "$e"; handler; ) ||:
+	done
 done
