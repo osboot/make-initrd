@@ -1,0 +1,119 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+cwd="${0%/*}"
+root="$cwd/root"
+
+rm -rf -- "$root"
+mkdir -p -- \
+	"$root/queues/network/.tmp" \
+	"$root/conf/ifaces/lo" \
+	"$root/conf/ifaces/eth0" \
+	"$root/conf/ifaces/eth1" \
+	"$root/auto" \
+	"$root/state" \
+	"$root/online" \
+	"$root/sys/lo" \
+	"$root/sys/eth0" \
+	"$root/sys/eth1" \
+	"$root/handlers"
+
+# Mock sysfs flags (IFF_LOOPBACK=8, IFF_UP=1) and writable uevent files
+printf '0x9\n' > "$root/sys/lo/flags"
+printf '0x1\n' > "$root/sys/eth0/flags"
+printf '0x1\n' > "$root/sys/eth1/flags"
+:> "$root/sys/lo/uevent"
+:> "$root/sys/eth0/uevent"
+:> "$root/sys/eth1/uevent"
+
+# Interface configs
+printf '127.0.0.1/8\n' > "$root/conf/ifaces/lo/ipv4address"
+printf '192.0.2.10/24\n' > "$root/conf/ifaces/eth0/ipv4address"
+printf '192.0.2.20/24\n' > "$root/conf/ifaces/eth1/ipv4address"
+printf 'default via 192.0.2.1\n' > "$root/conf/ifaces/eth1/ipv4route"
+printf 'nameserver 192.0.2.53\n' > "$root/conf/ifaces/eth1/resolv.conf"
+
+# Stub /lib/network/* handlers
+for h in link addr route hostname resolvconf config; do
+	cat > "$root/handlers/$h" <<'EOF'
+#!/bin/bash -eu
+exit 0
+EOF
+	chmod +x "$root/handlers/$h"
+done
+
+export PATH="$PWD/features/runtime/data/bin:$PWD/features/network/data/bin:$PATH"
+export TIMESTAMP="$PWD/.build/dest/lib/initrd/sbin/timestamp"
+export filterdir="$root/queues"
+export net_confdir="$root/conf"
+export net_autoconfdir="$root/auto"
+export net_statedir="$root/state"
+export net_onlinedir="$root/online"
+export net_sysdir="$root/sys"
+export net_handlerdir="$root/handlers"
+
+qdir="$root/queues/network"
+seq=0
+
+emit()
+{
+	local ev="$1"
+	shift
+	seq=$(( seq + 1 ))
+	printf '%s\n' "$@" > "$qdir/network.$ev.000001.000000000001.$seq"
+}
+
+run_handler()
+{
+	features/network/data/lib/uevent/handlers/network/400-network "$qdir" >/dev/null 2>&1
+}
+
+check_online()
+{
+	local iface="$1" label="$2"
+	local state='offline' uevent=''
+	[ ! -e "$root/online/$iface" ] || state='online'
+	read -r uevent < "$root/sys/$iface/uevent" ||:
+	printf '%s: %s (uevent=%s)\n' "$label" "$state" "${uevent:-none}"
+}
+
+# 1. Loopback: carrier.up + addr.ready (no route needed)
+emit carrier.up "NET_IF='lo'" "NET_IFINDEX='1'"
+run_handler
+check_online lo "lo after carrier.up"
+
+emit addr.ready "NET_IF='lo'" "NET_IFINDEX='1'" "IP_VER='4'"
+run_handler
+check_online lo "lo after addr.ready"
+
+# 2. L2-only interface (no default route configured)
+emit carrier.up "NET_IF='eth0'" "NET_IFINDEX='2'"
+emit addr.ready "NET_IF='eth0'" "NET_IFINDEX='2'" "IP_VER='4'"
+run_handler
+check_online eth0 "eth0 before route"
+
+emit route.ready "NET_IF='eth0'" "NET_IFINDEX='2'" "IP_VER='4'" "HAS_DEFAULT='0'"
+run_handler
+check_online eth0 "eth0 after subnet route"
+
+# 3. Gateway + resolv.conf interface
+emit carrier.up "NET_IF='eth1'" "NET_IFINDEX='3'"
+emit addr.ready "NET_IF='eth1'" "NET_IFINDEX='3'" "IP_VER='4'"
+emit route.ready "NET_IF='eth1'" "NET_IFINDEX='3'" "IP_VER='4'" "HAS_DEFAULT='0'"
+run_handler
+check_online eth1 "eth1 after subnet route only"
+
+emit route.ready "NET_IF='eth1'" "NET_IFINDEX='3'" "IP_VER='4'" "HAS_DEFAULT='1'"
+run_handler
+check_online eth1 "eth1 after default route (before resolvconf)"
+
+emit resolvconf.update "NET_IF='eth1'"
+run_handler
+check_online eth1 "eth1 after resolvconf.update"
+
+# 4. Config remove clears online state
+emit config.remove "NET_IF='eth1'"
+run_handler
+check_online eth1 "eth1 after config.remove"
+
+rm -rf -- "$root"

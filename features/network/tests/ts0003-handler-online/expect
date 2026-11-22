@@ -1,0 +1,9 @@
+lo after carrier.up: offline (uevent=none)
+lo after addr.ready: online (uevent=online)
+eth0 before route: offline (uevent=none)
+eth0 after subnet route: online (uevent=online)
+eth1 after subnet route only: offline (uevent=none)
+eth1 after default route (before resolvconf): offline (uevent=none)
+eth1 after resolvconf.update: online (uevent=online)
+eth1 after config.remove: offline (uevent=online)
+rc=0
