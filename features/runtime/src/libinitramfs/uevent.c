@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <time.h>
 
 #include "cleanup.h"
@@ -37,9 +38,15 @@ void rd_uevent_queue_open(struct rd_uevent_queue *q,
 	q->name = queue_name;
 	q->seq = 0;
 
+	if (mkdir(queue_path, 0755) < 0 && errno != EEXIST)
+		rd_fatal("mkdir: %s: %m", queue_path);
+
 	q->queue_dirfd = open(queue_path, O_PATH | O_DIRECTORY | O_CLOEXEC);
 	if (q->queue_dirfd < 0)
 		rd_fatal("open: %s: %m", queue_path);
+
+	if (mkdirat(q->queue_dirfd, QUEUE_TMPNAME, 0755) < 0 && errno != EEXIST)
+		rd_fatal("mkdir: %s/" QUEUE_TMPNAME ": %m", queue_path);
 
 	q->temp_dirfd = openat(q->queue_dirfd, QUEUE_TMPNAME, O_PATH | O_DIRECTORY | O_CLOEXEC);
 	if (q->temp_dirfd < 0)
