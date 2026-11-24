@@ -1,53 +1,90 @@
 #!/bin/bash
 ### BEGIN INIT INFO
 # Provides:            network-up
-# Required-Start:      uevent udev
+# Required-Start:      uevent $device-daemon
 # Default-Start:       3 4 5
 ### END INIT INFO
 
 [ "$1" = start ] ||
 	exit 0
 
-. /.initrd/initenv
-. /etc/init.d/functions
+[ ! -f /.initrd/initenv ] || . /.initrd/initenv
+# shellcheck source=/dev/null
+. "${net_init_functions:-/etc/init.d/functions}"
 
 msg="Network up"
 
 . network-sh-functions
 
 # wait for network modules
-udevadm settle --timeout=3
+if command -v udevadm >/dev/null 2>&1; then
+	udevadm settle --timeout=3
+fi
 
-ifaces=' '
+has_explicit_config()
+{
+	[ -d "$net_confdir/ifaces/$1" ] || [ -d "$net_autoconfdir/ifaces/$1" ]
+}
+
+timeout="${NETWORK_UP_TIMEOUT:-30}"
+ticks=$(( timeout * 10 ))
+elapsed=0
+
+ifaces=''
 while :; do
-	set -- /sys/class/net/*
+	explicit_pending=0
+	default_pending=0
+	online_nonlo=0
+	pending_list=''
 
-	up=0
-	for confdir; do
-		NET_IF="${confdir##*/}"
+	for netdev in "$net_sysdir"/*; do
+		[ -d "$netdev" ] || continue
 
-		if [ ! -d "$confdir" ] || [ -z "${ifaces##* $NET_IF *}" ] || ! get_iface_confdir; then
-			up=$(($up + 1))
+		NET_IF="${netdev##*/}"
+
+		if ! get_iface_confdir; then
 			continue
 		fi
 
-		[ -e "/.initrd/online/$NET_IF" ] ||
+		if [ -e "$net_onlinedir/$NET_IF" ]; then
+			is_loopback "$NET_IF" ||
+				online_nonlo=$(( online_nonlo + 1 ))
+
+			case " $ifaces " in
+				*" $NET_IF "*) ;;
+				*)
+					echo_msg "$msg ($NET_IF):"
+					success "$msg ($NET_IF):"
+					ifaces="${ifaces:+$ifaces }$NET_IF"
+					;;
+			esac
 			continue
+		fi
 
-		echo_msg "$msg ($NET_IF):"
-		success "$msg ($NET_IF):"
-
-		ifaces+="$NET_IF "
-		up=$(($up + 1))
+		if has_explicit_config "$NET_IF"; then
+			explicit_pending=$(( explicit_pending + 1 ))
+		else
+			default_pending=$(( default_pending + 1 ))
+		fi
+		pending_list="${pending_list:+$pending_list }$NET_IF"
 	done
 
-	[ "$#" != $up ] ||
+	if [ "$explicit_pending" -eq 0 ] &&
+	   { [ "$default_pending" -eq 0 ] || [ "$online_nonlo" -gt 0 ]; }; then
 		break
+	fi
+
+	if [ "$ticks" -gt 0 ] && [ "$elapsed" -ge "$ticks" ]; then
+		echo_msg "$msg (timeout: $pending_list):"
+		failure "$msg (timeout: $pending_list):"
+		break
+	fi
 
 	sleep 0.1
+	elapsed=$(( elapsed + 1 ))
 done
 
-if [ "${RDLOG-}" = 'console' ]; then
+if [ "${RDLOG-}" = 'console' ] && [ -n "$ifaces" ]; then
 	msg="all interfaces are up ($ifaces):"
 
 	echo_msg "$msg"

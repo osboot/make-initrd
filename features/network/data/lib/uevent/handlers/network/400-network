@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. /.initrd/initenv
+[ ! -f /.initrd/initenv ] || . /.initrd/initenv
 
 . shell-error
 . uevent-sh-functions
@@ -9,46 +9,121 @@
 PROG="${QUEUE:--}: session=${SESSION:-0}: $PROG"
 message_time=1
 
+net_handlerdir="${net_handlerdir:-/lib/network}"
+
+has_configured_default_route()
+{
+	local v="$1"
+	local f="$confdir/ipv${v}route"
+
+	[ -f "$f" ] || return 1
+	grep -qE '^[[:space:]]*((add|append|replace|change)[[:space:]]+)?default([[:space:]]|$)' "$f"
+}
+
 is_online()
 {
-	set -- link addr route
-	while [ "$#" -gt 0 ]; do
-		[ -d "$net_statedir/up/$NET_IF/$1" ] || return 1
-		shift
-	done
+	local updir="$net_statedir/up/$NET_IF"
+	local confdir='' v def
+
+	[ -e "$updir/carrier" ] ||
+		return 1
+
+	[ -e "$updir/addr/ipv4" ] || [ -e "$updir/addr/ipv6" ] ||
+		return 1
+
+	if ! is_loopback "$NET_IF"; then
+		[ -e "$updir/route/ipv4" ] || [ -e "$updir/route/ipv6" ] ||
+			return 1
+	fi
+
+	if get_iface_confdir; then
+		if ! is_loopback "$NET_IF"; then
+			for v in 4 6; do
+				if has_configured_default_route "$v"; then
+					def=0
+					[ ! -f "$updir/route/ipv$v" ] ||
+						read -r def < "$updir/route/ipv$v" ||:
+					[ "$def" = 1 ] ||
+						return 1
+				fi
+			done
+		fi
+
+		[ ! -f "$confdir/resolv.conf" ] || [ -e "$updir/resolvconf" ] ||
+			return 1
+
+		[ ! -f "$confdir/hostname" ] || [ -e "$updir/hostname" ] ||
+			return 1
+	fi
+
+	return 0
 }
 
 handler()
 {
+	local updir="$net_statedir/up/$NET_IF"
+
 	message "$NET_IF: process event: network.$ev_type.$ev_action"
 
-	case "$ev_action" in
-		 update|remove)
-			case "$ev_type" in
-				link|addr|route|hostname|resolvconf|config)
-					NET_IF="$NET_IF" \
-					NET_EV_TYPE="$ev_type" \
-					NET_EV_ACTION="$ev_action" \
-					"/lib/network/$ev_type"
+	case "$ev_type.$ev_action" in
+		link.update|link.remove|addr.update|addr.remove|route.update|route.remove|hostname.update|hostname.remove|resolvconf.update|resolvconf.remove|config.update|config.remove)
+			NET_IF="$NET_IF" \
+			NET_EV_TYPE="$ev_type" \
+			NET_EV_ACTION="$ev_action" \
+			"$net_handlerdir/$ev_type" || return 1
+
+			case "$ev_type.$ev_action" in
+				hostname.update|resolvconf.update)
+					mkdir -p -- "$updir"
+					:> "$updir/$ev_type"
 					;;
-				*)
-					fatal "$NET_IF: unknown event type: $ev_type"
+				hostname.remove|resolvconf.remove)
+					rm -f -- "$updir/$ev_type"
+					;;
+				config.remove)
+					rm -rf -- "${updir:?}"
+					rm -f -- "$net_onlinedir/$NET_IF"
+					return 0
 					;;
 			esac
 			;;
-		updated) mkdir -p -- "$net_statedir/up/$NET_IF/$ev_type" ;;
-		removed) rm -rf   -- "$net_statedir/up/$NET_IF/$ev_type" ;;
+		carrier.up)
+			mkdir -p -- "$updir"
+			:> "$updir/carrier"
+			;;
+		carrier.down)
+			rm -f -- "$updir/carrier"
+			;;
+		addr.ready)
+			mkdir -p -- "$updir/addr"
+			:> "$updir/addr/ipv${IP_VER:-4}"
+			;;
+		addr.lost)
+			rm -f -- "$updir/addr/ipv${IP_VER:-4}"
+			;;
+		route.ready)
+			mkdir -p -- "$updir/route"
+			printf '%s\n' "${HAS_DEFAULT:-0}" > "$updir/route/ipv${IP_VER:-4}"
+			;;
+		route.lost)
+			rm -f -- "$updir/route/ipv${IP_VER:-4}"
+			;;
+		*)
+			fatal "$NET_IF: unknown event: network.$ev_type.$ev_action"
+			;;
 	esac
 
-	if [ ! -e "/.initrd/online/$NET_IF" ] && is_online; then
+	if [ ! -e "$net_onlinedir/$NET_IF" ] && is_online; then
 		message "$NET_IF: online"
-		echo online > "/sys/class/net/$NET_IF/uevent"
-		touch "/.initrd/online/$NET_IF"
+		mkdir -p -- "$net_onlinedir"
+		[ ! -w "$net_sysdir/$NET_IF/uevent" ] ||
+			echo online > "$net_sysdir/$NET_IF/uevent"
+		touch "$net_onlinedir/$NET_IF"
 	fi
 }
 
 rc=0
-for ev_type in $net_event_list config; do
+for ev_type in carrier $net_event_list config; do
 	for e in "$1/network.$ev_type".*; do
 		[ -e "$e" ] || break
 

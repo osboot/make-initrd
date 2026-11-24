@@ -20,7 +20,7 @@ update()
 	#
 	# `ip link ...` may but should not change the name of the interface.
 	#
-	cd "/sys/class/net/$NET_IF"
+	cd "$net_sysdir/$NET_IF"
 
 	cat_config "$confdir/iplink" __handler &&
 		ip_cmd link set dev "$NET_IF" up ||
@@ -30,11 +30,6 @@ update()
 
 	add_iface_state "$NET_IF" "iplink"
 	add_iface_state "$NET_IF" "iftab"
-
-	if wait_for_link_up "$NET_IF"; then
-		message "create event: network.$NET_EV_TYPE.$NET_EV_ACTION -> network.link.updated"
-		net_event "network.link.updated" "$NET_IF"
-	fi
 }
 
 remove()
@@ -43,9 +38,6 @@ remove()
 		exit
 
 	del_iface_state "$NET_IF" "iplink"
-
-	message "create event: network.$NET_EV_TYPE.$NET_EV_ACTION -> network.link.removed"
-	net_event "network.link.removed" "$NET_IF"
 }
 
 case "$NET_EV_ACTION" in

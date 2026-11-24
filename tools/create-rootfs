@@ -174,7 +174,7 @@ get_bin_paths()
 
 	local n d
 	for n in $ALL_ACTIVE_FEATURES; do
-		for d in "$LOCALBUILDDIR$BIN_FEATURESDIR/$n"/{bin,sbin} "$BIN_FEATURESDIR/$n"/{bin,sbin}; do
+		for d in "$LOCALBUILDDIR$BIN_FEATURESDIR/$n"/{bin,sbin,lib/uevent/sources} "$BIN_FEATURESDIR/$n"/{bin,sbin,lib/uevent/sources}; do
 			[ ! -d "$d" ] ||
 				BIN_PATHS+=("$d")
 		done

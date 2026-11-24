@@ -52,4 +52,11 @@ extern ssize_t write_loop(int fd, const char *buffer, size_t count) __nonnull(2)
 /* process.c */
 extern pid_t waitpid_retry(pid_t pid, int *wstatus, int options);
 
+/* sources.c */
+extern void sources_start(const char *dir_path);
+extern int sources_handle_exit(pid_t pid, int wstatus);
+extern int sources_next_timeout_ms(void);
+extern void sources_tick(void);
+extern void sources_stop_all(void);
+
 #endif /* __UEVENTD_H__ */

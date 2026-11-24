@@ -137,6 +137,20 @@ void rd_log_message(int priority, const char *fmt, ...)
 	va_end(ap);
 }
 
+const char *rd_log_resolve_file(const char *env_var, const char *fallback)
+{
+	const char *logfile = NULL;
+
+	if (env_var)
+		logfile = getenv(env_var);
+	if (!logfile || !*logfile)
+		logfile = getenv("LOGFILE");
+	if (!logfile || !*logfile)
+		logfile = fallback;
+
+	return logfile;
+}
+
 void rd_log_setup_stderr(const char *logfile)
 {
 	if (getenv("RDLOG_STDERR"))

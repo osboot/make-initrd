@@ -26,6 +26,7 @@
 
 #include "rd/memory.h"
 #include "rd/logging.h"
+#include "rd/uevent.h"
 #include "ueventd.h"
 
 #define DEFAULT_LOGFILE "/var/log/ueventd.log"
@@ -90,7 +91,6 @@ static void setup_pipe_fd(struct fd_handler *el)            __nonnull(1);
 static void setup_timer_fd(struct fd_handler *el)           __nonnull(1);
 static int setup_epoll_fd(struct fd_handler list[FD_MAX]);
 static pid_t spawn_worker(int epollfd, struct watch *queue) __nonnull(2);
-static inline char *get_param_dir(const char *name)         __nonnull(1);
 static void update_timerfd(int inotifyfd, int timerfd);
 static struct watch *find_queue_watch(const char *name)     __nonnull(1);
 static void mark_queue_dirty(struct watch *queue)           __nonnull(1);
@@ -397,7 +397,9 @@ int process_signal_events(int signfd)
 
 	if (fdsi.ssi_signo == SIGCHLD) {
 		while (1) {
-			pid_t pid = waitpid_retry(-1, NULL, WNOHANG);
+			int wstatus = 0;
+			int found = 0;
+			pid_t pid = waitpid_retry(-1, &wstatus, WNOHANG);
 
 			if (pid <= 0) {
 				if (pid < 0 && errno != ECHILD) {
@@ -408,9 +410,14 @@ int process_signal_events(int signfd)
 			}
 
 			for (p = watch_list; p; p = p->next) {
-				if (p->q_pid == pid)
+				if (p->q_pid == pid) {
 					p->q_pid = 0;
+					found = 1;
+				}
 			}
+
+			if (!found)
+				sources_handle_exit(pid, wstatus);
 		}
 		return 0;
 	}
@@ -631,14 +638,6 @@ pid_t spawn_worker(int epollfd, struct watch *queue)
 	return 0;
 }
 
-char *get_param_dir(const char *name)
-{
-	char *value = getenv(name);
-	if (!value)
-		rd_fatal("please set `%s' env variable", name);
-	return value;
-}
-
 int main(int argc, char **argv)
 {
 	struct watch *e, *n;
@@ -664,16 +663,16 @@ int main(int argc, char **argv)
 	if (optind == argc)
 		rd_fatal("specify handler program");
 
-	rd_log_setup_stderr(DEFAULT_LOGFILE);
+	rd_log_setup_stderr(rd_log_resolve_file("UEVENTD_LOGFILE", DEFAULT_LOGFILE));
 	rd_logging_init(fileno(stderr), loglevel, program_invocation_short_name);
 
 	rd_info("starting server ...");
 
-	filter_dir = get_param_dir("filterdir");
-	uevent_dir = get_param_dir("ueventdir");
-	uevent_confdb = get_param_dir("uevent_confdb");
+	filter_dir = rd_getenv_or_die("filterdir");
+	uevent_dir = rd_getenv_or_die("ueventdir");
+	uevent_confdb = rd_getenv_or_die("uevent_confdb");
 	handler_file = argv[optind++];
-	timer_dir = get_param_dir("timerdir");
+	timer_dir = rd_getenv_or_die("timerdir");
 
 	setup_inotify_fd(&fd_handler_list[FD_INOTIFY]);
 	setup_signal_fd(&fd_handler_list[FD_SIGNAL]);
@@ -693,13 +692,19 @@ int main(int argc, char **argv)
 	watch_timer_queues(fd_handler_list[FD_INOTIFY].fd);
 	apply_pause();
 	update_timerfd(fd_handler_list[FD_INOTIFY].fd, fd_handler_list[FD_TIMER].fd);
+	sources_start(getenv("sourcedir"));
 
 	while (1) {
 		struct epoll_event ev[EV_MAX];
 		int fdcount;
+		int timeout = dirty_queues ? 250 : -1;
+		int src_timeout = sources_next_timeout_ms();
+
+		if (src_timeout >= 0 && (timeout < 0 || src_timeout < timeout))
+			timeout = src_timeout;
 
 		errno = 0;
-		fdcount = epoll_wait(epollfd, ev, EV_MAX, (dirty_queues ? 250 : -1));
+		fdcount = epoll_wait(epollfd, ev, EV_MAX, timeout);
 
 		if (fdcount < 0) {
 			if (errno == EINTR)
@@ -716,6 +721,8 @@ int main(int argc, char **argv)
 			if (fde->fd_handler(fde->fd) != 0)
 				goto done;
 		}
+
+		sources_tick();
 
 		if (timer_changed)
 			update_timerfd(fd_handler_list[FD_INOTIFY].fd, fd_handler_list[FD_TIMER].fd);
@@ -734,6 +741,8 @@ int main(int argc, char **argv)
 		}
 	}
 done:
+	sources_stop_all();
+
 	for (e = watch_list, n = NULL; e; e = n) {
 		n = e->next;
 		if (e->q_pid)

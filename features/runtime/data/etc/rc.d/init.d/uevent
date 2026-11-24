@@ -2,7 +2,7 @@
 ### BEGIN INIT INFO
 # Provides:            uevent
 # Required-Start:      cmdline fstab mountvirtfs
-# Should-Start:        $syslog
+# Should-Start:        $syslog mountfs
 # Required-Stop:
 # Should-Stop:
 # Default-Start:       3 4 5
@@ -20,7 +20,7 @@ PIDFILE=/var/run/$NAME.pid
 ARGS="--lockfile $LOCKFILE --pidfile $PIDFILE --displayname $NAME --name $NAME"
 
 start() {
-	export filterdir timerdir ueventdir uevent_confdb
+	export filterdir timerdir ueventdir uevent_confdb sourcedir
 
 	mkdir -p -- \
 		"$filterdir" \

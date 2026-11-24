@@ -1,0 +1,10 @@
+after config.update (no carrier): running=no starts=0
+after lo carrier.up: running=no starts=0
+after eth0 carrier.up: running=yes starts=1
+after duplicate carrier.up: running=yes starts=1
+after carrier.down: running=no starts=1
+after replug carrier.up: running=yes starts=2
+after config.remove: running=no starts=2
+bound event: addr.update
+bound event: route.update
+rc=0

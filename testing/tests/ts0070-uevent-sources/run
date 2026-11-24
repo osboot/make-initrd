@@ -1,0 +1,107 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+cwd="${0%/*}"
+root="$cwd/root"
+handler="$root/handler"
+log="$root/handler.log"
+source_bin="$root/sources/ueventd-mock"
+ignored_bin="$root/sources/helper-ignored"
+runs_file="$root/source.runs"
+pid_file="$root/source.pid"
+
+rm -rf -- "$root"
+mkdir -p -- \
+	"$root/queues/demo/.tmp" \
+	"$root/timers" \
+	"$root/events" \
+	"$root/confdb/queue/pause" \
+	"$root/sources"
+
+cat > "$handler" <<'EOF'
+#!/bin/bash -eu
+queuedir="$1"
+for event in "$queuedir"/*; do
+	[ -f "$event" ] || continue
+	cat "$event" >> "$TEST_LOG"
+	rm -f -- "$event"
+done
+EOF
+chmod +x "$handler"
+
+cat > "$source_bin" <<'EOF'
+#!/bin/bash -eu
+count=0
+[ ! -f "$SOURCE_RUNS" ] || read -r count < "$SOURCE_RUNS"
+count=$(( count + 1 ))
+printf '%s\n' "$count" > "$SOURCE_RUNS"
+printf '%s\n' "$$" > "$SOURCE_PID"
+
+tmp="$filterdir/demo/.tmp/.ev.$count"
+printf 'run=%s\n' "$count" > "$tmp"
+mv -f -- "$tmp" "$filterdir/demo/demo.ev.$count"
+
+if [ "$count" -eq 1 ]; then
+	# Simulate crash on first run to test automatic restart
+	exit 1
+fi
+
+trap 'exit 0' TERM INT
+sleep 30 &
+wait "$!"
+EOF
+chmod +x "$source_bin"
+
+# Executable without ueventd- prefix must not be launched
+cat > "$ignored_bin" <<'EOF'
+#!/bin/bash -eu
+printf 'ignored_ran=yes\n' >> "$TEST_LOG"
+EOF
+chmod +x "$ignored_bin"
+
+export PATH="$PWD/.build/dest/usr/bin:$PATH"
+export TIMESTAMP="$PWD/.build/dest/lib/initrd/sbin/timestamp"
+libcdir="$(tools/get-libc-dir 2>/dev/null ||:)"
+export LD_LIBRARY_PATH="$PWD/.build/dest/lib/initrd$libcdir:$PWD/.build/dest/lib/initrd/usr/lib/x86_64-linux-gnu:$PWD/.build/dest/lib/initrd/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export TEST_LOG="$log"
+export SOURCE_RUNS="$runs_file"
+export SOURCE_PID="$pid_file"
+export RDLOG_STDERR=1
+
+export filterdir="$root/queues"
+export timerdir="$root/timers"
+export ueventdir="$root/events"
+export uevent_confdb="$root/confdb"
+export sourcedir="$root/sources"
+
+.build/dest/lib/initrd/sbin/ueventd -l error "$handler" 2>"$root/ueventd.log" &
+pid="$!"
+trap 'kill "$pid" 2>/dev/null ||:; rm -rf -- "$root"' EXIT
+
+# Wait until both run=1 and restarted run=2 events are processed
+i=0
+while [ "$i" -lt 50 ]; do
+	if [ -f "$log" ] && [ "$(wc -l < "$log")" -ge 2 ]; then
+		break
+	fi
+	sleep 0.1
+	i=$(( i + 1 ))
+done
+
+src_pid=''
+[ ! -f "$pid_file" ] || read -r src_pid < "$pid_file" ||:
+
+kill -TERM "$pid" 2>/dev/null ||:
+wait "$pid" 2>/dev/null ||:
+trap - EXIT
+
+src_alive='no'
+if [ -n "$src_pid" ] && kill -0 "$src_pid" 2>/dev/null; then
+	src_alive='yes'
+	kill -KILL "$src_pid" 2>/dev/null ||:
+fi
+
+cat "$log"
+printf 'source_alive_after_stop=%s\n' "$src_alive"
+
+rm -rf -- "$root"

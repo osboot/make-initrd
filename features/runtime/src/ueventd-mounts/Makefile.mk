@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-ueventd_mounts_DEST = $(dest_data_sbindir)/ueventd-mounts
+ueventd_mounts_DEST = $(dest_data_ueventdir)/ueventd-mounts
 ueventd_mounts_SRCDIR = $(runtime_srcdir)/ueventd-mounts
 
 ueventd_mounts_SRCS = \

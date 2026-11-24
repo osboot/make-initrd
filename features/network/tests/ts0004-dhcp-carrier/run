@@ -1,0 +1,162 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+cwd="${0%/*}"
+root="$cwd/root"
+
+rm -rf -- "$root"
+mkdir -p -- \
+	"$root/bin" \
+	"$root/.initrd/uevent/queues/network/.tmp" \
+	"$root/conf/ifaces/eth0" \
+	"$root/auto" \
+	"$root/state" \
+	"$root/run" \
+	"$root/log" \
+	"$root/sys/lo" \
+	"$root/sys/eth0"
+
+printf '0x9\n' > "$root/sys/lo/flags"
+printf '0x1\n' > "$root/sys/eth0/flags"
+:> "$root/conf/ifaces/eth0/ipv4dhcp"
+
+# Stub udhcpc that records invocations, writes pidfile, and stays alive
+cat > "$root/bin/udhcpc" <<'EOF'
+#!/bin/bash -eu
+pidfile=''
+iface=''
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+		-p) pidfile="$2"; shift 2 ;;
+		-i) iface="$2"; shift 2 ;;
+		*) shift ;;
+	esac
+done
+printf '%s\n' "$$" > "$pidfile"
+printf 'start %s\n' "$iface" >> "$DHCP_CALLS"
+trap 'exit 0' TERM INT
+sleep 30 &
+wait "$!"
+EOF
+chmod +x "$root/bin/udhcpc"
+
+export PATH="$root/bin:$PWD/features/runtime/data/bin:$PWD/features/network/data/bin:$PATH"
+export TIMESTAMP="$PWD/.build/dest/lib/initrd/sbin/timestamp"
+export uevent_rootpath="$root"
+export net_confdir="$root/conf"
+export net_autoconfdir="$root/auto"
+export net_statedir="$root/state"
+export net_sysdir="$root/sys"
+export net_piddir="$root/run"
+export net_logdir="$root/log"
+export net_handlerdir="$PWD/features/network/data/lib/network"
+export DHCP_CALLS="$root/dhcp.calls"
+:> "$DHCP_CALLS"
+
+cleanup()
+{
+	local p=''
+	if [ -f "$root/run/udhcpc4.eth0.pid" ]; then
+		read -r p < "$root/run/udhcpc4.eth0.pid" ||:
+		[ -z "$p" ] || kill "$p" 2>/dev/null ||:
+	fi
+	rm -rf -- "$root"
+}
+trap cleanup EXIT
+
+qdir="$root/.initrd/uevent/queues/network"
+seq=0
+
+emit()
+{
+	local ev="$1"
+	shift
+	seq=$(( seq + 1 ))
+	printf '%s\n' "$@" > "$qdir/network.$ev.000001.000000000001.$seq"
+}
+
+run_dhcp_handler()
+{
+	features/network/data/lib/uevent/handlers/network/100-dhcp "$qdir" >/dev/null 2>&1
+	rm -f -- "$qdir"/network.*
+}
+
+wait_pidfile()
+{
+	local i=0
+	while [ "$i" -lt 40 ]; do
+		[ ! -s "$root/run/udhcpc4.eth0.pid" ] || return 0
+		sleep 0.05
+		i=$(( i + 1 ))
+	done
+}
+
+report()
+{
+	local label="$1" running='no' count
+	if [ -f "$root/run/udhcpc4.eth0.pid" ]; then
+		local pid=''
+		read -r pid < "$root/run/udhcpc4.eth0.pid" ||:
+		[ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null || running='yes'
+	fi
+	count=$(wc -l < "$DHCP_CALLS")
+	printf '%s: running=%s starts=%s\n' "$label" "$running" "$count"
+}
+
+# 1. config.update before carrier -> must NOT start udhcpc
+emit config.update "NET_IF='eth0'"
+run_dhcp_handler
+report "after config.update (no carrier)"
+
+# 2. loopback carrier.up -> must be ignored
+emit carrier.up "NET_IF='lo'" "NET_IFINDEX='1'"
+run_dhcp_handler
+report "after lo carrier.up"
+
+# 3. eth0 carrier.up -> starts udhcpc
+emit carrier.up "NET_IF='eth0'" "NET_IFINDEX='2'"
+run_dhcp_handler
+wait_pidfile
+report "after eth0 carrier.up"
+
+# 4. duplicate carrier.up while running -> must NOT start second udhcpc
+emit carrier.up "NET_IF='eth0'" "NET_IFINDEX='2'"
+run_dhcp_handler
+sleep 0.05
+report "after duplicate carrier.up"
+
+# 5. carrier.down -> stops udhcpc and removes pidfile
+emit carrier.down "NET_IF='eth0'" "NET_IFINDEX='2'"
+run_dhcp_handler
+sleep 0.05
+report "after carrier.down"
+
+# 6. carrier.up again -> restarts udhcpc
+emit carrier.up "NET_IF='eth0'" "NET_IFINDEX='2'"
+run_dhcp_handler
+wait_pidfile
+report "after replug carrier.up"
+
+# 7. config.remove -> stops udhcpc
+emit config.remove "NET_IF='eth0'"
+run_dhcp_handler
+sleep 0.05
+report "after config.remove"
+
+# 8. udhcpc4.script bound emits addr.update + route.update (and skips missing optional files)
+RDLOG='' \
+interface='eth0' \
+ip='192.0.2.50' \
+mask='24' \
+router='192.0.2.1' \
+features/network/data/lib/network/udhcpc4.script bound
+
+for f in "$qdir"/network.*; do
+	[ -f "$f" ] || continue
+	base="${f##*/}"
+	rest="${base#network.}"
+	t1="${rest%%.*}"
+	r1="${rest#*.}"
+	t2="${r1%%.*}"
+	printf 'bound event: %s.%s\n' "$t1" "$t2"
+done | LC_ALL=C sort

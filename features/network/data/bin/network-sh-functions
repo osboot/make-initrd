@@ -3,9 +3,11 @@
 if [ -z "${__net_sh_functions-}" ]; then
 __net_sh_functions=1
 
-net_confdir=/etc/network
-net_autoconfdir=/.initrd/network/auto
-net_statedir=/.initrd/network/state
+net_confdir="${net_confdir:-/etc/network}"
+net_autoconfdir="${net_autoconfdir:-/.initrd/network/auto}"
+net_statedir="${net_statedir:-/.initrd/network/state}"
+net_onlinedir="${net_onlinedir:-/.initrd/online}"
+net_sysdir="${net_sysdir:-/sys/class/net}"
 net_event_list='link addr route hostname resolvconf'
 
 . shell-error
@@ -167,7 +169,7 @@ is_set()
 is_loopback()
 {
 	local state=0
-	{ read -r state < "/sys/class/net/$1/flags" ||:; } >/dev/null 2>&1
+	{ read -r state < "$net_sysdir/$1/flags" ||:; } >/dev/null 2>&1
 
 	is_set "$state" "$IFF_LOOPBACK"
 }
@@ -175,7 +177,7 @@ is_loopback()
 is_link_up()
 {
 	local state=0
-	{ read -r state < "/sys/class/net/$1/flags" ||:; } >/dev/null 2>&1
+	{ read -r state < "$net_sysdir/$1/flags" ||:; } >/dev/null 2>&1
 
 	is_set "$state" "$IFF_UP"
 }

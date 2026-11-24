@@ -1,0 +1,82 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+cwd="${0%/*}"
+root="$cwd/root"
+
+rm -rf -- "$root"
+mkdir -p -- "$root/bin"
+trap 'rm -rf -- "$root"' EXIT
+
+# Stub /etc/init.d/functions
+cat > "$root/functions" <<'EOF'
+echo_msg() { :; }
+success() { printf 'OK: %s\n' "$*"; }
+failure() { printf 'FAIL: %s\n' "$*"; }
+EOF
+
+# Stub udevadm so tests don't touch host udev
+cat > "$root/bin/udevadm" <<'EOF'
+#!/bin/bash -eu
+exit 0
+EOF
+chmod +x "$root/bin/udevadm"
+
+export PATH="$root/bin:$PWD/features/runtime/data/bin:$PWD/features/network/data/bin:$PATH"
+export net_init_functions="$root/functions"
+export RDLOG='console'
+
+setup_case()
+{
+	local name="$1"
+	local cdir="$root/$name"
+
+	rm -rf -- "$cdir"
+	mkdir -p -- \
+		"$cdir/conf/ifaces/lo" \
+		"$cdir/auto" \
+		"$cdir/state" \
+		"$cdir/online" \
+		"$cdir/sys/lo" \
+		"$cdir/sys/eth0" \
+		"$cdir/sys/eth1"
+
+	printf '0x9\n' > "$cdir/sys/lo/flags"
+	printf '0x1\n' > "$cdir/sys/eth0/flags"
+	printf '0x1\n' > "$cdir/sys/eth1/flags"
+	:> "$cdir/conf/ifaces/lo/ipv4address"
+
+	export net_confdir="$cdir/conf"
+	export net_autoconfdir="$cdir/auto"
+	export net_statedir="$cdir/state"
+	export net_onlinedir="$cdir/online"
+	export net_sysdir="$cdir/sys"
+}
+
+# Case 1: ip=dhcp (default) with lo + eth0 online and eth1 unplugged -> must not hang
+printf '=== case 1: default config with unplugged eth1 ===\n'
+setup_case case1
+mkdir -p -- "$net_confdir/default"
+:> "$net_confdir/default/ipv4dhcp"
+:> "$net_onlinedir/lo"
+:> "$net_onlinedir/eth0"
+NETWORK_UP_TIMEOUT=2 features/network/data/etc/rc.d/init.d/network-up start
+
+# Case 2: explicit eth0 + eth1 where eth1 comes online asynchronously
+printf '=== case 2: explicit eth0 + delayed eth1 ===\n'
+setup_case case2
+mkdir -p -- "$net_confdir/ifaces/eth0" "$net_confdir/ifaces/eth1"
+:> "$net_onlinedir/lo"
+:> "$net_onlinedir/eth0"
+( sleep 0.2; :> "$net_onlinedir/eth1" ) &
+bg=$!
+NETWORK_UP_TIMEOUT=3 features/network/data/etc/rc.d/init.d/network-up start
+wait "$bg"
+
+# Case 3: explicit eth1 never comes online -> timeout cleanly
+printf '=== case 3: timeout on missing explicit eth1 ===\n'
+setup_case case3
+mkdir -p -- "$net_confdir/ifaces/eth0" "$net_confdir/ifaces/eth1"
+:> "$net_onlinedir/lo"
+:> "$net_onlinedir/eth0"
+NETWORK_UP_TIMEOUT=1 features/network/data/etc/rc.d/init.d/network-up start

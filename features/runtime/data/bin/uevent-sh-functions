@@ -19,6 +19,7 @@ ueventdir="$uevent_rootpath/$uevent_basepath/uevent/events"
 eventdir="$uevent_rootpath/$uevent_basepath/uevent/events/udev"
 
 handlerdir="$uevent_rootpath/lib/uevent/handlers"
+sourcedir="$uevent_rootpath/lib/uevent/sources"
 timestamp_bin="${TIMESTAMP:-/sbin/timestamp}"
 
 make_event() {

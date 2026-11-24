@@ -59,9 +59,10 @@ dest_execdir      := $(build_prefix)/dest$(execdir)
 dest_man1dir      := $(build_prefix)/dest$(man1dir)
 dest_rulesdir     := $(build_prefix)/dest$(rulesdir)
 dest_runtimedir   := $(build_prefix)/dest$(runtimedir)
-dest_data_bindir  := $(dest_runtimedir)/bin
-dest_data_sbindir := $(dest_runtimedir)/sbin
-dest_data_libdir  := $(dest_runtimedir)/$(libcdir)
+dest_data_bindir    := $(dest_runtimedir)/bin
+dest_data_sbindir   := $(dest_runtimedir)/sbin
+dest_data_ueventdir := $(dest_runtimedir)/lib/uevent/sources
+dest_data_libdir    := $(dest_runtimedir)/$(libcdir)
 dest_featuredir   := $(dest_execdir)/$(FEATURESDIR)
 
 BUILD_OS := @build_os@
@@ -416,10 +417,11 @@ $(OBJDIR)/%.o: %.c
 	$(Q)mkdir -p -- $(dir $@)
 	$(call quiet_cmd,CC,$<,$(COMPILE.c)) $(depflags) $(cflags) $(OUTPUT_OPTION) $<
 
-BIN_NAMES          =
-SBIN_NAMES         =
-RUNTIME_BIN_NAMES  =
-RUNTIME_SBIN_NAMES =
+BIN_NAMES            =
+SBIN_NAMES           =
+RUNTIME_BIN_NAMES    =
+RUNTIME_SBIN_NAMES   =
+RUNTIME_UEVENT_NAMES =
 
 define classify_file =
 ifeq ($(1:$(dest_bindir)/%=),)
@@ -433,6 +435,9 @@ RUNTIME_BIN_NAMES += $(notdir $(1))
 endif
 ifeq ($(1:$(dest_data_sbindir)/%=),)
 RUNTIME_SBIN_NAMES += $(notdir $(1))
+endif
+ifeq ($(1:$(dest_data_ueventdir)/%=),)
+RUNTIME_UEVENT_NAMES += $(notdir $(1))
 endif
 endef
 
@@ -575,6 +580,7 @@ installdirs:
 	 $(DESTDIR)$(execdir)/$(FEATURESDIR) \
 	 $(DESTDIR)$(runtimedir)/bin \
 	 $(DESTDIR)$(runtimedir)/sbin \
+	 $(DESTDIR)$(runtimedir)/lib/uevent/sources \
 	 $(DESTDIR)$(runtimedir)/$(libcdir)
 	$(Q)[ -z "$(completionsdir)" ] || $(INSTALL) -d -m 755 -- "$(DESTDIR)$(completionsdir)"
 
@@ -605,6 +611,8 @@ install: build installdirs
 	$(Q)cp -at "$(DESTDIR)$(execdir)/$(FEATURESDIR)" -- $(wildcard $(dest_execdir)/$(FEATURESDIR)/*)
 	$(Q)$(INSTALL_PROGRAM) -m 755 -t "$(DESTDIR)$(runtimedir)/bin" -- $(addprefix $(dest_data_bindir)/,$(RUNTIME_BIN_NAMES))
 	$(Q)$(INSTALL_PROGRAM) -m 755 -t "$(DESTDIR)$(runtimedir)/sbin" -- $(addprefix $(dest_data_sbindir)/,$(RUNTIME_SBIN_NAMES))
+	$(Q)[ -z "$(RUNTIME_UEVENT_NAMES)" ] || \
+	    $(INSTALL_PROGRAM) -m 755 -t "$(DESTDIR)$(runtimedir)/lib/uevent/sources" -- $(addprefix $(dest_data_ueventdir)/,$(RUNTIME_UEVENT_NAMES))
 	$(Q)[ -z "$(wildcard $(dest_data_libdir)/lib*)" ] || \
 	    cp -at "$(DESTDIR)$(runtimedir)/$(libcdir)" -- $(wildcard $(dest_data_libdir)/lib*)
 	$(Q)[ -z "$(completionsdir)" ] || \
