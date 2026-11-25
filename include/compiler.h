@@ -45,6 +45,16 @@
 #ifndef _alloc_
 # define _alloc_(...)      __attribute__((__alloc_size__(__VA_ARGS__)))
 #endif
+#ifndef _access_
+# if !defined(__clang__)
+#  define _access_(...)             __attribute__((__access__(__VA_ARGS__)))
+# else
+#  define _access_(...)
+# endif
+# define _rdonly_ptr_(ptr_idx, ...) _nonnull_(ptr_idx) _access_(read_only, ptr_idx __VA_OPT__(,) __VA_ARGS__)
+# define _wronly_ptr_(ptr_idx, ...) _nonnull_(ptr_idx) _access_(write_only, ptr_idx __VA_OPT__(,) __VA_ARGS__)
+# define _rdwr_ptr_(ptr_idx, ...)   _nonnull_(ptr_idx) _access_(read_write, ptr_idx __VA_OPT__(,) __VA_ARGS__)
+#endif
 #ifndef _malloc_
 # define _malloc_          __attribute__((__malloc__))
 #endif
