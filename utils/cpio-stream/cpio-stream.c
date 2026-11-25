@@ -16,9 +16,12 @@
 #include <err.h>
 
 #include "compiler.h"
+#include "cleanup.h"
 #include "temp_failure_retry.h"
 #include "initrd-common.h"
 #include "initrd-cpio.h"
+
+DEFINE_FREE(file_close, FILE *, if (_t && _t != stdout) fclose(_t))
 
 static void show_help(int rc) _noreturn_;
 static void show_version(void) _noreturn_;
@@ -79,7 +82,7 @@ read_stream(int fd, size_t *out_len)
 {
 	size_t cap = 65536;
 	size_t len = 0;
-	char *buf = malloc(cap);
+	char *buf _free_(free) = malloc(cap);
 
 	if (!buf)
 		err(EXIT_FAILURE, "malloc failed");
@@ -89,39 +92,35 @@ read_stream(int fd, size_t *out_len)
 			size_t new_cap = cap * 2;
 			char *new_buf;
 
-			if (new_cap < cap) {
-				free(buf);
+			if (new_cap < cap)
 				errx(EXIT_FAILURE, "file too large");
-			}
+
 			new_buf = realloc(buf, new_cap);
-			if (!new_buf) {
-				free(buf);
+			if (!new_buf)
 				err(EXIT_FAILURE, "realloc failed");
-			}
+
 			buf = new_buf;
 			cap = new_cap;
 		}
 
 		ssize_t n = TEMP_FAILURE_RETRY(read(fd, buf + len, cap - len));
-		if (n < 0) {
-			free(buf);
+		if (n < 0)
 			err(EXIT_FAILURE, "read failed");
-		}
 		if (n == 0)
 			break;
 		len += (size_t) n;
 	}
 
 	*out_len = len;
-	return buf;
+	return no_free_ptr(buf);
 }
 
 static char *
 read_file(const char *path, size_t *out_len, struct stat *st_out)
 {
 	struct stat st;
-	int fd;
-	char *buf;
+	int fd _free_(close) = -1;
+	char *buf _free_(free) = NULL;
 	size_t len = 0;
 	size_t fsize;
 
@@ -135,9 +134,7 @@ read_file(const char *path, size_t *out_len, struct stat *st_out)
 		fd = open(path, O_RDONLY);
 		if (fd < 0)
 			err(EXIT_FAILURE, "open failed: %s", path);
-		buf = read_stream(fd, out_len);
-		close(fd);
-		return buf;
+		return read_stream(fd, out_len);
 	}
 
 	fsize = (size_t) st.st_size;
@@ -146,26 +143,20 @@ read_file(const char *path, size_t *out_len, struct stat *st_out)
 		err(EXIT_FAILURE, "malloc failed");
 
 	fd = open(path, O_RDONLY);
-	if (fd < 0) {
-		free(buf);
+	if (fd < 0)
 		err(EXIT_FAILURE, "open failed: %s", path);
-	}
 
 	while (len < fsize) {
 		ssize_t n = TEMP_FAILURE_RETRY(read(fd, buf + len, fsize - len));
-		if (n < 0) {
-			free(buf);
-			close(fd);
+		if (n < 0)
 			err(EXIT_FAILURE, "read failed: %s", path);
-		}
 		if (n == 0)
 			break;
 		len += (size_t) n;
 	}
-	close(fd);
 
 	*out_len = len;
-	return buf;
+	return no_free_ptr(buf);
 }
 
 static const char *
@@ -244,11 +235,11 @@ cmd_add(int argc, char **argv)
 	const char *outfile = NULL;
 	const char *arc_name;
 	const char *src_file;
-	char *body = NULL;
+	char *body _free_(free) = NULL;
 	size_t body_len = 0;
 	struct stat st;
 	int from_file;
-	FILE *out;
+	FILE *out _free_(file_close) = stdout;
 	int c;
 
 	optind = 1;
@@ -315,20 +306,13 @@ cmd_add(int argc, char **argv)
 			mtime = time(NULL);
 	}
 
-	out = stdout;
 	if (outfile) {
 		out = fopen(outfile, "ab");
-		if (!out) {
-			free(body);
+		if (!out)
 			err(EXIT_FAILURE, "cannot open output file: %s", outfile);
-		}
 	}
 
 	write_entry(arc_name, body, body_len, mode, mtime, uid, gid, out);
-
-	if (outfile)
-		fclose(out);
-	free(body);
 
 	return EXIT_SUCCESS;
 }
@@ -343,7 +327,7 @@ cmd_trailer(int argc, char **argv)
 	};
 
 	const char *outfile = NULL;
-	FILE *out;
+	FILE *out _free_(file_close) = stdout;
 	int c;
 
 	optind = 1;
@@ -360,7 +344,6 @@ cmd_trailer(int argc, char **argv)
 		}
 	}
 
-	out = stdout;
 	if (outfile) {
 		out = fopen(outfile, "ab");
 		if (!out)
@@ -368,9 +351,6 @@ cmd_trailer(int argc, char **argv)
 	}
 
 	write_archive_trailer(out);
-
-	if (outfile)
-		fclose(out);
 
 	return EXIT_SUCCESS;
 }
@@ -385,7 +365,7 @@ cmd_create(int argc, char **argv)
 	};
 
 	const char *outfile = NULL;
-	FILE *out;
+	FILE *out _free_(file_close) = stdout;
 	int c;
 	int i;
 
@@ -406,7 +386,6 @@ cmd_create(int argc, char **argv)
 	if (optind >= argc)
 		errx(EXIT_FAILURE, "create: no input files specified");
 
-	out = stdout;
 	if (outfile) {
 		out = fopen(outfile, "wb");
 		if (!out)
@@ -418,17 +397,13 @@ cmd_create(int argc, char **argv)
 		const char *arc_name = sanitize_path(path);
 		size_t body_len = 0;
 		struct stat st;
-		char *body = read_file(path, &body_len, &st);
+		char *body _free_(free) = read_file(path, &body_len, &st);
 
 		write_entry(arc_name, body, body_len, st.st_mode, st.st_mtime,
 		            st.st_uid, st.st_gid, out);
-		free(body);
 	}
 
 	write_archive_trailer(out);
-
-	if (outfile)
-		fclose(out);
 
 	return EXIT_SUCCESS;
 }
@@ -438,7 +413,7 @@ main(int argc, char **argv)
 {
 	int cmd_idx = -1;
 	const char *cmd = NULL;
-	char **sub_argv;
+	char **sub_argv _free_(free) = NULL;
 	int sub_argc;
 	int ret = EXIT_FAILURE;
 	int i;
@@ -489,6 +464,5 @@ main(int argc, char **argv)
 	else if (strcmp(cmd, "create") == 0)
 		ret = cmd_create(sub_argc, sub_argv);
 
-	free(sub_argv);
 	return ret;
 }
