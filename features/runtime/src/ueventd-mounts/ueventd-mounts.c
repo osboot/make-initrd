@@ -102,7 +102,7 @@ static struct mount_backend *backends[] = {
 
 static struct mount_backend *backend_select(void)
 {
-	for (size_t i = 0; i < sizeof(backends) / sizeof(backends[0]); i++) {
+	for (size_t i = 0; i < ARRAY_SIZE(backends); i++) {
 		struct mount_backend *b = backends[i];
 		if (b->init(b) == 0) {
 			rd_info("using %s mount monitoring backend", b->name);
