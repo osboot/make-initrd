@@ -28,6 +28,7 @@
 #include "elf_dlopen.h"
 
 DEFINE_FREE(json_object_put, struct json_object *, if (_t) json_object_put(_t))
+DEFINE_FREE(dlclose, void *, if (_t) dlclose(_t))
 
 extern int verbose;
 
@@ -48,7 +49,8 @@ static int in_envvar(const char *envname, const char *filename, const char *valu
 {
 	const char *s, *e, *p, *list, *sep, *file_regex, *word;
 	size_t sz, file_regex_sz, word_sz, buf_sz;
-	char *buf, *new;
+	char *buf _free_(free) = NULL;
+	char *new;
 	int ret;
 
 	int regex_err;
@@ -59,8 +61,6 @@ static int in_envvar(const char *envname, const char *filename, const char *valu
 		return 0;
 
 	ret = 0;
-
-	buf = NULL;
 	buf_sz = 0;
 
 	s = p = list;
@@ -130,7 +130,6 @@ static int in_envvar(const char *envname, const char *filename, const char *valu
 
 	if (regex_compiled)
 		regfree(&regex);
-	free(buf);
 
 	return ret;
 }
@@ -146,7 +145,7 @@ static int resolve_soname(const char **soname, size_t len, char *outbuf)
 	ssize_t n;
 	size_t offset, siz;
 	pid_t pid;
-	void *handle;
+	void *handle _free_(dlclose) = NULL;
 	int ret = -1;
 
 	outbuf[0] = '\0';
@@ -209,7 +208,6 @@ out_parent:
 	if (prctl(PR_SET_PDEATHSIG, SIGKILL) < 0)
 		warn("prctl(PR_SET_PDEATHSIG)");
 
-	handle = NULL;
 	ret = EXIT_FAILURE;
 
 	struct link_map *map = NULL;
@@ -255,9 +253,6 @@ out_parent:
 
 	ret = EXIT_SUCCESS;
 out_child:
-	if (handle)
-		dlclose(handle);
-
 	close(pipefd[1]); // write
 	close(pipefd[0]); // read
 
