@@ -8,8 +8,6 @@
 #include "compiler.h"
 #include "cleanup.h"
 
-DEFINE_FREE(closedir, DIR *, if (_t) closedir(_t))
-
 typedef enum {
 	OP_MATCH,        /* == */
 	OP_NOMATCH,      /* != */
@@ -101,8 +99,6 @@ static const char *const rule_key_names[_KEY_TYPE_MAX] = {
 
 #define key2str(pair) rule_key_names[pair->key]
 #define op2str(pair)  rule_op_names[pair->op]
-
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 static const unsigned int rule_pair_prio[] = {
 	KEY_LABEL      + PAIR_OP_ACTION,

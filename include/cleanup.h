@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <dirent.h>
 
 #include "compiler.h"
 
@@ -22,9 +23,13 @@
 #define no_free_fd(fd) \
 	({ __typeof__(fd) __fd = (fd); (fd) = -1; __fd; })
 
+#define mfree(p) \
+	({ free(p); (__typeof__(p)) NULL; })
+
 /* Common cleanup handlers */
 DEFINE_FREE(free, void *, if (_t) free(_t))
 DEFINE_FREE(close, int, if (_t >= 0) close(_t))
 DEFINE_FREE(fclose, FILE *, if (_t) fclose(_t))
+DEFINE_FREE(closedir, DIR *, if (_t) closedir(_t))
 
 #endif /* _CLEANUP_H */

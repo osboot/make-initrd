@@ -21,8 +21,6 @@
 #include "compiler.h"
 #include "cleanup.h"
 
-DEFINE_FREE(closedir, DIR *, if (_t) closedir(_t))
-
 /*
  * Because statfs.t_type can be int on some architectures, we have to cast the
  * const magic to the type, otherwise the compiler warns about signed/unsigned

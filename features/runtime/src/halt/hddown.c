@@ -40,8 +40,6 @@ const char *v_hddown = "@(#)hddown.c  1.02  22-Apr-2003  miquels@cistron.nl";
 #include "cleanup.h"
 #include "reboot.h"
 
-DEFINE_FREE(closedir, DIR *, if (_t) closedir(_t))
-
 #define SYS_BLK		"/sys/block"
 #define SYS_CLASS	"/sys/class/scsi_disk"
 #define DEV_BASE	"/dev"

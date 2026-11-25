@@ -11,8 +11,6 @@
 #include "compiler.h"
 #include "cleanup.h"
 
-DEFINE_FREE(closedir, DIR *, if (_t) closedir(_t))
-
 #define F_ROOT_DIR  (1 << 0)
 #define F_QUEUE_DIR (1 << 1)
 #define F_PAUSE_DIR (1 << 2)
