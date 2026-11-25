@@ -65,6 +65,7 @@ static int flush_cache_ext(const char *device);
 /*
  *	Find all disks through /sys/block.
  */
+_nonnull_(1) _wronly_ptr_(2)
 static char *list_disks(DIR *blk, unsigned int *flags)
 {
 	struct dirent *d;

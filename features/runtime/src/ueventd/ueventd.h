@@ -43,9 +43,9 @@ extern int is_dot_dir(struct dirent *ent)                           _nonnull_(1)
 extern DIR *xopendir(const char *path)                              _nonnull_(1);
 extern struct dirent *xreaddir(DIR *d, const char *path)            _nonnull_(1, 2);
 extern int empty_directory(const char *path)                        _nonnull_(1);
-extern ssize_t read_retry(int fd, void *buf, size_t count)          _nonnull_(2);
-extern ssize_t write_retry(int fd, const void *buf, size_t count)   _nonnull_(2);
-extern ssize_t write_loop(int fd, const char *buffer, size_t count) _nonnull_(2);
+extern ssize_t read_retry(int fd, void *buf, size_t count)          _wronly_ptr_(2, 3);
+extern ssize_t write_retry(int fd, const void *buf, size_t count)   _rdonly_ptr_(2, 3);
+extern ssize_t write_loop(int fd, const char *buffer, size_t count) _rdonly_ptr_(2, 3);
 
 /* process.c */
 extern pid_t waitpid_retry(pid_t pid, int *wstatus, int options);

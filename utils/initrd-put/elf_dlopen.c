@@ -139,6 +139,7 @@ static pid_t waitpid_retry(pid_t pid, int *wstatus, int options)
 	return (pid_t) TEMP_FAILURE_RETRY(waitpid(pid, wstatus, options));
 }
 
+_rdonly_ptr_(1, 2) _wronly_ptr_(3)
 static int resolve_soname(const char **soname, size_t len, char *outbuf)
 {
 	int pipefd[2];

@@ -12,7 +12,7 @@
 
 #include "cleanup.h"
 
-void get_password(char **password, FILE *stream) _nonnull_(1, 2);
+void get_password(char **password, FILE *stream) _wronly_ptr_(1) _nonnull_(2);
 
 int main(int argc, char *argv[])
 {

@@ -25,13 +25,15 @@ DEFINE_FREE(file_close, FILE *, if (_t && _t != stdout) fclose(_t))
 
 static void show_help(int rc) _noreturn_;
 static void show_version(void) _noreturn_;
-static char *read_stream(int fd, size_t *out_len);
-static char *read_file(const char *path, size_t *out_len, struct stat *st_out);
-static const char *sanitize_path(const char *path);
-static unsigned long get_stream_offset(FILE *fp);
+static char *read_stream(int fd, size_t *out_len) _wronly_ptr_(2);
+static char *read_file(const char *path, size_t *out_len, struct stat *st_out)
+	_rdonly_ptr_(1) _wronly_ptr_(2) _access_(write_only, 3);
+static const char *sanitize_path(const char *path) _rdonly_ptr_(1);
+static unsigned long get_stream_offset(FILE *fp) _nonnull_(1);
 static void write_entry(const char *arc_name, const char *body, size_t body_len,
-                        mode_t mode, time_t mtime, uid_t uid, gid_t gid, FILE *out);
-static void write_archive_trailer(FILE *out);
+                        mode_t mode, time_t mtime, uid_t uid, gid_t gid, FILE *out)
+	_rdonly_ptr_(1) _rdonly_ptr_(2, 3) _nonnull_(8);
+static void write_archive_trailer(FILE *out) _nonnull_(1);
 static int cmd_add(int argc, char **argv);
 static int cmd_trailer(int argc, char **argv);
 static int cmd_create(int argc, char **argv);

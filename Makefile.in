@@ -128,6 +128,7 @@ CFLAGS = @CFLAGS@ \
 	-Wwrite-strings -Wconversion -Waggregate-return -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations -Wmissing-noreturn \
 	-Wmissing-format-attribute -Wredundant-decls -Wdisabled-optimization \
+	-Wstringop-overflow -Wstringop-overread -Wmaybe-uninitialized \
 	-Wno-pointer-arith \
 	-Werror=shadow -Werror=missing-prototypes -Werror=implicit-function-declaration
 

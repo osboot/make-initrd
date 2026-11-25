@@ -20,7 +20,7 @@ struct file {
 	bool installed;
 };
 
-struct file *get_queue(size_t *nr);
+struct file *get_queue(size_t *nr) _access_(write_only, 1);
 void free_file(void *ptr) _nonnull_(1);
 struct file *enqueue_item(const char *str, ssize_t len) _nonnull_(1);
 void dequeue_item(struct file *ptr);
