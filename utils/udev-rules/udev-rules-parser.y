@@ -82,7 +82,7 @@ static size_t rule_pair_priority(struct rule_pair *pair)
 	return 0;
 }
 
-static int rule_pair_cmp(void *priv __attribute__((unused)), const struct list_head *a, const struct list_head *b)
+static int rule_pair_cmp(void *priv _maybe_unused_, const struct list_head *a, const struct list_head *b)
 {
 	struct rule_pair *pair_a, *pair_b;
 
