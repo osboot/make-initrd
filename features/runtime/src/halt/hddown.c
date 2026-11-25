@@ -207,7 +207,7 @@ static int do_standby_disk(char *device, unsigned int flags)
 	unsigned char stdby2[4] = {WIN_STANDBYNOW2,0,0,0};
 	char buf[NAME_MAX+1];
 	int ret;
-	int fd __free(close) = -1;
+	int fd _free_(close) = -1;
 
 	ret = snprintf(buf, sizeof(buf), DEV_BASE "/%s", device);
 	if ((ret >= (int)sizeof(buf)) || (ret < 0))
@@ -221,7 +221,7 @@ static int do_standby_disk(char *device, unsigned int flags)
 			if ((ret = ioctl(fd, HDIO_DRIVE_CMD, &flush1)) == 0)
 				break;
 			/* Extend flush rejected, try standard flush */
-			__fallthrough;
+			_fallthrough_;
 		default:
 			ret = ioctl(fd, HDIO_DRIVE_CMD, &flush2) &&
 			      ioctl(fd, BLKFLSBUF);
@@ -247,7 +247,7 @@ int hddown(void)
 {
 	unsigned int flags;
 	char *disk;
-	DIR *blk __free(closedir) = opendir(SYS_BLK);
+	DIR *blk _free_(closedir) = opendir(SYS_BLK);
 
 	if (!blk)
 		return -1;
@@ -265,7 +265,7 @@ int hdflush(void)
 {
 	unsigned int flags;
 	char *disk;
-	DIR *blk __free(closedir) = opendir(SYS_BLK);
+	DIR *blk _free_(closedir) = opendir(SYS_BLK);
 
 	if (!blk)
 		return -1;
@@ -333,7 +333,7 @@ static int flush_cache_ext(const char *device)
 	unsigned short *id = (unsigned short *)(&args[4]);
 	char buf[NAME_MAX+1], *ptr;
 	int ret = 0;
-	int fd __free(close) = -1;
+	int fd _free_(close) = -1;
 	FILE *fp;
 
 	fp = hdopen(SYS_BLK "/%s/size", device);

@@ -45,7 +45,7 @@ int empty_directory(const char *path)
 {
 	struct dirent *ent;
 	int is_empty = 1;
-	DIR *d __free(closedir) = xopendir(path);
+	DIR *d _free_(closedir) = xopendir(path);
 
 	while ((ent = xreaddir(d, path)) != NULL) {
 		if (ent->d_name[0] != '.') {

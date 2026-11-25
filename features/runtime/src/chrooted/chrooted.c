@@ -14,7 +14,7 @@
 
 static char *prog;
 
-static void __noreturn show_usage(int rc)
+static void _noreturn_ show_usage(int rc)
 {
 	fprintf(stderr, "Usage: %s -h\n", prog);
 	fprintf(stderr, "   or: %s <rootdir> test -{b|c|d|e|f|p|s|L} <path>\n", prog);

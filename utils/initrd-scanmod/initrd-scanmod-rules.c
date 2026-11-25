@@ -62,7 +62,7 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 		const char *eol = memchr(ptr, '\n', (size_t) (end - ptr));
 		size_t linelen = eol ? (size_t) (eol - ptr) : (size_t) (end - ptr);
 
-		char *line __free(free) = xmalloc(linelen + 1);
+		char *line _free_(free) = xmalloc(linelen + 1);
 		memcpy(line, ptr, linelen);
 		line[linelen] = '\0';
 
@@ -81,8 +81,8 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 		while (len > 0 && (p[len - 1] == '\r' || isblank(p[len - 1])))
 			p[--len] = '\0';
 
-		char *kw __free(free) = NULL;
-		char *value __free(free) = NULL;
+		char *kw _free_(free) = NULL;
+		char *value _free_(free) = NULL;
 
 		rule       = xcalloc(1, sizeof(struct rule_pair));
 		rule->type = RULE_NOT_MATCH;

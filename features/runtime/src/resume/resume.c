@@ -12,7 +12,7 @@
 
 char *progname;
 
-static void __noreturn usage(void)
+static void _noreturn_ usage(void)
 {
 	fprintf(stderr, "Usage: %s /dev/<resumedevice> [offset]\n", progname);
 	exit(1);

@@ -55,7 +55,7 @@ const char *progname;
 
 #define KERNEL_MONITOR	1 /* If halt() puts you into the kernel monitor. */
 
-static void __noreturn usage(void);
+static void _noreturn_ usage(void);
 static int get_runlevel(void);
 static void do_shutdown(const char *fl, const char *pw, const char *tm);
 

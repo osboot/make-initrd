@@ -3,37 +3,32 @@
 #ifndef _COMPILER_H
 #define _COMPILER_H 1
 
-#ifdef __has_include
-# if __has_include(<features.h>)
-#  include <features.h>
-# endif
+#ifndef _noreturn_
+# define _noreturn_        __attribute__((__noreturn__))
 #endif
-
-#ifndef __noreturn
-# define __noreturn        __attribute__((__noreturn__))
+#ifndef _printf_
+# define _printf_(a, b)    __attribute__((__format__(printf, a, b)))
 #endif
-#ifndef __printf
-# define __printf(a, b)    __attribute__((__format__(printf, a, b)))
+#ifndef _nonnull_
+# define _nonnull_(...)    __attribute__((__nonnull__(__VA_ARGS__)))
 #endif
-#undef __nonnull
-#define __nonnull(...)     __attribute__((__nonnull__(__VA_ARGS__)))
-#ifndef __must_check
-# define __must_check      __attribute__((__warn_unused_result__))
+#ifndef _must_check_
+# define _must_check_      __attribute__((__warn_unused_result__))
 #endif
-#ifndef __maybe_unused
-# define __maybe_unused    __attribute__((__unused__))
+#ifndef _maybe_unused_
+# define _maybe_unused_    __attribute__((__unused__))
 #endif
-#ifndef __always_inline
-# define __always_inline   inline __attribute__((__always_inline__))
+#ifndef _always_inline_
+# define _always_inline_   inline __attribute__((__always_inline__))
 #endif
-#ifndef __packed
-# define __packed          __attribute__((__packed__))
+#ifndef _packed_
+# define _packed_          __attribute__((__packed__))
 #endif
-#ifndef __aligned
-# define __aligned(x)      __attribute__((__aligned__(x)))
+#ifndef _aligned_
+# define _aligned_(x)      __attribute__((__aligned__(x)))
 #endif
-#ifndef __fallthrough
-# define __fallthrough     __attribute__((__fallthrough__))
+#ifndef _fallthrough_
+# define _fallthrough_     __attribute__((__fallthrough__))
 #endif
 
 #endif /* _COMPILER_H */

@@ -16,8 +16,8 @@ void *xmalloc(size_t size);
 void *xrealloc(void *ptr, size_t nmemb, size_t elem_size);
 void *xcalloc(size_t nmemb, size_t size);
 void *xfree(void *ptr);
-int xasprintf(char **ptr, const char *fmt, ...) __printf(2, 3) __nonnull(2);
-char *xstrdup(const char *s) __nonnull(1);
+int xasprintf(char **ptr, const char *fmt, ...) _printf_(2, 3) _nonnull_(2);
+char *xstrdup(const char *s) _nonnull_(1);
 
 // findmodule-rules.c
 #define RULESET_HAS_INFO 1
@@ -69,8 +69,8 @@ struct mapfile {
 	char *map;
 };
 
-int open_map(const char *filename, struct mapfile *f, int quiet) __nonnull(1, 2);
-void close_map(struct mapfile *f) __nonnull(1);
+int open_map(const char *filename, struct mapfile *f, int quiet) _nonnull_(1, 2);
+void close_map(struct mapfile *f) _nonnull_(1);
 
 // findmodule-walk.c
 void find_modules(const char *kerneldir);

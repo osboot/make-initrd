@@ -41,7 +41,7 @@ int ifdown(void)
 	int i;
 	int numif;
 	int shaper;
-	int fd __free(close) = socket(AF_INET, SOCK_DGRAM, 0);
+	int fd _free_(close) = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (fd < 0) {
 		fprintf(stderr, "ifdown: ");

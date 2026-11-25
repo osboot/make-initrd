@@ -51,7 +51,7 @@ static int remove_recursive_at(int fd)
 {
 	struct stat root_sb;
 	int rc = -1;
-	DIR *dir __free(closedir) = fdopendir(fd);
+	DIR *dir _free_(closedir) = fdopendir(fd);
 
 	if (!dir) {
 		warn("failed to open directory");
@@ -97,7 +97,7 @@ static int remove_recursive_at(int fd)
 
 			/* remove subdirectories */
 			if (S_ISDIR(dir_sb.st_mode)) {
-				int cfd __free(close) = openat(dir_fd, d->d_name, DIR_FLAGS);
+				int cfd _free_(close) = openat(dir_fd, d->d_name, DIR_FLAGS);
 
 				if (cfd >= 0)
 					remove_recursive_at(no_free_fd(cfd));
@@ -127,7 +127,7 @@ static bool is_temporary_fs(int fd)
 	        F_TYPE_EQUAL(stfs.f_type, TMPFS_MAGIC));
 }
 
-static void __noreturn usage(int retcode)
+static void _noreturn_ usage(int retcode)
 {
 	printf("Usage: %s <newrootdir> <init> [<args ...>]\n", program_invocation_short_name);
 	exit(retcode);
@@ -155,12 +155,12 @@ int main(int argc, char *argv[])
 		usage(EXIT_FAILURE);
 	}
 
-	int old_root_fd __free(close) = open("/", DIR_FLAGS);
+	int old_root_fd _free_(close) = open("/", DIR_FLAGS);
 
 	if (old_root_fd < 0)
 		err(EXIT_FAILURE, "failed to open current root directory");
 
-	int new_root_fd __free(close) = open(newroot, DIR_FLAGS);
+	int new_root_fd _free_(close) = open(newroot, DIR_FLAGS);
 
 	if (new_root_fd < 0)
 		err(EXIT_FAILURE, "failed to open new root directory: %s", newroot);

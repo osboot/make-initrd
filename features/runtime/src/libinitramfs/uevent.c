@@ -32,7 +32,7 @@ void rd_uevent_queue_open(struct rd_uevent_queue *q,
                           const char *filter_dir,
                           const char *queue_name)
 {
-	char *queue_path __free(free) = rd_asprintf_or_die("%s/%s", filter_dir, queue_name);
+	char *queue_path _free_(free) = rd_asprintf_or_die("%s/%s", filter_dir, queue_name);
 
 	q->filter_dir = filter_dir;
 	q->name = queue_name;
@@ -75,9 +75,9 @@ void rd_uevent_emit(struct rd_uevent_queue *q,
 
 	clock_gettime(CLOCK_BOOTTIME, &tp);
 
-	char *tmpname __free(free) = rd_asprintf_or_die(".%s.event.new", q->name);
+	char *tmpname _free_(free) = rd_asprintf_or_die(".%s.event.new", q->name);
 
-	int fd __free(close) = openat(q->temp_dirfd, tmpname,
+	int fd _free_(close) = openat(q->temp_dirfd, tmpname,
 	                              O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC,
 	                              S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if (fd < 0)
@@ -90,7 +90,7 @@ void rd_uevent_emit(struct rd_uevent_queue *q,
 		         q->filter_dir, q->name, tmpname);
 	va_end(ap);
 
-	char *fname __free(free) = rd_asprintf_or_die("%s.%s.%06lu.%012lu.%06" PRIu64,
+	char *fname _free_(free) = rd_asprintf_or_die("%s.%s.%06lu.%012lu.%06" PRIu64,
 	                                              q->name, event_name,
 	                                              (unsigned long) tp.tv_sec,
 	                                              (unsigned long) tp.tv_nsec,

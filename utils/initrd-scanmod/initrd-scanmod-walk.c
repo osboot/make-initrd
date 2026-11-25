@@ -386,7 +386,7 @@ static void *
 worker_func(void *arg)
 {
 	struct worker_data *wdata = arg;
-	struct kmod_ctx *ctx __free(kmod_unref) = kmod_new(wdata->kerneldir, NULL);
+	struct kmod_ctx *ctx _free_(kmod_unref) = kmod_new(wdata->kerneldir, NULL);
 	const char *path;
 
 	if (!ctx)
@@ -401,7 +401,7 @@ worker_func(void *arg)
 void
 find_modules(const char *kerneldir)
 {
-	FTS *t __free(fts_close) = NULL;
+	FTS *t _free_(fts_close) = NULL;
 	FTSENT *p;
 	char *argv[2];
 	struct module_queue q = { 0 };
@@ -467,8 +467,8 @@ find_modules(const char *kerneldir)
 		};
 		worker_func(&wdata);
 	} else {
-		pthread_t *threads __free(free) = xmalloc(sizeof(pthread_t) * (size_t) n_workers);
-		struct worker_data *wdata __free(free) = xmalloc(sizeof(struct worker_data) * (size_t) n_workers);
+		pthread_t *threads _free_(free) = xmalloc(sizeof(pthread_t) * (size_t) n_workers);
+		struct worker_data *wdata _free_(free) = xmalloc(sizeof(struct worker_data) * (size_t) n_workers);
 		int n_created = 0;
 
 		for (int i = 0; i < n_workers; i++) {

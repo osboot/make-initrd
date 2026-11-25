@@ -314,7 +314,7 @@ static int visit_userfunc(json_object *jso, int flags, json_object *,
 		    in_envvar("IGNORE_PUT_DLOPEN_PRIORITY", data->filename, elf_metadata.priority))
 			return JSON_C_VISIT_RETURN_SKIP;
 
-		const char **soname __free(free) = xcalloc(array_len, sizeof(char *));
+		const char **soname _free_(free) = xcalloc(array_len, sizeof(char *));
 
 		for (i = 0; i < array_len; i++) {
 			json_object *child = json_object_array_get_idx(value, i);
@@ -346,7 +346,7 @@ static int visit_userfunc(json_object *jso, int flags, json_object *,
 
 int process_json_metadata(const char *filename, const char *json, char *outbuf)
 {
-	struct json_object *obj __free(json_object_put) = json_tokener_parse(json);
+	struct json_object *obj _free_(json_object_put) = json_tokener_parse(json);
 	struct visit_data data = { 0 };
 
 	if (!obj)

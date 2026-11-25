@@ -43,11 +43,11 @@ struct mounts *mount_new(uint64_t mnt_id, const char *source,
 void free_mount(struct mounts *mount);
 struct mounts *mount_find(uint64_t mnt_id, const char *target,
                           const char *source, const char *fstype);
-void mount_emit(const char *action, struct mounts *m) __nonnull(1, 2);
-void mount_attach(struct mounts *mount) __nonnull(1);
-void mount_detach(struct mounts *mount) __nonnull(1);
+void mount_emit(const char *action, struct mounts *m) _nonnull_(1, 2);
+void mount_attach(struct mounts *mount) _nonnull_(1);
+void mount_detach(struct mounts *mount) _nonnull_(1);
 
-void create_event(const char *action, struct mounts *m) __nonnull(1, 2);
+void create_event(const char *action, struct mounts *m) _nonnull_(1, 2);
 
 extern struct mount_backend fanotify_backend;
 extern struct mount_backend procfs_backend;

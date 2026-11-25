@@ -53,7 +53,7 @@ int do_resume(int argc, char *argv[])
 int resume(const char *resume_file, unsigned long long resume_offset)
 {
 	dev_t resume_device;
-	int powerfd __free(close) = -1;
+	int powerfd _free_(close) = -1;
 	char device_string[64];
 	ssize_t len;
 

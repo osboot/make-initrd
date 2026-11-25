@@ -26,7 +26,7 @@ static char *prefix = (char *) "";
 static char *quote = (char *) "";
 static unsigned int shell = 0;
 
-static void __noreturn
+static void _noreturn_
 show_usage(int ret)
 {
 	fprintf(stderr,
@@ -80,7 +80,7 @@ static void
 set_environ(const char *fname)
 {
 	char *a, *map = NULL;
-	int fd __free(close) = -1;
+	int fd _free_(close) = -1;
 	struct stat sb;
 
 	if ((fd = open(fname, O_RDONLY | O_CLOEXEC)) < 0)
@@ -96,10 +96,10 @@ set_environ(const char *fname)
 		rd_fatal("mmap: %s: %m", fname);
 
 	while (a && *a) {
-		char *name __free(free) = NULL;
-		char *value __free(free) = NULL;
+		char *name _free_(free) = NULL;
+		char *value _free_(free) = NULL;
 		size_t namesz, valuesz;
-		FILE *valfd __free(fclose) = NULL;
+		FILE *valfd _free_(fclose) = NULL;
 		int is_quote = 0;
 
 		while (isspace(*a)) a++;
@@ -172,7 +172,7 @@ unset_environ(char **envp, char *patterns, int invert_match)
 		last++;
 	}
 
-	ssize_t *envname __free(free) = rd_calloc_or_die(envp_sz, sizeof(ssize_t));
+	ssize_t *envname _free_(free) = rd_calloc_or_die(envp_sz, sizeof(ssize_t));
 
 	e = last;
 	i = envp_sz;
@@ -197,7 +197,7 @@ next:
 		i--;
 	}
 
-	char *env __free(free) = rd_malloc_or_die(sizeof(char) * (max + 1));
+	char *env _free_(free) = rd_malloc_or_die(sizeof(char) * (max + 1));
 
 	pattern = s = patterns;
 	next = NULL;

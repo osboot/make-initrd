@@ -29,7 +29,7 @@ const struct option long_opts[] = {
 	{ NULL, 0, NULL, 0 }
 };
 
-static void __noreturn
+static void _noreturn_
 usage(const char *progname, int code)
 {
 	dprintf(STDOUT_FILENO,
@@ -49,7 +49,7 @@ usage(const char *progname, int code)
 	exit(code);
 }
 
-static inline void __noreturn
+static inline void _noreturn_
 print_version_and_exit(const char *progname)
 {
 	dprintf(STDOUT_FILENO, "%s version %s\n", progname, PACKAGE_VERSION);
@@ -66,7 +66,7 @@ main(int argc, char **argv)
 {
 	int c;
 	struct utsname u;
-	char *kerneldir __free(free) = NULL;
+	char *kerneldir _free_(free) = NULL;
 	const char *kversion = NULL;
 	const char *basedir  = NULL;
 

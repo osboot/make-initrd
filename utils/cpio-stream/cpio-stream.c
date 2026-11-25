@@ -20,8 +20,8 @@
 #include "initrd-common.h"
 #include "initrd-cpio.h"
 
-static void show_help(int rc) __noreturn;
-static void show_version(void) __noreturn;
+static void show_help(int rc) _noreturn_;
+static void show_version(void) _noreturn_;
 static char *read_stream(int fd, size_t *out_len);
 static char *read_file(const char *path, size_t *out_len, struct stat *st_out);
 static const char *sanitize_path(const char *path);
@@ -33,7 +33,7 @@ static int cmd_add(int argc, char **argv);
 static int cmd_trailer(int argc, char **argv);
 static int cmd_create(int argc, char **argv);
 
-static void __noreturn
+static void _noreturn_
 show_help(int rc)
 {
 	printf("Usage: cpio-stream <command> [options]\n"
@@ -61,7 +61,7 @@ show_help(int rc)
 	exit(rc);
 }
 
-static void __noreturn
+static void _noreturn_
 show_version(void)
 {
 	printf("cpio-stream version " PACKAGE_VERSION "\n"

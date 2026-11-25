@@ -49,25 +49,25 @@ static atomic_size_t installed = 0;
 regex_t *exclude_match = NULL;
 size_t exclude_match_nr = 0;
 
-static void show_version(void) __noreturn;
-static void show_help(int rc) __noreturn;
+static void show_version(void) _noreturn_;
+static void show_help(int rc) _noreturn_;
 
-static void fill_stat(struct file *p, struct stat *sb) __nonnull(1, 2);
+static void fill_stat(struct file *p, struct stat *sb) _nonnull_(1, 2);
 static void enqueue_parent_directory(char *path);
-static void enqueue_directory(char *path) __nonnull(1);
-static int mksock(const char *path) __nonnull(1);
+static void enqueue_directory(char *path) _nonnull_(1);
+static int mksock(const char *path) _nonnull_(1);
 
-static bool suffix_requires_dir_check(char const *end) __nonnull(1);
-static bool dir_check(const char *dir, char *dirend) __nonnull(1, 2);
+static bool suffix_requires_dir_check(char const *end) _nonnull_(1);
+static bool dir_check(const char *dir, char *dirend) _nonnull_(1, 2);
 static void enqueue_canonicalized_path(const char *name, bool add_recursively);
 
-static int enqueue_regular_file(const char *filename) __nonnull(1);
-static void enqueue_path(struct file *p) __nonnull(1);
-static void print_file(struct file *p) __nonnull(1);
-static void print_uninstalled_file(struct file *p) __nonnull(1);
-static void install_file(struct file *p) __nonnull(1);
-static void install_hardlink(struct file *p) __nonnull(1);
-static void apply_permissions(struct file *p) __nonnull(1);
+static int enqueue_regular_file(const char *filename) _nonnull_(1);
+static void enqueue_path(struct file *p) _nonnull_(1);
+static void print_file(struct file *p) _nonnull_(1);
+static void print_uninstalled_file(struct file *p) _nonnull_(1);
+static void install_file(struct file *p) _nonnull_(1);
+static void install_hardlink(struct file *p) _nonnull_(1);
+static void apply_permissions(struct file *p) _nonnull_(1);
 
 void fill_stat(struct file *p, struct stat *sb)
 {
@@ -90,7 +90,7 @@ DEFINE_FREE(fts_close, FTS *, if (_t) fts_close(_t))
 
 void enqueue_directory(char *path)
 {
-	FTS *t __free(fts_close) = NULL;
+	FTS *t _free_(fts_close) = NULL;
 	char *argv[2] = { path, NULL };
 
 	if (verbose)
@@ -355,7 +355,7 @@ int enqueue_regular_file(const char *filename)
 {
 	char buf[LINE_MAX];
 	ssize_t n;
-	int fd __free(close) = -1;
+	int fd _free_(close) = -1;
 
 	errno = 0;
 	fd = open(filename, O_RDONLY | O_NOFOLLOW | O_CLOEXEC);
@@ -483,8 +483,8 @@ static volatile int use_sendfile = 1;
 
 void install_file(struct file *p)
 {
-	int sfd __free(close) = -1;
-	int dfd __free(close) = -1;
+	int sfd _free_(close) = -1;
+	int dfd _free_(close) = -1;
 	char install_path[PATH_MAX + 1];
 	const char *ftype;
 	const char *op = "install";
@@ -1191,7 +1191,7 @@ int main(int argc, char **argv)
 				};
 				pthread_mutex_init(&pool.mutex, NULL);
 
-				pthread_t *threads __free(free) = xcalloc((size_t) n_workers, sizeof(pthread_t));
+				pthread_t *threads _free_(free) = xcalloc((size_t) n_workers, sizeof(pthread_t));
 				int n_created = 0;
 
 				for (int i = 0; i < n_workers - 1; i++) {

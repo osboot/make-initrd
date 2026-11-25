@@ -90,7 +90,7 @@ void sources_start(const char *dir_path)
 	if (!dir_path || !*dir_path)
 		return;
 
-	DIR *d __free(closedir) = opendir(dir_path);
+	DIR *d _free_(closedir) = opendir(dir_path);
 	if (!d) {
 		if (errno != ENOENT)
 			rd_err("opendir: %s: %m", dir_path);
@@ -103,7 +103,7 @@ void sources_start(const char *dir_path)
 		if (strncmp(ent->d_name, "ueventd-", 8) != 0)
 			continue;
 
-		char *fullpath __free(free) = rd_asprintf_or_die("%s/%s", dir_path, ent->d_name);
+		char *fullpath _free_(free) = rd_asprintf_or_die("%s/%s", dir_path, ent->d_name);
 
 		if (stat(fullpath, &st) < 0) {
 			rd_err("stat: %s: %m", fullpath);

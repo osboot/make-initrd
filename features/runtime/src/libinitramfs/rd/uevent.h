@@ -15,16 +15,16 @@ struct rd_uevent_queue {
 	uint64_t seq;
 };
 
-char *rd_getenv_or_die(const char *name) __nonnull(1);
+char *rd_getenv_or_die(const char *name) _nonnull_(1);
 
 void rd_uevent_queue_open(struct rd_uevent_queue *q,
                           const char *filter_dir,
-                          const char *queue_name) __nonnull(1, 2, 3);
+                          const char *queue_name) _nonnull_(1, 2, 3);
 
-void rd_uevent_queue_close(struct rd_uevent_queue *q) __nonnull(1);
+void rd_uevent_queue_close(struct rd_uevent_queue *q) _nonnull_(1);
 
 void rd_uevent_emit(struct rd_uevent_queue *q,
                     const char *event_name,
-                    const char *fmt, ...) __nonnull(1, 2, 3) __printf(3, 4);
+                    const char *fmt, ...) _nonnull_(1, 2, 3) _printf_(3, 4);
 
 #endif /* __RD_UEVENT_H__ */

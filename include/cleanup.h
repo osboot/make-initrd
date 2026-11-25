@@ -9,12 +9,12 @@
 
 #include "compiler.h"
 
-#define __cleanup(func)   __attribute__((__cleanup__(func)))
+#define _cleanup_(func)   __attribute__((__cleanup__(func)))
 
 #define DEFINE_FREE(name, type, free_expr) \
-	static inline void __free_##name(void *p) { type _t = *(type *)p; free_expr; }
+	static inline void _free_##name##_(void *p) { type _t = *(type *)p; free_expr; }
 
-#define __free(name)      __cleanup(__free_##name)
+#define _free_(name)      _cleanup_(_free_##name##_)
 
 #define no_free_ptr(p) \
 	({ __typeof__(p) __val = (p); (p) = NULL; __val; })
