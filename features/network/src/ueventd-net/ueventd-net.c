@@ -20,7 +20,7 @@ struct rd_uevent_queue event_queue;
 
 static volatile sig_atomic_t running = 1;
 
-static void handle_signal(int sig __attribute__((unused)))
+static void handle_signal(int sig _maybe_unused_)
 {
 	running = 0;
 }
