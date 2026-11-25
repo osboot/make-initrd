@@ -16,6 +16,8 @@
 
 #include <linux/nfs_mount.h>
 
+#include "compiler.h"
+#include "cleanup.h"
 #include "nfsmount.h"
 #include "sunrpc.h"
 #include "dummypmap.h"
@@ -177,12 +179,11 @@ static void check_path(const char *path)
 }
 
 int main(int argc, char *argv[])
-__attribute__ ((weak, alias("nfsmount_main")));
+_weak_ _alias_(nfsmount_main);
 
 int nfsmount_main(int argc, char *argv[])
 {
 	uint32_t server;
-	char *rem_name;
 	char *rem_path;
 	char *hostname;
 	const char *path;
@@ -229,7 +230,7 @@ int nfsmount_main(int argc, char *argv[])
 
 	hostname = rem_path = argv[optind];
 
-	rem_name = strdup(rem_path);
+	char *rem_name _free_(free) = strdup(rem_path);
 	if (rem_name == NULL) {
 		perror("strdup");
 		return 1;
@@ -238,7 +239,6 @@ int nfsmount_main(int argc, char *argv[])
 	rem_path = strchr(rem_path, ':');
 	if (rem_path == NULL) {
 		fprintf(stderr, "%s: need a server\n", progname);
-		free(rem_name);
 		return 1;
 	}
 
@@ -246,7 +246,6 @@ int nfsmount_main(int argc, char *argv[])
 
 	if (*rem_path != '/') {
 		fprintf(stderr, "%s: need a path\n", progname);
-		free(rem_name);
 		return 1;
 	}
 
@@ -265,10 +264,8 @@ int nfsmount_main(int argc, char *argv[])
 	if (portmap_file)
 		spoof_portmap = start_dummy_portmap(portmap_file);
 
-	if (spoof_portmap == -1) {
-		free(rem_name);
+	if (spoof_portmap == -1)
 		return 1;
-	}
 #endif
 
 	ret = 0;
@@ -283,8 +280,6 @@ int nfsmount_main(int argc, char *argv[])
 		       && errno == EINTR)
 			;
 	}
-
-	free(rem_name);
 
 	return ret;
 }
