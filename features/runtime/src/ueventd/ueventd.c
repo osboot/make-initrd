@@ -449,7 +449,7 @@ void setup_signal_fd(struct fd_handler *el)
 
 int process_inotify_events(int inotifyfd)
 {
-	char buf[4096] __attribute__ ((aligned(__alignof__(struct inotify_event))));
+	char buf[4096] _alignas_(struct inotify_event);
 
 	while (1) {
 		ssize_t len = read_retry(inotifyfd, buf, sizeof(buf));

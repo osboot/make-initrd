@@ -46,8 +46,8 @@ static uint64_t restart_backoff_ms(unsigned int restarts)
 	static const uint64_t delays[] = { 200, 500, 1000, 2000, 5000 };
 	size_t idx = (restarts > 0) ? (size_t) (restarts - 1) : 0;
 
-	if (idx >= sizeof(delays) / sizeof(delays[0]))
-		idx = sizeof(delays) / sizeof(delays[0]) - 1;
+	if (idx >= ARRAY_SIZE(delays))
+		idx = ARRAY_SIZE(delays) - 1;
 
 	return delays[idx];
 }
