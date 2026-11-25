@@ -12,12 +12,11 @@ extern int verbose;
 extern int jobs;
 
 // findmodule-common.c
-void *xmalloc(size_t size);
-void *xrealloc(void *ptr, size_t nmemb, size_t elem_size);
-void *xcalloc(size_t nmemb, size_t size);
-void *xfree(void *ptr);
+void *xmalloc(size_t size) _alloc_(1) _returns_nonnull_ _must_check_;
+void *xrealloc(void *ptr, size_t nmemb, size_t elem_size) _alloc_(2, 3) _returns_nonnull_ _must_check_;
+void *xcalloc(size_t nmemb, size_t size) _alloc_(1, 2) _returns_nonnull_ _must_check_;
 int xasprintf(char **ptr, const char *fmt, ...) _printf_(2, 3) _nonnull_(2);
-char *xstrdup(const char *s) _nonnull_(1);
+char *xstrdup(const char *s) _nonnull_(1) _returns_nonnull_ _must_check_;
 
 // findmodule-rules.c
 #define RULESET_HAS_INFO 1

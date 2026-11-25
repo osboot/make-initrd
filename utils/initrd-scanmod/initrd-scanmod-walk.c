@@ -487,7 +487,7 @@ find_modules(const char *kerneldir)
 	}
 
 	for (size_t i = 0; i < q.count; i++)
-		xfree(q.paths[i]);
-	xfree(q.paths);
+		mfree(q.paths[i]);
+	mfree(q.paths);
 	pthread_mutex_destroy(&q.mutex);
 }

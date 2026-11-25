@@ -89,8 +89,8 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 
 		n = sscanf(p, "not-%ms %m[^\n]", &kw, &value);
 		if (n != 2) {
-			kw    = xfree(kw);
-			value = xfree(value);
+			kw    = mfree(kw);
+			value = mfree(value);
 
 			rule->type = RULE_MATCH;
 			n          = sscanf(p, "%ms %m[^\n]", &kw, &value);
@@ -207,11 +207,11 @@ free_ruleset(struct rule_pair **filters)
 	r = filters[i++];
 	while (r) {
 		regfree(r->value);
-		xfree(r->value);
-		xfree(r);
+		mfree(r->value);
+		mfree(r);
 		r = filters[i++];
 	}
-	xfree(filters);
+	mfree(filters);
 }
 
 void
@@ -228,9 +228,9 @@ free_rules(void)
 		free_ruleset(set->info);
 		free_ruleset(set->paths);
 		free_ruleset(set->symbols);
-		xfree(set);
+		mfree(set);
 		set = filter_rules[i++];
 	}
 
-	xfree(filter_rules);
+	mfree(filter_rules);
 }

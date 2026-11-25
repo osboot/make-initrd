@@ -73,11 +73,3 @@ xasprintf(char **ptr, const char *fmt, ...)
 
 	return ret;
 }
-
-void *
-xfree(void *ptr)
-{
-	if (ptr)
-		free(ptr);
-	return NULL;
-}
