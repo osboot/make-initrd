@@ -20,6 +20,20 @@ AC_PROG_YACC
 AC_PROG_LEX([noyywrap])
 
 runtime_CFLAGS=
+for flag in \
+		-fno-unwind-tables \
+		-fno-asynchronous-unwind-tables; do
+	AC_MSG_CHECKING([whether $CC supports $flag])
+	saved_CFLAGS=$CFLAGS
+	CFLAGS="$CFLAGS -Werror $flag"
+	AC_COMPILE_IFELSE(
+		[AC_LANG_PROGRAM([], [return 0;])],
+		[runtime_CFLAGS="$runtime_CFLAGS $flag"
+		 AC_MSG_RESULT([yes])],
+		[AC_MSG_RESULT([no])])
+	CFLAGS=$saved_CFLAGS
+done
+
 runtime_LDFLAGS=
 
 AC_MSG_CHECKING([whether $CC supports -Wl,-z,noseparate-code])
