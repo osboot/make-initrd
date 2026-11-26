@@ -19,6 +19,11 @@ AC_PROG_SED
 AC_PROG_YACC
 AC_PROG_LEX([noyywrap])
 
+runtime_CFLAGS=
+runtime_LDFLAGS=
+AC_SUBST([runtime_CFLAGS])
+AC_SUBST([runtime_LDFLAGS])
+
 AC_ARG_ENABLE([lto],
 	[AS_HELP_STRING([--enable-lto],
 			[build C programs with link-time optimization])],

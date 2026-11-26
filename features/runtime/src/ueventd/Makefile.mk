@@ -7,7 +7,8 @@ ueventd_SRCS = \
 	$(runtime_srcdir)/ueventd/ueventd.c \
 	$(runtime_srcdir)/ueventd/ueventd.h
 
-ueventd_CFLAGS = -D_GNU_SOURCE -I$(runtime_srcdir)/libinitramfs
+ueventd_CFLAGS = $(runtime_CFLAGS) -D_GNU_SOURCE -I$(runtime_srcdir)/libinitramfs
+ueventd_LDFLAGS = $(runtime_LDFLAGS)
 ueventd_LIBS = -L$(dest_data_libdir) -linitramfs
 
 PROGS += ueventd

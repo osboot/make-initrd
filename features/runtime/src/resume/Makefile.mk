@@ -10,6 +10,7 @@ resume_SRCS = \
 	$(runtime_srcdir)/resume/name_to_dev.h \
 	$(NULL)
 
-resume_CFLAGS = -I$(runtime_srcdir)
+resume_CFLAGS = $(runtime_CFLAGS) -I$(runtime_srcdir)
+resume_LDFLAGS = $(runtime_LDFLAGS)
 
 PROGS += resume

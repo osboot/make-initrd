@@ -8,6 +8,9 @@ halt_SRCS = \
 	$(runtime_srcdir)/halt/utmp.c \
 	$(runtime_srcdir)/halt/reboot.h
 
+halt_CFLAGS = $(runtime_CFLAGS)
+halt_LDFLAGS = $(runtime_LDFLAGS)
+
 PROGS += halt
 
 halt_SYMLINKS = \

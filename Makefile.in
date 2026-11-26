@@ -135,6 +135,14 @@ CFLAGS = @CFLAGS@ \
 CPPFLAGS += @CPPFLAGS@ @DEFS@ -I$(CURDIR) -I$(srcdir) -I$(srcdir)/include
 LDFLAGS = @LDFLAGS@
 
+runtime_CFLAGS = @runtime_CFLAGS@
+runtime_LDFLAGS = @runtime_LDFLAGS@ \
+	-Wl,--enable-new-dtags \
+	-Wl,-z,combreloc \
+	-Wl,--sort-common \
+	-Wl,--sort-section,alignment \
+	-Wl,--as-needed
+
 UDEVD		= @UDEVD@
 UDEVADM		= @UDEVADM@
 STRIP		= @STRIP@

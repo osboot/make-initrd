@@ -12,6 +12,7 @@ nfsmount_SRCS = \
 	$(runtime_srcdir)/nfsmount/sunrpc.h \
 	$(NULL)
 
-nfsmount_CFLAGS = -I$(runtime_srcdir) -D_GNU_SOURCE=1 -Wno-conversion -Wno-sign-conversion -Wno-stringop-truncation
+nfsmount_CFLAGS = $(runtime_CFLAGS) -I$(runtime_srcdir) -D_GNU_SOURCE=1 -Wno-conversion -Wno-sign-conversion -Wno-stringop-truncation
+nfsmount_LDFLAGS = $(runtime_LDFLAGS)
 
 PROGS += nfsmount

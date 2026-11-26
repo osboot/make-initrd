@@ -5,7 +5,8 @@ environ_SRCS = $(runtime_srcdir)/environ/environ.c
 
 PROGS += environ
 
-environ_CFLAGS = -D_GNU_SOURCE -I$(runtime_srcdir)/libinitramfs
+environ_CFLAGS = $(runtime_CFLAGS) -D_GNU_SOURCE -I$(runtime_srcdir)/libinitramfs
+environ_LDFLAGS = $(runtime_LDFLAGS)
 environ_LIBS = -L$(dest_data_libdir) -linitramfs
 
 environ_SYMLINKS += $(dest_data_bindir)/showenv
