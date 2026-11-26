@@ -14,7 +14,7 @@ def get_packages() -> PackageSet:
     return PackageSet(
         make_initrd=(
             "make", "udev", "libelf", "libkmod", "zlib", "bzlib", "libzstd",
-            "liblzma", "libbpf", "libjson-c5", "squashfs-tools",
+            "liblzma", "libbpf", "libjson-c5", "squashfs-tools", "binutils",
         ),
         make_initrd_devel=(
             "make", "udev", "libelf", "libkmod", "zlib", "bzlib", "libzstd",

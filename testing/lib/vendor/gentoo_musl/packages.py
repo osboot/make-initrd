@@ -21,7 +21,7 @@ def get_packages() -> PackageSet:
             "sys-apps/shadow", "sys-apps/findutils", "sys-apps/grep", "sys-apps/kmod",
             "sys-apps/util-linux", "virtual/libcrypt:=", "virtual/udev",
             "app-arch/bzip2", "app-arch/xz-utils", "app-text/scdoc", "sys-libs/zlib",
-            "app-arch/zstd", "dev-libs/json-c", "app-arch/lz4",
+            "app-arch/zstd", "dev-libs/json-c", "app-arch/lz4", "sys-devel/binutils",
         ),
         make_initrd_devel=(
             "app-alternatives/cpio", "app-arch/tar", "dev-build/make",

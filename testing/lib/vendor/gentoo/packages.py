@@ -22,7 +22,7 @@ def get_packages() -> PackageSet:
             "sys-apps/util-linux", "virtual/libcrypt:=", "virtual/udev",
             "app-arch/bzip2", "app-arch/xz-utils", "app-text/scdoc", "sys-libs/zlib",
             "app-arch/zstd", "dev-libs/json-c", "sys-fs/squashfs-tools",
-            "sys-fs/erofs-utils",
+            "sys-fs/erofs-utils", "sys-devel/binutils",
         ),
         make_initrd_devel=(
             "app-alternatives/cpio", "app-arch/tar", "dev-build/make",
