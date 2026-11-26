@@ -22,7 +22,11 @@ AC_PROG_LEX([noyywrap])
 runtime_CFLAGS=
 for flag in \
 		-fno-unwind-tables \
-		-fno-asynchronous-unwind-tables; do
+		-fno-asynchronous-unwind-tables \
+		-falign-functions=1 \
+		-falign-jumps=1 \
+		-falign-labels=1 \
+		-falign-loops=1; do
 	AC_MSG_CHECKING([whether $CC supports $flag])
 	saved_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS -Werror $flag"
