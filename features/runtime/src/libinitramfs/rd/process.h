@@ -7,6 +7,6 @@
 
 #include "compiler.h"
 
-pid_t rd_waitpid_retry(pid_t pid, int *wstatus, int options) _access_(write_only, 2);
+_public_ pid_t rd_waitpid_retry(pid_t pid, int *wstatus, int options) _access_(write_only, 2);
 
 #endif /* __RD_PROCESS_H__ */

@@ -29,7 +29,9 @@ for flag in \
 		-falign-loops=1 \
 		-fomit-frame-pointer \
 		-malign-data=abi \
-		-Os; do
+		-Os \
+		-fvisibility=hidden \
+		-fno-semantic-interposition; do
 	AC_MSG_CHECKING([whether $CC supports $flag])
 	saved_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS -Werror $flag"
@@ -42,16 +44,19 @@ for flag in \
 done
 
 runtime_LDFLAGS=
-
-AC_MSG_CHECKING([whether $CC supports -Wl,-z,noseparate-code])
-saved_LDFLAGS=$LDFLAGS
-LDFLAGS="$LDFLAGS -Wl,--fatal-warnings -Wl,-z,noseparate-code"
-AC_LINK_IFELSE(
-	[AC_LANG_PROGRAM([], [return 0;])],
-	[runtime_LDFLAGS="$runtime_LDFLAGS -Wl,-z,noseparate-code"
-	 AC_MSG_RESULT([yes])],
-	[AC_MSG_RESULT([no])])
-LDFLAGS=$saved_LDFLAGS
+for flag in \
+		-Wl,-z,noseparate-code \
+		-Wl,-Bsymbolic-functions; do
+	AC_MSG_CHECKING([whether $CC supports $flag])
+	saved_LDFLAGS=$LDFLAGS
+	LDFLAGS="$LDFLAGS -Wl,--fatal-warnings $flag"
+	AC_LINK_IFELSE(
+		[AC_LANG_PROGRAM([], [return 0;])],
+		[runtime_LDFLAGS="$runtime_LDFLAGS $flag"
+		 AC_MSG_RESULT([yes])],
+		[AC_MSG_RESULT([no])])
+	LDFLAGS=$saved_LDFLAGS
+done
 
 AC_SUBST([runtime_CFLAGS])
 AC_SUBST([runtime_LDFLAGS])
