@@ -26,7 +26,10 @@ for flag in \
 		-falign-functions=1 \
 		-falign-jumps=1 \
 		-falign-labels=1 \
-		-falign-loops=1; do
+		-falign-loops=1 \
+		-fomit-frame-pointer \
+		-malign-data=abi \
+		-Os; do
 	AC_MSG_CHECKING([whether $CC supports $flag])
 	saved_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS -Werror $flag"
