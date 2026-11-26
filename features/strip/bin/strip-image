@@ -6,6 +6,11 @@
 [ -n "${STRIP-}" ] && [ "${STRIP-}" != ":" ] ||
 	exit 0
 
+if ! type -P "$STRIP" >/dev/null 2>&1; then
+	message "Utility not found: $STRIP"
+	exit 0
+fi
+
 export STRIP STRIP_FLAGS
 
 declare -a strip_files=()
