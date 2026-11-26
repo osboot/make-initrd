@@ -36,7 +36,7 @@ void event_handler(struct watch *queue, char *path)
 	} else {
 		int status = 0;
 
-		if (waitpid_retry(pid, &status, 0) != pid || !WIFEXITED(status))
+		if (rd_waitpid_retry(pid, &status, 0) != pid || !WIFEXITED(status))
 			rd_info("%s: session=%lu: %s failed",
 			        queue->q_name, session, handler_file);
 		else
@@ -69,7 +69,7 @@ void move_files(char *srcdir, char *dstdir)
 	if (!d)
 		rd_fatal("fdopendir: %m");
 
-	while ((ent = xreaddir(d, srcdir)) != NULL) {
+	while ((ent = rd_readdir_or_die(d, srcdir)) != NULL) {
 		if (ent->d_name[0] != '.' && ent->d_type == DT_REG &&
 		    renameat(srcfd, ent->d_name, dstfd, ent->d_name) < 0)
 			rd_fatal("rename `%s/%s' -> `%s/%s': %m", srcdir, ent->d_name, dstdir, ent->d_name);
@@ -80,8 +80,8 @@ void signal_unhandled_events(struct watch *queue)
 {
 	ssize_t len;
 
-	len = write_loop(queue->q_parentfd,
-	                 (char *) &queue->q_watchfd, sizeof(queue->q_watchfd));
+	len = rd_write_loop(queue->q_parentfd,
+	                    (char *) &queue->q_watchfd, sizeof(queue->q_watchfd));
 	if (len < 0)
 		rd_err("write(pipe): %m");
 
@@ -100,10 +100,10 @@ void process_events(struct watch *queue)
 
 	move_files(srcdir, dstdir);
 
-	if (!empty_directory(dstdir)) {
+	if (!rd_empty_directory(dstdir)) {
 		event_handler(queue, dstdir);
 
-		if (!empty_directory(dstdir))
+		if (!rd_empty_directory(dstdir))
 			signal_unhandled_events(queue);
 	}
 

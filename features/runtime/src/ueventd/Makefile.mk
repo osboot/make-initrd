@@ -2,8 +2,6 @@
 
 ueventd_DEST = $(dest_data_sbindir)/ueventd
 ueventd_SRCS = \
-	$(runtime_srcdir)/ueventd/path.c \
-	$(runtime_srcdir)/ueventd/process.c \
 	$(runtime_srcdir)/ueventd/queue-processor.c \
 	$(runtime_srcdir)/ueventd/sources.c \
 	$(runtime_srcdir)/ueventd/ueventd.c \

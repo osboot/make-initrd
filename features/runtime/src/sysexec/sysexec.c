@@ -20,6 +20,7 @@
 
 #include "compiler.h"
 #include "cleanup.h"
+#include "rd/path.h"
 
 /*
  * Because statfs.t_type can be int on some architectures, we have to cast the
@@ -36,13 +37,6 @@ static inline long pivot_root(const char *new_root, const char *put_old)
 	return syscall(SYS_pivot_root, new_root, put_old);
 }
 #endif
-
-static int is_dot_dir(struct dirent *ent)
-{
-	return ((ent->d_type == DT_DIR) &&
-	        (ent->d_name[0] == '.' && ((ent->d_name[1] == '\0') ||
-	                                   (ent->d_name[1] == '.' && ent->d_name[2] == '\0'))));
-}
 
 /* remove all files/directories below dirName -- don't cross mountpoints */
 static int remove_recursive_at(int fd)
@@ -78,7 +72,7 @@ static int remove_recursive_at(int fd)
 			break;
 		}
 
-		if (is_dot_dir(d))
+		if (rd_is_dot_dir(d))
 			continue;
 
 		if (d->d_type == DT_DIR || d->d_type == DT_UNKNOWN) {

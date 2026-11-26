@@ -13,9 +13,9 @@
 #include <errno.h>
 
 #include "temp_failure_retry.h"
-#include "ueventd.h"
+#include "rd/process.h"
 
-pid_t waitpid_retry(pid_t pid, int *wstatus, int options)
+pid_t rd_waitpid_retry(pid_t pid, int *wstatus, int options)
 {
 	return (pid_t) TEMP_FAILURE_RETRY(waitpid(pid, wstatus, options));
 }

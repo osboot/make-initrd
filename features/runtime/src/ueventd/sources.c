@@ -97,7 +97,7 @@ void sources_start(const char *dir_path)
 		return;
 	}
 
-	while ((ent = xreaddir(d, dir_path)) != NULL) {
+	while ((ent = rd_readdir_or_die(d, dir_path)) != NULL) {
 		struct stat st;
 
 		if (strncmp(ent->d_name, "ueventd-", 8) != 0)
@@ -221,7 +221,7 @@ void sources_stop_all(void)
 			for (src = source_list; src; src = src->next) {
 				if (src->pid <= 0)
 					continue;
-				if (waitpid_retry(src->pid, NULL, WNOHANG) > 0) {
+				if (rd_waitpid_retry(src->pid, NULL, WNOHANG) > 0) {
 					src->pid = 0;
 					alive--;
 				}
@@ -235,7 +235,7 @@ void sources_stop_all(void)
 		for (src = source_list; src; src = src->next) {
 			if (src->pid > 0) {
 				kill(src->pid, SIGKILL);
-				waitpid_retry(src->pid, NULL, 0);
+				rd_waitpid_retry(src->pid, NULL, 0);
 				src->pid = 0;
 			}
 		}
