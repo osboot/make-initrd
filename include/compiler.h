@@ -76,6 +76,12 @@
 #ifndef _section_
 # define _section_(x)      __attribute__((__section__(x)))
 #endif
+#ifndef _public_
+# define _public_          __attribute__((__visibility__("default")))
+#endif
+#ifndef _hidden_
+# define _hidden_          __attribute__((__visibility__("hidden")))
+#endif
 #ifndef _likely_
 # define _likely_(x)       (__builtin_expect(!!(x), 1))
 #endif
