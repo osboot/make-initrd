@@ -154,6 +154,7 @@ INSTALL_DATA    = @INSTALL_DATA@
 SED = @SED@ \
 	-e 's|@UDEVD[@]|$(UDEVD)|g' \
 	-e 's|@UDEVADM[@]|$(UDEVADM)|g' \
+	-e 's|@STRIP[@]|$(STRIP)|g' \
 	-e 's|@PACKAGE_NAME[@]|$(PACKAGE_NAME)|g' \
 	-e 's|@PACKAGE_VERSION[@]|$(PACKAGE_VERSION)|g' \
 	-e 's|@bootdir[@]|$(bootdir)|g' \
@@ -451,7 +452,6 @@ $$(call get_objects,$$($(1)_SRCS)): cflags = $$($(1)_CFLAGS)
 $($(1)_DEST): $(call get_objects,$($(1)_SRCS))
 	$(Q)mkdir -p -- $(dir $($(1)_DEST))
 	$(call quiet_cmd,LD,$($(1)_DEST),$(LINK.o)) $($(1)_LDFLAGS) -o $($(1)_DEST) $$^ $($(1)_LIBS)
-	$(call quiet_cmd,STRIP,$($(1)_DEST),$(STRIP)) -s --remove-section=.note --remove-section=.comment "$($(1)_DEST)"
 
 $(1): $($(1)_DEST)
 endef

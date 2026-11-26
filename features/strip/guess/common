@@ -1,0 +1,6 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. guess-functions
+
+guess_feature "strip"

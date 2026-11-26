@@ -1,0 +1,42 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+. sh-functions
+
+[ -n "${STRIP-}" ] && [ "${STRIP-}" != ":" ] ||
+	exit 0
+
+export STRIP STRIP_FLAGS
+
+declare -a strip_files=()
+declare -a readonly_files=()
+
+while IFS= read -r -d '' path && IFS= read -r desc; do
+	case "$desc" in
+		:\ ELF\ *\ executable,*|:\ ELF\ *\ shared\ object,*)
+			;;
+		*)
+			continue
+			;;
+	esac
+
+	if [ ! -w "$path" ]; then
+		chmod u+w -- "$path"
+		readonly_files+=("$path")
+	fi
+
+	strip_files+=("$path")
+done < <(
+	find "$ROOTDIR" \
+		\( -path "$ROOTDIR/lib/modules" -o -path "$ROOTDIR/usr/lib/modules" \) -prune -o \
+		-type f -exec file -0 -N -- '{}' '+'
+)
+
+if [ "${#strip_files[@]}" -gt 0 ]; then
+	# shellcheck disable=SC2086
+	"$STRIP" ${STRIP_FLAGS-} -- "${strip_files[@]}"
+fi
+
+if [ "${#readonly_files[@]}" -gt 0 ]; then
+	chmod u-w -- "${readonly_files[@]}"
+fi

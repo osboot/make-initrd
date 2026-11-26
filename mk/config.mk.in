@@ -53,6 +53,7 @@ BIN_FEATURESDIR := @execdir@/features
 
 UDEVD		:= @UDEVD@
 UDEVADM		:= @UDEVADM@
+STRIP		?= @STRIP@
 
 BUSYBOX_PATH := $(RUNTIMEDIR)/sbin:$(RUNTIMEDIR)/usr/sbin:$(RUNTIMEDIR)/bin:$(RUNTIMEDIR)/usr/bin
 SYSTEM_PATH  := /sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin
