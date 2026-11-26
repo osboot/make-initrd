@@ -17,6 +17,7 @@
 #include "cleanup.h"
 #include "rd/logging.h"
 #include "rd/memory.h"
+#include "runtime.h"
 
 #ifndef _GNU_SOURCE
 extern char **environ;
@@ -258,7 +259,7 @@ next:
 }
 
 int
-main(int argc, char *argv[])
+environ_main(int argc, char *argv[])
 {
 	int o;
 

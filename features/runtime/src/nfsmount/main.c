@@ -21,6 +21,7 @@
 #include "nfsmount.h"
 #include "sunrpc.h"
 #include "dummypmap.h"
+#include "runtime.h"
 
 const char *progname;
 static jmp_buf abort_buf;
@@ -177,9 +178,6 @@ static void check_path(const char *path)
 		longjmp(abort_buf, 1);
 	}
 }
-
-int main(int argc, char *argv[])
-_weak_ _alias_(nfsmount_main);
 
 int nfsmount_main(int argc, char *argv[])
 {

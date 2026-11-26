@@ -18,8 +18,6 @@ fi
 command -v unshare >/dev/null 2>&1 || exit 127
 unshare -r -n true 2>/dev/null || exit 127
 
-libcdir="$(tools/get-libc-dir 2>/dev/null ||:)"
-export LD_LIBRARY_PATH="$PWD/.build/dest/lib/initrd$libcdir:$PWD/.build/dest/lib/initrd/usr/lib/x86_64-linux-gnu:$PWD/.build/dest/lib/initrd/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export RDLOG_STDERR=1
 export ueventd_net
 export root

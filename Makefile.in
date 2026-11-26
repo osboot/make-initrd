@@ -205,7 +205,9 @@ UNITTEST_DIRS = $(sort \
 				$(wildcard $(srcdir)/$(1)/tests $(srcdir)/$(1)/*/tests)))
 
 check-unit: $(UNITTEST_DIRS)
-	@env PATH="$(CURDIR)/tools:$(srcdir)/tools:$(CURDIR)/$(dest_sbindir):$(CURDIR)/$(dest_bindir):$$PATH" $(srcdir)/testing/tests/run $?
+	@env PATH="$(CURDIR)/tools:$(srcdir)/tools:$(CURDIR)/$(dest_sbindir):$(CURDIR)/$(dest_bindir):$$PATH" \
+		LD_LIBRARY_PATH="$(abspath $(dest_data_libdir))$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}" \
+		$(srcdir)/testing/tests/run $?
 
 .PHONY: check-coverage coverage-clean
 
@@ -425,7 +427,7 @@ build: $(addprefix $(dest_sysconfdir)/,$(SYSCONF_NAMES))
 depflags = -MT $@ -MMD -MP -MF $(@:.o=.d)
 $(OBJDIR)/%.o: %.c
 	$(Q)mkdir -p -- $(dir $@)
-	$(call quiet_cmd,CC,$<,$(COMPILE.c)) $(depflags) $(cflags) $(OUTPUT_OPTION) $<
+	$(call quiet_cmd,CC,$<,$(COMPILE.c)) $(depflags) $(cflags) $(extra_cflags) $(OUTPUT_OPTION) $<
 
 BIN_NAMES            =
 SBIN_NAMES           =
@@ -455,7 +457,7 @@ define generate_link_lib_target =
 $(call classify_file,$($(1)_DEST))
 
 ALL_OBJS += $$(call get_objects,$$($(1)_SRCS))
-$$(call get_objects,$$($(1)_SRCS)): cflags = $$($(1)_CFLAGS)
+$$(call get_objects,$$($(1)_SRCS)): cflags += $$($(1)_CFLAGS)
 
 $($(1)_DEST): $(call get_objects,$($(1)_SRCS))
 	$(Q)mkdir -p -- $(dir $($(1)_DEST))
@@ -468,7 +470,7 @@ define generate_link_bin_target =
 $(call classify_file,$($(1)_DEST))
 
 ALL_OBJS += $$(call get_objects,$$($(1)_SRCS))
-$$(call get_objects,$$($(1)_SRCS)): cflags = $$($(1)_CFLAGS)
+$$(call get_objects,$$($(1)_SRCS)): cflags += $$($(1)_CFLAGS)
 
 $($(1)_DEST): $(call get_objects,$($(1)_SRCS))
 	$(Q)mkdir -p -- $(dir $($(1)_DEST))

@@ -21,6 +21,7 @@
 #include "compiler.h"
 #include "cleanup.h"
 #include "rd/path.h"
+#include "runtime.h"
 
 /*
  * Because statfs.t_type can be int on some architectures, we have to cast the
@@ -125,7 +126,7 @@ static void _noreturn_ usage(int retcode)
 	exit(retcode);
 }
 
-int main(int argc, char *argv[])
+int sysexec_main(int argc, char *argv[])
 {
 	char *newroot, *initprog, **initargs;
 
@@ -203,5 +204,6 @@ int main(int argc, char *argv[])
 		remove_recursive_at(old_root_fd);
 
 	execvp(initprog, initargs);
-	err(EXIT_FAILURE, "failed to execute %s", initprog);
+	warn("failed to execute %s", initprog);
+	return EXIT_FAILURE;
 }

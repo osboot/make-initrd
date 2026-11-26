@@ -28,6 +28,7 @@
 #include "rd/logging.h"
 #include "rd/uevent.h"
 #include "ueventd.h"
+#include "runtime.h"
 
 #define DEFAULT_LOGFILE "/var/log/ueventd.log"
 
@@ -638,7 +639,7 @@ pid_t spawn_worker(int epollfd, struct watch *queue)
 	return 0;
 }
 
-int main(int argc, char **argv)
+int ueventd_main(int argc, char **argv)
 {
 	struct watch *e, *n;
 	int i, epollfd;

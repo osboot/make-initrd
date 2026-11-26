@@ -6,8 +6,10 @@
 #include <string.h>
 #include <time.h>
 
+#include "runtime.h"
+
 int
-main(int argc, char **argv)
+timestamp_main(int argc, char **argv)
 {
 	clockid_t clockid;
 	int arg = 1;

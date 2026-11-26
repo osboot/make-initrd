@@ -9,8 +9,10 @@
 #include <unistd.h>
 #include <libgen.h>
 
+#include "runtime.h"
+
 int
-main (int ac, char *av[])
+runas_main (int ac, char *av[])
 {
 	if (ac < 3)
 		fprintf (stderr, "usage: %s program [arguments]\n", basename(av[0]));

@@ -49,9 +49,10 @@
 #include <getopt.h>
 #include "compiler.h"
 #include "reboot.h"
+#include "runtime.h"
 
 const char *Version = "@(#)halt  2.86  31-Jul-2004 miquels@cistron.nl";
-const char *progname;
+static const char *progname;
 
 #define KERNEL_MONITOR	1 /* If halt() puts you into the kernel monitor. */
 
@@ -144,7 +145,7 @@ void do_shutdown(const char *fl, const char *pw, const char *tm)
  *	Main program.
  *	Write a wtmp entry and reboot cq. halt.
  */
-int main(int argc, char **argv)
+int halt_main(int argc, char **argv)
 {
 	int do_reboot = 0;
 	int do_sync = 1;
@@ -315,5 +316,5 @@ int main(int argc, char **argv)
 #endif
 	kill(1, SIGCONT);
 
-	exit(0);
+	return 0;
 }

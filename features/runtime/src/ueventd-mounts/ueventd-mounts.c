@@ -14,6 +14,7 @@
 #include "rd/uevent.h"
 #include "list.h"
 #include "ueventd-mounts.h"
+#include "runtime.h"
 
 #define DEFAULT_LOGFILE "/var/log/ueventd-mounts.log"
 #define QUEUE_NAME "mount"
@@ -120,7 +121,7 @@ static void backend_dispatch(void *data)
 	b->dispatch(b);
 }
 
-int main(int argc, char **argv)
+int ueventd_mounts_main(int argc, char **argv)
 {
 	rd_uevent_source_init(&event_queue, argc, argv, QUEUE_NAME,
 	                      "UEVENTD_MOUNTS_LOGFILE", DEFAULT_LOGFILE);

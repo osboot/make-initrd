@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-nfsmount_DEST = $(dest_data_bindir)/nfsmount
 nfsmount_SRCS = \
 	$(runtime_srcdir)/nfsmount/dummypmap.c \
 	$(runtime_srcdir)/nfsmount/dummypmap.h \
@@ -12,7 +11,8 @@ nfsmount_SRCS = \
 	$(runtime_srcdir)/nfsmount/sunrpc.h \
 	$(NULL)
 
-nfsmount_CFLAGS = $(runtime_CFLAGS) -I$(runtime_srcdir) -D_GNU_SOURCE=1 -Wno-conversion -Wno-sign-conversion -Wno-stringop-truncation
-nfsmount_LDFLAGS = $(runtime_LDFLAGS)
+initrd_runtime_SRCS += $(nfsmount_SRCS)
+initrd_runtime_SYMLINKS += $(dest_data_bindir)/nfsmount
 
-PROGS += nfsmount
+$(patsubst $(srcdir)/%.c,$(OBJDIR)/%.o,$(filter %.c,$(nfsmount_SRCS))): \
+	extra_cflags += -Wno-conversion -Wno-sign-conversion -Wno-stringop-truncation

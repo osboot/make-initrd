@@ -11,6 +11,7 @@
 #include <err.h>       /* err */
 
 #include "compiler.h"
+#include "runtime.h"
 
 static char *prog;
 
@@ -77,7 +78,7 @@ static int cmd_realpath(int argc, char **argv)
 	return 0;
 }
 
-int main(int argc, char **argv)
+int chrooted_main(int argc, char **argv)
 {
 	prog = strrchr(argv[0], '/');
 	if (!prog)
