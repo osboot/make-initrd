@@ -4,7 +4,6 @@ libinitramfs_DEST = $(dest_data_libdir)/libinitramfs.so
 libinitramfs_SRCS = \
 	$(runtime_srcdir)/libinitramfs/logging.c \
 	$(runtime_srcdir)/libinitramfs/memory.c \
-	$(runtime_srcdir)/libinitramfs/console.c \
 	$(runtime_srcdir)/libinitramfs/uevent.c \
 	$(NULL)
 
