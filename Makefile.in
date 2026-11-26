@@ -618,10 +618,10 @@ install: build installdirs
 	done
 	$(Q)$(INSTALL_DATA) -t "$(DESTDIR)$(projectdir)/$(FEATURESDIR)" -- $(realpath $(dest_projectdir)/$(FEATURESDIR)/README.md)
 	$(Q)cp -at "$(DESTDIR)$(execdir)/$(FEATURESDIR)" -- $(wildcard $(dest_execdir)/$(FEATURESDIR)/*)
-	$(Q)$(INSTALL_PROGRAM) -m 755 -t "$(DESTDIR)$(runtimedir)/bin" -- $(addprefix $(dest_data_bindir)/,$(RUNTIME_BIN_NAMES))
-	$(Q)$(INSTALL_PROGRAM) -m 755 -t "$(DESTDIR)$(runtimedir)/sbin" -- $(addprefix $(dest_data_sbindir)/,$(RUNTIME_SBIN_NAMES))
+	$(Q)cp -at "$(DESTDIR)$(runtimedir)/bin" -- $(addprefix $(dest_data_bindir)/,$(RUNTIME_BIN_NAMES))
+	$(Q)cp -at "$(DESTDIR)$(runtimedir)/sbin" -- $(addprefix $(dest_data_sbindir)/,$(RUNTIME_SBIN_NAMES))
 	$(Q)[ -z "$(RUNTIME_UEVENT_NAMES)" ] || \
-	    $(INSTALL_PROGRAM) -m 755 -t "$(DESTDIR)$(runtimedir)/lib/uevent/sources" -- $(addprefix $(dest_data_ueventdir)/,$(RUNTIME_UEVENT_NAMES))
+	    cp -at "$(DESTDIR)$(runtimedir)/lib/uevent/sources" -- $(addprefix $(dest_data_ueventdir)/,$(RUNTIME_UEVENT_NAMES))
 	$(Q)[ -z "$(wildcard $(dest_data_libdir)/lib*)" ] || \
 	    cp -at "$(DESTDIR)$(runtimedir)/$(libcdir)" -- $(wildcard $(dest_data_libdir)/lib*)
 	$(Q)[ -z "$(completionsdir)" ] || \
