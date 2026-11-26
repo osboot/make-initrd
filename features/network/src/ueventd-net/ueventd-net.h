@@ -8,7 +8,7 @@
 #include <stdbool.h>
 
 #include "compiler.h"
-#include "rd/list.h"
+#include "list.h"
 #include "rd/uevent.h"
 
 struct net_addr {

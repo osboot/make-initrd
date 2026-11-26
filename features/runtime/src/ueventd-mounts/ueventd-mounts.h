@@ -8,7 +8,7 @@
 #include <poll.h>
 
 #include "compiler.h"
-#include "rd/list.h"
+#include "list.h"
 
 enum mount_entry_t {
 	MOUNT_ENTRY_OLD,

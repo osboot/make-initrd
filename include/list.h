@@ -39,7 +39,7 @@
 #define container_of(ptr, type, member)					\
 	({								\
 		const __typeof__(((type *) NULL)->member) *__mptr = (ptr);	\
-		(type *) ((char *) __mptr - offsetof(type, member));	\
+		(type *) (void *) ((char *) __mptr - offsetof(type, member));	\
 	})
 #endif
 
@@ -47,7 +47,7 @@
 #define container_of_safe(ptr, type, member)						\
 	({										\
 		const __typeof__(((type *) NULL)->member) *__mptr = (ptr);		\
-		__mptr ? (type *)((char *) __mptr - offsetof(type, member)) : NULL;	\
+		__mptr ? (type *) (void *) ((char *) __mptr - offsetof(type, member)) : NULL;	\
 	})
 #endif
 

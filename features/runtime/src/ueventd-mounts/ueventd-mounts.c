@@ -11,8 +11,8 @@
 
 #include "rd/memory.h"
 #include "rd/logging.h"
-#include "rd/list.h"
 #include "rd/uevent.h"
+#include "list.h"
 #include "ueventd-mounts.h"
 
 #define DEFAULT_LOGFILE "/var/log/ueventd-mounts.log"
