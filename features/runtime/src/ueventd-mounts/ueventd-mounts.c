@@ -114,58 +114,22 @@ static struct mount_backend *backend_select(void)
 	return NULL;
 }
 
+static void backend_dispatch(void *data)
+{
+	struct mount_backend *b = data;
+	b->dispatch(b);
+}
+
 int main(int argc, char **argv)
 {
-	int c;
-	int loglevel = LOG_INFO;
-
-	while ((c = getopt(argc, argv, "hl:")) != -1) {
-		switch (c) {
-			case 'h':
-				fprintf(stderr, "Usage: %s [-l loglevel]\n",
-				        program_invocation_short_name);
-				exit(EXIT_SUCCESS);
-				break;
-			case 'l':
-				loglevel = rd_logging_level(optarg);
-				break;
-			default:
-				exit(EXIT_FAILURE);
-				break;
-		}
-	}
-
-	rd_log_setup_stderr(rd_log_resolve_file("UEVENTD_MOUNTS_LOGFILE", DEFAULT_LOGFILE));
-	rd_logging_init(fileno(stderr), loglevel, program_invocation_short_name);
-
-	rd_info("starting server ...");
-
-	rd_uevent_queue_open(&event_queue, rd_getenv_or_die("filterdir"), QUEUE_NAME);
+	rd_uevent_source_init(&event_queue, argc, argv, QUEUE_NAME,
+	                      "UEVENTD_MOUNTS_LOGFILE", DEFAULT_LOGFILE);
 
 	struct mount_backend *b = backend_select();
 
-	struct pollfd fds[1] = {
-		{
-			.fd = b->fd,
-			.events = b->poll_events,
-		},
-	};
-
-	while (1) {
-		int ready;
-
-		errno = 0;
-		if ((ready = poll(fds, 1, -1)) < 0) {
-			if (errno == EINTR)
-				continue;
-			rd_fatal("poll: %m");
-		}
-
-		if (fds[0].revents & b->poll_events)
-			b->dispatch(b);
-	}
+	rd_uevent_source_loop(b->fd, b->poll_events, backend_dispatch, b);
 
 	b->cleanup(b);
-	rd_uevent_queue_close(&event_queue);
+	rd_uevent_source_close(&event_queue);
 	return EXIT_SUCCESS;
 }
