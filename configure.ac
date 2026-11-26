@@ -21,6 +21,17 @@ AC_PROG_LEX([noyywrap])
 
 runtime_CFLAGS=
 runtime_LDFLAGS=
+
+AC_MSG_CHECKING([whether $CC supports -Wl,-z,noseparate-code])
+saved_LDFLAGS=$LDFLAGS
+LDFLAGS="$LDFLAGS -Wl,--fatal-warnings -Wl,-z,noseparate-code"
+AC_LINK_IFELSE(
+	[AC_LANG_PROGRAM([], [return 0;])],
+	[runtime_LDFLAGS="$runtime_LDFLAGS -Wl,-z,noseparate-code"
+	 AC_MSG_RESULT([yes])],
+	[AC_MSG_RESULT([no])])
+LDFLAGS=$saved_LDFLAGS
+
 AC_SUBST([runtime_CFLAGS])
 AC_SUBST([runtime_LDFLAGS])
 
