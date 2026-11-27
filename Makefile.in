@@ -129,9 +129,11 @@ CFLAGS = @CFLAGS@ \
 	-Wwrite-strings -Wconversion -Waggregate-return -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations -Wmissing-noreturn \
 	-Wmissing-format-attribute -Wredundant-decls -Wdisabled-optimization \
-	-Wstringop-overflow -Wstringop-overread -Wmaybe-uninitialized \
+	@warn_CFLAGS@ \
 	-Wno-pointer-arith \
 	-Werror=shadow -Werror=missing-prototypes -Werror=implicit-function-declaration
+
+no_stringop_truncation_CFLAGS = @no_stringop_truncation_CFLAGS@
 
 CPPFLAGS += @CPPFLAGS@ @DEFS@ -I$(CURDIR) -I$(srcdir) -I$(srcdir)/include
 LDFLAGS = @LDFLAGS@

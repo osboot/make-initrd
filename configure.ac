@@ -19,6 +19,35 @@ AC_PROG_SED
 AC_PROG_YACC
 AC_PROG_LEX([noyywrap])
 
+warn_CFLAGS=
+for flag in \
+		-Wstringop-overflow \
+		-Wstringop-overread \
+		-Wmaybe-uninitialized; do
+	AC_MSG_CHECKING([whether $CC supports $flag])
+	saved_CFLAGS=$CFLAGS
+	CFLAGS="$CFLAGS -Werror $flag"
+	AC_COMPILE_IFELSE(
+		[AC_LANG_PROGRAM([], [return 0;])],
+		[warn_CFLAGS="$warn_CFLAGS $flag"
+		 AC_MSG_RESULT([yes])],
+		[AC_MSG_RESULT([no])])
+	CFLAGS=$saved_CFLAGS
+done
+AC_SUBST([warn_CFLAGS])
+
+no_stringop_truncation_CFLAGS=
+AC_MSG_CHECKING([whether $CC supports -Wstringop-truncation])
+saved_CFLAGS=$CFLAGS
+CFLAGS="$CFLAGS -Werror -Wstringop-truncation"
+AC_COMPILE_IFELSE(
+	[AC_LANG_PROGRAM([], [return 0;])],
+	[no_stringop_truncation_CFLAGS="-Wno-stringop-truncation"
+	 AC_MSG_RESULT([yes])],
+	[AC_MSG_RESULT([no])])
+CFLAGS=$saved_CFLAGS
+AC_SUBST([no_stringop_truncation_CFLAGS])
+
 runtime_CFLAGS=
 for flag in \
 		-fno-unwind-tables \

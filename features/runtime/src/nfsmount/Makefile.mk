@@ -15,4 +15,4 @@ initrd_runtime_SRCS += $(nfsmount_SRCS)
 initrd_runtime_SYMLINKS += $(dest_data_bindir)/nfsmount
 
 $(patsubst $(srcdir)/%.c,$(OBJDIR)/%.o,$(filter %.c,$(nfsmount_SRCS))): \
-	extra_cflags += -Wno-conversion -Wno-sign-conversion -Wno-stringop-truncation
+	extra_cflags += -Wno-conversion -Wno-sign-conversion $(no_stringop_truncation_CFLAGS)
