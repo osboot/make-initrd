@@ -23,14 +23,13 @@ fatal()
 	exit 1
 }
 
-eval "$(sed -n '/^ks_check_requires()/,/^}/p' features/kickstart/data/bin/kickstart)"
-
-. features/kickstart/data/bin/kickstart-sh-storage
-. features/kickstart/data/bin/kickstart-sh-storage-btrfs
-. features/kickstart/data/bin/kickstart-sh-storage-lvm
-. features/kickstart/data/bin/kickstart-sh-storage-raid
-. features/kickstart/data/bin/kickstart-sh-storage-zfs
-. features/kickstart/data/bin/kickstart-sh-installation
+. kickstart-sh-functions
+. kickstart-sh-storage
+. kickstart-sh-storage-btrfs
+. kickstart-sh-storage-lvm
+. kickstart-sh-storage-raid
+. kickstart-sh-storage-zfs
+. kickstart-sh-installation
 
 ks_datadir="$tmpdir/ks"
 ks_rootdir="$tmpdir/root"
