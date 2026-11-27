@@ -548,9 +548,10 @@ ks_get_dev_id()
 	printf '%s\n' "$1"
 }
 
-ks_requires_ext4=("e2fsck" "resize2fs")
-ks_requires_xfs=("xfs_growfs" "mount")
-ks_requires_f2fs=("resize.f2fs")
+ks_requires_ks_growfs=("blkid")
+ks_requires_ks_growfs_ext4=("e2fsck" "resize2fs")
+ks_requires_ks_growfs_xfs=("xfs_growfs" "mount" "umount")
+ks_requires_ks_growfs_f2fs=("fsck.f2fs" "resize.f2fs" "yes")
 ks_growfs()
 {
 	local PROG
@@ -558,6 +559,9 @@ ks_growfs()
 
 	PROG="kickstart"
 	message "command: ${FUNCNAME[0]} $*"
+
+	ks_check_requires "${FUNCNAME[0]}" ||
+		return 1
 
 	fs="$(blkid --output value --match-tag TYPE -c /dev/null "$1")" ||
 		return 0

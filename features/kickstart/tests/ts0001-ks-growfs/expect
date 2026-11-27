@@ -1,0 +1,13 @@
+MSG: command: ks_growfs /dev/null
+MSG: command `ks_growfs' requires utilities that are missing: blkid
+subtest_rc=1
+MSG: command: ks_growfs /dev/null
+MSG: command `ks_growfs_ext4' requires utilities that are missing: e2fsck resize2fs
+subtest_rc=1
+MSG: command: ks_growfs /dev/null
+MSG: command `ks_growfs_xfs' requires utilities that are missing: xfs_growfs mount umount
+subtest_rc=1
+MSG: command: ks_growfs /dev/null
+MSG: command `ks_growfs_f2fs' requires utilities that are missing: fsck.f2fs resize.f2fs yes
+subtest_rc=1
+rc=0
