@@ -1,0 +1,58 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' EXIT
+
+message()
+{
+	printf 'MSG: %s\n' "$*"
+}
+
+verbose()
+{
+	printf 'VERBOSE: %s\n' "$*"
+}
+
+eval "$(sed -n '/^ks_check_requires()/,/^}/p' features/kickstart/data/bin/kickstart)"
+
+PATH="$PWD/features/kickstart/data/bin:$PATH"
+. features/kickstart/data/bin/kickstart-sh-storage
+
+mkdir -p "$tmpdir/bin"
+
+make_blkid_mock()
+{
+	local fstype="$1"
+	cat > "$tmpdir/bin/blkid" <<-EOF
+	#!/bin/bash -eu
+	printf '%s\n' "$fstype"
+	EOF
+	chmod +x "$tmpdir/bin/blkid"
+}
+
+run_growfs_subshell()
+{
+	local rc=0
+	(
+		PATH="$tmpdir/bin"
+		ks_growfs /dev/null
+	) || rc=$?
+	printf 'subtest_rc=%s\n' "$rc"
+}
+
+# 1. Missing blkid
+rm -f -- "$tmpdir/bin/blkid"
+run_growfs_subshell
+
+# 2. Missing ext4 tools
+make_blkid_mock ext4
+run_growfs_subshell
+
+# 3. Missing xfs tools
+make_blkid_mock xfs
+run_growfs_subshell
+
+# 4. Missing f2fs tools
+make_blkid_mock f2fs
+run_growfs_subshell

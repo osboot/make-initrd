@@ -4,7 +4,7 @@ $(call feature-requires,add-modules depmod-image devmapper luks lvm mdadm module
 KICKSTART_PROGS  = sfdisk wipefs blkid findmnt mkswap mount mountpoint chroot \
 		   rsync wget tar unzip cpio env sha256sum eject halt reboot \
 		   btrfs mkfs.btrfs mkfs.ext4 numfmt e2fsck resize2fs \
-		   xfs_growfs resize.f2fs
+		   xfs_growfs fsck.f2fs resize.f2fs
 
 KICKSTART_PROGS_PATTERNS = \
 			   */lz4 \
