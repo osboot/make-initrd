@@ -235,8 +235,11 @@ ks_block_devices()
 	for majmin in $(findmnt -lno MAJ:MIN |sed -e '/^ *0:.*/d' |sort -u); do
 		dev="$(readlink-e "/sys/dev/block/$majmin" 2>/dev/null)" ||
 			continue
-		[ -z "${dev##*/virtual/block/*}" ] ||
+		if [ -f "$dev/partition" ]; then
 			dev="${dev%/*}"
+			[ ! -r "$dev/dev" ] ||
+				readline majmin "$dev/dev"
+		fi
 		exclude="${exclude}${majmin},"
 	done
 
