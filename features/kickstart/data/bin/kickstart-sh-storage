@@ -420,6 +420,12 @@ ks_set_crypto_args()
 	esac
 }
 
+ks_crypto_umount()
+{
+	verbose "closing luks device $1 ..."
+	cryptsetup close "$1" ||:
+}
+
 ks_requires_crypto=("cryptsetup")
 crypto()
 {
@@ -528,6 +534,8 @@ crypto()
 			message "unable to open luks device: /dev/$dev"
 			return 1
 		}
+
+	ks_add_umount_hook ks_crypto_umount "$crypt_name"
 
 	message "luks device ready: /dev/$dev"
 	return 0
