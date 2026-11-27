@@ -1,0 +1,10 @@
+gpt-full: rc=1
+gpt-enlarged: rc=0
+gpt-4kn-full: rc=1
+dos-full: rc=1
+dos-enlarged: rc=0
+middle-blocked: rc=1
+middle-gap: rc=0
+logical-full: rc=1
+sfdisk-fail: rc=0
+rc=0
