@@ -5,6 +5,12 @@ __kickstart_sh_storage_lvm=1
 
 . kickstart-sh-storage
 
+ks_lvm_umount()
+{
+	verbose "deactivating lvm volume group $1 ..."
+	lvm vgchange -an --noudevsync "$1" ||:
+}
+
 ks_requires_volgroup=("lvm")
 volgroup()
 {
@@ -75,12 +81,14 @@ volgroup()
 			return 1
 		lvm vgcreate -q ${pesize:+-s "$pesize"} "$name" "$@" ||
 			return 1
+		ks_add_umount_hook ks_lvm_umount "$name"
 		return 0
 	fi
 
 	verbose "changing lvm volume group '$name'"
 	lvm vgchange -q ${pesize:+-s "$pesize"} "$name" ||
 		return 1
+	ks_add_umount_hook ks_lvm_umount "$name"
 }
 
 ks_requires_logvol=("lvm")
@@ -225,6 +233,8 @@ logvol()
 		message "unable to handle logical volume: /dev/$partdev"
 		return 1
 	fi
+
+	ks_add_umount_hook ks_lvm_umount "$vgname"
 
 	if [ -n "$useexisting" ] && [ -n "$resize" ]; then
 		ks_growfs "/dev/$partdev" ||
