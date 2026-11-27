@@ -95,7 +95,7 @@ zpool()
 		"$name" "${vdevs[@]}"
 }
 
-ks_requires_zpool=("zfs")
+ks_requires_zfs=("zfs")
 zfs()
 {
 	local PROG TEMP
