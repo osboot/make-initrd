@@ -1,0 +1,121 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' EXIT
+
+PATH="$PWD/features/kickstart/data/bin:$PATH"
+
+message()
+{
+	printf 'MSG: %s\n' "$*"
+}
+
+verbose()
+{
+	local s="$*"
+	printf 'VERBOSE: %s\n' "${s//"$tmpdir"/TMPDIR}"
+}
+
+fatal()
+{
+	printf 'FATAL: %s\n' "$*"
+	exit 1
+}
+
+. kickstart-sh-functions
+. kickstart-sh-storage
+
+ks_datadir="$tmpdir/ks"
+ks_rootdir="$tmpdir/root"
+mkdir -p -- "$ks_datadir/fstab.d" "$ks_rootdir"
+verbose=""
+
+mkdir -p -- "$tmpdir/bin" "$tmpdir/sysbin"
+for cmd in cat find mkdir sha256sum sort; do
+	ln -sf "$(type -P "$cmd")" "$tmpdir/sysbin/$cmd"
+done
+
+export REAL_FINDMNT
+REAL_FINDMNT="$(type -P findmnt)"
+export ks_rootdir
+call_log="$tmpdir/calls.log"
+export call_log
+
+cat > "$tmpdir/bin/findmnt" <<'EOF'
+#!/bin/bash -eu
+has_v=0
+has_k=0
+for arg in "$@"; do
+	case "$arg" in
+		-F) exec "$REAL_FINDMNT" "$@" ;;
+		-v) has_v=1 ;;
+		-k) has_k=1 ;;
+	esac
+done
+if [ "$has_k" = 1 ]; then
+	[ "$has_v" = 1 ] || {
+		printf 'ERROR: findmnt -k called without -v\n' >&2
+		exit 1
+	}
+	printf '/dev/null %s ext4\n' "$ks_rootdir"
+	printf '/dev/zero %s/boot ext4\n' "$ks_rootdir"
+	exit 0
+fi
+exec "$REAL_FINDMNT" "$@"
+EOF
+chmod +x "$tmpdir/bin/findmnt"
+
+cat > "$tmpdir/bin/blkid" <<'EOF'
+#!/bin/bash -eu
+tag=""
+dev=""
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+		-s) shift; tag="$1" ;;
+		/dev/*) dev="$1" ;;
+	esac
+	shift
+done
+case "$tag:$dev" in
+	TYPE:/dev/null)    printf 'ext4\n' ;;
+	TYPE:/dev/zero)    printf 'ext4\n' ;;
+	UUID:/dev/null)    printf 'uuid-root\n' ;;
+	UUID:/dev/zero)    printf 'uuid-boot\n' ;;
+	UUID:/dev/full)    printf 'uuid-swap1\n' ;;
+	UUID:/dev/urandom) printf 'uuid-swap2\n' ;;
+	*) exit 2 ;;
+esac
+EOF
+chmod +x "$tmpdir/bin/blkid"
+
+cat > "$tmpdir/bin/mount" <<'EOF'
+#!/bin/bash -eu
+printf 'mount %s\n' "$*" >> "$call_log"
+EOF
+chmod +x "$tmpdir/bin/mount"
+
+cat > "$tmpdir/bin/umount" <<'EOF'
+#!/bin/bash -eu
+exit 0
+EOF
+chmod +x "$tmpdir/bin/umount"
+
+: > "$call_log"
+(
+	PATH="$tmpdir/bin:$tmpdir/sysbin"
+	ks_fstab /dev/null / ""
+	ks_fstab /dev/zero /boot "noatime"
+	ks_fstab /dev/full swap "" swap
+	ks_fstab /dev/urandom swap "sw,pri=10" swap
+	ks_mount
+)
+
+echo "=== mount calls ==="
+sed "s#$tmpdir#TMPDIR#g" "$call_log"
+
+echo "=== staging fstab ==="
+sed "s#$tmpdir#TMPDIR#g" "$ks_datadir/fstab" | sort
+
+echo "=== target etc/fstab ==="
+sed "s#$tmpdir#TMPDIR#g" "$ks_datadir/sysdata/etc/fstab" | sort

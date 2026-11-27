@@ -217,8 +217,25 @@ ks_block_devices()
 	eval "$retval=\"\$*\""
 }
 
+ks_fstab_source()
+{
+	local source="$1" value=
+
+	if [ -z "${source##/dev/*}" ] && [ -e "$source" ]; then
+		if   value="$(blkid -o value -s UUID  "$source")" && [ -n "$value" ]; then
+			source="UUID=$value"
+		elif value="$(blkid -o value -s LABEL "$source")" && [ -n "$value" ]; then
+			source="LABEL=$value"
+		fi
+	fi
+
+	printf '%s\n' "$source"
+}
+
 ks_mount()
 {
+	local mntpoint source target fstype options freq passno
+
 	[ -s "$ks_datadir/fstab" ] ||
 		return 0
 
@@ -226,7 +243,7 @@ ks_mount()
 
 	verbose "mounting destination ..."
 
-	findmnt -F "$ks_datadir/fstab" -n -o target | sort -d |
+	( findmnt -F "$ks_datadir/fstab" -t noswap -n -o target ||: ) | sort -d |
 	while read -r mntpoint; do
 		mkdir -p -- "$mntpoint"
 		mount $verbose -w -n --fstab="$ks_datadir/fstab" "$mntpoint"
@@ -234,33 +251,32 @@ ks_mount()
 
 	mkdir -p -- "$ks_datadir/sysdata/etc"
 
-	findmnt -v -l -k -n -R -o SOURCE,TARGET,FSTYPE "$ks_rootdir" |
-	while read -r source target fstype; do
-		freq=0 passno=0
+	{
+		( findmnt -v -l -k -n -R -o SOURCE,TARGET,FSTYPE "$ks_rootdir" ||: ) |
+		while read -r source target fstype; do
+			freq=0 passno=0
 
-		if [ "$target" = "$ks_rootdir" ]; then
-			freq=1 passno=1
-		fi
-
-		if [ -z "${source##/dev/*}" ] && [ -e "$source" ]; then
-			local value=
-
-			if   value="$(blkid -o value -s UUID  "$source")" && [ -n "$value" ]; then
-				source="UUID=$value"
-			elif value="$(blkid -o value -s LABEL "$source")" && [ -n "$value" ]; then
-				source="LABEL=$value"
+			if [ "$target" = "$ks_rootdir" ]; then
+				freq=1 passno=1
 			fi
-		fi
 
-		options="$(findmnt -n -F "$ks_datadir/fstab" -o OPTIONS "$target")"
-		options="${options:-defaults}"
+			source="$(ks_fstab_source "$source")"
 
-		target="${target#$ks_rootdir}"
-		target="${target:-/}"
+			options="$(findmnt -n -F "$ks_datadir/fstab" -o OPTIONS "$target")"
+			options="${options:-defaults}"
 
-		printf '%s\n' "$source $target $fstype $options $freq $passno"
+			target="${target#$ks_rootdir}"
+			target="${target:-/}"
 
-	done > "$ks_datadir/sysdata/etc/fstab"
+			printf '%s\n' "$source $target $fstype $options $freq $passno"
+		done
+
+		( findmnt -F "$ks_datadir/fstab" -t swap -n -o SOURCE,TARGET,FSTYPE,OPTIONS ||: ) |
+		while read -r source target fstype options; do
+			source="$(ks_fstab_source "$source")"
+			printf '%s\n' "$source $target $fstype ${options:-defaults} 0 0"
+		done
+	} > "$ks_datadir/sysdata/etc/fstab"
 }
 
 ks_sync()

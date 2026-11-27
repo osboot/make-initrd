@@ -1,0 +1,15 @@
+VERBOSE: mounting destination ...
+=== mount calls ===
+mount -w -n --fstab=TMPDIR/ks/fstab TMPDIR/root/
+mount -w -n --fstab=TMPDIR/ks/fstab TMPDIR/root/boot
+=== staging fstab ===
+/dev/full swap swap defaults 0 0
+/dev/null TMPDIR/root/ ext4 defaults 0 0
+/dev/urandom swap swap sw,pri=10 0 0
+/dev/zero TMPDIR/root/boot ext4 noatime 0 0
+=== target etc/fstab ===
+UUID=uuid-boot /boot ext4 noatime 0 0
+UUID=uuid-root / ext4 defaults 1 1
+UUID=uuid-swap1 swap swap defaults 0 0
+UUID=uuid-swap2 swap swap sw,pri=10 0 0
+rc=0

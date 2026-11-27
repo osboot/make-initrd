@@ -165,6 +165,7 @@ logvol()
 	fi
 
 	mntpoint="${1:-none}"
+	[ "$mntpoint" != "swap" ] || fstype="swap"
 
 	if [ -z "${mntpoint##/*}" ] && ks_is_mountpoint_exists "$mntpoint"; then
 		message "partition for \`$mntpoint' mountpoint already exists. Ignore."
@@ -257,6 +258,9 @@ logvol()
 	case "$mntpoint" in
 		/|/*)
 			ks_fstab "/dev/${partdev#/dev/}" "$mntpoint" "$fsoptions"
+			;;
+		swap)
+			ks_fstab "/dev/${partdev#/dev/}" "swap" "$fsoptions" "swap"
 			;;
 		none)
 			;;
