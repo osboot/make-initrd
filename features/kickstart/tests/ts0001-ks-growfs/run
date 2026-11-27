@@ -16,10 +16,9 @@ verbose()
 	printf 'VERBOSE: %s\n' "${s//"$tmpdir"/TMPDIR}"
 }
 
-eval "$(sed -n '/^ks_check_requires()/,/^}/p' features/kickstart/data/bin/kickstart)"
-
 PATH="$PWD/features/kickstart/data/bin:$PATH"
-. features/kickstart/data/bin/kickstart-sh-storage
+. kickstart-sh-functions
+. kickstart-sh-storage
 
 mkdir -p "$tmpdir/bin"
 call_log="$tmpdir/calls.log"

@@ -1,0 +1,529 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+if [ -z "${__kickstart_sh_functions-}" ]; then
+__kickstart_sh_functions=1
+
+KS_IGNORED='9999000000'
+KS_ORDERS=(
+	"$KS_IGNORED":autostep
+	"$KS_IGNORED":device
+	"$KS_IGNORED":deviceprobe
+	"$KS_IGNORED":dmraid
+	"$KS_IGNORED":install
+	"$KS_IGNORED":interactive
+	"$KS_IGNORED":langsupport
+	"$KS_IGNORED":method
+	"$KS_IGNORED":monitor
+	"$KS_IGNORED":mouse
+	"$KS_IGNORED":multipath
+	"$KS_IGNORED":upgrade
+	0000000000:cdrom
+	0000000000:cmdline
+	0000000000:driverdisk
+	0000000000:eula
+	0000000000:firstboot
+	0000000000:graphical
+	0000000000:harddrive
+	0000000000:hmc
+	0000000000:mediacheck
+	0000000000:module
+	0000000000:nfs
+	0000000000:nvdimm
+	0000000000:rescue
+	0000000000:snapshot
+	0000000000:text
+	0000000000:updates
+	0000000000:vnc
+	1000000000:ks_step_begin
+	2000000000:lang
+	2000000000:url
+	2100000000:ks_step_pre
+	3000000000:ignoredisk
+	3100000000:clearpart
+	3200000000:autopart
+	3200000000:reqpart
+	3300000000:btrfs
+	3300000000:crypto
+	3300000000:fcoe
+	3300000000:iscsi
+	3300000000:iscsiname
+	3300000000:logvol
+	3300000000:makefs
+	3300000000:part
+	3300000000:partition
+	3300000000:raid
+	3300000000:volgroup
+	3300000000:zerombr
+	3300000000:zfcp
+	3300000000:zipl
+	3300000000:zpool
+	3300000000:zfs
+	4000000000:ks_step_mount
+	5000000000:ks_step_pre_install
+	5100000000:liveimg
+	6000000000:repo
+	7000000000:ks_step_packages
+	8000000000:auth
+	8000000000:authconfig
+	8000000000:authselect
+	8000000000:bootloader
+	8000000000:firewall
+	8000000000:group
+	8000000000:keyboard
+	8000000000:logging
+	8000000000:network
+	8000000000:ostreesetup
+	8000000000:realm
+	8000000000:rootpw
+	8000000000:selinux
+	8000000000:services
+	8000000000:skipx
+	8000000000:sshkey
+	8000000000:sshpw
+	8000000000:timesource
+	8000000000:timezone
+	8000000000:user
+	8000000000:xconfig
+	9000000000:ks_step_sync
+	9100000000:ks_step_post
+	9200000000:halt
+	9200000000:poweroff
+	9200000000:reboot
+	9200000000:shutdown
+)
+
+# Based on systemd code.
+# https://github.com/systemd/systemd/blob/main/src/shared/blockdev-util.c#L359
+ks_valid_block_device()
+{
+	local syspath="$1"
+	local attr
+
+	[ -e "$syspath" ] ||
+		return 1
+
+	# With https://github.com/torvalds/linux/commit/a4217c6740dc64a3eb6815868a9260825e8c68c6 (v6.10,
+	# backported to v6.6+), the partscan status is directly exposed as
+	# 'partscan' sysattr.
+	if [ -r "$syspath/partscan" ]; then
+		readline attr "$syspath/partscan"
+
+		shell_var_is_yes "$attr" ||
+			return 1
+		return 0
+	fi
+
+	# For loopback block device, especially for v5.19 or newer. Even if this
+	# is enabled, we also need to check GENHD_FL_NO_PART flag through
+	# 'ext_range' and 'capability' sysfs attributes below.
+	if [ -r "$syspath/loop/partscan" ]; then
+		readline attr "$syspath/loop/partscan"
+
+		shell_var_is_yes "$attr" ||
+			return 1
+	fi
+
+	# With https://github.com/torvalds/linux/commit/1ebe2e5f9d68e94c524aba876f27b945669a7879 (v5.17),
+	# we can check the flag from 'ext_range' sysfs attribute directly.
+	#
+	# If the ext_range file doesn't exist then we are most likely looking at
+	# a partition block device, not the whole block device. And that means
+	# we have no partition scanning on for it (we do for its parent, but not
+	# for the partition itself).
+	[ -r "$syspath/ext_range" ] ||
+		return 1
+
+	readline attr "$syspath/ext_range"
+
+	# The value should be always positive, but the kernel uses '%d'
+	# for the attribute.
+	shell_var_is_number "$attr" ||
+		return 1
+
+	# With https://github.com/torvalds/linux/commit/e81cd5a983bb35dabd38ee472cf3fea1c63e0f23 (v6.3),
+	# the 'capability' sysfs attribute is deprecated, hence we cannot check
+	# flags from it.
+	if [ -r "$syspath/capability" ]; then
+		# With https://github.com/torvalds/linux/commit/430cc5d3ab4d0ba0bd011cfbb0035e46ba92920c (v5.17),
+		# the value of GENHD_FL_NO_PART is changed from 0x0200 to 0x0004
+		local GENHD_FL_NO_PART_v5_17=$(( 0x0200 ))
+		local GENHD_FL_NO_PART_v6_3=$((  0x0004 ))
+
+		readline attr "$syspath/capability"
+
+		# If one of the NO_PART flags is set, part scanning is
+		# definitely off.
+		shell_var_is_number "$attr" &&
+			[ "$(( $attr & ( $GENHD_FL_NO_PART_v5_17 | $GENHD_FL_NO_PART_v6_3 ) ))" -eq 0 ] ||
+			return 1
+	fi
+
+	# Otherwise, assume part scanning is on.
+	return 0
+}
+
+ks_list_devices()
+{
+	# Sort by full path to account for the PCI domain and bus number.
+	find /sys/dev/block -mindepth 1 -maxdepth 1 \
+		-exec readlink-e '{}' ';' 2>/dev/null |
+		sort -d
+}
+
+ks_block_devices()
+{
+	local retval="$1"
+	local majmin dev
+	local exclude=','
+
+	for majmin in $(findmnt -lno MAJ:MIN |sed -e '/^ *0:.*/d' |sort -u); do
+		dev="$(readlink-e "/sys/dev/block/$majmin" 2>/dev/null)" ||
+			continue
+		if [ -f "$dev/partition" ]; then
+			dev="${dev%/*}"
+			[ ! -r "$dev/dev" ] ||
+				readline majmin "$dev/dev"
+		fi
+		exclude="${exclude}${majmin},"
+	done
+
+	set --
+
+	for dev in $(ks_list_devices); do
+		readline majmin "$dev/dev"
+
+		[ -n "${exclude##*,$majmin,*}" ] ||
+			continue
+
+		case "$majmin" in
+			# 0       - Unnamed devices (e.g. non-device mounts)
+			# 1 block - RAM disk
+			# 4 block - Aliases for dynamically allocated major
+			#           devices to be used when its not possible to
+			#           create the real device nodes because the
+			#           root filesystem is mounted read-only.
+			0:*|1:*|4:*)
+				continue
+				;;
+		esac
+
+		ks_valid_block_device "$dev" ||
+			continue
+
+		set -- "$@" "${dev##*/}"
+	done
+
+	eval "$retval=\"\$*\""
+}
+
+ks_mount()
+{
+	[ -s "$ks_datadir/fstab" ] ||
+		return 0
+
+	umount -q -R "$ks_rootdir" ||:
+
+	verbose "mounting destination ..."
+
+	findmnt -F "$ks_datadir/fstab" -n -o target | sort -d |
+	while read -r mntpoint; do
+		mkdir -p -- "$mntpoint"
+		mount $verbose -w -n --fstab="$ks_datadir/fstab" "$mntpoint"
+	done
+
+	mkdir -p -- "$ks_datadir/sysdata/etc"
+
+	findmnt -v -l -k -n -R -o SOURCE,TARGET,FSTYPE "$ks_rootdir" |
+	while read -r source target fstype; do
+		freq=0 passno=0
+
+		if [ "$target" = "$ks_rootdir" ]; then
+			freq=1 passno=1
+		fi
+
+		if [ -z "${source##/dev/*}" ] && [ -e "$source" ]; then
+			local value=
+
+			if   value="$(blkid -o value -s UUID  "$source")" && [ -n "$value" ]; then
+				source="UUID=$value"
+			elif value="$(blkid -o value -s LABEL "$source")" && [ -n "$value" ]; then
+				source="LABEL=$value"
+			fi
+		fi
+
+		options="$(findmnt -n -F "$ks_datadir/fstab" -o OPTIONS "$target")"
+		options="${options:-defaults}"
+
+		target="${target#$ks_rootdir}"
+		target="${target:-/}"
+
+		printf '%s\n' "$source $target $fstype $options $freq $passno"
+
+	done > "$ks_datadir/sysdata/etc/fstab"
+}
+
+ks_sync()
+{
+	[ -d "$ks_datadir/sysdata" ] && mountpoint -q "$ks_rootdir" ||
+		return 0
+	rsync -abX --suffix=.ks -- "$ks_datadir/sysdata/" "$ks_rootdir/"
+}
+
+ks_begin=()
+ks_onerror=()
+ks_packages=()
+ks_post=()
+ks_pre=()
+ks_pre_install=()
+ks_traceback=()
+
+ks_run_section()
+{
+	local name="$1"; shift
+	local num="$1"; shift
+
+	local PROG TEMP str args
+	local erroronfail='' interpreter='bash' logfile='' nochroot=''
+
+	PROG="%$name"
+
+	declare -n "args=ks_$name"
+	quote_shell_args str "${args[$num]}"
+	eval "set -- \"$PROG\" $str"
+
+	TEMP=`getopt -n "$PROG" -l 'nochroot,erroronfail,interpreter:,log:,logfile:' -- "$@"` ||
+		return 1
+	eval set -- "$TEMP"
+
+	while :; do
+		case "$1" in
+			--) shift; break
+				;;
+			--nochroot)
+				nochroot=1
+				;;
+			--erroronfail)
+				erroronfail=1
+				;;
+			--interpreter) shift
+				message "use shebang to change interpreter"
+				interpreter="$1"
+				;;
+			--log|--logfile) shift
+				logfile="$1"
+				;;
+		esac
+		shift
+	done
+
+	set -- $interpreter
+
+	local msg="running $num script"
+
+	case "$nochroot$name" in
+		post)
+			set -- chroot "$ks_rootdir" "$@"
+			msg="$msg in chroot"
+			;;
+	esac
+
+	local script="$ks_datadir/ks:$name-$num"
+	local ret=0
+
+	# shellcheck disable=SC2016
+	verbose "$msg ${erroronfail:+and stop in case of failure }${logfile:+and log will be in '$logfile' }..."
+
+	if [ -n "$logfile" ]; then
+		"$@" < "$script" >"$logfile" 2>&1 ||
+			ret=1
+	else
+		"$@" < "$script" ||
+			ret=1
+	fi
+	[ -n "$erroronfail" ] ||
+		ret=0
+	return $ret
+}
+
+ks_run()
+{
+	local i max
+	eval "max=\${#ks_$1[@]}"
+	for (( i=0; $i < $max; i++ )); do
+		ks_run_section "$1" "$i" ||
+			return 1
+	done
+}
+
+ks_not_implemented()
+{
+	fatal "command $1 not implemented"
+}
+
+ks_check_requires()
+{
+	local kwd args typeof missing
+
+	typeof="$(declare -p "ks_requires_$1" 2>/dev/null)" && [ -z "${typeof##declare -a *}" ] ||
+		return 0
+
+	declare -n "args=ks_requires_$1"
+	missing=()
+
+	for kwd in "${args[@]}"; do
+		type -P "$kwd" &>/dev/null || missing+=("$kwd")
+	done
+
+	[ "${#missing[@]}" -gt 0 ] ||
+		return 0
+
+	message "command \`$1' requires utilities that are missing: ${missing[*]}"
+	return 1
+}
+
+ks_prepare_parser()
+{
+	local fn order
+
+	for fn in "${KS_ORDERS[@]}"; do
+		order="${fn%%:*}"
+		fn="${fn#*:}"
+
+		eval "ks_order_$fn=$order"
+
+		if [ "$order" = "$KS_IGNORED" ]; then
+			eval "$fn() { :; }"
+		elif [ "$(type -t "$fn")" != 'function' ]; then
+			eval "$fn() { ks_not_implemented \"\$FUNCNAME\"; }"
+		fi
+
+		KS_COMMANDS="$KS_COMMANDS$fn,"
+	done
+}
+
+ks_parse()
+{
+	local l eof='' args kwd num section="${section:-body}" cmdbase=0
+	while [ -z "$eof" ]; do
+		if [ "$section" = 'body' ]; then
+			# shellcheck disable=SC2162
+			IFS='' read l || eof=1
+
+			if [[ "$l" =~ [[:space:]]*([^[:space:]].*) ]]; then
+				l="${BASH_REMATCH[1]}"
+			fi
+		else
+			IFS='' read -r l || eof=1
+		fi
+
+		lineno=$(( $lineno + 1 ))
+
+		case "$l" in
+			'#'*|'')
+				[ "$section" != 'body' ] ||
+					continue
+				;;
+			'%include'|'%include '*)
+				quote_shell_args args "$l"
+				eval "set -- $args"
+				[ "$#" -ge 2 ] ||
+					fatal "lineno=$lineno: %include requires a filename"
+				ks_parse < "$2"
+				continue
+				;;
+			'%ksappend'|'%ksappend '*)
+				fatal "%ksappend directive is not supported"
+				;;
+			'%begin'|'%begin '*)
+				;;
+			'%onerror'|'%onerror '*)
+				;;
+			'%pre'|'%pre '*)
+				;;
+			'%post'|'%post '*)
+				;;
+			'%pre-install'|'%pre-install '*)
+				;;
+			'%packages'|'%packages '*)
+				;;
+			'%traceback'|'%traceback '*)
+				;;
+			'%end')
+				section='body'
+				continue
+				;;
+		esac
+
+		if [ "$section" = 'body' ]; then
+			set -- $l
+
+			if [ -n "$l" ] && [ -z "${l##%*}" ]; then
+				kwd="${1#%}"
+				kwd="${kwd//-/_}"
+				if ! typeof="$(declare -p "ks_$kwd" 2>/dev/null)" || [ -n "${typeof##declare -a *}" ]; then
+					fatal "lineno=$lineno: unknown section: %$kwd"
+				fi
+				declare -n "args=ks_$kwd"
+				num=${#args[@]}
+				section="$kwd-$num"
+				args+=("${l#"$1"}")
+				printf '#!/bin/bash -efu\n' > "$ks_datadir/ks:$section"
+				chmod +x "$ks_datadir/ks:$section"
+				continue
+			fi
+
+			if [ -n "${KS_COMMANDS##*,$1,*}" ]; then
+				message "lineno=$lineno: unknown command: $1"
+				continue
+			fi
+
+			ks_check_requires "$1" ||
+				exit 1
+
+			eval "cmdbase=\$ks_order_$1"
+		fi
+
+		if [ ! -f "$ks_datadir/ks:$section" ]; then
+			printf '#!/bin/bash -efu\n' > "$ks_datadir/ks:$section"
+			chmod +x "$ks_datadir/ks:$section"
+		fi
+
+		{
+			[ "$section" = 'body' ] &&
+				printf '%010d\t%s\n' "$(($lineno + $cmdbase))" "$l" ||
+				printf '%s\n' "$l"
+		} >> "$ks_datadir/ks:$section"
+	done
+}
+
+ks_parse_stream()
+{
+	local l step i=0 cmdbase=0 lineno=0
+	local KS_COMMANDS=','
+
+	ks_prepare_parser
+	ks_parse
+
+	for l in \
+		ks_step_begin \
+		ks_step_pre \
+		ks_step_mount \
+		ks_step_pre_install \
+		ks_step_packages \
+		ks_step_post \
+		ks_step_sync;
+	do
+		eval "cmdbase=\$ks_order_$l"
+		step="${l#ks_step_}"
+		if [ "$(type -t ks_$step)" != function ]; then
+			eval "$l() { ks_run \"$step\"; }"
+		else
+			eval "$l() { ks_$step; }"
+		fi
+		printf '%010d\t%s\n' "$(( $i + $cmdbase ))" "$l"
+		i=$(( $i + 1 ))
+	done >> "$ks_datadir/ks:body"
+}
+
+fi #__kickstart_sh_functions

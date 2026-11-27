@@ -4,7 +4,7 @@
 tmpdir="$(mktemp -d)"
 trap 'rm -rf -- "$tmpdir"' EXIT
 
-PATH="$PWD/external/libshell/upstream:$PATH"
+PATH="$PWD/external/libshell/upstream:$PWD/features/kickstart/data/bin:$PATH"
 . shell-quote
 
 message()
@@ -23,11 +23,7 @@ fatal()
 	exit 1
 }
 
-eval "$(sed -n \
-	-e '/^KS_IGNORED=/,/^)/p' \
-	-e '/^ks_begin=/,/^ks_parse_stream()/{ /^ks_parse_stream()/d; p; }' \
-	-e '/^ks_parse_stream()/,/^}/p' \
-	features/kickstart/data/bin/kickstart)"
+. kickstart-sh-functions
 
 ks_datadir="$tmpdir/ks"
 ks_rootdir="$tmpdir/root"
