@@ -6,12 +6,14 @@ trap 'rm -rf -- "$tmpdir"' EXIT
 
 message()
 {
-	printf 'MSG: %s\n' "$*"
+	local s="$*"
+	printf 'MSG: %s\n' "${s//"$tmpdir"/TMPDIR}"
 }
 
 verbose()
 {
-	printf 'VERBOSE: %s\n' "$*"
+	local s="$*"
+	printf 'VERBOSE: %s\n' "${s//"$tmpdir"/TMPDIR}"
 }
 
 eval "$(sed -n '/^ks_check_requires()/,/^}/p' features/kickstart/data/bin/kickstart)"
@@ -20,25 +22,52 @@ PATH="$PWD/features/kickstart/data/bin:$PATH"
 . features/kickstart/data/bin/kickstart-sh-storage
 
 mkdir -p "$tmpdir/bin"
+call_log="$tmpdir/calls.log"
+img="$tmpdir/disk.img"
 
 make_blkid_mock()
 {
-	local fstype="$1"
+	local content="$1"
 	cat > "$tmpdir/bin/blkid" <<-EOF
 	#!/bin/bash -eu
-	printf '%s\n' "$fstype"
+	printf '%b' "$content"
 	EOF
 	chmod +x "$tmpdir/bin/blkid"
 }
 
+make_fs_tool_mocks()
+{
+	local tool
+	ln -sf "$(type -P stat)" "$tmpdir/bin/stat"
+
+	for tool in e2fsck resize2fs xfs_growfs mount umount fsck.f2fs resize.f2fs; do
+		cat > "$tmpdir/bin/$tool" <<-EOF
+		#!/bin/bash -eu
+		printf '%s %s\n' "$tool" "\$*" >> "$call_log"
+		EOF
+		chmod +x "$tmpdir/bin/$tool"
+	done
+
+	cat > "$tmpdir/bin/yes" <<-'EOF'
+	#!/bin/bash -eu
+	printf 'y\n' || :
+	EOF
+	chmod +x "$tmpdir/bin/yes"
+}
+
 run_growfs_subshell()
 {
+	local dev="${1:-/dev/null}"
 	local rc=0
+	: > "$call_log"
 	(
 		PATH="$tmpdir/bin"
-		ks_growfs /dev/null
+		ks_growfs "$dev"
 	) || rc=$?
 	printf 'subtest_rc=%s\n' "$rc"
+	if [ -s "$call_log" ]; then
+		sed "s#$tmpdir#TMPDIR#g" "$call_log"
+	fi
 }
 
 # 1. Missing blkid
@@ -46,13 +75,57 @@ rm -f -- "$tmpdir/bin/blkid"
 run_growfs_subshell
 
 # 2. Missing ext4 tools
-make_blkid_mock ext4
+make_blkid_mock 'TYPE=ext4\n'
 run_growfs_subshell
 
 # 3. Missing xfs tools
-make_blkid_mock xfs
+make_blkid_mock 'TYPE=xfs\n'
 run_growfs_subshell
 
 # 4. Missing f2fs tools
-make_blkid_mock f2fs
+make_blkid_mock 'TYPE=f2fs\n'
 run_growfs_subshell
+
+make_fs_tool_mocks
+
+# 5. f2fs where FSSIZE == devsize -> skip fsck.f2fs and resize.f2fs
+truncate -s 40960 "$img"
+make_blkid_mock 'TYPE=f2fs\nFSBLOCKSIZE=4096\nFSSIZE=40960\n'
+run_growfs_subshell "$img"
+
+# 6. f2fs where devsize has a sub-block tail -> skip fsck.f2fs and resize.f2fs
+truncate -s 41472 "$img"
+make_blkid_mock 'TYPE=f2fs\nFSBLOCKSIZE=4096\nFSSIZE=40960\n'
+run_growfs_subshell "$img"
+
+# 7. f2fs where devsize is at least one FS block larger -> run fsck.f2fs and resize.f2fs
+truncate -s 45056 "$img"
+make_blkid_mock 'TYPE=f2fs\nFSBLOCKSIZE=4096\nFSSIZE=40960\n'
+run_growfs_subshell "$img"
+
+# 8. ext4 where FSLASTBLOCK*FSBLOCKSIZE == devsize -> skip e2fsck and resize2fs
+truncate -s 40960 "$img"
+make_blkid_mock 'TYPE=ext4\nFSBLOCKSIZE=4096\nFSLASTBLOCK=10\nFSSIZE=40960\n'
+run_growfs_subshell "$img"
+
+# 9. ext4 where FSLASTBLOCK*FSBLOCKSIZE < devsize -> run e2fsck and resize2fs
+truncate -s 45056 "$img"
+make_blkid_mock 'TYPE=ext4\nFSBLOCKSIZE=4096\nFSLASTBLOCK=10\nFSSIZE=40960\n'
+run_growfs_subshell "$img"
+
+# 10. xfs with internal journal (FSSIZE < devsize, but FSLASTBLOCK*FSBLOCKSIZE == devsize) -> skip
+truncate -s 40960 "$img"
+make_blkid_mock 'TYPE=xfs\nBLOCK_SIZE=512\nFSBLOCKSIZE=4096\nFSLASTBLOCK=10\nFSSIZE=32768\n'
+ks_datadir="$tmpdir/ksdata"
+mkdir -p "$ks_datadir"
+run_growfs_subshell "$img"
+
+# 11. xfs when grown (devsize > FSLASTBLOCK*FSBLOCKSIZE) -> run mount, xfs_growfs, umount
+truncate -s 45056 "$img"
+make_blkid_mock 'TYPE=xfs\nBLOCK_SIZE=512\nFSBLOCKSIZE=4096\nFSLASTBLOCK=10\nFSSIZE=32768\n'
+run_growfs_subshell "$img"
+
+# 12. Fallback when blkid does not emit FSSIZE -> run fsck.f2fs and resize.f2fs
+truncate -s 40960 "$img"
+make_blkid_mock 'TYPE=f2fs\n'
+run_growfs_subshell "$img"
