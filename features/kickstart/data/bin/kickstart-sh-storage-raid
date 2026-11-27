@@ -73,6 +73,7 @@ raid()
 	local mntpoint i num
 
 	mntpoint="$1"; shift
+	[ "$mntpoint" != "swap" ] || fstype="swap"
 
 	if [ -n "$mntpoint" ] && [ -z "${mntpoint##/*}" ] && ks_is_mountpoint_exists "$mntpoint"; then
 		message "partition for \`$mntpoint' mountpoint already exists. Ignore."
@@ -172,6 +173,9 @@ raid()
 	case "$mntpoint" in
 		/|/*)
 			ks_fstab "/dev/${dev#/dev/}" "$mntpoint" "$fsoptions"
+			;;
+		swap)
+			ks_fstab "/dev/${dev#/dev/}" "swap" "$fsoptions" "swap"
 			;;
 		none)
 			;;

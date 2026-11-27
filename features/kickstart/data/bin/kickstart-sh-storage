@@ -306,7 +306,7 @@ ks_is_mountpoint_exists()
 ks_requires_ks_fstab=("blkid" "sha256sum")
 ks_fstab()
 {
-	local fname dev mpoint fstype fsopts
+	local fname dev mpoint fstype fsopts target
 
 	ks_check_requires "${FUNCNAME[0]}" ||
 		return 1
@@ -320,10 +320,18 @@ ks_fstab()
 	else
 		fstype="$1"; shift
 	fi
-	fname="$(ks_mountpoint_name "$mpoint")"
+
+	if [ "$mpoint" = "swap" ] || [ "$fstype" = "swap" ]; then
+		fname="$(ks_mountpoint_name "swap:$dev")"
+		target="swap"
+		fstype="swap"
+	else
+		fname="$(ks_mountpoint_name "$mpoint")"
+		target="$ks_rootdir$mpoint"
+	fi
 
 	printf '%s %s %s %s 0 0\n' \
-		"$dev" "$ks_rootdir$mpoint" "$fstype" "${fsopts:-defaults}" \
+		"$dev" "$target" "$fstype" "${fsopts:-defaults}" \
 		> "$ks_datadir/fstab.d/$fname"
 
 	find "$ks_datadir/fstab.d" -type f -exec cat '{}' '+' \
@@ -1046,8 +1054,9 @@ part()
 			ks_fstab "/dev/${partdev#/dev/}" "$mntpoint" "$fsoptions"
 			;;
 		swap)
-			makefs "$partdev" "$@" --fstype=swap
-			ks_fstab "/dev/${partdev#/dev/}" "swap" "$fsoptions"
+			[ -n "$useexisting" ] ||
+				makefs "$partdev" "$@" --fstype=swap
+			ks_fstab "/dev/${partdev#/dev/}" "swap" "$fsoptions" "swap"
 			;;
 		none)
 			[ -n "$useexisting" ] ||
