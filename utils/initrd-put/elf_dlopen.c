@@ -20,6 +20,7 @@
 #include <json-c/json.h>
 #include <json-c/json_visit.h>
 
+#include "compiler.h"
 #include "cleanup.h"
 #include "temp_failure_retry.h"
 #include "memory.h"
@@ -148,6 +149,7 @@ static int resolve_soname(const char **soname, size_t len, char *outbuf)
 	pid_t pid;
 	void *handle _free_(dlclose) = NULL;
 	int ret = -1;
+	int status;
 
 	outbuf[0] = '\0';
 
@@ -196,7 +198,6 @@ static int resolve_soname(const char **soname, size_t len, char *outbuf)
 		}
 		ret = 0;
 out_parent:
-		int status;
 		if (waitpid_retry(pid, &status, 0) < 0)
 			warn("waitpid");
 
@@ -260,8 +261,8 @@ out_child:
 	exit(ret);
 }
 
-static int visit_userfunc(json_object *jso, int flags, json_object *,
-                          const char *, size_t *, void *userarg)
+static int visit_userfunc(json_object *jso, int flags, json_object *parent _maybe_unused_,
+                          const char *key _maybe_unused_, size_t *index _maybe_unused_, void *userarg)
 {
 	struct visit_data *data = userarg;
 
