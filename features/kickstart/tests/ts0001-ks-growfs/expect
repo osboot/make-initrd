@@ -10,4 +10,37 @@ subtest_rc=1
 MSG: command: ks_growfs /dev/null
 MSG: command `ks_growfs_f2fs' requires utilities that are missing: fsck.f2fs resize.f2fs yes
 subtest_rc=1
+MSG: command: ks_growfs TMPDIR/disk.img
+VERBOSE: Filesystem on TMPDIR/disk.img already fills the device, skipping resize
+subtest_rc=0
+MSG: command: ks_growfs TMPDIR/disk.img
+VERBOSE: Filesystem on TMPDIR/disk.img already fills the device, skipping resize
+subtest_rc=0
+MSG: command: ks_growfs TMPDIR/disk.img
+VERBOSE: Increase filesystem to partition size: TMPDIR/disk.img
+subtest_rc=0
+fsck.f2fs -p -f TMPDIR/disk.img
+resize.f2fs TMPDIR/disk.img
+MSG: command: ks_growfs TMPDIR/disk.img
+VERBOSE: Filesystem on TMPDIR/disk.img already fills the device, skipping resize
+subtest_rc=0
+MSG: command: ks_growfs TMPDIR/disk.img
+VERBOSE: Increase filesystem to partition size: TMPDIR/disk.img
+subtest_rc=0
+e2fsck -y -p -f TMPDIR/disk.img
+resize2fs -f TMPDIR/disk.img
+MSG: command: ks_growfs TMPDIR/disk.img
+VERBOSE: Filesystem on TMPDIR/disk.img already fills the device, skipping resize
+subtest_rc=0
+MSG: command: ks_growfs TMPDIR/disk.img
+VERBOSE: Increase filesystem to partition size: TMPDIR/disk.img
+subtest_rc=0
+mount -n -o rw,X-mount.mkdir TMPDIR/disk.img TMPDIR/ksdata/xfs.dir
+xfs_growfs TMPDIR/ksdata/xfs.dir
+umount -f TMPDIR/ksdata/xfs.dir
+MSG: command: ks_growfs TMPDIR/disk.img
+VERBOSE: Increase filesystem to partition size: TMPDIR/disk.img
+subtest_rc=0
+fsck.f2fs -p -f TMPDIR/disk.img
+resize.f2fs TMPDIR/disk.img
 rc=0

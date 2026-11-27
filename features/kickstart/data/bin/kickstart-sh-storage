@@ -552,10 +552,67 @@ ks_requires_ks_growfs=("blkid")
 ks_requires_ks_growfs_ext4=("e2fsck" "resize2fs")
 ks_requires_ks_growfs_xfs=("xfs_growfs" "mount" "umount")
 ks_requires_ks_growfs_f2fs=("fsck.f2fs" "resize.f2fs" "yes")
+
+ks_dev_bytes()
+{
+	local dev="$1" majmin sectors
+
+	if [ -b "$dev" ]; then
+		majmin="$(get_majmin "$dev")" &&
+			[ -r "/sys/dev/block/$majmin/size" ] &&
+			read -r sectors < "/sys/dev/block/$majmin/size" ||
+			return 1
+		printf '%s\n' "$(( sectors * 512 ))"
+		return 0
+	fi
+
+	if [ -f "$dev" ]; then
+		stat -L -c '%s' "$dev" 2>/dev/null ||
+			return 1
+		return 0
+	fi
+
+	return 1
+}
+
+ks_fs_fills_dev()
+{
+	local devsize="$1" fssize="$2" fslastblock="$3"
+	local fsblocksize="$4" blocksize="$5" bsize
+
+	case "$devsize" in
+		''|*[!0-9]*) return 1 ;;
+	esac
+	[ "$devsize" -gt 0 ] ||
+		return 1
+
+	if [ -n "$fslastblock" ] && [ -n "$fsblocksize" ]; then
+		case "$fslastblock:$fsblocksize" in
+			*[!0-9:]*) return 1 ;;
+		esac
+		[ "$fslastblock" -gt 0 ] && [ "$fsblocksize" -gt 0 ] ||
+			return 1
+		[ "$(( 10#$devsize / 10#$fsblocksize ))" -le "$(( 10#$fslastblock ))" ]
+		return
+	fi
+
+	bsize="${fsblocksize:-${blocksize:-1}}"
+	case "$fssize:$bsize" in
+		*[!0-9:]*) return 1 ;;
+	esac
+	[ -n "$fssize" ] && [ -n "$bsize" ] &&
+		[ "$fssize" -gt 0 ] && [ "$bsize" -gt 0 ] ||
+		return 1
+
+	[ "$(( 10#$devsize / 10#$bsize ))" -le "$(( 10#$fssize / 10#$bsize ))" ]
+}
+
 ks_growfs()
 {
 	local PROG
-	local fs="" requires="" ret=0 rc=0
+	local probe="" k="" v=""
+	local fs="" fssize="" fslastblock="" fsblocksize="" blocksize="" devsize=""
+	local requires="" ret=0 rc=0
 
 	PROG="kickstart"
 	message "command: ${FUNCNAME[0]} $*"
@@ -563,8 +620,18 @@ ks_growfs()
 	ks_check_requires "${FUNCNAME[0]}" ||
 		return 1
 
-	fs="$(blkid --output value --match-tag TYPE -c /dev/null "$1")" ||
+	probe="$(blkid -p -u filesystem -o export "$1" 2>/dev/null)" ||
 		return 0
+
+	while IFS='=' read -r k v; do
+		case "$k" in
+			TYPE)        fs="$v" ;;
+			FSSIZE)      fssize="$v" ;;
+			FSLASTBLOCK) fslastblock="$v" ;;
+			FSBLOCKSIZE) fsblocksize="$v" ;;
+			BLOCK_SIZE)  blocksize="$v" ;;
+		esac
+	done <<< "$probe"
 
 	case "$fs" in
 		ext*) requires="ks_growfs_ext4" ;;
@@ -578,6 +645,12 @@ ks_growfs()
 
 	ks_check_requires "$requires" ||
 		return 1
+
+	if devsize="$(ks_dev_bytes "$1")" &&
+	   ks_fs_fills_dev "$devsize" "$fssize" "$fslastblock" "$fsblocksize" "$blocksize"; then
+		verbose "Filesystem on $1 already fills the device, skipping resize"
+		return 0
+	fi
 
 	verbose "Increase filesystem to partition size: $1"
 
