@@ -37,11 +37,15 @@ btrfs()
 				;;
 			--data) shift
 				data="${1,,}"
-				data="${data#raid}"
+				case "$data" in
+					0|1|1c*|5|6|10) data="raid$data" ;;
+				esac
 				;;
 			--metadata) shift
 				metadata="${1,,}"
-				metadata="${metadata#raid}"
+				case "$metadata" in
+					0|1|1c*|5|6|10) metadata="raid$metadata" ;;
+				esac
 				;;
 			*)
 				shift_args=0
@@ -101,8 +105,8 @@ btrfs()
 		if [ -z "$subvol" ]; then
 			wipefs -qfa "$@" ||:
 			mkfs.btrfs -q -f \
-				${data:+--data "raid$data"} \
-				${metadata:+--metadata "raid$metadata"} \
+				${data:+--data "$data"} \
+				${metadata:+--metadata "$metadata"} \
 				${label:+--label "$label"} \
 				"$@" ||
 				ret=1
