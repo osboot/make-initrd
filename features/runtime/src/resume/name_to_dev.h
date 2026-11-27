@@ -3,15 +3,15 @@
 
 #include <sys/sysmacros.h>
 
-#define __makedev(__ma, __mi) \
-	((((__ma) & 0xfff) << 8)|((__mi) & 0xff)|(((__mi) & 0xfff00) << 12))
+#define RD_MAKEDEV(ma, mi) \
+	((((ma) & 0xfff) << 8)|((mi) & 0xff)|(((mi) & 0xfff00) << 12))
 
-#define	Root_RAM0	__makedev(1, 0)
+#define	Root_RAM0	RD_MAKEDEV(1, 0)
 
 /* These device numbers are only used internally */
-#define Root_NFS	__makedev(0, 255)
-#define Root_MTD	__makedev(0, 254)
-#define Root_MULTI	__makedev(0, 253)
+#define Root_NFS	RD_MAKEDEV(0, 255)
+#define Root_MTD	RD_MAKEDEV(0, 254)
+#define Root_MULTI	RD_MAKEDEV(0, 253)
 
 dev_t name_to_dev_t(const char *name);
 
