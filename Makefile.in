@@ -123,6 +123,7 @@ get_objects = $(foreach name,$(filter %.c,$(1)),$(OBJDIR)/$(patsubst $(srcdir)/%
 quiet_cmd   = $(if $(VERBOSE),$(3),$(Q)printf "  %-08s%s\n" "$(1)" $(2); $(3))
 
 PATH = $(CURDIR)/$(dest_sbindir):$(CURDIR)/$(dest_bindir):$(shell echo $$PATH)
+CC = @CC@
 CFLAGS = @CFLAGS@ \
 	-Wall -Wextra -W -Wshadow -Wcast-align \
 	-Wwrite-strings -Wconversion -Waggregate-return -Wstrict-prototypes \
