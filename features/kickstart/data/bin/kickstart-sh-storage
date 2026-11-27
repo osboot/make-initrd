@@ -116,7 +116,7 @@ ignoredisk()
 ks_requires_clearpart=("findmnt" "wipefs" "sfdisk" "umount")
 clearpart()
 {
-	local PROG TEMP dev devname num partnum skipped
+	local PROG TEMP dev devname num partnum skipped dropped
 	local all='' disks='' list='' initlabel=''
 
 	PROG="kickstart"
@@ -182,6 +182,7 @@ clearpart()
 
 	for dev in $disks; do
 		skipped=0
+		dropped=0
 		num=0
 		for devname in $(sfdisk -d "/dev/$dev" | sed -n -e 's,^/dev/\([^[:space:]]\+[0-9]\+\) : .*,\1,p' | tac); do
 			num=$(( $num + 1 ))
@@ -212,6 +213,9 @@ clearpart()
 			dropped=1
 		done
 
+		[ "$dropped" = 0 ] ||
+			ks_udev_settle
+
 		[ -n "$initlabel" ] ||
 			continue
 
@@ -225,6 +229,8 @@ clearpart()
 		echo "label: $DISKLABEL" |
 			sfdisk -q -w always "/dev/$dev" ||
 			return 1
+
+		ks_udev_settle
 	done
 }
 
@@ -414,7 +420,10 @@ makefs()
 		fat|vfat) mkfs."$fstype" ${label:+-n "$label"} "/dev/$dev" >/dev/null ;;
 		f2fs) "mkfs.$fstype" -q ${label:+-l "$label"} "/dev/$dev" ;;
 		*) "mkfs.$fstype" -q ${label:+-L "$label"} "/dev/$dev" ;;
-	esac
+	esac ||
+		return 1
+
+	ks_udev_settle
 }
 
 getopt_crypto='cipher:,passphrase:,passfile:,pbkdf:,pbkdf-memory:,pbkdf-time:,pbkdf-iterations:'
@@ -542,6 +551,8 @@ crypto()
 			message "unable to open luks device: /dev/$dev"
 			return 1
 		}
+
+	ks_udev_settle
 
 	ks_add_umount_hook ks_crypto_umount "$crypt_name"
 
@@ -1055,6 +1066,8 @@ part()
 				sfdisk -q -W always --append "/dev/$dev" ||
 				break
 
+			ks_udev_settle
+
 			readarray -t prev_parttable <<< "$(sfdisk -d "/dev/$dev" | grep ^/dev/)"
 		fi
 
@@ -1069,6 +1082,8 @@ part()
 			message "unable to create partition"
 			return 1
 		fi
+
+		ks_udev_settle
 
 		readarray -t curr_parttable <<< "$(sfdisk -d "/dev/$dev" | grep ^/dev/)"
 
@@ -1135,7 +1150,10 @@ part()
 			verbose "increasing partition /dev/$partdev"
 
 			printf ', %s\n' "$size" |
-				sfdisk -q -N "$partnum" "/dev/$dev"
+				sfdisk -q -N "$partnum" "/dev/$dev" ||
+				return 1
+
+			ks_udev_settle
 		fi
 		ks_growfs "/dev/$partdev"
 	fi
@@ -1169,8 +1187,10 @@ part()
 		partdev="mapper/$crypt_name"
 	fi
 
-	[ ! -d "$ks_datadir/part/$dev/start" ] ||
+	if [ -d "$ks_datadir/part/$dev/start" ]; then
 		find "$ks_datadir/part/$dev/start" -type f -executable -exec '{}' ';'
+		ks_udev_settle
+	fi
 
 	quote_shell_args makefs_args "$makefs_args"
 	eval "set -- $makefs_args"

@@ -115,7 +115,7 @@ else
 	ks_parse_stream
 fi
 
-udevadm settle --timeout=3 ||:
+ks_udev_settle
 
 # Final reorder
 sort -g -k1,1 "$ks_datadir/ks:body" |

@@ -110,6 +110,8 @@ btrfs()
 				${label:+--label "$label"} \
 				"$@" ||
 				ret=1
+			[ "$ret" != 0 ] ||
+				ks_udev_settle
 		else
 			if [ -z "$name" ]; then
 				message "name of subvolume required."
