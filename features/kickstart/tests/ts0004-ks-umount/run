@@ -24,6 +24,7 @@ fatal()
 }
 
 . kickstart-sh-functions
+. kickstart-sh-storage
 . kickstart-sh-postinstall
 
 mkdir -p -- "$tmpdir/bin" "$tmpdir/sysbin" "$tmpdir/root"
@@ -101,3 +102,10 @@ make_log_mock mountpoint 0
 ks_add_umount_hook dummy_hook first "with space"
 ks_add_umount_hook dummy_hook second arg2
 run_test shutdown
+
+# 5. LUKS/crypto umount hook
+echo "=== ks_crypto_umount ==="
+make_log_mock cryptsetup 0
+ks_umount_hooks=()
+ks_add_umount_hook ks_crypto_umount sda2_crypt
+run_test ks_umount
