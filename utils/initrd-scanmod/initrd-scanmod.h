@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef _INITRD_SCANMOD_H_
-#define _INITRD_SCANMOD_H_
+#ifndef MKRD_INITRD_SCANMOD_H
+#define MKRD_INITRD_SCANMOD_H
 
 #include <sys/types.h>
 #include <regex.h>
@@ -12,12 +12,11 @@ extern int verbose;
 extern int jobs;
 
 // findmodule-common.c
-void *xmalloc(size_t size);
-void *xrealloc(void *ptr, size_t nmemb, size_t elem_size);
-void *xcalloc(size_t nmemb, size_t size);
-void *xfree(void *ptr);
-int xasprintf(char **ptr, const char *fmt, ...) __printf(2, 3) __nonnull(2);
-char *xstrdup(const char *s) __nonnull(1);
+void *xmalloc(size_t size) _alloc_(1) _returns_nonnull_ _must_check_;
+void *xrealloc(void *ptr, size_t nmemb, size_t elem_size) _alloc_(2, 3) _returns_nonnull_ _must_check_;
+void *xcalloc(size_t nmemb, size_t size) _alloc_(1, 2) _returns_nonnull_ _must_check_;
+int xasprintf(char **ptr, const char *fmt, ...) _printf_(2, 3) _wronly_ptr_(1) _nonnull_(2);
+char *xstrdup(const char *s) _nonnull_(1) _returns_nonnull_ _must_check_;
 
 // findmodule-rules.c
 #define RULESET_HAS_INFO 1
@@ -58,7 +57,7 @@ struct rule_pair {
 	regex_t *value;
 };
 
-void parse_rules(int n_files, char **files);
+void parse_rules(int n_files, char **files) _access_(read_only, 2, 1);
 void free_rules(void);
 
 // findmodule-file.c
@@ -69,10 +68,10 @@ struct mapfile {
 	char *map;
 };
 
-int open_map(const char *filename, struct mapfile *f, int quiet) __nonnull(1, 2);
-void close_map(struct mapfile *f) __nonnull(1);
+int open_map(const char *filename, struct mapfile *f, int quiet) _rdonly_ptr_(1) _wronly_ptr_(2);
+void close_map(struct mapfile *f) _rdwr_ptr_(1);
 
 // findmodule-walk.c
 void find_modules(const char *kerneldir);
 
-#endif /* _INITRD_SCANMOD_H_ */
+#endif /* MKRD_INITRD_SCANMOD_H */

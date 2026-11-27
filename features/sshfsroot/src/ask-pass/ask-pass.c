@@ -10,15 +10,17 @@
 #include <string.h>
 #include <errno.h>
 
-void get_password(char **password, FILE *stream);
+#include "cleanup.h"
+
+void get_password(char **password, FILE *stream) _wronly_ptr_(1) _nonnull_(2);
 
 int main(int argc, char *argv[])
 {
-	char *password;
-	FILE *console;
+	char *password _free_(free) = NULL;
+	FILE *console _free_(fclose) = NULL;
 
 	fclose(stdin);
-	console=fopen("/dev/console", "a+");
+	console = fopen("/dev/console", "a+");
 
 	if (console == NULL) {
 		fprintf(stderr, "ask-pass error: Can't open /dev/console: %s\n", strerror(errno));
@@ -31,13 +33,10 @@ int main(int argc, char *argv[])
 
 	get_password(&password, console);
 
-	fclose(console);
-
 	if (password == NULL)
 		return 1;
 
 	printf("%s", password);
-	free(password);
 
 	return 0;
 }
@@ -64,8 +63,7 @@ void get_password(char **password, FILE *stream)
 
 	if (getline(password, &n, stream) == -1) {
 		fprintf(stream, "ask-pin error: Can't read password from stream: %s\n", strerror(errno));
-		free(*password);
-		*password=NULL;
+		*password = mfree(*password);
 	}
 
 	/*resetting our old stream*/

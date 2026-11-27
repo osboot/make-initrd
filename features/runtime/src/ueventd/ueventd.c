@@ -28,6 +28,7 @@
 #include "rd/logging.h"
 #include "rd/uevent.h"
 #include "ueventd.h"
+#include "runtime.h"
 
 #define DEFAULT_LOGFILE "/var/log/ueventd.log"
 
@@ -74,26 +75,26 @@ static int timer_changed = 0;
 #define EV_TIMER_MASK (IN_CLOSE_WRITE | IN_MOVED_TO | IN_DELETE_SELF)
 #define EV_MAX        (FD_MAX * 32)
 
-static int add_queue_dir(int inotifyfd, const char *path, uint32_t mask) __nonnull(2);
+static int add_queue_dir(int inotifyfd, const char *path, uint32_t mask) _nonnull_(2);
 static void watch_pauses(int inotifyfd);
 static void watch_queues(int inotifyfd);
 static void watch_timer_queues(int inotifyfd);
-static int watch_path(int inotifyfd, const char *dir, const char *name, uint32_t mask, int flags) __nonnull(2, 3);
+static int watch_path(int inotifyfd, const char *dir, const char *name, uint32_t mask, int flags) _nonnull_(2, 3);
 static int unwatch_path(int inotifyfd, ino_t ino);
 static void apply_pause(void);
 static int process_signal_events(int signfd);
 static int process_inotify_events(int inotifyfd);
 static int process_pipefd_events(int readfd);
 static int process_timerfd_events(int timerfd);
-static void setup_signal_fd(struct fd_handler *el)          __nonnull(1);
-static void setup_inotify_fd(struct fd_handler *el)         __nonnull(1);
-static void setup_pipe_fd(struct fd_handler *el)            __nonnull(1);
-static void setup_timer_fd(struct fd_handler *el)           __nonnull(1);
+static void setup_signal_fd(struct fd_handler *el)          _nonnull_(1);
+static void setup_inotify_fd(struct fd_handler *el)         _nonnull_(1);
+static void setup_pipe_fd(struct fd_handler *el)            _nonnull_(1);
+static void setup_timer_fd(struct fd_handler *el)           _nonnull_(1);
 static int setup_epoll_fd(struct fd_handler list[FD_MAX]);
-static pid_t spawn_worker(int epollfd, struct watch *queue) __nonnull(2);
+static pid_t spawn_worker(int epollfd, struct watch *queue) _nonnull_(2);
 static void update_timerfd(int inotifyfd, int timerfd);
-static struct watch *find_queue_watch(const char *name)     __nonnull(1);
-static void mark_queue_dirty(struct watch *queue)           __nonnull(1);
+static struct watch *find_queue_watch(const char *name)     _nonnull_(1);
+static void mark_queue_dirty(struct watch *queue)           _nonnull_(1);
 
 int add_queue_dir(int inotifyfd, const char *path, uint32_t mask)
 {
@@ -115,7 +116,7 @@ int watch_path(int inotifyfd, const char *dir, const char *name, uint32_t mask, 
 	struct stat st;
 	struct watch *new = NULL;
 
-	char *path __free(free) = rd_asprintf_or_die("%s/%s", dir, name);
+	char *path _free_(free) = rd_asprintf_or_die("%s/%s", dir, name);
 
 	int wfd = add_queue_dir(inotifyfd, path, mask);
 	if (wfd < 0)
@@ -136,14 +137,14 @@ int watch_path(int inotifyfd, const char *dir, const char *name, uint32_t mask, 
 	new->next      = watch_list;
 
 	if (flags & F_QUEUE_DIR) {
-		if (!empty_directory(path)) {
+		if (!rd_empty_directory(path)) {
 			new->q_flags |= F_DIRTY;
 			dirty_queues++;
 		}
 		new->q_parentfd = pipefd[PIPE_WRITE];
 	}
 
-	if ((flags & F_TIMER_DIR) && !empty_directory(path))
+	if ((flags & F_TIMER_DIR) && !rd_empty_directory(path))
 		timer_changed = 1;
 
 	if (pause_all)
@@ -186,7 +187,7 @@ int unwatch_path(int inotifyfd, ino_t ino)
 
 void watch_pauses(int inotifyfd)
 {
-	char *path __free(free) = rd_asprintf_or_die("%s/queue/pause", uevent_confdb);
+	char *path _free_(free) = rd_asprintf_or_die("%s/queue/pause", uevent_confdb);
 
 	if (watch_path(inotifyfd, path, ".", EV_PAUSE_MASK, F_PAUSE_DIR) < 0)
 		exit(EXIT_FAILURE);
@@ -195,8 +196,8 @@ void watch_pauses(int inotifyfd)
 void apply_pause(void)
 {
 	struct watch *p;
-	char *path __free(free) = rd_asprintf_or_die("%s/queue/pause", uevent_confdb);
-	DIR *dir __free(closedir) = xopendir(path);
+	char *path _free_(free) = rd_asprintf_or_die("%s/queue/pause", uevent_confdb);
+	DIR *dir _free_(closedir) = rd_opendir_or_die(path);
 
 	pause_all = 0;
 
@@ -207,8 +208,8 @@ void apply_pause(void)
 
 	struct dirent *ent;
 
-	while ((ent = xreaddir(dir, path)) != NULL) {
-		if (ent->d_type != DT_DIR || is_dot_dir(ent))
+	while ((ent = rd_readdir_or_die(dir, path)) != NULL) {
+		if (ent->d_type != DT_DIR || rd_is_dot_dir(ent))
 			continue;
 
 		if (!strcmp(ent->d_name, ".all"))
@@ -227,14 +228,14 @@ void apply_pause(void)
 
 void watch_queues(int inotifyfd)
 {
-	DIR *dir __free(closedir) = opendir(filter_dir);
+	DIR *dir _free_(closedir) = opendir(filter_dir);
 	if (!dir)
 		rd_fatal("opendir: %s: %m", filter_dir);
 
 	struct dirent *ent;
 
-	while ((ent = xreaddir(dir, filter_dir)) != NULL) {
-		if (ent->d_type != DT_DIR || is_dot_dir(ent))
+	while ((ent = rd_readdir_or_die(dir, filter_dir)) != NULL) {
+		if (ent->d_type != DT_DIR || rd_is_dot_dir(ent))
 			continue;
 
 		if (watch_path(inotifyfd, filter_dir, ent->d_name, EV_QUEUE_MASK, F_QUEUE_DIR) < 0)
@@ -244,14 +245,14 @@ void watch_queues(int inotifyfd)
 
 void watch_timer_queues(int inotifyfd)
 {
-	DIR *dir __free(closedir) = opendir(timer_dir);
+	DIR *dir _free_(closedir) = opendir(timer_dir);
 	if (!dir)
 		rd_fatal("opendir: %s: %m", timer_dir);
 
 	struct dirent *ent;
 
-	while ((ent = xreaddir(dir, timer_dir)) != NULL) {
-		if (ent->d_type != DT_DIR || is_dot_dir(ent))
+	while ((ent = rd_readdir_or_die(dir, timer_dir)) != NULL) {
+		if (ent->d_type != DT_DIR || rd_is_dot_dir(ent))
 			continue;
 
 		if (watch_path(inotifyfd, timer_dir, ent->d_name, EV_TIMER_MASK, F_TIMER_DIR) < 0)
@@ -294,8 +295,8 @@ static unsigned long long parse_timer_due(const char *name)
 
 static void ensure_queue_dir(int inotifyfd, const char *name)
 {
-	char *path __free(free) = rd_asprintf_or_die("%s/%s", filter_dir, name);
-	char *tmp __free(free) = rd_asprintf_or_die("%s/.tmp", path);
+	char *path _free_(free) = rd_asprintf_or_die("%s/%s", filter_dir, name);
+	char *tmp _free_(free) = rd_asprintf_or_die("%s/.tmp", path);
 
 	if (mkdir(path, 0755) < 0 && errno != EEXIST)
 		rd_fatal("mkdir: %s: %m", path);
@@ -318,8 +319,8 @@ static void move_timer_event(int inotifyfd, const char *queue_name, const char *
 
 	ensure_queue_dir(inotifyfd, queue_name);
 
-	char *src __free(free) = rd_asprintf_or_die("%s/%s", qpath, timer_name);
-	char *dst __free(free) = rd_asprintf_or_die("%s/%s/%s", filter_dir, queue_name, event_name);
+	char *src _free_(free) = rd_asprintf_or_die("%s/%s", qpath, timer_name);
+	char *dst _free_(free) = rd_asprintf_or_die("%s/%s/%s", filter_dir, queue_name, event_name);
 
 	if (rename(src, dst) < 0) {
 		if (errno != ENOENT)
@@ -341,20 +342,20 @@ void update_timerfd(int inotifyfd, int timerfd)
 	if (clock_gettime(CLOCK_BOOTTIME, &now) < 0)
 		rd_fatal("clock_gettime(CLOCK_BOOTTIME): %m");
 
-	DIR *dir __free(closedir) = opendir(timer_dir);
+	DIR *dir _free_(closedir) = opendir(timer_dir);
 	if (!dir)
 		rd_fatal("opendir: %s: %m", timer_dir);
 
-	while ((queue_ent = xreaddir(dir, timer_dir)) != NULL) {
+	while ((queue_ent = rd_readdir_or_die(dir, timer_dir)) != NULL) {
 		struct dirent *timer_ent;
 
-		if (queue_ent->d_type != DT_DIR || is_dot_dir(queue_ent))
+		if (queue_ent->d_type != DT_DIR || rd_is_dot_dir(queue_ent))
 			continue;
 
-		char *qpath __free(free) = rd_asprintf_or_die("%s/%s", timer_dir, queue_ent->d_name);
-		DIR *qdir __free(closedir) = xopendir(qpath);
+		char *qpath _free_(free) = rd_asprintf_or_die("%s/%s", timer_dir, queue_ent->d_name);
+		DIR *qdir _free_(closedir) = rd_opendir_or_die(qpath);
 
-		while ((timer_ent = xreaddir(qdir, qpath)) != NULL) {
+		while ((timer_ent = rd_readdir_or_die(qdir, qpath)) != NULL) {
 			unsigned long long due;
 
 			if (timer_ent->d_name[0] == '.' || timer_ent->d_type != DT_REG)
@@ -389,7 +390,7 @@ int process_signal_events(int signfd)
 	struct signalfd_siginfo fdsi = { 0 };
 	ssize_t size;
 
-	size = read_retry(signfd, &fdsi, sizeof(fdsi));
+	size = rd_read_retry(signfd, &fdsi, sizeof(fdsi));
 	if (size != sizeof(fdsi)) {
 		rd_err("unable to read signal info");
 		return 0;
@@ -399,7 +400,7 @@ int process_signal_events(int signfd)
 		while (1) {
 			int wstatus = 0;
 			int found = 0;
-			pid_t pid = waitpid_retry(-1, &wstatus, WNOHANG);
+			pid_t pid = rd_waitpid_retry(-1, &wstatus, WNOHANG);
 
 			if (pid <= 0) {
 				if (pid < 0 && errno != ECHILD) {
@@ -449,10 +450,10 @@ void setup_signal_fd(struct fd_handler *el)
 
 int process_inotify_events(int inotifyfd)
 {
-	char buf[4096] __attribute__ ((aligned(__alignof__(struct inotify_event))));
+	char buf[4096] _alignas_(struct inotify_event);
 
 	while (1) {
-		ssize_t len = read_retry(inotifyfd, buf, sizeof(buf));
+		ssize_t len = rd_read_retry(inotifyfd, buf, sizeof(buf));
 
 		if (len < 0) {
 			if (errno == EAGAIN)
@@ -529,7 +530,7 @@ int process_pipefd_events(int readfd)
 		int value = 0;
 
 		errno = 0;
-		len = read_retry(readfd, &value, sizeof(value));
+		len = rd_read_retry(readfd, &value, sizeof(value));
 
 		if (len < 0) {
 			if (errno == EAGAIN)
@@ -567,7 +568,7 @@ int process_timerfd_events(int timerfd)
 	uint64_t expirations;
 	ssize_t len;
 
-	len = read_retry(timerfd, &expirations, sizeof(expirations));
+	len = rd_read_retry(timerfd, &expirations, sizeof(expirations));
 	if (len < 0) {
 		if (errno == EAGAIN)
 			return 0;
@@ -638,7 +639,7 @@ pid_t spawn_worker(int epollfd, struct watch *queue)
 	return 0;
 }
 
-int main(int argc, char **argv)
+int ueventd_main(int argc, char **argv)
 {
 	struct watch *e, *n;
 	int i, epollfd;

@@ -212,7 +212,7 @@ free_kernel_builtin(void)
 static int
 read_kernel_builtin(char *module_dir, const char *modinfo)
 {
-	int fd __free(close) = -1;
+	int fd _free_(close) = -1;
 	char filename[MAXPATHLEN];
 	struct stat st;
 
@@ -243,7 +243,7 @@ read_kernel_builtin(char *module_dir, const char *modinfo)
 	p = addr;
 
 	while (bytes < (size_t) st.st_size) {
-		char *s __free(free) = strdup(p);
+		char *s _free_(free) = strdup(p);
 		if (!s)
 			errx(EXIT_FAILURE, "memory allocation failed");
 
@@ -588,7 +588,7 @@ __process_depends(struct kmod_ctx *ctx, const char *depends, const char *delim, 
 	if (!depends || !*depends)
 		return 0;
 
-	char *s __free(free) = strdup(depends);
+	char *s _free_(free) = strdup(depends);
 	if (!s)
 		errx(EXIT_FAILURE, "memory allocation failed");
 	str = s;
@@ -616,7 +616,7 @@ process_soft_depends(struct kmod_ctx *ctx, const char *depends)
 	if (!depends || !*depends)
 		return 0;
 
-	char *s __free(free) = strdup(depends);
+	char *s _free_(free) = strdup(depends);
 	if (!s)
 		errx(EXIT_FAILURE, "memory allocation failed");
 	str = s;
@@ -652,7 +652,7 @@ static int
 depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 {
 	struct kmod_list *l;
-	struct kmod_list *list __free(kmod_module_info_free_list) = NULL;
+	struct kmod_list *list _free_(kmod_module_info_free_list) = NULL;
 	int ret;
 
 	ret = tracked_module(mod);
@@ -714,7 +714,7 @@ depinfo(struct kmod_ctx *ctx, struct kmod_module *mod)
 static int
 depinfo_path(struct kmod_ctx *ctx, const char *path)
 {
-	struct kmod_module *mod __free(kmod_module_unref) = NULL;
+	struct kmod_module *mod _free_(kmod_module_unref) = NULL;
 
 	if (kmod_module_new_from_path(ctx, path, &mod) < 0) {
 		warnx("ERROR: Module file %s not found.", path);
@@ -752,7 +752,7 @@ process_name(struct kmod_ctx *ctx, const char *arg)
 static int
 read_names(struct kmod_ctx *ctx, const char *file)
 {
-	FILE *stream __free(file_close) = NULL;
+	FILE *stream _free_(file_close) = NULL;
 
 	if (!file)
 		return 0;
@@ -768,7 +768,7 @@ read_names(struct kmod_ctx *ctx, const char *file)
 	}
 
 	int ret = 0;
-	char *line __free(free) = NULL;
+	char *line _free_(free) = NULL;
 	size_t len = 0;
 	ssize_t nread;
 
@@ -818,7 +818,7 @@ static const struct option cmdopts[] = {
 	{ NULL, 0, 0, 0 }
 };
 
-static void __noreturn
+static void _noreturn_
 print_help(const char *progname)
 {
 	printf("Usage: %s [options] [module|filename|alias]...\n"
@@ -847,7 +847,7 @@ print_help(const char *progname)
 	exit(EXIT_SUCCESS);
 }
 
-static void __noreturn
+static void _noreturn_
 print_version(const char *progname)
 {
 	printf("%s version " PACKAGE_VERSION "\n"
@@ -864,7 +864,7 @@ print_version(const char *progname)
 int
 main(int argc, char **argv)
 {
-	struct kmod_ctx *ctx __free(kmod_unref) = NULL;
+	struct kmod_ctx *ctx _free_(kmod_unref) = NULL;
 	struct utsname u;
 	char module_dir[MAXPATHLEN];
 	const char *base_dir = NULL;
@@ -932,7 +932,7 @@ main(int argc, char **argv)
 	}
 
 	if (!access(SYS_FIRMWARE_CLASS_PATH, F_OK)) {
-		int fd __free(close) = open(SYS_FIRMWARE_CLASS_PATH, O_RDONLY | O_CLOEXEC);
+		int fd _free_(close) = open(SYS_FIRMWARE_CLASS_PATH, O_RDONLY | O_CLOEXEC);
 		if (fd != -1) {
 			ssize_t len = TEMP_FAILURE_RETRY(read(fd, firmware_class_path, PATH_MAX));
 

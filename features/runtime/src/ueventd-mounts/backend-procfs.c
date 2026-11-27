@@ -27,7 +27,7 @@ static void procfs_reset_state(void)
 static void procfs_read_mounts(struct list_head *new_entries)
 {
 	struct mntent *mnt;
-	FILE *fp __free(fclose) = fopen(MOUNT_PROC, "r");
+	FILE *fp _free_(fclose) = fopen(MOUNT_PROC, "r");
 
 	if (!fp)
 		rd_fatal("fopen: %s: %m", MOUNT_PROC);

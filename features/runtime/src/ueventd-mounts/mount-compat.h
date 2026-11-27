@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef _MOUNT_COMPAT_H
-#define _MOUNT_COMPAT_H 1
+#ifndef MKRD_MOUNT_COMPAT_H
+#define MKRD_MOUNT_COMPAT_H 1
 
 #include <stdint.h>
 #include <unistd.h>
@@ -9,6 +9,8 @@
 #include <sys/syscall.h>
 #include <sys/ioctl.h>
 #include <sys/fanotify.h>
+
+#include "compiler.h"
 
 #if defined(__has_include)
 # if __has_include(<linux/types.h>)
@@ -183,6 +185,7 @@ struct rd_statmount {
 	char str[];
 };
 
+_rdonly_ptr_(1) _nonnull_(2)
 static inline int sys_statmount(const struct rd_mnt_id_req *req, struct rd_statmount *sm, size_t bufsize, unsigned int flags)
 {
 #ifdef __NR_statmount
@@ -197,6 +200,7 @@ static inline int sys_statmount(const struct rd_mnt_id_req *req, struct rd_statm
 #endif
 }
 
+_rdonly_ptr_(1) _wronly_ptr_(2, 3)
 static inline long sys_listmount(const struct rd_mnt_id_req *req, uint64_t *mnt_ids, size_t nr, unsigned int flags)
 {
 #ifdef __NR_listmount
@@ -223,4 +227,4 @@ static inline int sys_pidfd_open(pid_t pid, unsigned int flags)
 #endif
 }
 
-#endif /* _MOUNT_COMPAT_H */
+#endif /* MKRD_MOUNT_COMPAT_H */

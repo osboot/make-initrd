@@ -7,18 +7,19 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include "cleanup.h"
 #include "temp_failure_retry.h"
 #include "rd/logging.h"
-#include "ueventd.h"
+#include "rd/path.h"
 
-int is_dot_dir(struct dirent *ent)
+int rd_is_dot_dir(const struct dirent *ent)
 {
 	return (ent->d_type == DT_DIR &&
 	        (ent->d_name[0] == '.' && (ent->d_name[1] == '\0' ||
 	                                   (ent->d_name[1] == '.' && ent->d_name[2] == '\0') )));
 }
 
-DIR *xopendir(const char *path)
+DIR *rd_opendir_or_die(const char *path)
 {
 	DIR *dir = opendir(path);
 	if (!dir)
@@ -27,7 +28,7 @@ DIR *xopendir(const char *path)
 }
 
 
-struct dirent *xreaddir(DIR *d, const char *path)
+struct dirent *rd_readdir_or_die(DIR *d, const char *path)
 {
 	struct dirent *ent;
 
@@ -41,13 +42,13 @@ struct dirent *xreaddir(DIR *d, const char *path)
 	return ent;
 }
 
-int empty_directory(const char *path)
+int rd_empty_directory(const char *path)
 {
 	struct dirent *ent;
 	int is_empty = 1;
-	DIR *d __free(closedir) = xopendir(path);
+	DIR *d _free_(closedir) = rd_opendir_or_die(path);
 
-	while ((ent = xreaddir(d, path)) != NULL) {
+	while ((ent = rd_readdir_or_die(d, path)) != NULL) {
 		if (ent->d_name[0] != '.') {
 			is_empty = 0;
 			break;
@@ -57,22 +58,22 @@ int empty_directory(const char *path)
 	return is_empty;
 }
 
-ssize_t read_retry(int fd, void *buf, size_t count)
+ssize_t rd_read_retry(int fd, void *buf, size_t count)
 {
 	return TEMP_FAILURE_RETRY(read(fd, buf, count));
 }
 
-ssize_t write_retry(int fd, const void *buf, size_t count)
+ssize_t rd_write_retry(int fd, const void *buf, size_t count)
 {
 	return TEMP_FAILURE_RETRY(write(fd, buf, count));
 }
 
-ssize_t write_loop(int fd, const char *buffer, size_t count)
+ssize_t rd_write_loop(int fd, const char *buffer, size_t count)
 {
 	ssize_t offset = 0;
 
 	while (count > 0) {
-		ssize_t block = write_retry(fd, &buffer[offset], count);
+		ssize_t block = rd_write_retry(fd, &buffer[offset], count);
 
 		if (block <= 0)
 			return offset ? : block;

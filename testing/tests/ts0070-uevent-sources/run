@@ -61,8 +61,6 @@ chmod +x "$ignored_bin"
 
 export PATH="$PWD/.build/dest/usr/bin:$PATH"
 export TIMESTAMP="$PWD/.build/dest/lib/initrd/sbin/timestamp"
-libcdir="$(tools/get-libc-dir 2>/dev/null ||:)"
-export LD_LIBRARY_PATH="$PWD/.build/dest/lib/initrd$libcdir:$PWD/.build/dest/lib/initrd/usr/lib/x86_64-linux-gnu:$PWD/.build/dest/lib/initrd/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export TEST_LOG="$log"
 export SOURCE_RUNS="$runs_file"
 export SOURCE_PID="$pid_file"

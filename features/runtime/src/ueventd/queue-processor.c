@@ -18,9 +18,9 @@
 #include "rd/logging.h"
 #include "ueventd.h"
 
-static void event_handler(struct watch *queue, char *path) __nonnull(1, 2);
-static void move_files(char *srcdir, char *dstdir)         __nonnull(1, 2);
-static void signal_unhandled_events(struct watch *queue)   __nonnull(1);
+static void event_handler(struct watch *queue, char *path) _nonnull_(1, 2);
+static void move_files(char *srcdir, char *dstdir)         _nonnull_(1, 2);
+static void signal_unhandled_events(struct watch *queue)   _nonnull_(1);
 
 void event_handler(struct watch *queue, char *path)
 {
@@ -36,7 +36,7 @@ void event_handler(struct watch *queue, char *path)
 	} else {
 		int status = 0;
 
-		if (waitpid_retry(pid, &status, 0) != pid || !WIFEXITED(status))
+		if (rd_waitpid_retry(pid, &status, 0) != pid || !WIFEXITED(status))
 			rd_info("%s: session=%lu: %s failed",
 			        queue->q_name, session, handler_file);
 		else
@@ -49,7 +49,7 @@ void move_files(char *srcdir, char *dstdir)
 {
 	struct dirent *ent;
 	int srcfd;
-	int dstfd __free(close) = -1;
+	int dstfd _free_(close) = -1;
 
 	if ((srcfd = open(srcdir, O_RDONLY | O_CLOEXEC)) < 0)
 		rd_fatal("open: %s: %m", srcdir);
@@ -65,11 +65,11 @@ void move_files(char *srcdir, char *dstdir)
 			rd_fatal("open: %s: %m", dstdir);
 	}
 
-	DIR *d __free(closedir) = fdopendir(srcfd);
+	DIR *d _free_(closedir) = fdopendir(srcfd);
 	if (!d)
 		rd_fatal("fdopendir: %m");
 
-	while ((ent = xreaddir(d, srcdir)) != NULL) {
+	while ((ent = rd_readdir_or_die(d, srcdir)) != NULL) {
 		if (ent->d_name[0] != '.' && ent->d_type == DT_REG &&
 		    renameat(srcfd, ent->d_name, dstfd, ent->d_name) < 0)
 			rd_fatal("rename `%s/%s' -> `%s/%s': %m", srcdir, ent->d_name, dstdir, ent->d_name);
@@ -80,8 +80,8 @@ void signal_unhandled_events(struct watch *queue)
 {
 	ssize_t len;
 
-	len = write_loop(queue->q_parentfd,
-	                 (char *) &queue->q_watchfd, sizeof(queue->q_watchfd));
+	len = rd_write_loop(queue->q_parentfd,
+	                    (char *) &queue->q_watchfd, sizeof(queue->q_watchfd));
 	if (len < 0)
 		rd_err("write(pipe): %m");
 
@@ -95,15 +95,15 @@ void process_events(struct watch *queue)
 	char *numenv = rd_asprintf_or_die("SESSION=%lu", session);
 	putenv(numenv);
 
-	char *srcdir __free(free) = rd_asprintf_or_die("%s/%s", filter_dir, queue->q_name);
-	char *dstdir __free(free) = rd_asprintf_or_die("%s/%s", uevent_dir, queue->q_name);
+	char *srcdir _free_(free) = rd_asprintf_or_die("%s/%s", filter_dir, queue->q_name);
+	char *dstdir _free_(free) = rd_asprintf_or_die("%s/%s", uevent_dir, queue->q_name);
 
 	move_files(srcdir, dstdir);
 
-	if (!empty_directory(dstdir)) {
+	if (!rd_empty_directory(dstdir)) {
 		event_handler(queue, dstdir);
 
-		if (!empty_directory(dstdir))
+		if (!rd_empty_directory(dstdir))
 			signal_unhandled_events(queue);
 	}
 

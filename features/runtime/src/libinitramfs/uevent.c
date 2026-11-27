@@ -9,8 +9,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <poll.h>
 #include <time.h>
 
 #include "cleanup.h"
@@ -32,7 +34,7 @@ void rd_uevent_queue_open(struct rd_uevent_queue *q,
                           const char *filter_dir,
                           const char *queue_name)
 {
-	char *queue_path __free(free) = rd_asprintf_or_die("%s/%s", filter_dir, queue_name);
+	char *queue_path _free_(free) = rd_asprintf_or_die("%s/%s", filter_dir, queue_name);
 
 	q->filter_dir = filter_dir;
 	q->name = queue_name;
@@ -75,9 +77,9 @@ void rd_uevent_emit(struct rd_uevent_queue *q,
 
 	clock_gettime(CLOCK_BOOTTIME, &tp);
 
-	char *tmpname __free(free) = rd_asprintf_or_die(".%s.event.new", q->name);
+	char *tmpname _free_(free) = rd_asprintf_or_die(".%s.event.new", q->name);
 
-	int fd __free(close) = openat(q->temp_dirfd, tmpname,
+	int fd _free_(close) = openat(q->temp_dirfd, tmpname,
 	                              O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC,
 	                              S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if (fd < 0)
@@ -90,7 +92,7 @@ void rd_uevent_emit(struct rd_uevent_queue *q,
 		         q->filter_dir, q->name, tmpname);
 	va_end(ap);
 
-	char *fname __free(free) = rd_asprintf_or_die("%s.%s.%06lu.%012lu.%06" PRIu64,
+	char *fname _free_(free) = rd_asprintf_or_die("%s.%s.%06lu.%012lu.%06" PRIu64,
 	                                              q->name, event_name,
 	                                              (unsigned long) tp.tv_sec,
 	                                              (unsigned long) tp.tv_nsec,
@@ -105,4 +107,92 @@ void rd_uevent_emit(struct rd_uevent_queue *q,
 		rd_fatal("rename `%s/%s/" QUEUE_TMPNAME "/%s' -> `%s/%s/%s': %m",
 		         q->filter_dir, q->name, tmpname,
 		         q->filter_dir, q->name, fname);
+}
+
+static volatile sig_atomic_t source_running = 1;
+
+static void handle_source_signal(int sig _maybe_unused_)
+{
+	source_running = 0;
+}
+
+static void setup_source_signals(void)
+{
+	struct sigaction sa = {
+		.sa_handler = handle_source_signal,
+		.sa_flags = 0,
+	};
+
+	sigemptyset(&sa.sa_mask);
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGINT, &sa, NULL);
+}
+
+void rd_uevent_source_init(struct rd_uevent_queue *q,
+                           int argc, char **argv,
+                           const char *queue_name,
+                           const char *logfile_env,
+                           const char *default_logfile)
+{
+	int c;
+	int loglevel = LOG_INFO;
+
+	while ((c = getopt(argc, argv, "hl:")) != -1) {
+		switch (c) {
+			case 'h':
+				fprintf(stderr, "Usage: %s [-l loglevel]\n",
+				        program_invocation_short_name);
+				exit(EXIT_SUCCESS);
+			case 'l':
+				loglevel = rd_logging_level(optarg);
+				break;
+			default:
+				exit(EXIT_FAILURE);
+		}
+	}
+
+	rd_log_setup_stderr(rd_log_resolve_file(logfile_env, default_logfile));
+	rd_logging_init(fileno(stderr), loglevel, program_invocation_short_name);
+
+	rd_info("starting server ...");
+
+	setup_source_signals();
+	rd_uevent_queue_open(q, rd_getenv_or_die("filterdir"), queue_name);
+}
+
+void rd_uevent_source_loop(int fd, short poll_events,
+                           void (*dispatch)(void *data),
+                           void *data)
+{
+	struct pollfd fds[1] = {
+		{
+			.fd = fd,
+			.events = poll_events,
+		},
+	};
+
+	source_running = 1;
+
+	while (source_running) {
+		int ready;
+
+		errno = 0;
+		ready = poll(fds, 1, -1);
+		if (ready < 0) {
+			if (errno == EINTR)
+				continue;
+			rd_fatal("poll: %m");
+		}
+
+		if (fds[0].revents & poll_events)
+			dispatch(data);
+	}
+
+	rd_info("stopping server ...");
+}
+
+void rd_uevent_source_close(struct rd_uevent_queue *q)
+{
+	rd_uevent_queue_close(q);
+	rd_logging_close();
 }

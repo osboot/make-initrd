@@ -38,7 +38,7 @@ static const struct option cmdopts[] = {
 	{ NULL, 0, 0, 0 }
 };
 
-static void __noreturn
+static void _noreturn_
 print_help(const char *progname)
 {
 	printf("Usage: %s [options] initramfs\n"
@@ -59,7 +59,7 @@ print_help(const char *progname)
 	exit(EXIT_SUCCESS);
 }
 
-static void __noreturn
+static void _noreturn_
 print_version(const char *progname)
 {
 	printf("%s version " PACKAGE_VERSION "\n"
@@ -77,7 +77,7 @@ int
 main(int argc, char **argv)
 {
 	int c;
-	int fd __free(close) = -1;
+	int fd _free_(close) = -1;
 	struct stat st;
 
 	while ((c = getopt_long(argc, argv, cmdopts_s, cmdopts, NULL)) != -1) {
@@ -136,12 +136,12 @@ main(int argc, char **argv)
 	s->allocated = 0;
 
 	read_stream("raw", s, &res);
-	struct list_tail *streams __free(free_streams) = res.streams;
-	struct list_tail *cpios __free(free_cpios) = res.cpios;
+	struct list_tail *streams _free_(free_streams) = res.streams;
+	struct list_tail *cpios _free_(free_cpios) = res.cpios;
 
 	int bytes;
 	int max_compress_name = 3;
-	char *fmt __free(free) = NULL;
+	char *fmt _free_(free) = NULL;
 	struct cpio *part     = NULL;
 
 	l = res.cpios;

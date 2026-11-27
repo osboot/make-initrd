@@ -123,16 +123,28 @@ get_objects = $(foreach name,$(filter %.c,$(1)),$(OBJDIR)/$(patsubst $(srcdir)/%
 quiet_cmd   = $(if $(VERBOSE),$(3),$(Q)printf "  %-08s%s\n" "$(1)" $(2); $(3))
 
 PATH = $(CURDIR)/$(dest_sbindir):$(CURDIR)/$(dest_bindir):$(shell echo $$PATH)
-CFLAGS = @CFLAGS@ \
+CC = @CC@
+CFLAGS = @CFLAGS@ -std=gnu17 \
 	-Wall -Wextra -W -Wshadow -Wcast-align \
 	-Wwrite-strings -Wconversion -Waggregate-return -Wstrict-prototypes \
 	-Wmissing-prototypes -Wmissing-declarations -Wmissing-noreturn \
 	-Wmissing-format-attribute -Wredundant-decls -Wdisabled-optimization \
+	@warn_CFLAGS@ \
 	-Wno-pointer-arith \
 	-Werror=shadow -Werror=missing-prototypes -Werror=implicit-function-declaration
 
+no_stringop_truncation_CFLAGS = @no_stringop_truncation_CFLAGS@
+
 CPPFLAGS += @CPPFLAGS@ @DEFS@ -I$(CURDIR) -I$(srcdir) -I$(srcdir)/include
 LDFLAGS = @LDFLAGS@
+
+runtime_CFLAGS = @runtime_CFLAGS@
+runtime_LDFLAGS = @runtime_LDFLAGS@ \
+	-Wl,--enable-new-dtags \
+	-Wl,-z,combreloc \
+	-Wl,--sort-common \
+	-Wl,--sort-section,alignment \
+	-Wl,--as-needed
 
 UDEVD		= @UDEVD@
 UDEVADM		= @UDEVADM@
@@ -153,6 +165,7 @@ INSTALL_DATA    = @INSTALL_DATA@
 SED = @SED@ \
 	-e 's|@UDEVD[@]|$(UDEVD)|g' \
 	-e 's|@UDEVADM[@]|$(UDEVADM)|g' \
+	-e 's|@STRIP[@]|$(STRIP)|g' \
 	-e 's|@PACKAGE_NAME[@]|$(PACKAGE_NAME)|g' \
 	-e 's|@PACKAGE_VERSION[@]|$(PACKAGE_VERSION)|g' \
 	-e 's|@bootdir[@]|$(bootdir)|g' \
@@ -195,7 +208,9 @@ UNITTEST_DIRS = $(sort \
 				$(wildcard $(srcdir)/$(1)/tests $(srcdir)/$(1)/*/tests)))
 
 check-unit: $(UNITTEST_DIRS)
-	@env PATH="$(CURDIR)/tools:$(srcdir)/tools:$(CURDIR)/$(dest_sbindir):$(CURDIR)/$(dest_bindir):$$PATH" $(srcdir)/testing/tests/run $?
+	@env PATH="$(CURDIR)/tools:$(srcdir)/tools:$(CURDIR)/$(dest_sbindir):$(CURDIR)/$(dest_bindir):$$PATH" \
+		LD_LIBRARY_PATH="$(abspath $(dest_data_libdir))$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}" \
+		$(srcdir)/testing/tests/run $?
 
 .PHONY: check-coverage coverage-clean
 
@@ -415,7 +430,7 @@ build: $(addprefix $(dest_sysconfdir)/,$(SYSCONF_NAMES))
 depflags = -MT $@ -MMD -MP -MF $(@:.o=.d)
 $(OBJDIR)/%.o: %.c
 	$(Q)mkdir -p -- $(dir $@)
-	$(call quiet_cmd,CC,$<,$(COMPILE.c)) $(depflags) $(cflags) $(OUTPUT_OPTION) $<
+	$(call quiet_cmd,CC,$<,$(COMPILE.c)) $(depflags) $(cflags) $(extra_cflags) $(OUTPUT_OPTION) $<
 
 BIN_NAMES            =
 SBIN_NAMES           =
@@ -445,12 +460,11 @@ define generate_link_lib_target =
 $(call classify_file,$($(1)_DEST))
 
 ALL_OBJS += $$(call get_objects,$$($(1)_SRCS))
-$$(call get_objects,$$($(1)_SRCS)): cflags = $$($(1)_CFLAGS)
+$$(call get_objects,$$($(1)_SRCS)): cflags += $$($(1)_CFLAGS)
 
 $($(1)_DEST): $(call get_objects,$($(1)_SRCS))
 	$(Q)mkdir -p -- $(dir $($(1)_DEST))
 	$(call quiet_cmd,LD,$($(1)_DEST),$(LINK.o)) $($(1)_LDFLAGS) -o $($(1)_DEST) $$^ $($(1)_LIBS)
-	$(call quiet_cmd,STRIP,$($(1)_DEST),$(STRIP)) -s --remove-section=.note --remove-section=.comment "$($(1)_DEST)"
 
 $(1): $($(1)_DEST)
 endef
@@ -459,7 +473,7 @@ define generate_link_bin_target =
 $(call classify_file,$($(1)_DEST))
 
 ALL_OBJS += $$(call get_objects,$$($(1)_SRCS))
-$$(call get_objects,$$($(1)_SRCS)): cflags = $$($(1)_CFLAGS)
+$$(call get_objects,$$($(1)_SRCS)): cflags += $$($(1)_CFLAGS)
 
 $($(1)_DEST): $(call get_objects,$($(1)_SRCS))
 	$(Q)mkdir -p -- $(dir $($(1)_DEST))
@@ -609,10 +623,10 @@ install: build installdirs
 	done
 	$(Q)$(INSTALL_DATA) -t "$(DESTDIR)$(projectdir)/$(FEATURESDIR)" -- $(realpath $(dest_projectdir)/$(FEATURESDIR)/README.md)
 	$(Q)cp -at "$(DESTDIR)$(execdir)/$(FEATURESDIR)" -- $(wildcard $(dest_execdir)/$(FEATURESDIR)/*)
-	$(Q)$(INSTALL_PROGRAM) -m 755 -t "$(DESTDIR)$(runtimedir)/bin" -- $(addprefix $(dest_data_bindir)/,$(RUNTIME_BIN_NAMES))
-	$(Q)$(INSTALL_PROGRAM) -m 755 -t "$(DESTDIR)$(runtimedir)/sbin" -- $(addprefix $(dest_data_sbindir)/,$(RUNTIME_SBIN_NAMES))
+	$(Q)cp -at "$(DESTDIR)$(runtimedir)/bin" -- $(addprefix $(dest_data_bindir)/,$(RUNTIME_BIN_NAMES))
+	$(Q)cp -at "$(DESTDIR)$(runtimedir)/sbin" -- $(addprefix $(dest_data_sbindir)/,$(RUNTIME_SBIN_NAMES))
 	$(Q)[ -z "$(RUNTIME_UEVENT_NAMES)" ] || \
-	    $(INSTALL_PROGRAM) -m 755 -t "$(DESTDIR)$(runtimedir)/lib/uevent/sources" -- $(addprefix $(dest_data_ueventdir)/,$(RUNTIME_UEVENT_NAMES))
+	    cp -at "$(DESTDIR)$(runtimedir)/lib/uevent/sources" -- $(addprefix $(dest_data_ueventdir)/,$(RUNTIME_UEVENT_NAMES))
 	$(Q)[ -z "$(wildcard $(dest_data_libdir)/lib*)" ] || \
 	    cp -at "$(DESTDIR)$(runtimedir)/$(libcdir)" -- $(wildcard $(dest_data_libdir)/lib*)
 	$(Q)[ -z "$(completionsdir)" ] || \

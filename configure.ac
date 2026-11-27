@@ -19,6 +19,77 @@ AC_PROG_SED
 AC_PROG_YACC
 AC_PROG_LEX([noyywrap])
 
+warn_CFLAGS=
+for flag in \
+		-Wstringop-overflow \
+		-Wstringop-overread \
+		-Wmaybe-uninitialized; do
+	AC_MSG_CHECKING([whether $CC supports $flag])
+	saved_CFLAGS=$CFLAGS
+	CFLAGS="$CFLAGS -Werror $flag"
+	AC_COMPILE_IFELSE(
+		[AC_LANG_PROGRAM([], [return 0;])],
+		[warn_CFLAGS="$warn_CFLAGS $flag"
+		 AC_MSG_RESULT([yes])],
+		[AC_MSG_RESULT([no])])
+	CFLAGS=$saved_CFLAGS
+done
+AC_SUBST([warn_CFLAGS])
+
+no_stringop_truncation_CFLAGS=
+AC_MSG_CHECKING([whether $CC supports -Wstringop-truncation])
+saved_CFLAGS=$CFLAGS
+CFLAGS="$CFLAGS -Werror -Wstringop-truncation"
+AC_COMPILE_IFELSE(
+	[AC_LANG_PROGRAM([], [return 0;])],
+	[no_stringop_truncation_CFLAGS="-Wno-stringop-truncation"
+	 AC_MSG_RESULT([yes])],
+	[AC_MSG_RESULT([no])])
+CFLAGS=$saved_CFLAGS
+AC_SUBST([no_stringop_truncation_CFLAGS])
+
+runtime_CFLAGS=
+for flag in \
+		-fno-unwind-tables \
+		-fno-asynchronous-unwind-tables \
+		-falign-functions=1 \
+		-falign-jumps=1 \
+		-falign-labels=1 \
+		-falign-loops=1 \
+		-fomit-frame-pointer \
+		-malign-data=abi \
+		-Os \
+		-fvisibility=hidden \
+		-fno-semantic-interposition; do
+	AC_MSG_CHECKING([whether $CC supports $flag])
+	saved_CFLAGS=$CFLAGS
+	CFLAGS="$CFLAGS -Werror $flag"
+	AC_COMPILE_IFELSE(
+		[AC_LANG_PROGRAM([], [return 0;])],
+		[runtime_CFLAGS="$runtime_CFLAGS $flag"
+		 AC_MSG_RESULT([yes])],
+		[AC_MSG_RESULT([no])])
+	CFLAGS=$saved_CFLAGS
+done
+
+runtime_LDFLAGS=
+for flag in \
+		-Wl,-z,noseparate-code \
+		-Wl,-Bsymbolic-functions; do
+	AC_MSG_CHECKING([whether $CC supports $flag])
+	saved_LDFLAGS=$LDFLAGS
+	LDFLAGS="$LDFLAGS -Wl,--fatal-warnings $flag"
+	AC_LINK_IFELSE(
+		[AC_LANG_PROGRAM([], [return 0;])],
+		[runtime_LDFLAGS="$runtime_LDFLAGS $flag"
+		 AC_MSG_RESULT([yes])],
+		[AC_MSG_RESULT([no])])
+	LDFLAGS=$saved_LDFLAGS
+done
+
+AC_SUBST([runtime_CFLAGS])
+AC_SUBST([runtime_LDFLAGS])
+
 AC_ARG_ENABLE([lto],
 	[AS_HELP_STRING([--enable-lto],
 			[build C programs with link-time optimization])],

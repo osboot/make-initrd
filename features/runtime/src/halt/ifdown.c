@@ -41,7 +41,7 @@ int ifdown(void)
 	int i;
 	int numif;
 	int shaper;
-	int fd __free(close) = socket(AF_INET, SOCK_DGRAM, 0);
+	int fd _free_(close) = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (fd < 0) {
 		fprintf(stderr, "ifdown: ");
@@ -56,7 +56,7 @@ int ifdown(void)
 		perror("SIOCGIFCONF");
 		return -1;
 	}
-	numif = (unsigned long) ifc.ifc_len / sizeof(struct ifreq);
+	numif = (int) ((unsigned long) ifc.ifc_len / sizeof(struct ifreq));
 
 	for (shaper = 1; shaper >= 0; shaper--) {
 		for (i = 0; i < numif; i++) {

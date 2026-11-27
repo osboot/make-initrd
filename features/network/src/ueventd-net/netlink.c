@@ -99,7 +99,7 @@ int netlink_open(struct netlink_ctx *ctx)
 	if (bind(ctx->fd, (struct sockaddr *) &local, sizeof(local)) < 0)
 		rd_fatal("bind(AF_NETLINK): %m");
 
-	for (size_t i = 0; i < sizeof(groups) / sizeof(groups[0]); i++) {
+	for (size_t i = 0; i < ARRAY_SIZE(groups); i++) {
 		int grp = groups[i];
 		if (setsockopt(ctx->fd, SOL_NETLINK, NETLINK_ADD_MEMBERSHIP,
 		               &grp, sizeof(grp)) < 0)
@@ -117,6 +117,7 @@ void netlink_close(struct netlink_ctx *ctx)
 	}
 }
 
+_access_(read_only, 1)
 static bool rta_ok_safe(const struct rtattr *attr, size_t remaining)
 {
 	return attr != NULL &&
@@ -125,6 +126,7 @@ static bool rta_ok_safe(const struct rtattr *attr, size_t remaining)
 	       attr->rta_len <= remaining;
 }
 
+_rdonly_ptr_(1) _rdwr_ptr_(2)
 static struct rtattr *rta_next_safe(struct rtattr *attr, size_t *remaining)
 {
 	size_t aligned = RTA_ALIGN(attr->rta_len);

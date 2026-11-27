@@ -7,6 +7,17 @@ export LC_ALL=C
 cwd="$(readlink -ev "$0")"
 cwd="${cwd%/*}"
 
+if [ -d "$PWD/.build/dest/lib/initrd" ]; then
+	libinitramfs_path="$(find "$PWD/.build/dest/lib/initrd" -name 'libinitramfs.so*' -print -quit 2>/dev/null ||:)"
+	if [ -n "$libinitramfs_path" ]; then
+		libinitramfs_dir="${libinitramfs_path%/*}"
+		case ":${LD_LIBRARY_PATH:-}:" in
+			*":$libinitramfs_dir:"*) ;;
+			*) export LD_LIBRARY_PATH="$libinitramfs_dir${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" ;;
+		esac
+	fi
+fi
+
 ret=0
 for testsuite in "$@"; do
 	[ -d "$testsuite" ] ||

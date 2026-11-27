@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef __UDEV_RULES_H__
-#define __UDEV_RULES_H__
+#ifndef MKRD_UDEV_RULES_H
+#define MKRD_UDEV_RULES_H
 
 #include <dirent.h>
 
 #include "compiler.h"
 #include "cleanup.h"
-
-DEFINE_FREE(closedir, DIR *, if (_t) closedir(_t))
 
 typedef enum {
 	OP_MATCH,        /* == */
@@ -101,8 +99,6 @@ static const char *const rule_key_names[_KEY_TYPE_MAX] = {
 
 #define key2str(pair) rule_key_names[pair->key]
 #define op2str(pair)  rule_op_names[pair->op]
-
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 static const unsigned int rule_pair_prio[] = {
 	KEY_LABEL      + PAIR_OP_ACTION,
@@ -285,4 +281,4 @@ static inline bool isempty(const char *a)
 	return !a || a[0] == '\0';
 }
 
-#endif /* __UDEV_RULES_H__ */
+#endif /* MKRD_UDEV_RULES_H */

@@ -48,7 +48,7 @@ static int fanotify_read_mounts(void)
 	};
 
 	while (1) {
-		long nr = sys_listmount(&req, mnt_ids, sizeof(mnt_ids) / sizeof(mnt_ids[0]), 0);
+		long nr = sys_listmount(&req, mnt_ids, ARRAY_SIZE(mnt_ids), 0);
 		if (nr < 0)
 			return -1;
 		if (nr == 0)
@@ -66,7 +66,7 @@ static int fanotify_read_mounts(void)
 			list_add_tail(&m->list, &mounts);
 		}
 
-		if (nr < (long) (sizeof(mnt_ids) / sizeof(mnt_ids[0])))
+		if (nr < (long) ARRAY_SIZE(mnt_ids))
 			break;
 
 		req.param = mnt_ids[nr - 1];
@@ -77,48 +77,37 @@ static int fanotify_read_mounts(void)
 
 static int fanotify_init_backend(struct mount_backend *b)
 {
-	int fd = fanotify_init(FAN_CLASS_NOTIF | FAN_REPORT_MNT | FAN_NONBLOCK, O_RDONLY | O_CLOEXEC);
+	int fd _free_(close) = fanotify_init(FAN_CLASS_NOTIF | FAN_REPORT_MNT | FAN_NONBLOCK, O_RDONLY | O_CLOEXEC);
 	if (fd < 0)
 		return -1;
 
-	int mntns_fd = -1;
-	int pidfd = sys_pidfd_open(getpid(), 0);
-	if (pidfd >= 0) {
+	int mntns_fd _free_(close) = -1;
+	int pidfd _free_(close) = sys_pidfd_open(getpid(), 0);
+	if (pidfd >= 0)
 		mntns_fd = ioctl(pidfd, PIDFD_GET_MNT_NAMESPACE);
-		close(pidfd);
-	}
 
 	if (mntns_fd < 0)
 		mntns_fd = open("/proc/self/ns/mnt", O_RDONLY | O_CLOEXEC);
 
-	if (mntns_fd < 0) {
-		close(fd);
+	if (mntns_fd < 0)
 		return -1;
-	}
 
-	int ret = fanotify_mark(fd, FAN_MARK_ADD | FAN_MARK_MNTNS,
-	                        FAN_MNT_ATTACH | FAN_MNT_DETACH,
-	                        mntns_fd, NULL);
-	close(mntns_fd);
-
-	if (ret < 0) {
-		close(fd);
+	if (fanotify_mark(fd, FAN_MARK_ADD | FAN_MARK_MNTNS,
+	                  FAN_MNT_ATTACH | FAN_MNT_DETACH,
+	                  mntns_fd, NULL) < 0)
 		return -1;
-	}
 
-	if (fanotify_read_mounts() < 0) {
-		close(fd);
+	if (fanotify_read_mounts() < 0)
 		return -1;
-	}
 
-	b->fd = fd;
+	b->fd = no_free_fd(fd);
 	b->poll_events = POLLIN;
 	return 0;
 }
 
 static void fanotify_dispatch(struct mount_backend *b)
 {
-	char buf[4096] __attribute__((aligned(__alignof__(struct fanotify_event_metadata))));
+	char buf[4096] _alignas_(struct fanotify_event_metadata);
 
 	while (1) {
 		ssize_t len = read(b->fd, buf, sizeof(buf));

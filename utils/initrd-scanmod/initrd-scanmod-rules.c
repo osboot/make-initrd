@@ -62,7 +62,7 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 		const char *eol = memchr(ptr, '\n', (size_t) (end - ptr));
 		size_t linelen = eol ? (size_t) (eol - ptr) : (size_t) (end - ptr);
 
-		char *line __free(free) = xmalloc(linelen + 1);
+		char *line _free_(free) = xmalloc(linelen + 1);
 		memcpy(line, ptr, linelen);
 		line[linelen] = '\0';
 
@@ -81,16 +81,16 @@ parse_ruleset(const char *rulesfile, struct ruleset *set)
 		while (len > 0 && (p[len - 1] == '\r' || isblank(p[len - 1])))
 			p[--len] = '\0';
 
-		char *kw __free(free) = NULL;
-		char *value __free(free) = NULL;
+		char *kw _free_(free) = NULL;
+		char *value _free_(free) = NULL;
 
 		rule       = xcalloc(1, sizeof(struct rule_pair));
 		rule->type = RULE_NOT_MATCH;
 
 		n = sscanf(p, "not-%ms %m[^\n]", &kw, &value);
 		if (n != 2) {
-			kw    = xfree(kw);
-			value = xfree(value);
+			kw    = mfree(kw);
+			value = mfree(value);
 
 			rule->type = RULE_MATCH;
 			n          = sscanf(p, "%ms %m[^\n]", &kw, &value);
@@ -207,11 +207,11 @@ free_ruleset(struct rule_pair **filters)
 	r = filters[i++];
 	while (r) {
 		regfree(r->value);
-		xfree(r->value);
-		xfree(r);
+		mfree(r->value);
+		mfree(r);
 		r = filters[i++];
 	}
-	xfree(filters);
+	mfree(filters);
 }
 
 void
@@ -228,9 +228,9 @@ free_rules(void)
 		free_ruleset(set->info);
 		free_ruleset(set->paths);
 		free_ruleset(set->symbols);
-		xfree(set);
+		mfree(set);
 		set = filter_rules[i++];
 	}
 
-	xfree(filter_rules);
+	mfree(filter_rules);
 }

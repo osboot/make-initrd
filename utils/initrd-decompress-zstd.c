@@ -5,13 +5,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <string.h>
 #include <err.h>
 #include <limits.h>
 
 #include <zstd.h>
 
+#include "cleanup.h"
 #include "initrd-decompress.h"
+
+DEFINE_FREE(zstd_dstream, ZSTD_DStream *, if (_t) ZSTD_freeDStream(_t))
 
 static void *
 xmalloc(size_t size)
@@ -27,15 +29,13 @@ unzstd(unsigned char *in, unsigned long in_size,
        unsigned char **out, unsigned long *out_size,
        unsigned long long *inread)
 {
-	int ret = DECOMP_FAIL;
-	void *buff_in = NULL, *buff_out = NULL;
+	void *buff_in _free_(free) = NULL, *buff_out _free_(free) = NULL;
 	size_t to_read, pos = 0;
 
-	ZSTD_DStream *dstream = ZSTD_createDStream();
-
+	ZSTD_DStream *dstream _free_(zstd_dstream) = ZSTD_createDStream();
 	if (!dstream) {
 		warnx("ERROR: %s: %d: ZSTD_createDStream", __FILE__, __LINE__);
-		goto out;
+		return DECOMP_FAIL;
 	}
 
 	to_read  = ZSTD_DStreamInSize();
@@ -61,13 +61,13 @@ unzstd(unsigned char *in, unsigned long in_size,
 			if (ZSTD_isError(to_read)) {
 				warnx("ERROR: %s: %d: ZSTD_decompressStream: %s",
 				      __FILE__, __LINE__, ZSTD_getErrorName(to_read));
-				goto out;
+				return DECOMP_FAIL;
 			}
 
 			if (output.pos > (size_t) ULONG_MAX ||
 			    *out_size > ULONG_MAX - (unsigned long) output.pos) {
 				warnx("ERROR: %s: %d: output too large", __FILE__, __LINE__);
-				goto out;
+				return DECOMP_FAIL;
 			}
 
 			unsigned long new_size = *out_size + (unsigned long) output.pos;
@@ -75,7 +75,7 @@ unzstd(unsigned char *in, unsigned long in_size,
 
 			if (!new_out) {
 				warn("ERROR: %s: %d: realloc", __FILE__, __LINE__);
-				goto out;
+				return DECOMP_FAIL;
 			}
 
 			*out = new_out;
@@ -85,11 +85,5 @@ unzstd(unsigned char *in, unsigned long in_size,
 	}
 
 	*inread = in_size;
-	ret = DECOMP_OK;
-out:
-	if (dstream)
-		ZSTD_freeDStream(dstream);
-	free(buff_in);
-	free(buff_out);
-	return ret;
+	return DECOMP_OK;
 }

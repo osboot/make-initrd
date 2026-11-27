@@ -40,8 +40,6 @@ const char *v_hddown = "@(#)hddown.c  1.02  22-Apr-2003  miquels@cistron.nl";
 #include "cleanup.h"
 #include "reboot.h"
 
-DEFINE_FREE(closedir, DIR *, if (_t) closedir(_t))
-
 #define SYS_BLK		"/sys/block"
 #define SYS_CLASS	"/sys/class/scsi_disk"
 #define DEV_BASE	"/dev"
@@ -67,6 +65,7 @@ static int flush_cache_ext(const char *device);
 /*
  *	Find all disks through /sys/block.
  */
+_nonnull_(1) _wronly_ptr_(2)
 static char *list_disks(DIR *blk, unsigned int *flags)
 {
 	struct dirent *d;
@@ -75,18 +74,17 @@ static char *list_disks(DIR *blk, unsigned int *flags)
 		(*flags) = 0;
 		if (d->d_name[1] == 'd' && (d->d_name[0] == 'h' || d->d_name[0] == 's')) {
 			char buf[NAME_MAX+1], lnk[NAME_MAX+1], *ptr;
-			FILE *fp;
 			ssize_t ret;
 
-			fp = hdopen(SYS_BLK "/%s/removable", d->d_name);
-			if ((long)fp <= 0) {
-				if ((long)fp < 0)
-					goto empty;	/* error */
-				continue;		/* no entry `removable' */
+			{
+				FILE *fp _free_(fclose) = hdopen(SYS_BLK "/%s/removable", d->d_name);
+				if (!fp) {
+					if (errno != ENOENT)
+						goto empty;	/* error */
+					continue;		/* no entry `removable' */
+				}
+				ret = getc(fp);
 			}
-
-			ret = getc(fp);
-			fclose(fp);
 
 			if (ret != '0')
 				(*flags) |= DISK_REMOVABLE;
@@ -122,29 +120,26 @@ static char *list_disks(DIR *blk, unsigned int *flags)
 			if (!ptr || !*ptr)
 				continue;		/* should not happen */
 
-			fp = hdopen(SYS_CLASS "/%s/manage_start_stop", ptr);
-			if ((long)fp <= 0) {
-				if ((long)fp < 0)
-					goto empty;	/* error */
-			} else {
-				ret = getc(fp);
-				fclose(fp);
-
-				if (ret != '0') {
+			{
+				FILE *fp _free_(fclose) = hdopen(SYS_CLASS "/%s/manage_start_stop", ptr);
+				if (!fp) {
+					if (errno != ENOENT)
+						goto empty;	/* error */
+				} else if (getc(fp) != '0') {
 					(*flags) |= DISK_MANAGED;
 					continue;
 				}
 			}
 
-			fp = hdopen(SYS_BLK "/%s/device/vendor", d->d_name);
-			if ((long)fp <= 0) {
-				if ((long)fp < 0)
-					goto empty;	/* error */
-				continue;		/* no entry `device/vendor' */
+			{
+				FILE *fp _free_(fclose) = hdopen(SYS_BLK "/%s/device/vendor", d->d_name);
+				if (!fp) {
+					if (errno != ENOENT)
+						goto empty;	/* error */
+					continue;		/* no entry `device/vendor' */
+				}
+				ptr = fgets(buf, sizeof(buf), fp);
 			}
-
-			ptr = fgets(buf, sizeof(buf), fp);
-			fclose(fp);
 			if (ptr == (char *)0)
 				continue;		/* should not happen */
 
@@ -207,7 +202,7 @@ static int do_standby_disk(char *device, unsigned int flags)
 	unsigned char stdby2[4] = {WIN_STANDBYNOW2,0,0,0};
 	char buf[NAME_MAX+1];
 	int ret;
-	int fd __free(close) = -1;
+	int fd _free_(close) = -1;
 
 	ret = snprintf(buf, sizeof(buf), DEV_BASE "/%s", device);
 	if ((ret >= (int)sizeof(buf)) || (ret < 0))
@@ -221,7 +216,7 @@ static int do_standby_disk(char *device, unsigned int flags)
 			if ((ret = ioctl(fd, HDIO_DRIVE_CMD, &flush1)) == 0)
 				break;
 			/* Extend flush rejected, try standard flush */
-			__fallthrough;
+			_fallthrough_;
 		default:
 			ret = ioctl(fd, HDIO_DRIVE_CMD, &flush2) &&
 			      ioctl(fd, BLKFLSBUF);
@@ -247,7 +242,7 @@ int hddown(void)
 {
 	unsigned int flags;
 	char *disk;
-	DIR *blk __free(closedir) = opendir(SYS_BLK);
+	DIR *blk _free_(closedir) = opendir(SYS_BLK);
 
 	if (!blk)
 		return -1;
@@ -265,7 +260,7 @@ int hdflush(void)
 {
 	unsigned int flags;
 	char *disk;
-	DIR *blk __free(closedir) = opendir(SYS_BLK);
+	DIR *blk _free_(closedir) = opendir(SYS_BLK);
 
 	if (!blk)
 		return -1;
@@ -298,25 +293,24 @@ static char *strstrip(char *str)
 static FILE *hdopen(const char *const format, const char *const name)
 {
 	char buf[NAME_MAX+1];
-	FILE *fp = (FILE *)-1;
-	int fd, ret;
+	FILE *fp;
+	int fd _free_(close) = -1;
+	int ret;
 
 	ret = snprintf(buf, sizeof(buf), format, name);
-	if ((ret >= (int)sizeof(buf)) || (ret < 0))
-		goto error;		/* error */
-
-	fd = open(buf, O_RDONLY|O_NOCTTY);
-	if (fd < 0) {
-		if (errno != ENOENT)
-			goto error;	/* error */
-		fp = (FILE *)0;
-		goto error;		/* no entry `removable' */
+	if ((ret >= (int)sizeof(buf)) || (ret < 0)) {
+		errno = ENAMETOOLONG;
+		return NULL;
 	}
 
+	fd = open(buf, O_RDONLY|O_NOCTTY);
+	if (fd < 0)
+		return NULL;
+
 	fp = fdopen(fd, "r");
-	if (fp == (FILE *)0)
-		close(fd);		/* should not happen */
-error:
+	if (fp)
+		no_free_fd(fd);
+
 	return fp;
 }
 
@@ -333,18 +327,18 @@ static int flush_cache_ext(const char *device)
 	unsigned short *id = (unsigned short *)(&args[4]);
 	char buf[NAME_MAX+1], *ptr;
 	int ret = 0;
-	int fd __free(close) = -1;
-	FILE *fp;
+	int fd _free_(close) = -1;
 
-	fp = hdopen(SYS_BLK "/%s/size", device);
-	if ((long)fp <= 0) {
-		if ((long)fp < 0)
-			return -1;	/* error */
-		goto out;		/* no entry `size' */
+	{
+		FILE *fp _free_(fclose) = hdopen(SYS_BLK "/%s/size", device);
+		if (!fp) {
+			if (errno != ENOENT)
+				return -1;	/* error */
+			goto out;		/* no entry `size' */
+		}
+
+		ptr = fgets(buf, sizeof(buf), fp);
 	}
-
-	ptr = fgets(buf, sizeof(buf), fp);
-	fclose(fp);
 	if (ptr == (char *)0)
 		goto out;		/* should not happen */
 

@@ -26,10 +26,11 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef _LINUX_LIST_H_
-#define _LINUX_LIST_H_
+#ifndef MKRD_LIST_H
+#define MKRD_LIST_H
 
 #include <stddef.h>
+#include "compiler.h"
 #include <stdbool.h>
 
 #define	prefetch(x)
@@ -38,7 +39,7 @@
 #define container_of(ptr, type, member)					\
 	({								\
 		const __typeof__(((type *) NULL)->member) *__mptr = (ptr);	\
-		(type *) ((char *) __mptr - offsetof(type, member));	\
+		(type *) (void *) ((char *) __mptr - offsetof(type, member));	\
 	})
 #endif
 
@@ -46,7 +47,7 @@
 #define container_of_safe(ptr, type, member)						\
 	({										\
 		const __typeof__(((type *) NULL)->member) *__mptr = (ptr);		\
-		__mptr ? (type *)((char *) __mptr - offsetof(type, member)) : NULL;	\
+		__mptr ? (type *) (void *) ((char *) __mptr - offsetof(type, member)) : NULL;	\
 	})
 #endif
 
@@ -233,10 +234,10 @@ list_splice_tail_init(struct list_head *list, struct list_head *head)
 	INIT_LIST_HEAD(list);
 }
 
-typedef int __attribute__((nonnull(2,3))) (*list_cmp_func_t)(void *,
-                                                             const struct list_head *, const struct list_head *);
+typedef int _nonnull_(2, 3) (*list_cmp_func_t)(void *,
+                                               const struct list_head *, const struct list_head *);
 
-__attribute__((nonnull(2,3)))
+_nonnull_(2, 3)
 void list_sort(void *priv, struct list_head *head, list_cmp_func_t cmp);
 
-#endif /* _LINUX_LIST_H_ */
+#endif /* MKRD_LIST_H */

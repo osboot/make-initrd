@@ -9,16 +9,17 @@
 
 #include "compiler.h"
 #include "resume.h"
+#include "runtime.h"
 
-char *progname;
+static char *progname;
 
-static void __noreturn usage(void)
+static void _noreturn_ usage(void)
 {
 	fprintf(stderr, "Usage: %s /dev/<resumedevice> [offset]\n", progname);
 	exit(1);
 }
 
-int main(int argc, char *argv[])
+int resume_main(int argc, char *argv[])
 {
 	progname = argv[0];
 	if (argc < 2 || argc > 3)

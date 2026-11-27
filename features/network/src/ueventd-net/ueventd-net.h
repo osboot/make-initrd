@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef _UEVENTD_NET_H
-#define _UEVENTD_NET_H 1
+#ifndef MKRD_UEVENTD_NET_H
+#define MKRD_UEVENTD_NET_H 1
 
 #include <linux/if.h>
 #include <stdint.h>
 #include <stdbool.h>
 
 #include "compiler.h"
-#include "rd/list.h"
+#include "list.h"
 #include "rd/uevent.h"
 
 struct net_addr {
@@ -77,30 +77,30 @@ void net_state_sweep_unseen(void);
 void net_state_sync_all(void);
 
 void net_state_link_update(int ifindex, const char *ifname,
-                           unsigned int flags, bool defer_emit) __nonnull(2);
+                           unsigned int flags, bool defer_emit) _rdonly_ptr_(2);
 void net_state_link_remove(int ifindex, bool defer_emit);
 
 void net_state_addr_update(int ifindex, uint8_t family, uint8_t prefixlen,
                            uint8_t scope, uint32_t flags,
-                           const uint8_t *addr, bool defer_emit) __nonnull(6);
+                           const uint8_t *addr, bool defer_emit) _rdonly_ptr_(6);
 void net_state_addr_remove(int ifindex, uint8_t family, uint8_t prefixlen,
-                           const uint8_t *addr, bool defer_emit) __nonnull(4);
+                           const uint8_t *addr, bool defer_emit) _rdonly_ptr_(4);
 
 void net_state_route_update(int ifindex, uint8_t family, uint8_t dst_len,
                             uint8_t protocol, uint8_t scope,
                             const uint8_t *dst, const uint8_t *gw,
                             bool has_gw, uint32_t priority,
-                            bool defer_emit) __nonnull(6);
+                            bool defer_emit) _rdonly_ptr_(6) _access_(read_only, 7);
 void net_state_route_remove(int ifindex, uint8_t family, uint8_t dst_len,
                             uint8_t protocol, uint8_t scope,
                             const uint8_t *dst, const uint8_t *gw,
                             bool has_gw, uint32_t priority,
-                            bool defer_emit) __nonnull(6);
+                            bool defer_emit) _rdonly_ptr_(6) _access_(read_only, 7);
 
 /* netlink.c */
-int netlink_open(struct netlink_ctx *ctx) __nonnull(1);
-void netlink_close(struct netlink_ctx *ctx) __nonnull(1);
-void netlink_start_dump(struct netlink_ctx *ctx) __nonnull(1);
-void netlink_dispatch(struct netlink_ctx *ctx) __nonnull(1);
+int netlink_open(struct netlink_ctx *ctx) _wronly_ptr_(1);
+void netlink_close(struct netlink_ctx *ctx) _rdwr_ptr_(1);
+void netlink_start_dump(struct netlink_ctx *ctx) _rdwr_ptr_(1);
+void netlink_dispatch(struct netlink_ctx *ctx) _rdwr_ptr_(1);
 
-#endif /* _UEVENTD_NET_H */
+#endif /* MKRD_UEVENTD_NET_H */

@@ -11,10 +11,11 @@
 #include <err.h>       /* err */
 
 #include "compiler.h"
+#include "runtime.h"
 
 static char *prog;
 
-static void __noreturn show_usage(int rc)
+static void _noreturn_ show_usage(int rc)
 {
 	fprintf(stderr, "Usage: %s -h\n", prog);
 	fprintf(stderr, "   or: %s <rootdir> test -{b|c|d|e|f|p|s|L} <path>\n", prog);
@@ -77,7 +78,7 @@ static int cmd_realpath(int argc, char **argv)
 	return 0;
 }
 
-int main(int argc, char **argv)
+int chrooted_main(int argc, char **argv)
 {
 	prog = strrchr(argv[0], '/');
 	if (!prog)

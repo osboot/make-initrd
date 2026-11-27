@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef __UEVENTD_H__
-#define __UEVENTD_H__
+#ifndef MKRD_UEVENTD_H
+#define MKRD_UEVENTD_H
 
 #include <sys/types.h>
 #include <stdint.h>
@@ -10,8 +10,8 @@
 
 #include "compiler.h"
 #include "cleanup.h"
-
-DEFINE_FREE(closedir, DIR *, if (_t) closedir(_t))
+#include "rd/path.h"
+#include "rd/process.h"
 
 #define F_ROOT_DIR  (1 << 0)
 #define F_QUEUE_DIR (1 << 1)
@@ -38,19 +38,7 @@ extern char *handler_file;
 extern uint64_t session;
 
 /* queue-processor.c */
-extern void process_events(struct watch *queue) __nonnull(1) __noreturn;
-
-/* path.c */
-extern int is_dot_dir(struct dirent *ent)                           __nonnull(1);
-extern DIR *xopendir(const char *path)                              __nonnull(1);
-extern struct dirent *xreaddir(DIR *d, const char *path)            __nonnull(1, 2);
-extern int empty_directory(const char *path)                        __nonnull(1);
-extern ssize_t read_retry(int fd, void *buf, size_t count)          __nonnull(2);
-extern ssize_t write_retry(int fd, const void *buf, size_t count)   __nonnull(2);
-extern ssize_t write_loop(int fd, const char *buffer, size_t count) __nonnull(2);
-
-/* process.c */
-extern pid_t waitpid_retry(pid_t pid, int *wstatus, int options);
+extern void process_events(struct watch *queue) _nonnull_(1) _noreturn_;
 
 /* sources.c */
 extern void sources_start(const char *dir_path);
@@ -59,4 +47,4 @@ extern int sources_next_timeout_ms(void);
 extern void sources_tick(void);
 extern void sources_stop_all(void);
 
-#endif /* __UEVENTD_H__ */
+#endif /* MKRD_UEVENTD_H */

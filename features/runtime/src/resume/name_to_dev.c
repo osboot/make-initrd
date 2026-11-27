@@ -27,7 +27,7 @@ static dev_t try_name(char *name, unsigned long int part)
 
 	/* read device number from /sys/block/.../dev */
 	snprintf(path, sizeof(path), "/sys/block/%s/dev", name);
-	int fd __free(close) = open(path, 0, 0);
+	int fd _free_(close) = open(path, 0, 0);
 	if (fd < 0)
 		return (dev_t) 0;
 	len = read(fd, buf, BUF_SZ);
@@ -49,7 +49,7 @@ static dev_t try_name(char *name, unsigned long int part)
 
 	/* otherwise read range from .../range */
 	snprintf(path, sizeof(path), "/sys/block/%s/range", name);
-	int rfd __free(close) = open(path, 0, 0);
+	int rfd _free_(close) = open(path, 0, 0);
 	if (rfd < 0)
 		return (dev_t) 0;
 	len = read(rfd, buf, 32);

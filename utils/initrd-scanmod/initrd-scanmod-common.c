@@ -60,7 +60,7 @@ xstrdup(const char *s)
 	return r;
 }
 
-int __printf(2, 3) __nonnull(2)
+int _printf_(2, 3) _nonnull_(2)
 xasprintf(char **ptr, const char *fmt, ...)
 {
 	int ret;
@@ -72,12 +72,4 @@ xasprintf(char **ptr, const char *fmt, ...)
 	va_end(arg);
 
 	return ret;
-}
-
-void *
-xfree(void *ptr)
-{
-	if (ptr)
-		free(ptr);
-	return NULL;
 }

@@ -46,8 +46,8 @@ static uint64_t restart_backoff_ms(unsigned int restarts)
 	static const uint64_t delays[] = { 200, 500, 1000, 2000, 5000 };
 	size_t idx = (restarts > 0) ? (size_t) (restarts - 1) : 0;
 
-	if (idx >= sizeof(delays) / sizeof(delays[0]))
-		idx = sizeof(delays) / sizeof(delays[0]) - 1;
+	if (idx >= ARRAY_SIZE(delays))
+		idx = ARRAY_SIZE(delays) - 1;
 
 	return delays[idx];
 }
@@ -90,20 +90,20 @@ void sources_start(const char *dir_path)
 	if (!dir_path || !*dir_path)
 		return;
 
-	DIR *d __free(closedir) = opendir(dir_path);
+	DIR *d _free_(closedir) = opendir(dir_path);
 	if (!d) {
 		if (errno != ENOENT)
 			rd_err("opendir: %s: %m", dir_path);
 		return;
 	}
 
-	while ((ent = xreaddir(d, dir_path)) != NULL) {
+	while ((ent = rd_readdir_or_die(d, dir_path)) != NULL) {
 		struct stat st;
 
 		if (strncmp(ent->d_name, "ueventd-", 8) != 0)
 			continue;
 
-		char *fullpath __free(free) = rd_asprintf_or_die("%s/%s", dir_path, ent->d_name);
+		char *fullpath _free_(free) = rd_asprintf_or_die("%s/%s", dir_path, ent->d_name);
 
 		if (stat(fullpath, &st) < 0) {
 			rd_err("stat: %s: %m", fullpath);
@@ -221,7 +221,7 @@ void sources_stop_all(void)
 			for (src = source_list; src; src = src->next) {
 				if (src->pid <= 0)
 					continue;
-				if (waitpid_retry(src->pid, NULL, WNOHANG) > 0) {
+				if (rd_waitpid_retry(src->pid, NULL, WNOHANG) > 0) {
 					src->pid = 0;
 					alive--;
 				}
@@ -235,7 +235,7 @@ void sources_stop_all(void)
 		for (src = source_list; src; src = src->next) {
 			if (src->pid > 0) {
 				kill(src->pid, SIGKILL);
-				waitpid_retry(src->pid, NULL, 0);
+				rd_waitpid_retry(src->pid, NULL, 0);
 				src->pid = 0;
 			}
 		}

@@ -38,8 +38,8 @@ DEFINE_FREE(elf_end, Elf *, if (_t) elf_end(_t))
 
 extern int verbose;
 
-static int enqueue_elf_dlopen(const char *filename, int fd) __nonnull(1);
-static int enqueue_shared_libraries(const char *filename, uint8_t elf_class, uint16_t elf_machine, bool can_cache) __nonnull(1);
+static int enqueue_elf_dlopen(const char *filename, int fd) _nonnull_(1);
+static int enqueue_shared_libraries(const char *filename, uint8_t elf_class, uint16_t elf_machine, bool can_cache) _nonnull_(1);
 static FILE *pipe_command(char *const argv[], pid_t *pid_out);
 static int pipe_command_close(FILE *stream, pid_t pid);
 
@@ -194,7 +194,7 @@ int enqueue_elf_dlopen(const char *filename, int fd)
 {
 	int ret = 0;
 	char library[PATH_MAX + 1];
-	Elf *e __free(elf_end) = NULL;
+	Elf *e _free_(elf_end) = NULL;
 	Elf_Scn *scn;
 
 	if ((e = elf_begin(fd, ELF_C_READ, NULL)) == NULL) {
@@ -237,7 +237,7 @@ int enqueue_elf_dlopen(const char *filename, int fd)
 			if (nhdr.n_type == NT_FDO_DLOPEN_METADATA &&
 			    nhdr.n_namesz == sizeof(ELF_NOTE_FDO) &&
 			    !strcmp(data->d_buf + n_off, ELF_NOTE_FDO)) {
-				char *json __free(free) = xstrndup(data->d_buf + d_off, nhdr.n_descsz);
+				char *json _free_(free) = xstrndup(data->d_buf + d_off, nhdr.n_descsz);
 				library[0] = '\0';
 
 				process_json_metadata(filename, json, library);
@@ -259,11 +259,11 @@ static int enqueue_shared_libraries(const char *filename, uint8_t elf_class, uin
 	int ret = 0;
 	pid_t pid = -1;
 	FILE *pfd;
-	char *line __free(free) = NULL;
+	char *line _free_(free) = NULL;
 	size_t len = 0;
 	ssize_t n;
 	char *const argv[] = { (char *) "ldd", (char *) "--", (char *) filename, NULL };
-	struct pending_cache *pending __free(free) = NULL;
+	struct pending_cache *pending _free_(free) = NULL;
 	size_t pending_cnt = 0, pending_cap = 0;
 
 	pfd = pipe_command(argv, &pid);
@@ -367,7 +367,7 @@ bool is_elf_file(char buf[LINE_MAX])
 int enqueue_libraries(const char *filename, int fd)
 {
 	int ret = 0;
-	Elf *e __free(elf_end) = NULL;
+	Elf *e _free_(elf_end) = NULL;
 	GElf_Ehdr ehdr;
 	Elf_Scn *scn;
 	Elf_Scn *dynamic_scn = NULL;

@@ -13,7 +13,7 @@
 
 #include "udev-rules.h"
 
-static void __noreturn
+static void _noreturn_
 print_help(const char *progname, int rc)
 {
 	printf("Usage: %s [options] [file|directory]...\n"
@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 				}
 				break;
 			case S_IFREG: {
-				char *filename __free(free) = strdup(argv[optind]);
+				char *filename _free_(free) = strdup(argv[optind]);
 				if (!filename)
 					err(EXIT_FAILURE, "strdup");
 

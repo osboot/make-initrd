@@ -9,7 +9,8 @@ ueventd_net_SRCS = \
 	$(ueventd_net_SRCDIR)/netlink.c \
 	$(ueventd_net_SRCDIR)/state.c
 
-ueventd_net_CFLAGS = -D_GNU_SOURCE -I$(features_srcdir)/runtime/src/libinitramfs
+ueventd_net_CFLAGS = $(runtime_CFLAGS) -D_GNU_SOURCE -I$(features_srcdir)/runtime/src/libinitramfs
+ueventd_net_LDFLAGS = $(runtime_LDFLAGS)
 ueventd_net_LIBS = -L$(dest_data_libdir) -linitramfs
 
 PROGS += ueventd_net

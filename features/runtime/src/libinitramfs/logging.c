@@ -13,10 +13,10 @@
 #include "temp_failure_retry.h"
 #include "rd/logging.h"
 
-int log_priority = LOG_INFO;
-int log_fd = STDERR_FILENO;
-const char *log_progname = NULL;
-size_t log_progname_len = 0;
+static int log_priority = LOG_INFO;
+static int log_fd = STDERR_FILENO;
+static const char *log_progname = NULL;
+static size_t log_progname_len = 0;
 
 int rd_logging_level(const char *name)
 {

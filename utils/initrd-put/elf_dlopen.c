@@ -20,6 +20,7 @@
 #include <json-c/json.h>
 #include <json-c/json_visit.h>
 
+#include "compiler.h"
 #include "cleanup.h"
 #include "temp_failure_retry.h"
 #include "memory.h"
@@ -28,6 +29,7 @@
 #include "elf_dlopen.h"
 
 DEFINE_FREE(json_object_put, struct json_object *, if (_t) json_object_put(_t))
+DEFINE_FREE(dlclose, void *, if (_t) dlclose(_t))
 
 extern int verbose;
 
@@ -48,7 +50,8 @@ static int in_envvar(const char *envname, const char *filename, const char *valu
 {
 	const char *s, *e, *p, *list, *sep, *file_regex, *word;
 	size_t sz, file_regex_sz, word_sz, buf_sz;
-	char *buf, *new;
+	char *buf _free_(free) = NULL;
+	char *new;
 	int ret;
 
 	int regex_err;
@@ -59,8 +62,6 @@ static int in_envvar(const char *envname, const char *filename, const char *valu
 		return 0;
 
 	ret = 0;
-
-	buf = NULL;
 	buf_sz = 0;
 
 	s = p = list;
@@ -130,7 +131,6 @@ static int in_envvar(const char *envname, const char *filename, const char *valu
 
 	if (regex_compiled)
 		regfree(&regex);
-	free(buf);
 
 	return ret;
 }
@@ -140,14 +140,16 @@ static pid_t waitpid_retry(pid_t pid, int *wstatus, int options)
 	return (pid_t) TEMP_FAILURE_RETRY(waitpid(pid, wstatus, options));
 }
 
+_rdonly_ptr_(1, 2) _wronly_ptr_(3)
 static int resolve_soname(const char **soname, size_t len, char *outbuf)
 {
 	int pipefd[2];
 	ssize_t n;
 	size_t offset, siz;
 	pid_t pid;
-	void *handle;
+	void *handle _free_(dlclose) = NULL;
 	int ret = -1;
+	int status;
 
 	outbuf[0] = '\0';
 
@@ -196,7 +198,6 @@ static int resolve_soname(const char **soname, size_t len, char *outbuf)
 		}
 		ret = 0;
 out_parent:
-		int status;
 		if (waitpid_retry(pid, &status, 0) < 0)
 			warn("waitpid");
 
@@ -209,7 +210,6 @@ out_parent:
 	if (prctl(PR_SET_PDEATHSIG, SIGKILL) < 0)
 		warn("prctl(PR_SET_PDEATHSIG)");
 
-	handle = NULL;
 	ret = EXIT_FAILURE;
 
 	struct link_map *map = NULL;
@@ -255,17 +255,14 @@ out_parent:
 
 	ret = EXIT_SUCCESS;
 out_child:
-	if (handle)
-		dlclose(handle);
-
 	close(pipefd[1]); // write
 	close(pipefd[0]); // read
 
 	exit(ret);
 }
 
-static int visit_userfunc(json_object *jso, int flags, json_object *,
-                          const char *, size_t *, void *userarg)
+static int visit_userfunc(json_object *jso, int flags, json_object *parent _maybe_unused_,
+                          const char *key _maybe_unused_, size_t *index _maybe_unused_, void *userarg)
 {
 	struct visit_data *data = userarg;
 
@@ -314,7 +311,7 @@ static int visit_userfunc(json_object *jso, int flags, json_object *,
 		    in_envvar("IGNORE_PUT_DLOPEN_PRIORITY", data->filename, elf_metadata.priority))
 			return JSON_C_VISIT_RETURN_SKIP;
 
-		const char **soname __free(free) = xcalloc(array_len, sizeof(char *));
+		const char **soname _free_(free) = xcalloc(array_len, sizeof(char *));
 
 		for (i = 0; i < array_len; i++) {
 			json_object *child = json_object_array_get_idx(value, i);
@@ -346,7 +343,7 @@ static int visit_userfunc(json_object *jso, int flags, json_object *,
 
 int process_json_metadata(const char *filename, const char *json, char *outbuf)
 {
-	struct json_object *obj __free(json_object_put) = json_tokener_parse(json);
+	struct json_object *obj _free_(json_object_put) = json_tokener_parse(json);
 	struct visit_data data = { 0 };
 
 	if (!obj)

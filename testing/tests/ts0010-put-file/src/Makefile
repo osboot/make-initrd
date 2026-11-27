@@ -4,7 +4,7 @@ CFLAGS = -g -O0 -pedantic -Wall -Wextra
 all: foo
 
 libfoo.o: libfoo.c
-	$(COMPILE.c) -fPIC -shared -o $@ $^
+	$(COMPILE.c) -fPIC -o $@ $^
 
 libfoo.so: libfoo.o
 	$(LINK.o) -shared -fvisibility=default -o $@ $^

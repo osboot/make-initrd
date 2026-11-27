@@ -12,7 +12,7 @@ def get_packages() -> PackageSet:
         make_initrd=(
             "make", "findutils", "udev", "elfutils-libelf", "kmod-libs", "zlib-ng",
             "bzip2-libs", "libzstd", "xz-libs", "libxcrypt-compat", "json-c",
-            "squashfs-tools", "erofs-utils",
+            "squashfs-tools", "erofs-utils", "binutils",
         ),
         make_initrd_devel=(
             "make", "findutils", "udev", "elfutils-libelf", "kmod-libs", "zlib-ng",
