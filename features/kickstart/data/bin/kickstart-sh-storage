@@ -660,7 +660,7 @@ ks_growfs()
 
 	case "$fs" in
 		ext*)
-			e2fsck -y -p -f "$1" ||
+			e2fsck -y -f "$1" ||
 				rc="$?"
 			# 0 - No errors
 			# 1 - File system errors corrected
