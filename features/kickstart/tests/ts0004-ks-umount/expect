@@ -42,4 +42,15 @@ mountpoint -q TMPDIR/root
 umount -R TMPDIR/root
 cryptsetup close sda2_crypt
 sync 
+=== ks_zfs_umount ===
+VERBOSE: unmounting destination ...
+VERBOSE: exporting zfs pool dpool ...
+VERBOSE: exporting zfs pool rpool ...
+subtest_rc=0
+sync 
+mountpoint -q TMPDIR/root
+umount -R TMPDIR/root
+zpool export dpool
+zpool export rpool
+sync 
 rc=0

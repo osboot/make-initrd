@@ -25,6 +25,7 @@ fatal()
 
 . kickstart-sh-functions
 . kickstart-sh-storage
+. kickstart-sh-storage-zfs
 . kickstart-sh-postinstall
 
 mkdir -p -- "$tmpdir/bin" "$tmpdir/sysbin" "$tmpdir/root"
@@ -108,4 +109,12 @@ echo "=== ks_crypto_umount ==="
 make_log_mock cryptsetup 0
 ks_umount_hooks=()
 ks_add_umount_hook ks_crypto_umount sda2_crypt
+run_test ks_umount
+
+# 6. ZFS pool umount hook (multiple pools in LIFO order)
+echo "=== ks_zfs_umount ==="
+make_log_mock zpool 0
+ks_umount_hooks=()
+ks_add_umount_hook ks_zfs_umount rpool
+ks_add_umount_hook ks_zfs_umount dpool
 run_test ks_umount
