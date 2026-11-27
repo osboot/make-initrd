@@ -150,6 +150,8 @@ raid()
 			"$device" "$@" ||
 			return 1
 
+		ks_udev_settle
+
 		#mdadm --wait "$device"
 	fi
 

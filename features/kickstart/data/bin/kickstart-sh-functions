@@ -320,6 +320,12 @@ ks_umount()
 	sync ||:
 }
 
+ks_udev_settle()
+{
+	! type -P udevadm &>/dev/null ||
+		udevadm settle --timeout="${1:-3}" ||:
+}
+
 ks_begin=()
 ks_onerror=()
 ks_packages=()

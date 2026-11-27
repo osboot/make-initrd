@@ -81,6 +81,7 @@ volgroup()
 			return 1
 		lvm vgcreate -q ${pesize:+-s "$pesize"} "$name" "$@" ||
 			return 1
+		ks_udev_settle
 		ks_add_umount_hook ks_lvm_umount "$name"
 		return 0
 	fi
@@ -233,6 +234,10 @@ logvol()
 	if [ "$ret" = 1 ]; then
 		message "unable to handle logical volume: /dev/$partdev"
 		return 1
+	fi
+
+	if [ -z "$useexisting" ] || [ -n "$resize" ]; then
+		ks_udev_settle
 	fi
 
 	ks_add_umount_hook ks_lvm_umount "$vgname"
