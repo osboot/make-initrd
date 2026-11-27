@@ -5,6 +5,12 @@ __kickstart_sh_storage_raid=1
 
 . kickstart-sh-storage
 
+ks_raid_umount()
+{
+	verbose "stopping raid array $1 ..."
+	mdadm --quiet --stop "$1" ||:
+}
+
 ks_requires_raid=("mdadm")
 raid()
 {
@@ -147,6 +153,7 @@ raid()
 	fi
 
 	dev="$(ks_devname "$device")"
+	ks_add_umount_hook ks_raid_umount "/dev/$dev"
 
 	if [ -n "$encrypted" ]; then
 		local crypt_name="${device##*/}_crypt"
