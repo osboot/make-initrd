@@ -29,6 +29,7 @@ ks_reboot()
 		shift
 	done
 
+	ks_umount
 	[ -z "$try_eject" ] || eject ||:
 	[ -z "$try_kexec" ] || command reboot -f -d -k ||:
 	command "$@"
