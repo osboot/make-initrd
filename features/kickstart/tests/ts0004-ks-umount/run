@@ -25,6 +25,7 @@ fatal()
 
 . kickstart-sh-functions
 . kickstart-sh-storage
+. kickstart-sh-storage-lvm
 . kickstart-sh-storage-zfs
 . kickstart-sh-postinstall
 
@@ -117,4 +118,12 @@ make_log_mock zpool 0
 ks_umount_hooks=()
 ks_add_umount_hook ks_zfs_umount rpool
 ks_add_umount_hook ks_zfs_umount dpool
+run_test ks_umount
+
+# 7. LVM + LUKS nested stack (LIFO: cryptsetup close before vgchange -an)
+echo "=== ks_lvm_umount + ks_crypto_umount ==="
+make_log_mock lvm 0
+ks_umount_hooks=()
+ks_add_umount_hook ks_lvm_umount myvg
+ks_add_umount_hook ks_crypto_umount rootvol_crypt
 run_test ks_umount
