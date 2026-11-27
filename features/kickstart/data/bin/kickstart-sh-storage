@@ -116,7 +116,7 @@ ignoredisk()
 ks_requires_clearpart=("findmnt" "wipefs" "sfdisk" "umount")
 clearpart()
 {
-	local PROG TEMP dev devname num skipped
+	local PROG TEMP dev devname num partnum skipped
 	local all='' disks='' list='' initlabel=''
 
 	PROG="kickstart"
@@ -183,7 +183,7 @@ clearpart()
 	for dev in $disks; do
 		skipped=0
 		num=0
-		for devname in $(sfdisk -d "/dev/$dev" | sed -n -e 's,^/dev/\([^[:space:]]\+[0-9]\+\) : .*,\1,p'); do
+		for devname in $(sfdisk -d "/dev/$dev" | sed -n -e 's,^/dev/\([^[:space:]]\+[0-9]\+\) : .*,\1,p' | tac); do
 			num=$(( $num + 1 ))
 
 			if [ "$list" != ',,' ] && [ -n "${list##*,$devname,*}" ]; then
@@ -202,8 +202,12 @@ clearpart()
 
 			verbose "dropping /dev/$devname"
 
+			partnum=
+			[ ! -r "/sys/class/block/$devname/partition" ] ||
+				read -r partnum < "/sys/class/block/$devname/partition"
+
 			wipefs -qfa "/dev/$devname" ||:
-			sfdisk -q --delete "/dev/$dev" "$num" ||
+			sfdisk -q --delete "/dev/$dev" "${partnum:-$num}" ||
 				return 1
 			dropped=1
 		done
@@ -951,6 +955,12 @@ part()
 		return 0
 	fi
 
+	if [ -z "$dev" ]; then
+		dev="$(readlink-e "/sys/class/block/$partdev")"
+		dev="${dev%/*}"
+		dev="${dev##*/}"
+	fi
+
 	if [ -n "$resize" ]; then
 		[ ! -d "$ks_datadir/part/$dev/stop" ] ||
 			find "$ks_datadir/part/$dev/stop" -type f -executable -exec '{}' ';'
@@ -963,15 +973,21 @@ part()
 			message "you need to specify the size by which you want to increase the partition."
 			return 1
 		else
+			case "$size" in
+				*[0-9][Bb])
+					local sector_size=0
+					ks_get_dev_sector_size "$dev"
+					size="$(( ${size%[Bb]} / sector_size ))"
+					;;
+				*i)
+					size="${size}B"
+					;;
+			esac
 			size="+$size"
 		fi
 
 		local partnum
 		read -r partnum < "/sys/class/block/$partdev/partition"
-
-		dev="$(readlink-e "/sys/class/block/$partdev")"
-		dev="${dev%/*}"
-		dev="${dev##*/}"
 
 		verbose "increasing partition /dev/$partdev"
 
