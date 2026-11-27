@@ -1,0 +1,83 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' EXIT
+
+PATH="$PWD/external/libshell/upstream:$PATH"
+. shell-quote
+
+message()
+{
+	printf 'MSG: %s\n' "$*"
+}
+
+verbose()
+{
+	printf 'VERBOSE: %s\n' "$*"
+}
+
+fatal()
+{
+	printf 'FATAL: %s\n' "$*"
+	exit 1
+}
+
+eval "$(sed -n \
+	-e '/^KS_IGNORED=/,/^)/p' \
+	-e '/^ks_begin=/,/^ks_parse_stream()/{ /^ks_parse_stream()/d; p; }' \
+	-e '/^ks_parse_stream()/,/^}/p' \
+	features/kickstart/data/bin/kickstart)"
+
+ks_datadir="$tmpdir/ks"
+ks_rootdir="$tmpdir/root"
+mkdir -p -- "$ks_datadir" "$ks_rootdir"
+verbose=""
+
+cat > "$tmpdir/inc.ks" <<'EOF'
+ignoredisk --only-use=sda
+part / --size=100%
+EOF
+
+cat > "$tmpdir/main.ks" <<EOF
+clearpart --all
+%include $tmpdir/inc.ks
+part /home --size=50%
+reboot
+
+%pre
+%end
+
+%post --nochroot
+%end
+
+%pre-install --erroronfail
+exit 7
+%end
+EOF
+
+ks_parse_stream < "$tmpdir/main.ks"
+
+echo "=== ordered body ==="
+sort -g -k1,1 "$ks_datadir/ks:body" | cut -f2-
+
+echo "=== empty sections ==="
+rc=0
+ks_run pre || rc=$?
+printf 'pre_rc=%s\n' "$rc"
+
+rc=0
+ks_run post || rc=$?
+printf 'post_rc=%s\n' "$rc"
+
+echo "=== pre-install erroronfail ==="
+rc=0
+ks_run pre_install || rc=$?
+printf 'pre_install_rc=%s\n' "$rc"
+
+echo "=== include missing arg ==="
+rc=0
+(
+	printf '%%include\n' | ks_parse_stream
+) || rc=$?
+printf 'include_missing_rc=%s\n' "$rc"

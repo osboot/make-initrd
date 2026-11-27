@@ -459,7 +459,7 @@ ks_prepare_parser()
 
 ks_parse()
 {
-	local l eof='' args kwd num section='body' lineno=0 cmdbase=0
+	local l eof='' args kwd num section="${section:-body}" cmdbase=0
 	while [ -z "$eof" ]; do
 		if [ "$section" = 'body' ]; then
 			# shellcheck disable=SC2162
@@ -482,7 +482,9 @@ ks_parse()
 			'%include'|'%include '*)
 				quote_shell_args args "$l"
 				eval "set -- $args"
-				ks_parse < "$1"
+				[ "$#" -ge 2 ] ||
+					fatal "lineno=$lineno: %include requires a filename"
+				ks_parse < "$2"
 				continue
 				;;
 			'%ksappend'|'%ksappend '*)
@@ -520,7 +522,9 @@ ks_parse()
 				declare -n "args=ks_$kwd"
 				num=${#args[@]}
 				section="$kwd-$num"
-				args+=("${l#%$kwd}")
+				args+=("${l#"$1"}")
+				printf '#!/bin/bash -efu\n' > "$ks_datadir/ks:$section"
+				chmod +x "$ks_datadir/ks:$section"
 				continue
 			fi
 
@@ -550,7 +554,7 @@ ks_parse()
 
 ks_parse_stream()
 {
-	local l step i=0 cmdbase=0
+	local l step i=0 cmdbase=0 lineno=0
 	local KS_COMMANDS=','
 
 	ks_prepare_parser

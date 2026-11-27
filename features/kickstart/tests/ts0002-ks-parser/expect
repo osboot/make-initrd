@@ -1,0 +1,22 @@
+=== ordered body ===
+ks_step_begin
+ks_step_pre
+clearpart --all
+ignoredisk --only-use=sda
+part / --size=100%
+part /home --size=50%
+ks_step_mount
+ks_step_pre_install
+ks_step_packages
+ks_step_post
+ks_step_sync
+reboot
+=== empty sections ===
+pre_rc=0
+post_rc=0
+=== pre-install erroronfail ===
+pre_install_rc=1
+=== include missing arg ===
+FATAL: lineno=1: %include requires a filename
+include_missing_rc=1
+rc=0
