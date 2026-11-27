@@ -598,7 +598,11 @@ ks_growfs()
 				"$ks_datadir/xfs.dir"
 			;;
 		f2fs)
-			resize.f2fs "$1" ||
+			yes | fsck.f2fs -p -f "$1" ||
+				rc="$?"
+			#  0 - Success
+			# -1 - Failure. Exactly, it's negative.
+			[ "$rc" -eq 0 ] && yes | resize.f2fs "$1" ||
 				ret=1
 			;;
 	esac
