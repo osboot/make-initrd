@@ -26,6 +26,7 @@ fatal()
 . kickstart-sh-functions
 . kickstart-sh-storage
 . kickstart-sh-storage-lvm
+. kickstart-sh-storage-raid
 . kickstart-sh-storage-zfs
 . kickstart-sh-postinstall
 
@@ -126,4 +127,12 @@ make_log_mock lvm 0
 ks_umount_hooks=()
 ks_add_umount_hook ks_lvm_umount myvg
 ks_add_umount_hook ks_crypto_umount rootvol_crypt
+run_test ks_umount
+
+# 8. RAID + LUKS nested stack (LIFO: cryptsetup close before mdadm --stop)
+echo "=== ks_raid_umount + ks_crypto_umount ==="
+make_log_mock mdadm 0
+ks_umount_hooks=()
+ks_add_umount_hook ks_raid_umount /dev/md0
+ks_add_umount_hook ks_crypto_umount md0_crypt
 run_test ks_umount

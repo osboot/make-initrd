@@ -64,4 +64,15 @@ umount -R TMPDIR/root
 cryptsetup close rootvol_crypt
 lvm vgchange -an --noudevsync myvg
 sync 
+=== ks_raid_umount + ks_crypto_umount ===
+VERBOSE: unmounting destination ...
+VERBOSE: closing luks device md0_crypt ...
+VERBOSE: stopping raid array /dev/md0 ...
+subtest_rc=0
+sync 
+mountpoint -q TMPDIR/root
+umount -R TMPDIR/root
+cryptsetup close md0_crypt
+mdadm --quiet --stop /dev/md0
+sync 
 rc=0
