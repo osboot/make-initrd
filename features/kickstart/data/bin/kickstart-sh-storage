@@ -572,6 +572,7 @@ ks_requires_ks_growfs=("blkid")
 ks_requires_ks_growfs_ext4=("e2fsck" "resize2fs")
 ks_requires_ks_growfs_xfs=("xfs_growfs" "mount" "umount")
 ks_requires_ks_growfs_f2fs=("fsck.f2fs" "resize.f2fs" "yes")
+ks_requires_ks_growfs_btrfs=("btrfs" "mount" "umount")
 
 ks_dev_bytes()
 {
@@ -654,9 +655,10 @@ ks_growfs()
 	done <<< "$probe"
 
 	case "$fs" in
-		ext*) requires="ks_growfs_ext4" ;;
-		xfs)  requires="ks_growfs_xfs"  ;;
-		f2fs) requires="ks_growfs_f2fs" ;;
+		ext*)  requires="ks_growfs_ext4"  ;;
+		xfs)   requires="ks_growfs_xfs"   ;;
+		f2fs)  requires="ks_growfs_f2fs"  ;;
+		btrfs) requires="ks_growfs_btrfs" ;;
 		*)
 			# resize unsupported.
 			return 0
@@ -701,6 +703,16 @@ ks_growfs()
 			# -1 - Failure. Exactly, it's negative.
 			[ "$rc" -eq 0 ] && yes | resize.f2fs "$1" ||
 				ret=1
+			;;
+		btrfs)
+			mount -n -o rw,X-mount.mkdir \
+				"$1" \
+				"$ks_datadir/btrfs.dir"
+			command btrfs filesystem resize max \
+				"$ks_datadir/btrfs.dir" ||
+				ret=1
+			umount -f \
+				"$ks_datadir/btrfs.dir"
 			;;
 	esac
 

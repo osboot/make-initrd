@@ -39,7 +39,7 @@ make_fs_tool_mocks()
 	local tool
 	ln -sf "$(type -P stat)" "$tmpdir/bin/stat"
 
-	for tool in e2fsck resize2fs xfs_growfs mount umount fsck.f2fs resize.f2fs; do
+	for tool in e2fsck resize2fs xfs_growfs mount umount fsck.f2fs resize.f2fs btrfs; do
 		cat > "$tmpdir/bin/$tool" <<-EOF
 		#!/bin/bash -eu
 		printf '%s %s\n' "$tool" "\$*" >> "$call_log"
@@ -85,6 +85,10 @@ run_growfs_subshell
 make_blkid_mock 'TYPE=f2fs\n'
 run_growfs_subshell
 
+# 5. Missing btrfs tools
+make_blkid_mock 'TYPE=btrfs\n'
+run_growfs_subshell
+
 make_fs_tool_mocks
 
 # 5. f2fs where FSSIZE == devsize -> skip fsck.f2fs and resize.f2fs
@@ -127,4 +131,14 @@ run_growfs_subshell "$img"
 # 12. Fallback when blkid does not emit FSSIZE -> run fsck.f2fs and resize.f2fs
 truncate -s 40960 "$img"
 make_blkid_mock 'TYPE=f2fs\n'
+run_growfs_subshell "$img"
+
+# 13. btrfs already fills device -> skip
+truncate -s 40960 "$img"
+make_blkid_mock 'TYPE=btrfs\nFSBLOCKSIZE=4096\nFSLASTBLOCK=10\nFSSIZE=40960\n'
+run_growfs_subshell "$img"
+
+# 14. btrfs when grown -> run mount, btrfs filesystem resize max, umount
+truncate -s 45056 "$img"
+make_blkid_mock 'TYPE=btrfs\nFSBLOCKSIZE=4096\nFSLASTBLOCK=10\nFSSIZE=40960\n'
 run_growfs_subshell "$img"
