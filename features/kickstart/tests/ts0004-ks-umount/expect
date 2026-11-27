@@ -1,0 +1,36 @@
+=== ks_umount full ===
+VERBOSE: unmounting destination ...
+subtest_rc=0
+sync 
+mountpoint -q TMPDIR/root
+umount -R TMPDIR/root
+hook second [arg2]
+hook first [with space]
+sync 
+=== ks_umount lazy fallback ===
+VERBOSE: unmounting destination ...
+subtest_rc=0
+sync 
+mountpoint -q TMPDIR/root
+umount -R TMPDIR/root
+umount -l -R TMPDIR/root
+hook second [arg2]
+hook first [with space]
+sync 
+=== ks_umount minimal ===
+subtest_rc=0
+sync 
+mountpoint -q TMPDIR/root
+sync 
+=== shutdown ===
+MSG: command: ks_reboot -- halt -f -p
+VERBOSE: unmounting destination ...
+subtest_rc=0
+sync 
+mountpoint -q TMPDIR/root
+umount -R TMPDIR/root
+hook second [arg2]
+hook first [with space]
+sync 
+halt -f -p
+rc=0

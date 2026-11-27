@@ -270,6 +270,40 @@ ks_sync()
 	rsync -abX --suffix=.ks -- "$ks_datadir/sysdata/" "$ks_rootdir/"
 }
 
+ks_umount_hooks=()
+
+ks_add_umount_hook()
+{
+	local entry hook
+
+	printf -v entry '%q ' "$@"
+	entry="${entry% }"
+
+	for hook in "${ks_umount_hooks[@]}"; do
+		[ "$hook" != "$entry" ] || return 0
+	done
+	ks_umount_hooks+=("$entry")
+}
+
+ks_umount()
+{
+	local i
+
+	sync ||:
+
+	if [ -n "${ks_rootdir-}" ] && mountpoint -q "$ks_rootdir"; then
+		verbose "unmounting destination ..."
+		umount -R "$ks_rootdir" ||
+			umount -l -R "$ks_rootdir" ||:
+	fi
+
+	for (( i=${#ks_umount_hooks[@]} - 1; i >= 0; i-- )); do
+		eval "${ks_umount_hooks[$i]}" ||:
+	done
+
+	sync ||:
+}
+
 ks_begin=()
 ks_onerror=()
 ks_packages=()

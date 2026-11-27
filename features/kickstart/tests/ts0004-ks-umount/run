@@ -1,0 +1,103 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' EXIT
+
+PATH="$PWD/external/libshell/upstream:$PWD/features/kickstart/data/bin:$PATH"
+. shell-quote
+
+message()
+{
+	printf 'MSG: %s\n' "$*"
+}
+
+verbose()
+{
+	printf 'VERBOSE: %s\n' "$*"
+}
+
+fatal()
+{
+	printf 'FATAL: %s\n' "$*"
+	exit 1
+}
+
+. kickstart-sh-functions
+. kickstart-sh-postinstall
+
+mkdir -p -- "$tmpdir/bin" "$tmpdir/sysbin" "$tmpdir/root"
+ln -sf "$(type -P getopt)" "$tmpdir/sysbin/getopt"
+
+call_log="$tmpdir/calls.log"
+export call_log
+
+dummy_hook()
+{
+	printf 'hook %s [%s]\n' "$1" "$2" >> "$call_log"
+}
+
+make_log_mock()
+{
+	local name="$1" rc="${2:-0}"
+	cat > "$tmpdir/bin/$name" <<-EOF
+	#!/bin/bash -eu
+	printf '%s %s\n' "$name" "\$*" >> "$call_log"
+	exit $rc
+	EOF
+	chmod +x "$tmpdir/bin/$name"
+}
+
+run_test()
+{
+	local rc=0
+	: > "$call_log"
+	(
+		PATH="$tmpdir/bin:$tmpdir/sysbin"
+		"$@"
+	) || rc=$?
+	printf 'subtest_rc=%s\n' "$rc"
+	if [ -s "$call_log" ]; then
+		sed "s#$tmpdir#TMPDIR#g" "$call_log"
+	fi
+}
+
+make_log_mock sync 0
+make_log_mock mountpoint 0
+make_log_mock umount 0
+make_log_mock eject 0
+make_log_mock reboot 0
+make_log_mock halt 0
+
+# 1. Mounted rootdir, deduplicated LIFO hooks with quoted args
+echo "=== ks_umount full ==="
+ks_rootdir="$tmpdir/root"
+ks_umount_hooks=()
+ks_add_umount_hook dummy_hook first "with space"
+ks_add_umount_hook dummy_hook second arg2
+ks_add_umount_hook dummy_hook second arg2
+run_test ks_umount
+
+# 2. umount -R fails -> fallback to umount -l -R
+echo "=== ks_umount lazy fallback ==="
+cat > "$tmpdir/bin/umount" <<'EOF'
+#!/bin/bash -eu
+printf 'umount %s\n' "$*" >> "$call_log"
+[ "${1-}" != "-R" ] || exit 1
+EOF
+chmod +x "$tmpdir/bin/umount"
+run_test ks_umount
+
+# 3. Unmounted rootdir, no hooks
+echo "=== ks_umount minimal ==="
+make_log_mock umount 0
+make_log_mock mountpoint 1
+ks_umount_hooks=()
+run_test ks_umount
+
+# 4. shutdown calls ks_umount (with registered hooks) before halt -f -p
+echo "=== shutdown ==="
+make_log_mock mountpoint 0
+ks_add_umount_hook dummy_hook first "with space"
+ks_add_umount_hook dummy_hook second arg2
+run_test shutdown
