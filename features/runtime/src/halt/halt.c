@@ -58,7 +58,7 @@ static const char *progname;
 
 static void _noreturn_ usage(void);
 static int get_runlevel(void);
-static void do_shutdown(const char *fl, const char *pw, const char *tm);
+static void _noreturn_ do_shutdown(const char *fl, const char *pw, const char *tm);
 
 /*
  *	Send usage message.
@@ -119,7 +119,7 @@ int get_runlevel(void)
 /*
  *	Switch to another runlevel.
  */
-void do_shutdown(const char *fl, const char *pw, const char *tm)
+static void _noreturn_ do_shutdown(const char *fl, const char *pw, const char *tm)
 {
 	const char *args[9];
 	int i = 0;

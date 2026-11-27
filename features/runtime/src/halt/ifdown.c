@@ -56,7 +56,7 @@ int ifdown(void)
 		perror("SIOCGIFCONF");
 		return -1;
 	}
-	numif = (unsigned long) ifc.ifc_len / sizeof(struct ifreq);
+	numif = (int) ((unsigned long) ifc.ifc_len / sizeof(struct ifreq));
 
 	for (shaper = 1; shaper >= 0; shaper--) {
 		for (i = 0; i < numif; i++) {

@@ -59,7 +59,7 @@ void write_wtmp(
 	memset(&utmp, 0, sizeof(utmp));
 
 	if (!clock_gettime(CLOCK_REALTIME, &ts)) {
-		utmp.ut_tv.tv_sec = ts.tv_sec;
+		utmp.ut_tv.tv_sec = (__typeof__(utmp.ut_tv.tv_sec)) ts.tv_sec;
 		utmp.ut_tv.tv_usec = (int) ts.tv_nsec / 1000;
 	}
 
