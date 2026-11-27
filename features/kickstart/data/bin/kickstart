@@ -289,7 +289,7 @@ ks_mount()
 
 	mkdir -p -- "$ks_datadir/sysdata/etc"
 
-	findmnt -l -k -n -R -o SOURCE,TARGET,FSTYPE "$ks_rootdir" |
+	findmnt -v -l -k -n -R -o SOURCE,TARGET,FSTYPE "$ks_rootdir" |
 	while read -r source target fstype; do
 		freq=0 passno=0
 
