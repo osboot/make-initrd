@@ -708,6 +708,118 @@ ks_growfs()
 }
 
 
+ks_part_can_grow()
+{
+	local devpath="$1" partpath="$2"
+	local dump label="" last_lba="" table_length=128 sector_size=512
+	local line pdev pstart psize pend _
+	local part_start="" part_size="" part_end=""
+	local next_start="" container_end="" limit=""
+	local disk_bytes="" disk_sectors="" esects="" gpt_limit=""
+
+	dump="$(sfdisk -d "$devpath" 2>/dev/null)" ||
+		return 0
+
+	while IFS= read -r line; do
+		case "$line" in
+			label:*)
+				read -r _ label <<< "$line"
+				;;
+			last-lba:*)
+				read -r _ last_lba <<< "$line"
+				;;
+			table-length:*)
+				read -r _ table_length <<< "$line"
+				;;
+			sector-size:*)
+				read -r _ sector_size <<< "$line"
+				;;
+			*)
+				if [[ "$line" =~ ^([^[:space:]]+)[[:space:]]*:[[:space:]]*start=[[:space:]]*([0-9]+),[[:space:]]*size=[[:space:]]*([0-9]+) ]]; then
+					if [ "${BASH_REMATCH[1]}" = "$partpath" ]; then
+						part_start="${BASH_REMATCH[2]}"
+						part_size="${BASH_REMATCH[3]}"
+					fi
+				fi
+				;;
+		esac
+	done <<< "$dump"
+
+	[ -n "$part_start" ] && [ -n "$part_size" ] ||
+		return 0
+
+	case "$table_length:$sector_size" in
+		*[!0-9:]*) return 0 ;;
+	esac
+	[ -n "$table_length" ] && [ -n "$sector_size" ] &&
+		[ "$table_length" -gt 0 ] && [ "$sector_size" -gt 0 ] ||
+		return 0
+	case "$last_lba" in
+		*[!0-9]*) last_lba="" ;;
+	esac
+
+	part_end=$(( 10#$part_start + 10#$part_size ))
+
+	while IFS= read -r line; do
+		if [[ "$line" =~ ^([^[:space:]]+)[[:space:]]*:[[:space:]]*start=[[:space:]]*([0-9]+),[[:space:]]*size=[[:space:]]*([0-9]+) ]]; then
+			pdev="${BASH_REMATCH[1]}"
+			[ "$pdev" != "$partpath" ] ||
+				continue
+			pstart="${BASH_REMATCH[2]}"
+			psize="${BASH_REMATCH[3]}"
+			[ "$psize" -gt 0 ] ||
+				continue
+			pend=$(( 10#$pstart + 10#$psize ))
+
+			if [ "$pstart" -le "$part_start" ] && [ "$pend" -ge "$part_end" ]; then
+				if [ -z "$container_end" ] || [ "$pend" -lt "$container_end" ]; then
+					container_end="$pend"
+				fi
+			elif [ "$pstart" -ge "$part_end" ]; then
+				if [ -z "$next_start" ] || [ "$pstart" -lt "$next_start" ]; then
+					next_start="$pstart"
+				fi
+			fi
+		fi
+	done <<< "$dump"
+
+	if [ -n "$next_start" ]; then
+		limit="$next_start"
+	fi
+
+	if [ -n "$container_end" ] && { [ -z "$limit" ] || [ "$container_end" -lt "$limit" ]; }; then
+		limit="$container_end"
+	fi
+
+	if [ -z "$limit" ]; then
+		disk_bytes="$(ks_dev_bytes "$devpath")" ||
+			return 0
+		case "$disk_bytes" in
+			''|*[!0-9]*) return 0 ;;
+		esac
+		disk_sectors=$(( 10#$disk_bytes / 10#$sector_size ))
+
+		case "$label" in
+			gpt)
+				esects=$(( (10#$table_length * 128 + 10#$sector_size - 1) / 10#$sector_size ))
+				gpt_limit=$(( disk_sectors - 1 - esects ))
+				limit="$gpt_limit"
+				if [ -n "$last_lba" ] && [ "$(( 10#$last_lba + 1 ))" -gt "$limit" ]; then
+					limit=$(( 10#$last_lba + 1 ))
+				fi
+				;;
+			dos)
+				limit="$disk_sectors"
+				;;
+			*)
+				return 0
+				;;
+		esac
+	fi
+
+	[ "$part_end" -lt "$limit" ]
+}
+
 ks_requires_part=("numfmt" "sfdisk")
 part()
 {
@@ -978,37 +1090,41 @@ part()
 	fi
 
 	if [ -n "$resize" ]; then
-		[ ! -d "$ks_datadir/part/$dev/stop" ] ||
-			find "$ks_datadir/part/$dev/stop" -type f -executable -exec '{}' ';'
-
-		# https://karelzak.blogspot.com/2015/05/resize-by-sfdisk.html
-
-		if [ -n "$grow" ]; then
-			size='+'
-		elif [ -z "$size" ]; then
-			message "you need to specify the size by which you want to increase the partition."
-			return 1
+		if [ -n "$grow" ] && ! ks_part_can_grow "/dev/$dev" "/dev/$partdev"; then
+			verbose "Partition /dev/$partdev already uses all available space, skipping resize"
 		else
-			case "$size" in
-				*[0-9][Bb])
-					local sector_size=0
-					ks_get_dev_sector_size "$dev"
-					size="$(( ${size%[Bb]} / sector_size ))"
-					;;
-				*i)
-					size="${size}B"
-					;;
-			esac
-			size="+$size"
+			[ ! -d "$ks_datadir/part/$dev/stop" ] ||
+				find "$ks_datadir/part/$dev/stop" -type f -executable -exec '{}' ';'
+
+			# https://karelzak.blogspot.com/2015/05/resize-by-sfdisk.html
+
+			if [ -n "$grow" ]; then
+				size='+'
+			elif [ -z "$size" ]; then
+				message "you need to specify the size by which you want to increase the partition."
+				return 1
+			else
+				case "$size" in
+					*[0-9][Bb])
+						local sector_size=0
+						ks_get_dev_sector_size "$dev"
+						size="$(( ${size%[Bb]} / sector_size ))"
+						;;
+					*i)
+						size="${size}B"
+						;;
+				esac
+				size="+$size"
+			fi
+
+			local partnum
+			read -r partnum < "/sys/class/block/$partdev/partition"
+
+			verbose "increasing partition /dev/$partdev"
+
+			printf ', %s\n' "$size" |
+				sfdisk -q -N "$partnum" "/dev/$dev"
 		fi
-
-		local partnum
-		read -r partnum < "/sys/class/block/$partdev/partition"
-
-		verbose "increasing partition /dev/$partdev"
-
-		printf ', %s\n' "$size" |
-			sfdisk -q -N "$partnum" "/dev/$dev"
 		ks_growfs "/dev/$partdev"
 	fi
 
