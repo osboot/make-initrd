@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef __INITRD_PUT_TREE_H__
-#define __INITRD_PUT_TREE_H__
+#ifndef MKRD_INITRD_PUT_TREE_H
+#define MKRD_INITRD_PUT_TREE_H
 
 #include "queue.h"
 
@@ -10,4 +10,4 @@ size_t tree_get_nr(void);
 void tree_walk(void (*handler)(struct file *)) _nonnull_(1);
 void tree_destroy(void);
 
-#endif // __INITRD_PUT_TREE_H__
+#endif // MKRD_INITRD_PUT_TREE_H

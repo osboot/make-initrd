@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef _UEVENTD_MOUNTS_H
-#define _UEVENTD_MOUNTS_H 1
+#ifndef MKRD_UEVENTD_MOUNTS_H
+#define MKRD_UEVENTD_MOUNTS_H 1
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -52,4 +52,4 @@ void create_event(const char *action, struct mounts *m) _nonnull_(1, 2);
 extern struct mount_backend fanotify_backend;
 extern struct mount_backend procfs_backend;
 
-#endif /* _UEVENTD_MOUNTS_H */
+#endif /* MKRD_UEVENTD_MOUNTS_H */

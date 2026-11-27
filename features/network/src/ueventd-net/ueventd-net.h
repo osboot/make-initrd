@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef _UEVENTD_NET_H
-#define _UEVENTD_NET_H 1
+#ifndef MKRD_UEVENTD_NET_H
+#define MKRD_UEVENTD_NET_H 1
 
 #include <linux/if.h>
 #include <stdint.h>
@@ -103,4 +103,4 @@ void netlink_close(struct netlink_ctx *ctx) _rdwr_ptr_(1);
 void netlink_start_dump(struct netlink_ctx *ctx) _rdwr_ptr_(1);
 void netlink_dispatch(struct netlink_ctx *ctx) _rdwr_ptr_(1);
 
-#endif /* _UEVENTD_NET_H */
+#endif /* MKRD_UEVENTD_NET_H */

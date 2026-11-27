@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef __UEVENTD_H__
-#define __UEVENTD_H__
+#ifndef MKRD_UEVENTD_H
+#define MKRD_UEVENTD_H
 
 #include <sys/types.h>
 #include <stdint.h>
@@ -47,4 +47,4 @@ extern int sources_next_timeout_ms(void);
 extern void sources_tick(void);
 extern void sources_stop_all(void);
 
-#endif /* __UEVENTD_H__ */
+#endif /* MKRD_UEVENTD_H */

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef _INITRD_SCANMOD_H_
-#define _INITRD_SCANMOD_H_
+#ifndef MKRD_INITRD_SCANMOD_H
+#define MKRD_INITRD_SCANMOD_H
 
 #include <sys/types.h>
 #include <regex.h>
@@ -74,4 +74,4 @@ void close_map(struct mapfile *f) _rdwr_ptr_(1);
 // findmodule-walk.c
 void find_modules(const char *kerneldir);
 
-#endif /* _INITRD_SCANMOD_H_ */
+#endif /* MKRD_INITRD_SCANMOD_H */

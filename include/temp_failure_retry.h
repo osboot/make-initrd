@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // Copyright (C) 1991-2025 Free Software Foundation, Inc.
 
-#ifndef _TEMP_FAILURE_RETRY_H
-# define _TEMP_FAILURE_RETRY_H	1
+#ifndef MKRD_TEMP_FAILURE_RETRY_H
+# define MKRD_TEMP_FAILURE_RETRY_H	1
 
 # include <unistd.h>
 

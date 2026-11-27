@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef _COMPILER_H
-#define _COMPILER_H 1
+#ifndef MKRD_COMPILER_H
+#define MKRD_COMPILER_H 1
 
 #ifndef _noreturn_
 # define _noreturn_        __attribute__((__noreturn__))
@@ -97,4 +97,4 @@
 		(void)0))
 #endif
 
-#endif /* _COMPILER_H */
+#endif /* MKRD_COMPILER_H */

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef __RD_PROCESS_H__
-#define __RD_PROCESS_H__
+#ifndef RD_PROCESS_H
+#define RD_PROCESS_H
 
 #include <sys/types.h>
 
@@ -9,4 +9,4 @@
 
 _public_ pid_t rd_waitpid_retry(pid_t pid, int *wstatus, int options) _access_(write_only, 2);
 
-#endif /* __RD_PROCESS_H__ */
+#endif /* RD_PROCESS_H */

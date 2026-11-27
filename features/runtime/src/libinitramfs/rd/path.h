@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef __RD_PATH_H__
-#define __RD_PATH_H__
+#ifndef RD_PATH_H
+#define RD_PATH_H
 
 #include <sys/types.h>
 #include <dirent.h>
@@ -17,4 +17,4 @@ _public_ ssize_t rd_read_retry(int fd, void *buf, size_t count)                _
 _public_ ssize_t rd_write_retry(int fd, const void *buf, size_t count)         _rdonly_ptr_(2, 3);
 _public_ ssize_t rd_write_loop(int fd, const char *buffer, size_t count)       _rdonly_ptr_(2, 3);
 
-#endif /* __RD_PATH_H__ */
+#endif /* RD_PATH_H */

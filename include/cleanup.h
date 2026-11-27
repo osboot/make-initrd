@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef _CLEANUP_H
-#define _CLEANUP_H 1
+#ifndef MKRD_CLEANUP_H
+#define MKRD_CLEANUP_H 1
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -32,4 +32,4 @@ DEFINE_FREE(close, int, if (_t >= 0) close(_t))
 DEFINE_FREE(fclose, FILE *, if (_t) fclose(_t))
 DEFINE_FREE(closedir, DIR *, if (_t) closedir(_t))
 
-#endif /* _CLEANUP_H */
+#endif /* MKRD_CLEANUP_H */

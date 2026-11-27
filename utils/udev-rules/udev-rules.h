@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef __UDEV_RULES_H__
-#define __UDEV_RULES_H__
+#ifndef MKRD_UDEV_RULES_H
+#define MKRD_UDEV_RULES_H
 
 #include <dirent.h>
 
@@ -281,4 +281,4 @@ static inline bool isempty(const char *a)
 	return !a || a[0] == '\0';
 }
 
-#endif /* __UDEV_RULES_H__ */
+#endif /* MKRD_UDEV_RULES_H */

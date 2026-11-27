@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef __RD_UEVENT_H__
-#define __RD_UEVENT_H__
+#ifndef RD_UEVENT_H
+#define RD_UEVENT_H
 
 #include <stdint.h>
 
@@ -40,4 +40,4 @@ _public_ void rd_uevent_source_loop(int fd, short poll_events,
 
 _public_ void rd_uevent_source_close(struct rd_uevent_queue *q) _rdwr_ptr_(1);
 
-#endif /* __RD_UEVENT_H__ */
+#endif /* RD_UEVENT_H */

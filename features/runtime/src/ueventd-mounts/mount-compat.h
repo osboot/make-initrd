@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef _MOUNT_COMPAT_H
-#define _MOUNT_COMPAT_H 1
+#ifndef MKRD_MOUNT_COMPAT_H
+#define MKRD_MOUNT_COMPAT_H 1
 
 #include <stdint.h>
 #include <unistd.h>
@@ -227,4 +227,4 @@ static inline int sys_pidfd_open(pid_t pid, unsigned int flags)
 #endif
 }
 
-#endif /* _MOUNT_COMPAT_H */
+#endif /* MKRD_MOUNT_COMPAT_H */

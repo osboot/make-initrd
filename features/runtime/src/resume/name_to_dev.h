@@ -1,5 +1,5 @@
-#ifndef __NAME_TO_DEV_H__
-#define __NAME_TO_DEV_H__
+#ifndef MKRD_NAME_TO_DEV_H
+#define MKRD_NAME_TO_DEV_H
 
 #include <sys/sysmacros.h>
 
@@ -15,4 +15,4 @@
 
 dev_t name_to_dev_t(const char *name);
 
-#endif /* __NAME_TO_DEV_H__ */
+#endif /* MKRD_NAME_TO_DEV_H */

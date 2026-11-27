@@ -26,8 +26,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef _LINUX_LIST_H_
-#define _LINUX_LIST_H_
+#ifndef MKRD_LIST_H
+#define MKRD_LIST_H
 
 #include <stddef.h>
 #include "compiler.h"
@@ -240,4 +240,4 @@ typedef int _nonnull_(2, 3) (*list_cmp_func_t)(void *,
 _nonnull_(2, 3)
 void list_sort(void *priv, struct list_head *head, list_cmp_func_t cmp);
 
-#endif /* _LINUX_LIST_H_ */
+#endif /* MKRD_LIST_H */

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef __INITRD_PUT_QUEUE_H__
-#define __INITRD_PUT_QUEUE_H__
+#ifndef MKRD_INITRD_PUT_QUEUE_H
+#define MKRD_INITRD_PUT_QUEUE_H
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -27,5 +27,5 @@ void dequeue_item(struct file *ptr);
 bool is_path_queued(const char *path) _nonnull_(1);
 void queue_destroy(void);
 
-#endif // __INITRD_PUT_QUEUE_H__
+#endif // MKRD_INITRD_PUT_QUEUE_H
 

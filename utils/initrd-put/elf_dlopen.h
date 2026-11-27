@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef __ELF_DLOPEN_H__
-#define __ELF_DLOPEN_H__
+#ifndef MKRD_ELF_DLOPEN_H
+#define MKRD_ELF_DLOPEN_H
 
 #include "compiler.h"
 
@@ -15,4 +15,4 @@ static inline int process_json_metadata(const char *, const char *, char *)
 }
 #endif
 
-#endif /*__ELF_DLOPEN_H__ */
+#endif /*MKRD_ELF_DLOPEN_H */

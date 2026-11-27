@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef __INITRD_PUT_MEMORY_H__
-#define __INITRD_PUT_MEMORY_H__
+#ifndef MKRD_INITRD_PUT_MEMORY_H
+#define MKRD_INITRD_PUT_MEMORY_H
 
 #include "compiler.h"
 
@@ -9,5 +9,5 @@ void *xcalloc(size_t nmemb, size_t size) _alloc_(1, 2) _returns_nonnull_ _must_c
 char *xstrdup(const char *s) _nonnull_(1) _returns_nonnull_ _must_check_;
 char *xstrndup(const char *s, size_t n) _rdonly_ptr_(1, 2) _returns_nonnull_ _must_check_;
 
-#endif // __INITRD_PUT_MEMORY_H__
+#endif // MKRD_INITRD_PUT_MEMORY_H
 

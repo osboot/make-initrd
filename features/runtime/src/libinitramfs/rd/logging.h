@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef __RD_LOGGING_H__
-#define __RD_LOGGING_H__
+#ifndef RD_LOGGING_H
+#define RD_LOGGING_H
 
 #include <unistd.h>
 #include <syslog.h>
@@ -30,4 +30,4 @@ _public_ const char *rd_log_resolve_file(const char *env_var,
 #define rd_info(format, arg...) rd_log_message(LOG_INFO,  format, ##arg)
 #define rd_dbg(format, arg...)  rd_log_message(LOG_DEBUG, format, ##arg)
 
-#endif /* __RD_LOGGING_H__ */
+#endif /* RD_LOGGING_H */
