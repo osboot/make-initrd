@@ -137,10 +137,15 @@ touch "$mkfs_fail"
 run_test makefs /dev/vda2 --fstype=ext4
 rm -f -- "$mkfs_fail"
 
-# Use simple ks_devname override for storage layers without /dev nodes
+# Use simple overrides for storage layers without real /dev nodes
 ks_devname()
 {
 	printf '%s\n' "${1#/dev/}"
+}
+
+ks_get_dev_id()
+{
+	printf '%s\n' "$1"
 }
 
 # 6. raid --create settles before makefs
