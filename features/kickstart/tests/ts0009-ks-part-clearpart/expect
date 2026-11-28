@@ -1,0 +1,50 @@
+=== ks_part_resize_size ===
+grow: [+] rc=0
+MSG: you need to specify the size by which you want to increase the partition.
+empty: rc=1
+512Mi -> [+512MiB]
+2Gi -> [+2GiB]
+100M -> [+100M]
+4096B -> [+8]
+8192B@4Kn -> [+2]
+=== part percent rounding ===
+MSG: command: part none --size=50% --useexisting
+VERBOSE: creating new partition on /dev/vda
+subtest_rc=0
+sfdisk -q -W always --append /dev/vda | size=495 , type=linux
+MSG: command: part none --size=1% --useexisting
+VERBOSE: creating new partition on /dev/vda
+subtest_rc=0
+sfdisk -q -W always --append /dev/vda | size=5 , type=linux
+MSG: command: part none --size=1% --useexisting
+VERBOSE: /dev/vda has too little free space, ignoring.
+MSG: unable to create partition with 1% size
+subtest_rc=1
+=== part zero-sector guard ===
+MSG: command: part none --size=50% --useexisting
+VERBOSE: /dev/vda has unknown size, ignoring.
+VERBOSE: creating new partition on /dev/vdb
+subtest_rc=0
+sfdisk -q -W always --append /dev/vdb | size=500 , type=linux
+=== clearpart ===
+MSG: command: clearpart --all --disklabel=invalid
+MSG: unsupported disklabel: invalid
+subtest_rc=1
+MSG: command: clearpart --initlabel
+MSG: unable to initializes the disk label
+subtest_rc=1
+MSG: command: clearpart --all --initlabel --disklabel=mbr
+VERBOSE: creating new dos partition table on /dev/vda
+subtest_rc=0
+sfdisk -q -w always /dev/vda | label: dos
+MSG: command: clearpart --all --initlabel --disklabel=gpt
+VERBOSE: creating new gpt partition table on /dev/vda
+subtest_rc=0
+sfdisk -q -w always /dev/vda | label: gpt
+MSG: command: clearpart --all --none
+subtest_rc=0
+=== clearpart list skipped ===
+MSG: command: clearpart --all --initlabel --list=vda1
+MSG: unable to initializes the disk label because there are partitions left(1) on the disk
+subtest_rc=0
+rc=0

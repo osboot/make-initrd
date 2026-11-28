@@ -1,0 +1,123 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' EXIT
+
+PATH="$PWD/external/libshell/upstream:$PWD/features/kickstart/data/bin:$PATH"
+. shell-var
+
+message()
+{
+	printf 'MSG: %s\n' "$*"
+}
+
+verbose()
+{
+	printf 'VERBOSE: %s\n' "$*"
+}
+
+fatal()
+{
+	printf 'FATAL: %s\n' "$*"
+	exit 1
+}
+
+readline()
+{
+	local __v=
+	# shellcheck disable=SC2162
+	read __v < "$2" ||:
+	eval "$1=\"\$__v\""
+}
+
+. kickstart-sh-functions
+
+sysblock="$tmpdir/sys/devices/pci0/block"
+mkdir -p -- \
+	"$tmpdir/bin" "$tmpdir/sysbin" \
+	"$sysblock/sda/sda1" \
+	"$sysblock/sdb" \
+	"$sysblock/ram0" \
+	"$sysblock/sr0" \
+	"$sysblock/vdc" \
+	"$sysblock/vdd"
+
+for cmd in cat sed sort; do
+	ln -sf "$(type -P "$cmd")" "$tmpdir/sysbin/$cmd"
+done
+
+printf '8:0\n' > "$sysblock/sda/dev"
+printf '1\n' > "$sysblock/sda/partscan"
+printf '8:1\n' > "$sysblock/sda/sda1/dev"
+printf '1\n' > "$sysblock/sda/sda1/partition"
+
+printf '8:16\n' > "$sysblock/sdb/dev"
+printf '1\n' > "$sysblock/sdb/partscan"
+
+printf '1:0\n' > "$sysblock/ram0/dev"
+printf '1\n' > "$sysblock/ram0/partscan"
+
+printf '11:0\n' > "$sysblock/sr0/dev"
+printf '0\n' > "$sysblock/sr0/partscan"
+
+printf '253:0\n' > "$sysblock/vdc/dev"
+printf '16\n' > "$sysblock/vdc/ext_range"
+printf '16\n' > "$sysblock/vdc/capability"
+
+printf '253:16\n' > "$sysblock/vdd/dev"
+printf '16\n' > "$sysblock/vdd/ext_range"
+printf '4\n' > "$sysblock/vdd/capability"
+
+mounted_file="$tmpdir/mounted"
+export sysblock mounted_file
+
+cat > "$tmpdir/bin/findmnt" <<'EOF'
+#!/bin/bash -eu
+[ ! -f "$mounted_file" ] || cat "$mounted_file"
+EOF
+chmod +x "$tmpdir/bin/findmnt"
+
+cat > "$tmpdir/bin/readlink-e" <<'EOF'
+#!/bin/bash -eu
+case "$1" in
+	/sys/dev/block/8:1)  printf '%s\n' "$sysblock/sda/sda1" ;;
+	/sys/dev/block/8:16) printf '%s\n' "$sysblock/sdb" ;;
+	*) exit 1 ;;
+esac
+EOF
+chmod +x "$tmpdir/bin/readlink-e"
+
+ks_list_devices()
+{
+	printf '%s\n' \
+		"$sysblock/ram0" \
+		"$sysblock/sda" \
+		"$sysblock/sdb" \
+		"$sysblock/sr0" \
+		"$sysblock/vdc" \
+		"$sysblock/vdd"
+}
+
+run_case()
+{
+	local label="$1" devs='' rc=0
+	(
+		PATH="$tmpdir/bin:$tmpdir/sysbin"
+		ks_block_devices devs
+		printf '%s: %s\n' "$label" "$devs"
+	) || rc=$?
+	printf '%s: rc=%s\n' "$label" "$rc"
+}
+
+# 1. Mounted partition excludes parent disk sda; pseudo 0:25 ignored
+printf '0:25\n8:1\n' > "$mounted_file"
+run_case "mounted-part"
+
+# 2. Mounted whole disk excludes sdb
+printf '8:16\n' > "$mounted_file"
+run_case "mounted-disk"
+
+# 3. Only pseudo mounts -> all valid disks remain (ram0, sr0, vdd still excluded)
+printf '0:25\n' > "$mounted_file"
+run_case "none-mounted"
