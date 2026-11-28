@@ -5,7 +5,28 @@ looks similar to the kickstart implementation in RedHat's anaconda.
 
 ## Boot parameters
 
-- `ksfile=<FILE>` - Specifies the full path to the script.
+- `ksfile=<FILE>` - Specifies the path to the kickstart script
+  (default: `default`). Relative paths are looked up under
+  `/etc/ks.conf.d/`.
+- `noksfile` - Disables running kickstart during boot even when a
+  kickstart file is present.
+
+## Configuration
+
+The following variables can be set in `initrd.mk`:
+
+- `KICKSTART_CONFIGS` - Extra kickstart configuration files copied into
+  `/etc/ks.conf.d/` inside the initramfs.
+- `KICKSTART_EXTRA_FEATURES` - Optional features required by `kickstart`
+  (default: `devmapper luks lvm mdadm modules-filesystem network`). Clear
+  or narrow this list to build minimal images (for example, root partition
+  auto-resize only).
+- `KICKSTART_PROGS` - Core utilities required at build time for `kickstart`.
+- `KICKSTART_PROGS_PATTERNS` - Glob patterns of optional utilities (such as
+  `rsync`, `btrfs`, `mkfs.*`, `fsck.f2fs`, `resize.f2fs`, `xfs_growfs`,
+  `e2fsck`, `resize2fs`, `zpool`, `zfs`) included if found on the build
+  host. Missing utilities required by a kickstart script fail at runtime
+  with exit status `1`.
 
 ## Kickstart
 
@@ -52,6 +73,8 @@ The following commands can be placed in a kickstart file.
   - [logvol](#logvol)
   - [raid](#raid)
   - [btrfs](#btrfs)
+  - [zpool](#zpool)
+  - [zfs](#zfs)
 * Installation Methods and Sources
   - [liveimg](#liveimg)
 * After the Installation
@@ -161,6 +184,7 @@ Options:
 #### part or partition
 ```
 part [--ondisk=DISK] [--onpart=ONPART] [--asprimary]
+   [--size=SIZE] [--grow] [--resize] [--fsoptions=FSOPTS]
    [--fstype=FSTYPE] [--label=LABEL]
    [--useexisting] [--noformat] [--hibernation]
    [--encrypted] [--passphrase=PASSPHRASE] [--passfile=FILE] [--cipher=CIPHER]
@@ -189,26 +213,32 @@ Options:
   a particular disk.
 
 * `--onpart=ONPART`, `--usepart=ONPART` - Puts the partition on an already
-  existing device.
+  existing device. `/dev/root` can be used as an alias for the device specified
+  by the `root=` boot parameter.
 
 * `--asprimary` Forces automatic allocation of the partition as a primary
   partition or the partitioning will fail. The `--asprimary` option only makes
   sense with the MBR partitioning scheme and is ignored when the GPT
   partitioning scheme is used.
 
-* `--size=SIZE` - Size of this partition.
+* `--size=SIZE` - Size of this partition (or relative increment when used with
+  `--resize`).
 
 * `--grow` - Tells the partition to grow to fill available space (if any).
 
-* `--resize` - Attempt to resize this partition to the size given by `--size=`.
+* `--resize` - Attempt to increase the partition size: with `--size=SIZE`, the
+  partition is grown by a relative increment (`+SIZE`); with `--grow`, it
+  expands to fill available space. Also resizes `ext2`/`ext3`/`ext4`, `xfs`,
+  `f2fs`, and `btrfs` filesystems (skipping when the filesystem already fills
+  the partition).
 
 * `--fsoptions=FSOPTS` - Specifies a free form string of options to be used when
   mounting the filesystem. This string will be copied into the fstab file.
 
-* `--useexisting`, `--noformat` - Use an existing logical volume and do not
-  format it.
+* `--useexisting`, `--noformat` - Use an existing partition and do not format
+  it.
 
-* `--encrypted` - Specifies that this logical volume should be encrypted.
+* `--encrypted` - Specifies that this partition should be encrypted.
 
 * `--passphrase=PASSPHRASE`, `--passfile=FILE`, `--cipher=CIPHER`, `--pbkdf=PBKDF`,
   `--pbkdf-memory=MEMORY`, `--pbkdf-time=TIME`, `--pbkdf-iterations=ITERATIONS` -
@@ -315,10 +345,10 @@ Options:
 * `--fsoptions=FSOPTS` - Specifies a free form string of options to be used when
   mounting the filesystem. This string will be copied into the fstab file.
 
-* `--useexisting`, `--noformat` - Uses an existing logical volume and do not
-  format it.
+* `--useexisting`, `--noformat` - Use an existing RAID device and do not format
+  it.
 
-* `--encrypted` - Specifies that this logical volume should be encrypted.
+* `--encrypted` - Specifies that this RAID device should be encrypted.
 
 * `--passphrase=PASSPHRASE`, `--passfile=FILE`, `--cipher=CIPHER`, `--pbkdf=PBKDF`,
   `--pbkdf-memory=MEMORY`, `--pbkdf-time=TIME`, `--pbkdf-iterations=ITERATIONS` -
@@ -351,17 +381,18 @@ Options:
 
 * `--name=NAME` Subvolume name.
 
-* `--data=LEVEL` RAID level to use (0, 1, 10) for filesystem data.
+* `--data=LEVEL` Profile or RAID level to use (`0`, `1`, `1c3`, `1c4`, `5`, `6`,
+  `10`, `single`, `dup`) for filesystem data.
 
-* `--metadata=LEVEL` RAID level to use (0, 1, 10) for filesystem/volume
-  metadata.
+* `--metadata=LEVEL` Profile or RAID level to use (`0`, `1`, `1c3`, `1c4`, `5`,
+  `6`, `10`, `single`, `dup`) for filesystem/volume metadata.
 
 * `--label=LABEL` Specify the label to give to the filesystem to be made.
 
 * `--fsoptions=FSOPTS` - Specifies a free form string of options to be used when
   mounting the filesystem. This string will be copied into the fstab file.
 
-* `--useexisting`, `--noformat` - Uses an existing logical volume and do not
+* `--useexisting`, `--noformat` - Use an existing Btrfs volume and do not
   format it.
 
 Example:
@@ -463,7 +494,8 @@ the root filesystem. The file must end in .tar, .tbz, .tgz, .txz, .tar.bz2,
 
 Option:
 
-* `--url=<url>` - The URL to install from. http, https and file are supported.
+* `--url=<url>` - The URL to install from. `http`, `https`, `file`, and `dir`
+  are supported.
 * `--proxy=<proxyurl>` - Specifies an HTTP/HTTPS proxy to use while performing
   the install. The various parts of the argument act like you would expect.
 * `--noverifyssl` - Don't check the server certificate against the available
@@ -479,8 +511,9 @@ liveimg --url=file:///path/to/hasher.tar --checksum=01ba4719c80b6fe911b091a7c051
 ```
 reboot [--eject] [--kexec]
 ```
-Reboot after the installation is complete. Normally, kickstart displays a
-message and waits for the user to press a key before rebooting.
+Syncs and unmounts target filesystems, cleanly tears down configured storage
+layers (LUKS, ZFS, LVM, MD RAID), and reboots after the installation is
+complete.
 
 Options:
 
