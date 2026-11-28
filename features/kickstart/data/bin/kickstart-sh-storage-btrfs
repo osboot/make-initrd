@@ -6,6 +6,7 @@ __kickstart_sh_storage_btrfs=1
 . kickstart-sh-storage
 
 ks_requires_btrfs=("modprobe" "mount" "umount" "btrfs")
+ks_requires_btrfs_mkfs=("wipefs" "mkfs.btrfs")
 btrfs()
 {
 	local PROG TEMP shift_args dev
@@ -103,6 +104,8 @@ btrfs()
 		local ret=0
 
 		if [ -z "$subvol" ]; then
+			ks_check_requires btrfs_mkfs ||
+				return 1
 			wipefs -qfa "$@" ||:
 			mkfs.btrfs -q -f \
 				${data:+--data "$data"} \

@@ -366,7 +366,7 @@ ks_set_makefs_args()
 	esac
 }
 
-ks_requires_makefs=("wipefs" "mkswap")
+ks_requires_makefs=("wipefs")
 makefs()
 {
 	local PROG TEMP
@@ -403,6 +403,17 @@ makefs()
 
 	if [ -z "$fstype" ]; then
 		message "filesystem type required"
+		return 1
+	fi
+
+	local mkfs_bin
+	case "$fstype" in
+		swap) mkfs_bin="mkswap" ;;
+		*)    mkfs_bin="mkfs.$fstype" ;;
+	esac
+
+	if ! type -P "$mkfs_bin" &>/dev/null; then
+		message "command \`${FUNCNAME[0]}' requires utilities that are missing: $mkfs_bin"
 		return 1
 	fi
 
