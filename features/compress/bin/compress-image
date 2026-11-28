@@ -5,7 +5,7 @@
 . shell-error
 
 case "${COMPRESS-}" in
-	gzip|gz)   set -- gzip --best  ;;
+	gzip|gz)   set -- gzip --best --no-name ;;
 	bzip2|bz2) set -- bzip2 --best ;;
 	lz4)       set -- lz4 --best   ;;
 	lzma)      set -- lzma --best -T0 ;;

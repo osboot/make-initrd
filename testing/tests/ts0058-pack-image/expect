@@ -1,11 +1,19 @@
 early exists: yes
 main exists: yes
+outside untouched: yes
 === early cpio contents ===
-early
-early/data
+d Jan 01 00:00:00 1970 early
+- Jan 01 00:00:00 1970 early/data
+l Jan 01 00:00:00 1970 early/data-link -> data
 === main cpio contents ===
-bin
-bin/app
-etc
-etc/test.conf
+d Jan 01 00:00:00 1970 bin
+- Jan 01 00:00:00 1970 bin/app
+l Jan 01 00:00:00 1970 bin/app-link -> app
+d Jan 01 00:00:00 1970 etc
+l Jan 01 00:00:00 1970 etc/abs-link -> <TMPDIR>/outside
+l Jan 01 00:00:00 1970 etc/dangling -> /nonexistent
+- Jan 01 00:00:00 1970 etc/test.conf
+p Jan 01 00:00:00 1970 etc/test.fifo
+early reproducible: yes
+main reproducible: yes
 rc=0

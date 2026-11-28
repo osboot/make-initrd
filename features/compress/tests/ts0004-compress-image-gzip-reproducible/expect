@@ -1,0 +1,5 @@
+reproducible: yes
+gzip flg: 00
+gzip mtime: 00000000
+payload: reproducible gzip payload
+rc=0
