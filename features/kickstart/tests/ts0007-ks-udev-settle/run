@@ -1,0 +1,202 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' EXIT
+
+PATH="$PWD/external/libshell/upstream:$PWD/features/kickstart/data/bin:$PATH"
+. shell-quote
+
+message()
+{
+	printf 'MSG: %s\n' "$*"
+}
+
+verbose()
+{
+	printf 'VERBOSE: %s\n' "$*"
+}
+
+fatal()
+{
+	printf 'FATAL: %s\n' "$*"
+	exit 1
+}
+
+. kickstart-sh-functions
+. kickstart-sh-storage
+
+mkdir -p -- "$tmpdir/bin" "$tmpdir/sysbin" "$tmpdir/ks/fstab.d" "$tmpdir/root"
+for cmd in cat find getopt grep head numfmt rm sed sha256sum tac wc; do
+	ln -sf "$(type -P "$cmd")" "$tmpdir/sysbin/$cmd"
+done
+
+call_log="$tmpdir/calls.log"
+sfdisk_state="$tmpdir/sfdisk.state"
+mkfs_fail="$tmpdir/mkfs.fail"
+export call_log sfdisk_state mkfs_fail
+
+cat > "$tmpdir/bin/modprobe" <<'EOF'
+#!/bin/bash -eu
+exit 0
+EOF
+chmod +x "$tmpdir/bin/modprobe"
+
+for cmd in udevadm wipefs mkswap mount umount mdadm lvm mkfs.btrfs btrfs zpool zfs; do
+	cat > "$tmpdir/bin/$cmd" <<-EOF
+	#!/bin/bash -eu
+	printf '%s %s\n' "$cmd" "\$*" >> "$call_log"
+	EOF
+	chmod +x "$tmpdir/bin/$cmd"
+done
+
+cat > "$tmpdir/bin/mkfs.ext4" <<'EOF'
+#!/bin/bash -eu
+printf 'mkfs.ext4 %s\n' "$*" >> "$call_log"
+[ ! -e "$mkfs_fail" ] || exit 1
+EOF
+chmod +x "$tmpdir/bin/mkfs.ext4"
+
+cat > "$tmpdir/bin/blkid" <<'EOF'
+#!/bin/bash -eu
+printf 'ext4\n'
+EOF
+chmod +x "$tmpdir/bin/blkid"
+
+cat > "$tmpdir/bin/findmnt" <<'EOF'
+#!/bin/bash -eu
+exit 0
+EOF
+chmod +x "$tmpdir/bin/findmnt"
+
+cat > "$tmpdir/bin/sfdisk" <<'EOF'
+#!/bin/bash -eu
+if [ "${1-}" = "-d" ]; then
+	if [ -f "$sfdisk_state" ]; then
+		cat "$sfdisk_state"
+	fi
+	exit 0
+fi
+printf 'sfdisk %s\n' "$*" >> "$call_log"
+if [ "$*" = "-q -W always --append /dev/vda" ]; then
+	cat > "$sfdisk_state" <<'STATE'
+/dev/vda1 : start= 2048, size= 2048, type=83
+/dev/vda2 : start= 4096, size= 2048, type=83
+STATE
+fi
+EOF
+chmod +x "$tmpdir/bin/sfdisk"
+
+run_test()
+{
+	local rc=0
+	: > "$call_log"
+	(
+		PATH="$tmpdir/bin:$tmpdir/sysbin"
+		"$@"
+	) || rc=$?
+	printf 'subtest_rc=%s\n' "$rc"
+	if [ -s "$call_log" ]; then
+		sed "s#$tmpdir#TMPDIR#g" "$call_log"
+	fi
+}
+
+ks_datadir="$tmpdir/ks"
+ks_rootdir="$tmpdir/root"
+: > "$ks_datadir/fstab"
+DISKLABEL=dos
+BLOCK_DEVICES="vda"
+
+# 1. ks_udev_settle with udevadm present
+echo "=== ks_udev_settle present ==="
+run_test ks_udev_settle
+
+# 2. ks_udev_settle with udevadm absent
+echo "=== ks_udev_settle absent ==="
+mv -- "$tmpdir/bin/udevadm" "$tmpdir/udevadm.bak"
+run_test ks_udev_settle
+mv -- "$tmpdir/udevadm.bak" "$tmpdir/bin/udevadm"
+
+# 3. clearpart --all --initlabel
+echo "=== clearpart ==="
+rm -f -- "$sfdisk_state"
+run_test clearpart --all --initlabel
+
+# 4. part / --fstype=ext4 (new partition + makefs)
+echo "=== part ==="
+cat > "$sfdisk_state" <<'STATE'
+/dev/vda1 : start= 2048, size= 2048, type=83
+STATE
+: > "$ks_datadir/fstab"
+rm -f -- "$ks_datadir/fstab.d/"*
+run_test part / --fstype=ext4
+
+# 5. makefs failure does not settle
+echo "=== makefs fail ==="
+touch "$mkfs_fail"
+run_test makefs /dev/vda2 --fstype=ext4
+rm -f -- "$mkfs_fail"
+
+# Use simple overrides for storage layers without real /dev nodes
+ks_devname()
+{
+	printf '%s\n' "${1#/dev/}"
+}
+
+ks_get_dev_id()
+{
+	printf '%s\n' "$1"
+}
+
+# 6. raid --create settles before makefs
+echo "=== raid ==="
+: > "$ks_datadir/fstab"
+rm -f -- "$ks_datadir/fstab.d/"*
+run_test raid / --device=md0 --level=1 /dev/vda1 /dev/vdb1 --fstype=ext4
+
+# 7. volgroup settles after vgcreate
+echo "=== volgroup ==="
+run_test volgroup vg0 /dev/vda1
+
+# 8. logvol create settles before makefs
+echo "=== logvol create ==="
+: > "$ks_datadir/fstab"
+rm -f -- "$ks_datadir/fstab.d/"*
+run_test logvol / --vgname=vg0 --name=root --size=1G --fstype=ext4
+
+# 9. logvol --useexisting --resize settles before ks_growfs
+echo "=== logvol resize ==="
+: > "$ks_datadir/fstab"
+rm -f -- "$ks_datadir/fstab.d/"*
+(
+	ks_growfs()
+	{
+		printf 'ks_growfs %s\n' "$*" >> "$call_log"
+	}
+	run_test logvol / --vgname=vg0 --name=root --useexisting --resize --grow
+)
+
+# 10. logvol --useexisting without --resize does not settle
+echo "=== logvol useexisting ==="
+: > "$ks_datadir/fstab"
+rm -f -- "$ks_datadir/fstab.d/"*
+run_test logvol / --vgname=vg0 --name=root --useexisting
+
+# 11. btrfs mkfs settles
+echo "=== btrfs ==="
+: > "$ks_datadir/fstab"
+rm -f -- "$ks_datadir/fstab.d/"*
+run_test btrfs / /dev/vda1
+
+# 12. zpool create settles
+echo "=== zpool ==="
+run_test zpool rpool /dev/vda1
+
+# 13. zfs dataset does not settle, zvol (--size) settles
+echo "=== zfs dataset ==="
+: > "$ks_datadir/fstab"
+rm -f -- "$ks_datadir/fstab.d/"*
+run_test zfs / rpool/root
+
+echo "=== zfs zvol ==="
+run_test zfs none rpool/vol --size=1G

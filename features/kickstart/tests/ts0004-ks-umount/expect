@@ -1,0 +1,78 @@
+=== ks_umount full ===
+VERBOSE: unmounting destination ...
+subtest_rc=0
+sync 
+mountpoint -q TMPDIR/root
+umount -R TMPDIR/root
+hook second [arg2]
+hook first [with space]
+sync 
+=== ks_umount lazy fallback ===
+VERBOSE: unmounting destination ...
+subtest_rc=0
+sync 
+mountpoint -q TMPDIR/root
+umount -R TMPDIR/root
+umount -l -R TMPDIR/root
+hook second [arg2]
+hook first [with space]
+sync 
+=== ks_umount minimal ===
+subtest_rc=0
+sync 
+mountpoint -q TMPDIR/root
+sync 
+=== shutdown ===
+MSG: command: ks_reboot -- halt -f -p
+VERBOSE: unmounting destination ...
+subtest_rc=0
+sync 
+mountpoint -q TMPDIR/root
+umount -R TMPDIR/root
+hook second [arg2]
+hook first [with space]
+sync 
+halt -f -p
+=== ks_crypto_umount ===
+VERBOSE: unmounting destination ...
+VERBOSE: closing luks device sda2_crypt ...
+subtest_rc=0
+sync 
+mountpoint -q TMPDIR/root
+umount -R TMPDIR/root
+cryptsetup close sda2_crypt
+sync 
+=== ks_zfs_umount ===
+VERBOSE: unmounting destination ...
+VERBOSE: exporting zfs pool dpool ...
+VERBOSE: exporting zfs pool rpool ...
+subtest_rc=0
+sync 
+mountpoint -q TMPDIR/root
+umount -R TMPDIR/root
+zpool export dpool
+zpool export rpool
+sync 
+=== ks_lvm_umount + ks_crypto_umount ===
+VERBOSE: unmounting destination ...
+VERBOSE: closing luks device rootvol_crypt ...
+VERBOSE: deactivating lvm volume group myvg ...
+subtest_rc=0
+sync 
+mountpoint -q TMPDIR/root
+umount -R TMPDIR/root
+cryptsetup close rootvol_crypt
+lvm vgchange -an --noudevsync myvg
+sync 
+=== ks_raid_umount + ks_crypto_umount ===
+VERBOSE: unmounting destination ...
+VERBOSE: closing luks device md0_crypt ...
+VERBOSE: stopping raid array /dev/md0 ...
+subtest_rc=0
+sync 
+mountpoint -q TMPDIR/root
+umount -R TMPDIR/root
+cryptsetup close md0_crypt
+mdadm --quiet --stop /dev/md0
+sync 
+rc=0

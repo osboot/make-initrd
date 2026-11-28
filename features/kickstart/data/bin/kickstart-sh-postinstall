@@ -1,6 +1,11 @@
 #!/bin/bash
 
-ks_requires_ks_reboot=("eject" "reboot" "halt")
+ks_requires_reboot=("reboot")
+ks_requires_halt=("halt")
+ks_requires_poweroff=("halt")
+ks_requires_shutdown=("halt")
+ks_requires_ks_reboot_eject=("eject")
+ks_requires_ks_reboot_kexec=("reboot")
 ks_reboot()
 {
 	local PROG TEMP cmd
@@ -8,9 +13,6 @@ ks_reboot()
 
 	PROG="kickstart"
 	message "command: ${FUNCNAME[0]} $*"
-
-	ks_check_requires "${FUNCNAME[0]}" ||
-		return 1
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l 'eject,kexec' -- "$PROG" "$@"` ||
@@ -29,6 +31,14 @@ ks_reboot()
 		shift
 	done
 
+	ks_check_requires "$1" ||
+		return 1
+	[ -z "$try_eject" ] || ks_check_requires ks_reboot_eject ||
+		return 1
+	[ -z "$try_kexec" ] || ks_check_requires ks_reboot_kexec ||
+		return 1
+
+	ks_umount
 	[ -z "$try_eject" ] || eject ||:
 	[ -z "$try_kexec" ] || command reboot -f -d -k ||:
 	command "$@"

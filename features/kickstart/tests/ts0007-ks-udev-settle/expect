@@ -1,0 +1,102 @@
+=== ks_udev_settle present ===
+subtest_rc=0
+udevadm settle --timeout=3
+=== ks_udev_settle absent ===
+subtest_rc=0
+=== clearpart ===
+MSG: command: clearpart --all --initlabel
+VERBOSE: creating new dos partition table on /dev/vda
+subtest_rc=0
+sfdisk -q -w always /dev/vda
+udevadm settle --timeout=3
+=== part ===
+MSG: command: part / --fstype=ext4
+VERBOSE: creating new partition on /dev/vda
+MSG: command: makefs vda2 --fstype=ext4
+VERBOSE: clearing previous filesystem on /dev/vda2
+VERBOSE: creating ext4 filesystem on /dev/vda2
+subtest_rc=0
+sfdisk -q -W always --append /dev/vda
+udevadm settle --timeout=3
+wipefs -qfa /dev/vda2
+mkfs.ext4 -q /dev/vda2
+udevadm settle --timeout=3
+=== makefs fail ===
+MSG: command: makefs /dev/vda2 --fstype=ext4
+VERBOSE: clearing previous filesystem on /dev/vda2
+VERBOSE: creating ext4 filesystem on /dev/vda2
+subtest_rc=1
+wipefs -qfa /dev/vda2
+mkfs.ext4 -q /dev/vda2
+=== raid ===
+MSG: command: raid / --device=md0 --level=1 /dev/vda1 /dev/vdb1 --fstype=ext4
+VERBOSE: creating raid1 array 'md0': /dev/vda1 /dev/vdb1
+MSG: command: makefs md0 --fstype=ext4
+VERBOSE: clearing previous filesystem on /dev/md0
+VERBOSE: creating ext4 filesystem on /dev/md0
+subtest_rc=0
+wipefs -qfa /dev/vda1
+wipefs -qfa /dev/vdb1
+mdadm --query --brief /dev/md/md0
+mdadm --create --quiet --run --metadata=default --level=1 --raid-devices=2 md0 /dev/vda1 /dev/vdb1
+udevadm settle --timeout=3
+wipefs -qfa /dev/md0
+mkfs.ext4 -q /dev/md0
+udevadm settle --timeout=3
+=== volgroup ===
+MSG: command: volgroup vg0 /dev/vda1
+VERBOSE: creating lvm volume group 'vg0': /dev/vda1
+subtest_rc=0
+lvm pvcreate -q /dev/vda1
+lvm vgcreate -q vg0 /dev/vda1
+udevadm settle --timeout=3
+=== logvol create ===
+MSG: command: logvol / --vgname=vg0 --name=root --size=1G --fstype=ext4
+VERBOSE: creating logical volume 'root' in 'vg0' volume group
+MSG: command: makefs vg0/root
+VERBOSE: clearing previous filesystem on /dev/vg0/root
+VERBOSE: creating ext4 filesystem on /dev/vg0/root
+subtest_rc=0
+lvm lvcreate --size 1G vg0 --activate n --name root
+lvm vgscan
+lvm vgchange -ay --noudevsync
+lvm vgmknodes
+udevadm settle --timeout=3
+wipefs -qfa /dev/vg0/root
+mkfs.ext4 -q /dev/vg0/root
+udevadm settle --timeout=3
+=== logvol resize ===
+MSG: command: logvol / --vgname=vg0 --name=root --useexisting --resize --grow
+VERBOSE: increasing logical volume /dev/vg0/root
+subtest_rc=0
+lvm lvextend --extents +100%FREE /dev/vg0/root
+udevadm settle --timeout=3
+ks_growfs /dev/vg0/root
+=== logvol useexisting ===
+MSG: command: logvol / --vgname=vg0 --name=root --useexisting
+subtest_rc=0
+=== btrfs ===
+MSG: command: btrfs / /dev/vda1
+subtest_rc=0
+wipefs -qfa /dev/vda1
+mkfs.btrfs -q -f /dev/vda1
+udevadm settle --timeout=3
+=== zpool ===
+MSG: command: zpool rpool /dev/vda1
+subtest_rc=0
+zpool create -O acltype=posixacl -O relatime=on -O xattr=sa -O dnodesize=auto -O normalization=formD -R TMPDIR/root -O mountpoint=none -O canmount=off rpool /dev/vda1
+udevadm settle --timeout=3
+=== zfs dataset ===
+MSG: command: zfs / rpool/root
+subtest_rc=0
+zfs create -o mountpoint=/ rpool/root
+zfs umount -f -a
+zpool get -Ho value bootfs
+zpool set bootfs=rpool/root rpool
+=== zfs zvol ===
+MSG: command: zfs none rpool/vol --size=1G
+subtest_rc=0
+zfs create -o mountpoint=none -V 1G rpool/vol
+udevadm settle --timeout=3
+zfs umount -f -a
+rc=0

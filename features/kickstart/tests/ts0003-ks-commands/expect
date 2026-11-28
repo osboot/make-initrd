@@ -1,0 +1,79 @@
+=== zfs requires ===
+MSG: command: zpool create rpool sda
+MSG: command `zpool' requires utilities that are missing: zpool
+subtest_rc=1
+MSG: command: zfs / rpool/ROOT
+MSG: command `zfs' requires utilities that are missing: zfs
+subtest_rc=1
+=== btrfs profiles ===
+MSG: command: btrfs none --data=single --metadata=dup sda1
+subtest_rc=0
+mkfs.btrfs -q -f --data single --metadata dup /dev/sda1
+MSG: command: btrfs none --data=1 --metadata=RAID10 sda1
+subtest_rc=0
+mkfs.btrfs -q -f --data raid1 --metadata raid10 /dev/sda1
+=== raid ===
+MSG: command: raid --fsoptions=noatime --fstype=swap --device=md0 --level=RAID1 none raid.0*
+VERBOSE: creating raid1 array 'md0': /dev/sda1 /dev/sdb1
+subtest_rc=0
+mdadm --query --brief /dev/md/md0
+mdadm --create --quiet --run --metadata=default --level=1 --raid-devices=2 md0 /dev/sda1 /dev/sdb1
+makefs md0 --fstype=swap
+=== lvm ===
+MSG: command: volgroup --useexisting myvg
+VERBOSE: changing lvm volume group 'myvg'
+subtest_rc=0
+lvm vgchange -q myvg
+MSG: command: logvol --useexisting --resize --grow --vgname=myvg --name=root /
+VERBOSE: increasing logical volume /dev/myvg/root
+subtest_rc=0
+lvm lvextend --extents +100%FREE /dev/myvg/root
+ks_growfs /dev/myvg/root
+fstab /dev/myvg/root / 
+=== liveimg ===
+MSG: command: liveimg --url=dir:///src
+VERBOSE: syncing /src directory
+subtest_rc=0
+rsync -abX /src/ TMPDIR/root/
+MSG: command: liveimg --url=file:///img.tar.zst
+MSG: command `liveimg_zst' requires utilities that are missing: zstd tar
+subtest_rc=1
+=== makefs requires ===
+MSG: command: makefs /dev/sda1 --fstype=ext4
+VERBOSE: clearing previous filesystem on /dev/sda1
+VERBOSE: creating ext4 filesystem on /dev/sda1
+subtest_rc=0
+wipefs -qfa /dev/sda1
+mkfs.ext4 -q /dev/sda1
+MSG: command: makefs /dev/sda1 --fstype=xfs
+MSG: command `makefs' requires utilities that are missing: mkfs.xfs
+subtest_rc=1
+MSG: command: makefs /dev/sda1 --fstype=swap
+MSG: command `makefs' requires utilities that are missing: mkswap
+subtest_rc=1
+=== btrfs mkfs requires ===
+MSG: command: btrfs none sda1
+MSG: command `btrfs_mkfs' requires utilities that are missing: mkfs.btrfs
+subtest_rc=1
+MSG: command: btrfs none --subvol --name=root sda1
+subtest_rc=0
+btrfs subvolume create TMPDIR/ks/btrfs.subvol/root
+=== ks_sync requires ===
+subtest_rc=0
+MSG: command `ks_sync' requires utilities that are missing: rsync
+subtest_rc=1
+=== ks_reboot requires ===
+MSG: command: ks_reboot -- reboot -f -d
+subtest_rc=0
+ks_umount
+reboot -f -d
+MSG: command: ks_reboot --eject -- reboot -f -d
+MSG: command `ks_reboot_eject' requires utilities that are missing: eject
+subtest_rc=1
+MSG: command: ks_reboot -- halt -f -p
+MSG: command `halt' requires utilities that are missing: halt
+subtest_rc=1
+MSG: command: ks_reboot --kexec -- halt -f -p
+MSG: command `ks_reboot_kexec' requires utilities that are missing: reboot
+subtest_rc=1
+rc=0

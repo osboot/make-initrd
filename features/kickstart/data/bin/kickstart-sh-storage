@@ -116,7 +116,7 @@ ignoredisk()
 ks_requires_clearpart=("findmnt" "wipefs" "sfdisk" "umount")
 clearpart()
 {
-	local PROG TEMP dev devname num skipped
+	local PROG TEMP dev devname num partnum skipped dropped
 	local all='' disks='' list='' initlabel=''
 
 	PROG="kickstart"
@@ -182,8 +182,9 @@ clearpart()
 
 	for dev in $disks; do
 		skipped=0
+		dropped=0
 		num=0
-		for devname in $(sfdisk -d "/dev/$dev" | sed -n -e 's,^/dev/\([^[:space:]]\+[0-9]\+\) : .*,\1,p'); do
+		for devname in $(sfdisk -d "/dev/$dev" | sed -n -e 's,^/dev/\([^[:space:]]\+[0-9]\+\) : .*,\1,p' | tac); do
 			num=$(( $num + 1 ))
 
 			if [ "$list" != ',,' ] && [ -n "${list##*,$devname,*}" ]; then
@@ -202,11 +203,18 @@ clearpart()
 
 			verbose "dropping /dev/$devname"
 
+			partnum=
+			[ ! -r "/sys/class/block/$devname/partition" ] ||
+				read -r partnum < "/sys/class/block/$devname/partition"
+
 			wipefs -qfa "/dev/$devname" ||:
-			sfdisk -q --delete "/dev/$dev" "$num" ||
+			sfdisk -q --delete "/dev/$dev" "${partnum:-$num}" ||
 				return 1
 			dropped=1
 		done
+
+		[ "$dropped" = 0 ] ||
+			ks_udev_settle
 
 		[ -n "$initlabel" ] ||
 			continue
@@ -221,6 +229,8 @@ clearpart()
 		echo "label: $DISKLABEL" |
 			sfdisk -q -w always "/dev/$dev" ||
 			return 1
+
+		ks_udev_settle
 	done
 }
 
@@ -302,7 +312,7 @@ ks_is_mountpoint_exists()
 ks_requires_ks_fstab=("blkid" "sha256sum")
 ks_fstab()
 {
-	local fname dev mpoint fstype fsopts
+	local fname dev mpoint fstype fsopts target
 
 	ks_check_requires "${FUNCNAME[0]}" ||
 		return 1
@@ -316,10 +326,18 @@ ks_fstab()
 	else
 		fstype="$1"; shift
 	fi
-	fname="$(ks_mountpoint_name "$mpoint")"
+
+	if [ "$mpoint" = "swap" ] || [ "$fstype" = "swap" ]; then
+		fname="$(ks_mountpoint_name "swap:$dev")"
+		target="swap"
+		fstype="swap"
+	else
+		fname="$(ks_mountpoint_name "$mpoint")"
+		target="$ks_rootdir$mpoint"
+	fi
 
 	printf '%s %s %s %s 0 0\n' \
-		"$dev" "$ks_rootdir$mpoint" "$fstype" "${fsopts:-defaults}" \
+		"$dev" "$target" "$fstype" "${fsopts:-defaults}" \
 		> "$ks_datadir/fstab.d/$fname"
 
 	find "$ks_datadir/fstab.d" -type f -exec cat '{}' '+' \
@@ -348,7 +366,7 @@ ks_set_makefs_args()
 	esac
 }
 
-ks_requires_makefs=("wipefs" "mkswap")
+ks_requires_makefs=("wipefs")
 makefs()
 {
 	local PROG TEMP
@@ -388,6 +406,17 @@ makefs()
 		return 1
 	fi
 
+	local mkfs_bin
+	case "$fstype" in
+		swap) mkfs_bin="mkswap" ;;
+		*)    mkfs_bin="mkfs.$fstype" ;;
+	esac
+
+	if ! type -P "$mkfs_bin" &>/dev/null; then
+		message "command \`${FUNCNAME[0]}' requires utilities that are missing: $mkfs_bin"
+		return 1
+	fi
+
 	dev="${1#/dev/}"
 
 	verbose "clearing previous filesystem on /dev/$dev"
@@ -402,7 +431,10 @@ makefs()
 		fat|vfat) mkfs."$fstype" ${label:+-n "$label"} "/dev/$dev" >/dev/null ;;
 		f2fs) "mkfs.$fstype" -q ${label:+-l "$label"} "/dev/$dev" ;;
 		*) "mkfs.$fstype" -q ${label:+-L "$label"} "/dev/$dev" ;;
-	esac
+	esac ||
+		return 1
+
+	ks_udev_settle
 }
 
 getopt_crypto='cipher:,passphrase:,passfile:,pbkdf:,pbkdf-memory:,pbkdf-time:,pbkdf-iterations:'
@@ -414,6 +446,12 @@ ks_set_crypto_args()
 			shift_args=2
 			;;
 	esac
+}
+
+ks_crypto_umount()
+{
+	verbose "closing luks device $1 ..."
+	cryptsetup close "$1" ||:
 }
 
 ks_requires_crypto=("cryptsetup")
@@ -497,7 +535,7 @@ crypto()
 	if [ -n "$luks_passphrase" ]; then
 		printf '%s' "$luks_passphrase" > "$passfile"
 	elif [ -n "$luks_passfile" ]; then
-		cp -f -- $luks_passfile "$passfile"
+		cp -f -- "$luks_passfile" "$passfile"
 	else
 		message "unable to create luks without password or passfile"
 		return 1
@@ -525,6 +563,10 @@ crypto()
 			return 1
 		}
 
+	ks_udev_settle
+
+	ks_add_umount_hook ks_crypto_umount "$crypt_name"
+
 	message "luks device ready: /dev/$dev"
 	return 0
 }
@@ -548,24 +590,97 @@ ks_get_dev_id()
 	printf '%s\n' "$1"
 }
 
-ks_requires_ext4=("e2fsck" "resize2fs")
-ks_requires_xfs=("xfs_growfs" "mount")
-ks_requires_f2fs=("resize.f2fs")
+ks_requires_ks_growfs=("blkid")
+ks_requires_ks_growfs_ext4=("e2fsck" "resize2fs")
+ks_requires_ks_growfs_xfs=("xfs_growfs" "mount" "umount")
+ks_requires_ks_growfs_f2fs=("fsck.f2fs" "resize.f2fs" "yes")
+ks_requires_ks_growfs_btrfs=("btrfs" "mount" "umount")
+
+ks_dev_bytes()
+{
+	local dev="$1" majmin sectors
+
+	if [ -b "$dev" ]; then
+		majmin="$(get_majmin "$dev")" &&
+			[ -r "/sys/dev/block/$majmin/size" ] &&
+			read -r sectors < "/sys/dev/block/$majmin/size" ||
+			return 1
+		printf '%s\n' "$(( sectors * 512 ))"
+		return 0
+	fi
+
+	if [ -f "$dev" ]; then
+		stat -L -c '%s' "$dev" 2>/dev/null ||
+			return 1
+		return 0
+	fi
+
+	return 1
+}
+
+ks_fs_fills_dev()
+{
+	local devsize="$1" fssize="$2" fslastblock="$3"
+	local fsblocksize="$4" blocksize="$5" bsize
+
+	case "$devsize" in
+		''|*[!0-9]*) return 1 ;;
+	esac
+	[ "$devsize" -gt 0 ] ||
+		return 1
+
+	if [ -n "$fslastblock" ] && [ -n "$fsblocksize" ]; then
+		case "$fslastblock:$fsblocksize" in
+			*[!0-9:]*) return 1 ;;
+		esac
+		[ "$fslastblock" -gt 0 ] && [ "$fsblocksize" -gt 0 ] ||
+			return 1
+		[ "$(( 10#$devsize / 10#$fsblocksize ))" -le "$(( 10#$fslastblock ))" ]
+		return
+	fi
+
+	bsize="${fsblocksize:-${blocksize:-1}}"
+	case "$fssize:$bsize" in
+		*[!0-9:]*) return 1 ;;
+	esac
+	[ -n "$fssize" ] && [ -n "$bsize" ] &&
+		[ "$fssize" -gt 0 ] && [ "$bsize" -gt 0 ] ||
+		return 1
+
+	[ "$(( 10#$devsize / 10#$bsize ))" -le "$(( 10#$fssize / 10#$bsize ))" ]
+}
+
 ks_growfs()
 {
 	local PROG
-	local fs="" requires="" ret=0 rc=0
+	local probe="" k="" v=""
+	local fs="" fssize="" fslastblock="" fsblocksize="" blocksize="" devsize=""
+	local requires="" ret=0 rc=0
 
 	PROG="kickstart"
 	message "command: ${FUNCNAME[0]} $*"
 
-	fs="$(blkid --output value --match-tag TYPE -c /dev/null "$1")" ||
+	ks_check_requires "${FUNCNAME[0]}" ||
+		return 1
+
+	probe="$(blkid -p -u filesystem -o export "$1" 2>/dev/null)" ||
 		return 0
 
+	while IFS='=' read -r k v; do
+		case "$k" in
+			TYPE)        fs="$v" ;;
+			FSSIZE)      fssize="$v" ;;
+			FSLASTBLOCK) fslastblock="$v" ;;
+			FSBLOCKSIZE) fsblocksize="$v" ;;
+			BLOCK_SIZE)  blocksize="$v" ;;
+		esac
+	done <<< "$probe"
+
 	case "$fs" in
-		ext*) requires="ks_growfs_ext4" ;;
-		xfs)  requires="ks_growfs_xfs"  ;;
-		f2fs) requires="ks_growfs_f2fs" ;;
+		ext*)  requires="ks_growfs_ext4"  ;;
+		xfs)   requires="ks_growfs_xfs"   ;;
+		f2fs)  requires="ks_growfs_f2fs"  ;;
+		btrfs) requires="ks_growfs_btrfs" ;;
 		*)
 			# resize unsupported.
 			return 0
@@ -575,11 +690,17 @@ ks_growfs()
 	ks_check_requires "$requires" ||
 		return 1
 
+	if devsize="$(ks_dev_bytes "$1")" &&
+	   ks_fs_fills_dev "$devsize" "$fssize" "$fslastblock" "$fsblocksize" "$blocksize"; then
+		verbose "Filesystem on $1 already fills the device, skipping resize"
+		return 0
+	fi
+
 	verbose "Increase filesystem to partition size: $1"
 
 	case "$fs" in
 		ext*)
-			e2fsck -y -p -f "$1" ||
+			e2fsck -y -f "$1" ||
 				rc="$?"
 			# 0 - No errors
 			# 1 - File system errors corrected
@@ -605,11 +726,160 @@ ks_growfs()
 			[ "$rc" -eq 0 ] && yes | resize.f2fs "$1" ||
 				ret=1
 			;;
+		btrfs)
+			mount -n -o rw,X-mount.mkdir \
+				"$1" \
+				"$ks_datadir/btrfs.dir"
+			command btrfs filesystem resize max \
+				"$ks_datadir/btrfs.dir" ||
+				ret=1
+			umount -f \
+				"$ks_datadir/btrfs.dir"
+			;;
 	esac
 
 	return $ret
 }
 
+
+ks_part_can_grow()
+{
+	local devpath="$1" partpath="$2"
+	local dump label="" last_lba="" table_length=128 sector_size=512
+	local line pdev pstart psize pend _
+	local part_start="" part_size="" part_end=""
+	local next_start="" container_end="" limit=""
+	local disk_bytes="" disk_sectors="" esects="" gpt_limit=""
+
+	dump="$(sfdisk -d "$devpath" 2>/dev/null)" ||
+		return 0
+
+	while IFS= read -r line; do
+		case "$line" in
+			label:*)
+				read -r _ label <<< "$line"
+				;;
+			last-lba:*)
+				read -r _ last_lba <<< "$line"
+				;;
+			table-length:*)
+				read -r _ table_length <<< "$line"
+				;;
+			sector-size:*)
+				read -r _ sector_size <<< "$line"
+				;;
+			*)
+				if [[ "$line" =~ ^([^[:space:]]+)[[:space:]]*:[[:space:]]*start=[[:space:]]*([0-9]+),[[:space:]]*size=[[:space:]]*([0-9]+) ]]; then
+					if [ "${BASH_REMATCH[1]}" = "$partpath" ]; then
+						part_start="${BASH_REMATCH[2]}"
+						part_size="${BASH_REMATCH[3]}"
+					fi
+				fi
+				;;
+		esac
+	done <<< "$dump"
+
+	[ -n "$part_start" ] && [ -n "$part_size" ] ||
+		return 0
+
+	case "$table_length:$sector_size" in
+		*[!0-9:]*) return 0 ;;
+	esac
+	[ -n "$table_length" ] && [ -n "$sector_size" ] &&
+		[ "$table_length" -gt 0 ] && [ "$sector_size" -gt 0 ] ||
+		return 0
+	case "$last_lba" in
+		*[!0-9]*) last_lba="" ;;
+	esac
+
+	part_end=$(( 10#$part_start + 10#$part_size ))
+
+	while IFS= read -r line; do
+		if [[ "$line" =~ ^([^[:space:]]+)[[:space:]]*:[[:space:]]*start=[[:space:]]*([0-9]+),[[:space:]]*size=[[:space:]]*([0-9]+) ]]; then
+			pdev="${BASH_REMATCH[1]}"
+			[ "$pdev" != "$partpath" ] ||
+				continue
+			pstart="${BASH_REMATCH[2]}"
+			psize="${BASH_REMATCH[3]}"
+			[ "$psize" -gt 0 ] ||
+				continue
+			pend=$(( 10#$pstart + 10#$psize ))
+
+			if [ "$pstart" -le "$part_start" ] && [ "$pend" -ge "$part_end" ]; then
+				if [ -z "$container_end" ] || [ "$pend" -lt "$container_end" ]; then
+					container_end="$pend"
+				fi
+			elif [ "$pstart" -ge "$part_end" ]; then
+				if [ -z "$next_start" ] || [ "$pstart" -lt "$next_start" ]; then
+					next_start="$pstart"
+				fi
+			fi
+		fi
+	done <<< "$dump"
+
+	if [ -n "$next_start" ]; then
+		limit="$next_start"
+	fi
+
+	if [ -n "$container_end" ] && { [ -z "$limit" ] || [ "$container_end" -lt "$limit" ]; }; then
+		limit="$container_end"
+	fi
+
+	if [ -z "$limit" ]; then
+		disk_bytes="$(ks_dev_bytes "$devpath")" ||
+			return 0
+		case "$disk_bytes" in
+			''|*[!0-9]*) return 0 ;;
+		esac
+		disk_sectors=$(( 10#$disk_bytes / 10#$sector_size ))
+
+		case "$label" in
+			gpt)
+				esects=$(( (10#$table_length * 128 + 10#$sector_size - 1) / 10#$sector_size ))
+				gpt_limit=$(( disk_sectors - 1 - esects ))
+				limit="$gpt_limit"
+				if [ -n "$last_lba" ] && [ "$(( 10#$last_lba + 1 ))" -gt "$limit" ]; then
+					limit=$(( 10#$last_lba + 1 ))
+				fi
+				;;
+			dos)
+				limit="$disk_sectors"
+				;;
+			*)
+				return 0
+				;;
+		esac
+	fi
+
+	[ "$part_end" -lt "$limit" ]
+}
+
+ks_part_resize_size()
+{
+	local dev="$1" size="$2" grow="$3" sector_size=0
+
+	if [ -n "$grow" ]; then
+		printf '+\n'
+		return 0
+	fi
+
+	if [ -z "$size" ]; then
+		message "you need to specify the size by which you want to increase the partition."
+		return 1
+	fi
+
+	case "$size" in
+		*[0-9][Bb])
+			ks_get_dev_sector_size "$dev"
+			size="$(( ${size%[Bb]} / sector_size ))"
+			;;
+		*i)
+			size="${size}B"
+			;;
+	esac
+
+	printf '+%s\n' "$size"
+}
 
 ks_requires_part=("numfmt" "sfdisk")
 part()
@@ -778,11 +1048,12 @@ part()
 				freesize_sectors="$totalsize_sectors"
 
 				ks_get_dev_size "$dev" --list
-				totalfree_percent=$(( $freesize_sectors * 1000 / $totalsize_sectors ))
+				if [ "$totalsize_sectors" -le 0 ]; then
+					verbose "/dev/$dev has unknown size, ignoring."
+					continue
+				fi
 
-				[ ${totalfree_percent:$(( ${#totalfree_percent} - 1 ))} -ge 5 ] &&
-					totalfree_percent=$(( ${totalfree_percent:0:$(( ${#totalfree_percent} - 1 ))} + 1 )) ||
-					totalfree_percent=$(( ${totalfree_percent:0:$(( ${#totalfree_percent} - 1 ))} ))
+				totalfree_percent=$(( (freesize_sectors * 200 + totalsize_sectors) / (totalsize_sectors * 2) ))
 
 				if [ "${size%\%}" -eq "$totalfree_percent" ]; then
 					sectors="$freesize_sectors"
@@ -834,6 +1105,8 @@ part()
 				sfdisk -q -W always --append "/dev/$dev" ||
 				break
 
+			ks_udev_settle
+
 			readarray -t prev_parttable <<< "$(sfdisk -d "/dev/$dev" | grep ^/dev/)"
 		fi
 
@@ -848,6 +1121,8 @@ part()
 			message "unable to create partition"
 			return 1
 		fi
+
+		ks_udev_settle
 
 		readarray -t curr_parttable <<< "$(sfdisk -d "/dev/$dev" | grep ^/dev/)"
 
@@ -874,32 +1149,35 @@ part()
 		return 0
 	fi
 
-	if [ -n "$resize" ]; then
-		[ ! -d "$ks_datadir/part/$dev/stop" ] ||
-			find "$ks_datadir/part/$dev/stop" -type f -executable -exec '{}' ';'
-
-		# https://karelzak.blogspot.com/2015/05/resize-by-sfdisk.html
-
-		if [ -n "$grow" ]; then
-			size='+'
-		elif [ -z "$size" ]; then
-			message "you need to specify the size by which you want to increase the partition."
-			return 1
-		else
-			size="+$size"
-		fi
-
-		local partnum
-		read -r partnum < "/sys/class/block/$partdev/partition"
-
+	if [ -z "$dev" ]; then
 		dev="$(readlink-e "/sys/class/block/$partdev")"
 		dev="${dev%/*}"
 		dev="${dev##*/}"
+	fi
 
-		verbose "increasing partition /dev/$partdev"
+	if [ -n "$resize" ]; then
+		if [ -n "$grow" ] && ! ks_part_can_grow "/dev/$dev" "/dev/$partdev"; then
+			verbose "Partition /dev/$partdev already uses all available space, skipping resize"
+		else
+			[ ! -d "$ks_datadir/part/$dev/stop" ] ||
+				find "$ks_datadir/part/$dev/stop" -type f -executable -exec '{}' ';'
 
-		printf ', %s\n' "$size" |
-			sfdisk -q -N "$partnum" "/dev/$dev"
+			# https://karelzak.blogspot.com/2015/05/resize-by-sfdisk.html
+
+			size="$(ks_part_resize_size "$dev" "$size" "$grow")" ||
+				return 1
+
+			local partnum
+			read -r partnum < "/sys/class/block/$partdev/partition"
+
+			verbose "increasing partition /dev/$partdev"
+
+			printf ', %s\n' "$size" |
+				sfdisk -q -N "$partnum" "/dev/$dev" ||
+				return 1
+
+			ks_udev_settle
+		fi
 		ks_growfs "/dev/$partdev"
 	fi
 
@@ -932,8 +1210,10 @@ part()
 		partdev="mapper/$crypt_name"
 	fi
 
-	[ ! -d "$ks_datadir/part/$dev/start" ] ||
+	if [ -d "$ks_datadir/part/$dev/start" ]; then
 		find "$ks_datadir/part/$dev/start" -type f -executable -exec '{}' ';'
+		ks_udev_settle
+	fi
 
 	quote_shell_args makefs_args "$makefs_args"
 	eval "set -- $makefs_args"
@@ -945,8 +1225,9 @@ part()
 			ks_fstab "/dev/${partdev#/dev/}" "$mntpoint" "$fsoptions"
 			;;
 		swap)
-			makefs "$partdev" "$@" --fstype=swap
-			ks_fstab "/dev/${partdev#/dev/}" "swap" "$fsoptions"
+			[ -n "$useexisting" ] ||
+				makefs "$partdev" "$@" --fstype=swap
+			ks_fstab "/dev/${partdev#/dev/}" "swap" "$fsoptions" "swap"
 			;;
 		none)
 			[ -n "$useexisting" ] ||

@@ -5,10 +5,16 @@ __kickstart_sh_storage_raid=1
 
 . kickstart-sh-storage
 
+ks_raid_umount()
+{
+	verbose "stopping raid array $1 ..."
+	mdadm --quiet --stop "$1" ||:
+}
+
 ks_requires_raid=("mdadm")
 raid()
 {
-	local PROG TEMP shift_args dev=''
+	local PROG TEMP shift_args dev='' arg='' pdev=''
 	local device='' level='' chunksize='' useexisting='' fstype='' fsoptions=''
 	local encrypted='' hibernation='' makefs_args='' crypto_args=''
 
@@ -19,7 +25,7 @@ raid()
 		return 1
 
 	PROG="${FUNCNAME[0]}"
-	TEMP=`getopt -n "$PROG" -l "device:,level:,chunksize:,encrypted,hibernation,$getopt_crypto,$getopt_makefs,$getopt_useexisting" -- "$PROG" "$@"` ||
+	TEMP=`getopt -n "$PROG" -l "device:,level:,chunksize:,fsoptions:,encrypted,hibernation,$getopt_crypto,$getopt_makefs,$getopt_useexisting" -- "$PROG" "$@"` ||
 		return 1
 	eval set -- "$TEMP"
 
@@ -67,6 +73,7 @@ raid()
 	local mntpoint i num
 
 	mntpoint="$1"; shift
+	[ "$mntpoint" != "swap" ] || fstype="swap"
 
 	if [ -n "$mntpoint" ] && [ -z "${mntpoint##/*}" ] && ks_is_mountpoint_exists "$mntpoint"; then
 		message "partition for \`$mntpoint' mountpoint already exists. Ignore."
@@ -77,23 +84,11 @@ raid()
 		'')
 			;;
 		efi)
-			size="${size:-200Mi}"
 			ks_set_makefs_args --fstype "vfat"
 			;;
 		biosboot)
-			size="${size:-1Mi}"
 			;;
 		swap)
-			if [ -z "$size" ] && [ -n "$hibernation" ]; then
-				size="$(ks_guess_swap_size)"
-
-				if [ "$size" -eq 0 ]; then
-					message "no need to create a \`$fstype' partition. Ignore."
-					return
-				fi
-
-				size="${size}B"
-			fi
 			ks_set_makefs_args --fstype "swap"
 			;;
 		*)
@@ -109,8 +104,11 @@ raid()
 			'')
 				;;
 			raid.*)
-				read -r arg < "$ks_datadir/partid/$1"
-				set -- "$@" "/dev/$arg"
+				for arg in $(set +f; printf '%s\n' "$ks_datadir"/partid/$1); do
+					while read -r pdev; do
+						[ -z "$pdev" ] || set -- "$@" "/dev/$pdev"
+					done < "$arg"
+				done
 				;;
 			*)
 				for arg in $(set +f; printf '%s\n' $1); do
@@ -152,16 +150,20 @@ raid()
 			"$device" "$@" ||
 			return 1
 
+		ks_udev_settle
+
 		#mdadm --wait "$device"
 	fi
 
 	dev="$(ks_devname "$device")"
+	ks_add_umount_hook ks_raid_umount "/dev/$dev"
 
 	if [ -n "$encrypted" ]; then
+		local crypt_name="${device##*/}_crypt"
 		eval "set -- $crypto_args"
-		crypto --name="${device}_crypt" "$@" "$dev" ||
+		crypto --name="$crypt_name" "$@" "$dev" ||
 			return
-		dev="mapper/${device}_crypt"
+		dev="mapper/$crypt_name"
 	fi
 
 	if [ -z "$useexisting" ]; then
@@ -173,6 +175,9 @@ raid()
 	case "$mntpoint" in
 		/|/*)
 			ks_fstab "/dev/${dev#/dev/}" "$mntpoint" "$fsoptions"
+			;;
+		swap)
+			ks_fstab "/dev/${dev#/dev/}" "swap" "$fsoptions" "swap"
 			;;
 		none)
 			;;

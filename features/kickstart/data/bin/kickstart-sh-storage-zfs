@@ -8,6 +8,12 @@ __kickstart_sh_storage_zfs=1
 # zpool --property autotrim=on rpool zfs.0*
 # zfs / rpool/root
 
+ks_zfs_umount()
+{
+	verbose "exporting zfs pool $1 ..."
+	command zpool export "$1" ||:
+}
+
 ks_requires_zpool=("zpool")
 zpool()
 {
@@ -92,10 +98,14 @@ zpool()
 		-R "$ks_rootdir" \
 		-O mountpoint=none \
 		-O canmount=off \
-		"$name" "${vdevs[@]}"
+		"$name" "${vdevs[@]}" ||
+		return 1
+
+	ks_udev_settle
+	ks_add_umount_hook ks_zfs_umount "$name"
 }
 
-ks_requires_zpool=("zfs")
+ks_requires_zfs=("zfs")
 zfs()
 {
 	local PROG TEMP
@@ -137,7 +147,11 @@ zfs()
 	command zfs create $sparse "${properties[@]}" \
 		-o mountpoint="$mntpoint" \
 		${size:+-V "$size"} \
-		"$volname"
+		"$volname" ||
+		return 1
+
+	[ -z "$size" ] ||
+		ks_udev_settle
 
 	command zfs umount -f -a
 

@@ -1,6 +1,13 @@
 #!/bin/bash
 
-ks_requires_liveimg=("wget" "rsync" "cpio" "tar" "zstd" "lz4" "unzip" "sha256sum")
+ks_requires_liveimg_http=("wget")
+ks_requires_liveimg_checksum=("sha256sum")
+ks_requires_liveimg_tar=("tar")
+ks_requires_liveimg_zst=("zstd" "tar")
+ks_requires_liveimg_lz4=("lz4" "tar")
+ks_requires_liveimg_zip=("unzip")
+ks_requires_liveimg_cpio=("cpio")
+ks_requires_liveimg_dir=("rsync")
 liveimg()
 {
 	local PROG TEMP ret=0 archive='' isdir='' dev=''
@@ -8,9 +15,6 @@ liveimg()
 
 	PROG="kickstart"
 	message "command: ${FUNCNAME[0]} $*"
-
-	ks_check_requires "${FUNCNAME[0]}" ||
-		return 1
 
 	PROG="${FUNCNAME[0]}"
 	TEMP=`getopt -n "$PROG" -l 'url:,proxy:,checksum:,noverifyssl' -- "$PROG" "$@"` ||
@@ -48,6 +52,8 @@ liveimg()
 
 	case "$url" in
 		http://*|https://*)
+			ks_check_requires liveimg_http ||
+				return 1
 			env \
 				${proxy:+"http_proxy=$proxy"} \
 				${proxy:+"https_proxy=$proxy"} \
@@ -70,6 +76,9 @@ liveimg()
 	if [ -n "$checksum" ]; then
 		local cursum
 
+		ks_check_requires liveimg_checksum ||
+			return 1
+
 		cursum="$(sha256sum < "$archive")"
 		cursum="${cursum%% *}"
 
@@ -81,26 +90,38 @@ liveimg()
 
 	case "$archive" in
 		*.tar|*.tbz|*.tgz|*.txz|*.tar.bz2|*.tar.gz|*.tar.xz)
+			ks_check_requires liveimg_tar ||
+				return 1
 			tar -C "$ks_rootdir" -xf "$archive" ||
 				ret=1
 			;;
 		*.tar.zst)
+			ks_check_requires liveimg_zst ||
+				return 1
 			zstd -d < "$archive" | tar -C "$ks_rootdir" -xf - ||
 				ret=1
 			;;
 		*.tar.lz4)
+			ks_check_requires liveimg_lz4 ||
+				return 1
 			lz4 -d < "$archive"| tar -C "$ks_rootdir" -xf - ||
 				ret=1
 			;;
 		*.zip)
+			ks_check_requires liveimg_zip ||
+				return 1
 			unzip -d "$ks_rootdir" "$archive" ||
 				ret=1
 			;;
 		*.cpio)
+			ks_check_requires liveimg_cpio ||
+				return 1
 			cpio -id -D "$ks_rootdir" --no-absolute-filenames < "$archive" ||
 				ret=1
 			;;
 		dir://*)
+			ks_check_requires liveimg_dir ||
+				return 1
 			verbose "syncing ${archive#dir://} directory"
 			set -- -abX
 			if dev="$(cttyhack)" && [ -n "$dev" ] && [ -z "${dev##/dev/ttyS*}" ]; then

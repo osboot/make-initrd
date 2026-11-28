@@ -1,0 +1,26 @@
+=== ordered body ===
+#!/bin/bash -efu
+ks_step_begin
+ks_step_pre
+ignoredisk --only-use=sda
+clearpart --all
+part / --size=100%
+part /home --size=50%
+ks_step_mount
+ks_step_pre_install
+ks_step_packages
+ks_step_sync
+ks_step_post
+reboot
+=== empty sections ===
+VERBOSE: running 0 script ...
+pre_rc=0
+VERBOSE: running 0 script ...
+post_rc=0
+=== pre-install erroronfail ===
+VERBOSE: running 0 script and stop in case of failure ...
+pre_install_rc=1
+=== include missing arg ===
+FATAL: lineno=1: %include requires a filename
+include_missing_rc=1
+rc=0

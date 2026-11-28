@@ -1,0 +1,181 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' EXIT
+
+PATH="$PWD/external/libshell/upstream:$PWD/features/kickstart/data/bin:$PATH"
+. shell-quote
+
+message()
+{
+	printf 'MSG: %s\n' "$*"
+}
+
+verbose()
+{
+	printf 'VERBOSE: %s\n' "$*"
+}
+
+fatal()
+{
+	printf 'FATAL: %s\n' "$*"
+	exit 1
+}
+
+. kickstart-sh-functions
+. kickstart-sh-storage
+. kickstart-sh-storage-btrfs
+. kickstart-sh-storage-lvm
+. kickstart-sh-storage-raid
+. kickstart-sh-storage-zfs
+. kickstart-sh-installation
+. kickstart-sh-postinstall
+
+ks_datadir="$tmpdir/ks"
+ks_rootdir="$tmpdir/root"
+mkdir -p -- "$ks_datadir/partid" "$ks_rootdir"
+verbose=""
+
+mkdir -p -- "$tmpdir/bin" "$tmpdir/sysbin"
+for cmd in getopt grep mkdir rm sha256sum; do
+	ln -sf "$(type -P "$cmd")" "$tmpdir/sysbin/$cmd"
+done
+call_log="$tmpdir/calls.log"
+
+make_mock()
+{
+	local name="$1" mode="${2:-log}"
+	case "$mode" in
+		log)
+			cat > "$tmpdir/bin/$name" <<-EOF
+			#!/bin/bash -eu
+			printf '%s %s\n' "$name" "\$*" >> "$call_log"
+			EOF
+			;;
+		noop)
+			cat > "$tmpdir/bin/$name" <<-'EOF'
+			#!/bin/bash -eu
+			exit 0
+			EOF
+			;;
+	esac
+	chmod +x "$tmpdir/bin/$name"
+}
+
+run_in_mock_path()
+{
+	local rc=0
+	: > "$call_log"
+	(
+		PATH="$tmpdir/bin:$tmpdir/sysbin"
+		"$@"
+	) || rc=$?
+	printf 'subtest_rc=%s\n' "$rc"
+	if [ -s "$call_log" ]; then
+		sed "s#$tmpdir#TMPDIR#g" "$call_log"
+	fi
+}
+
+# 1. ZFS requirement checks (zpool checks zpool, zfs checks zfs)
+echo "=== zfs requires ==="
+run_in_mock_path zpool create rpool sda
+run_in_mock_path zfs / rpool/ROOT
+
+# 2. Btrfs --data / --metadata profiles
+echo "=== btrfs profiles ==="
+make_mock modprobe noop
+make_mock mount noop
+make_mock umount noop
+make_mock btrfs noop
+make_mock wipefs noop
+make_mock mkfs.btrfs log
+(
+	ks_devname() { printf '%s\n' "${1#/dev/}"; }
+	ks_fstab() { printf 'fstab %s\n' "$*" >> "$call_log"; }
+	run_in_mock_path btrfs none --data=single --metadata=dup sda1
+	run_in_mock_path btrfs none --data=1 --metadata=RAID10 sda1
+)
+rm -f -- "$tmpdir/bin/"*
+
+# 3. RAID --fsoptions, --fstype=swap, raid.* globbing
+echo "=== raid ==="
+make_mock mdadm log
+make_mock wipefs noop
+printf 'sda1\n' > "$ks_datadir/partid/raid.01"
+printf 'sdb1\n' > "$ks_datadir/partid/raid.02"
+(
+	ks_devname() { printf '%s\n' "${1#/dev/}"; }
+	makefs() { printf 'makefs %s\n' "$*" >> "$call_log"; }
+	run_in_mock_path raid --fsoptions=noatime --fstype=swap --device=md0 --level=RAID1 none 'raid.0*'
+)
+rm -f -- "$tmpdir/bin/"*
+
+# 4. LVM wrapper calls and logvol --resize
+echo "=== lvm ==="
+make_mock lvm log
+(
+	ks_growfs() { printf 'ks_growfs %s\n' "$*" >> "$call_log"; }
+	ks_fstab() { printf 'fstab %s\n' "$*" >> "$call_log"; }
+	run_in_mock_path volgroup --useexisting myvg
+	run_in_mock_path logvol --useexisting --resize --grow --vgname=myvg --name=root /
+)
+rm -f -- "$tmpdir/bin/"*
+
+# 5. liveimg per-operation requirements
+echo "=== liveimg ==="
+make_mock mountpoint noop
+make_mock cttyhack noop
+make_mock rsync log
+run_in_mock_path liveimg --url=dir:///src
+run_in_mock_path liveimg --url=file:///img.tar.zst
+rm -f -- "$tmpdir/bin/"*
+
+# 6. makefs per-filesystem requirements
+echo "=== makefs requires ==="
+make_mock wipefs log
+make_mock mkfs.ext4 log
+run_in_mock_path makefs /dev/sda1 --fstype=ext4
+run_in_mock_path makefs /dev/sda1 --fstype=xfs
+run_in_mock_path makefs /dev/sda1 --fstype=swap
+rm -f -- "$tmpdir/bin/"*
+
+# 7. btrfs mkfs requirements (required for mkfs, not for --subvol)
+echo "=== btrfs mkfs requires ==="
+make_mock modprobe noop
+make_mock mount noop
+make_mock umount noop
+make_mock btrfs log
+make_mock wipefs log
+(
+	ks_devname() { printf '%s\n' "${1#/dev/}"; }
+	run_in_mock_path btrfs none sda1
+	run_in_mock_path btrfs none --subvol --name=root sda1
+)
+rm -f -- "$tmpdir/bin/"*
+
+# 8. ks_sync requirements
+echo "=== ks_sync requires ==="
+mkdir -p -- "$ks_datadir/sysdata"
+cat > "$tmpdir/bin/mountpoint" <<-'EOF'
+#!/bin/bash -eu
+exit 1
+EOF
+chmod +x "$tmpdir/bin/mountpoint"
+run_in_mock_path ks_sync
+make_mock mountpoint noop
+run_in_mock_path ks_sync
+rm -f -- "$tmpdir/bin/"*
+
+# 9. ks_reboot per-command/flag requirements
+echo "=== ks_reboot requires ==="
+(
+	ks_umount() { printf 'ks_umount\n' >> "$call_log"; }
+	make_mock reboot log
+	run_in_mock_path reboot
+	run_in_mock_path reboot --eject
+	run_in_mock_path halt
+	rm -f -- "$tmpdir/bin/reboot"
+	make_mock halt log
+	run_in_mock_path halt --kexec
+)

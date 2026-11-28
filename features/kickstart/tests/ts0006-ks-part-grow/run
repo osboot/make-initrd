@@ -1,0 +1,128 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' EXIT
+
+PATH="$PWD/features/kickstart/data/bin:$PATH"
+
+message()
+{
+	printf 'MSG: %s\n' "$*"
+}
+
+verbose()
+{
+	printf 'VERBOSE: %s\n' "$*"
+}
+
+fatal()
+{
+	printf 'FATAL: %s\n' "$*"
+	exit 1
+}
+
+. kickstart-sh-functions
+. kickstart-sh-storage
+
+mkdir -p -- "$tmpdir/bin" "$tmpdir/sysbin"
+ln -sf "$(type -P cat)" "$tmpdir/sysbin/cat"
+ln -sf "$(type -P stat)" "$tmpdir/sysbin/stat"
+
+img="$tmpdir/disk.img"
+dump_file="$tmpdir/sfdisk.dump"
+fail_flag="$tmpdir/sfdisk.fail"
+export dump_file fail_flag
+
+cat > "$tmpdir/bin/sfdisk" <<'EOF'
+#!/bin/bash -eu
+[ ! -e "$fail_flag" ] || exit 1
+cat "$dump_file"
+EOF
+chmod +x "$tmpdir/bin/sfdisk"
+
+check_grow()
+{
+	local label="$1" part="$2" rc=0
+	(
+		PATH="$tmpdir/bin:$tmpdir/sysbin"
+		ks_part_can_grow "$img" "$part"
+	) || rc=$?
+	printf '%s: rc=%s\n' "$label" "$rc"
+}
+
+# 1. GPT disk full (512B sectors, 20480 sectors total, last-lba=20446)
+truncate -s $(( 20480 * 512 )) "$img"
+cat > "$dump_file" <<'EOF'
+label: gpt
+sector-size: 512
+last-lba: 20446
+
+/dev/sda1 : start=        2048, size=       18399, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4
+EOF
+check_grow "gpt-full" "/dev/sda1"
+
+# 2. GPT disk enlarged (40960 sectors total, stale last-lba=20446)
+truncate -s $(( 40960 * 512 )) "$img"
+check_grow "gpt-enlarged" "/dev/sda1"
+
+# 3. GPT 4Kn disk full (4096B sectors, 2560 sectors total, esects=4, last-lba=2554)
+truncate -s $(( 2560 * 4096 )) "$img"
+cat > "$dump_file" <<'EOF'
+label: gpt
+sector-size: 4096
+table-length: 128
+last-lba: 2554
+
+/dev/sda1 : start=         256, size=        2299, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4
+EOF
+check_grow "gpt-4kn-full" "/dev/sda1"
+
+# 4. MBR (dos) disk full (20480 sectors total)
+truncate -s $(( 20480 * 512 )) "$img"
+cat > "$dump_file" <<'EOF'
+label: dos
+sector-size: 512
+
+/dev/sda1 : start=        2048, size=       18432, type=83
+EOF
+check_grow "dos-full" "/dev/sda1"
+
+# 5. MBR (dos) disk enlarged (40960 sectors total)
+truncate -s $(( 40960 * 512 )) "$img"
+check_grow "dos-enlarged" "/dev/sda1"
+
+# 6. Non-last partition blocked by following partition
+truncate -s $(( 40960 * 512 )) "$img"
+cat > "$dump_file" <<'EOF'
+label: dos
+sector-size: 512
+
+/dev/sda1 : start=        2048, size=        8192, type=83
+/dev/sda2 : start=       10240, size=       10240, type=83
+EOF
+check_grow "middle-blocked" "/dev/sda1"
+
+# 7. Non-last partition with gap before following partition
+cat > "$dump_file" <<'EOF'
+label: dos
+sector-size: 512
+
+/dev/sda1 : start=        2048, size=        8192, type=83
+/dev/sda2 : start=       12288, size=        8192, type=83
+EOF
+check_grow "middle-gap" "/dev/sda1"
+
+# 8. Logical partition filling MBR extended container
+cat > "$dump_file" <<'EOF'
+label: dos
+sector-size: 512
+
+/dev/sda4 : start=        2048, size=       10000, type=5
+/dev/sda5 : start=        4096, size=        7952, type=83
+EOF
+check_grow "logical-full" "/dev/sda5"
+
+# 9. sfdisk -d failure -> safe fallback (allow grow)
+touch "$fail_flag"
+check_grow "sfdisk-fail" "/dev/sda1"
