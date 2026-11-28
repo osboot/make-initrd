@@ -279,10 +279,15 @@ ks_mount()
 	} > "$ks_datadir/sysdata/etc/fstab"
 }
 
+ks_requires_ks_sync=("rsync")
 ks_sync()
 {
 	[ -d "$ks_datadir/sysdata" ] && mountpoint -q "$ks_rootdir" ||
 		return 0
+
+	ks_check_requires "${FUNCNAME[0]}" ||
+		return 1
+
 	rsync -abX --suffix=.ks -- "$ks_datadir/sysdata/" "$ks_rootdir/"
 }
 
