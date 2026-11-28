@@ -535,7 +535,7 @@ crypto()
 	if [ -n "$luks_passphrase" ]; then
 		printf '%s' "$luks_passphrase" > "$passfile"
 	elif [ -n "$luks_passfile" ]; then
-		cp -f -- $luks_passfile "$passfile"
+		cp -f -- "$luks_passfile" "$passfile"
 	else
 		message "unable to create luks without password or passfile"
 		return 1
@@ -854,6 +854,33 @@ ks_part_can_grow()
 	[ "$part_end" -lt "$limit" ]
 }
 
+ks_part_resize_size()
+{
+	local dev="$1" size="$2" grow="$3" sector_size=0
+
+	if [ -n "$grow" ]; then
+		printf '+\n'
+		return 0
+	fi
+
+	if [ -z "$size" ]; then
+		message "you need to specify the size by which you want to increase the partition."
+		return 1
+	fi
+
+	case "$size" in
+		*[0-9][Bb])
+			ks_get_dev_sector_size "$dev"
+			size="$(( ${size%[Bb]} / sector_size ))"
+			;;
+		*i)
+			size="${size}B"
+			;;
+	esac
+
+	printf '+%s\n' "$size"
+}
+
 ks_requires_part=("numfmt" "sfdisk")
 part()
 {
@@ -1021,11 +1048,12 @@ part()
 				freesize_sectors="$totalsize_sectors"
 
 				ks_get_dev_size "$dev" --list
-				totalfree_percent=$(( $freesize_sectors * 1000 / $totalsize_sectors ))
+				if [ "$totalsize_sectors" -le 0 ]; then
+					verbose "/dev/$dev has unknown size, ignoring."
+					continue
+				fi
 
-				[ ${totalfree_percent:$(( ${#totalfree_percent} - 1 ))} -ge 5 ] &&
-					totalfree_percent=$(( ${totalfree_percent:0:$(( ${#totalfree_percent} - 1 ))} + 1 )) ||
-					totalfree_percent=$(( ${totalfree_percent:0:$(( ${#totalfree_percent} - 1 ))} ))
+				totalfree_percent=$(( (freesize_sectors * 200 + totalsize_sectors) / (totalsize_sectors * 2) ))
 
 				if [ "${size%\%}" -eq "$totalfree_percent" ]; then
 					sectors="$freesize_sectors"
@@ -1136,24 +1164,8 @@ part()
 
 			# https://karelzak.blogspot.com/2015/05/resize-by-sfdisk.html
 
-			if [ -n "$grow" ]; then
-				size='+'
-			elif [ -z "$size" ]; then
-				message "you need to specify the size by which you want to increase the partition."
+			size="$(ks_part_resize_size "$dev" "$size" "$grow")" ||
 				return 1
-			else
-				case "$size" in
-					*[0-9][Bb])
-						local sector_size=0
-						ks_get_dev_sector_size "$dev"
-						size="$(( ${size%[Bb]} / sector_size ))"
-						;;
-					*i)
-						size="${size}B"
-						;;
-				esac
-				size="+$size"
-			fi
 
 			local partnum
 			read -r partnum < "/sys/class/block/$partdev/partition"
