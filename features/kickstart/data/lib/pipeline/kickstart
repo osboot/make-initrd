@@ -1,6 +1,7 @@
 #!/bin/bash -efu
 
 . pipeline-sh-functions
+. initrd-sh-functions
 
 check_parameter KICKSTART
 ks="$(get_parameter KICKSTART)"
@@ -18,4 +19,5 @@ fi
 [ -f "$ksfile" ] ||
 	fatal "unable to find kickstart file: $ks"
 
-kickstart "$ksfile"
+run_rootdelay_paused kickstart "$ksfile"
+rootdelay_reset_timer
