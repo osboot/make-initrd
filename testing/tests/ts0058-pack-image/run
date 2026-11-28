@@ -4,27 +4,63 @@
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
+newpath="$(printf '%s' "$PWD/.build/dest/usr/sbin:$PWD/.build/dest/usr/bin:$PWD/tools:$PATH:$PWD/external/libshell/upstream" | tr ':' '\n' | grep '^/' | paste -sd ':' -)"
+export PATH="$newpath"
+
+list_entries()
+{
+	TZ=UTC initrd-ls "$1" | awk '{
+		type = substr($2, 1, 1)
+		mtime = $7 " " $8 " " $9 " " $10
+		name = $11
+		for (i = 12; i <= NF; i++)
+			name = name " " $i
+		print type, mtime, name
+	}' | sed "s|$tmpdir|<TMPDIR>|g"
+}
+
+touch -m --date="2020-05-06 07:08:09 +0000" "$tmpdir/outside"
+outside_mtime="$(stat -c %Y "$tmpdir/outside")"
+
 mkdir -p "$tmpdir/root/etc" "$tmpdir/root/bin"
 echo "hello world" > "$tmpdir/root/etc/test.conf"
 echo "#!/bin/sh" > "$tmpdir/root/bin/app"
 chmod +x "$tmpdir/root/bin/app"
+ln -s app "$tmpdir/root/bin/app-link"
+ln -s /nonexistent "$tmpdir/root/etc/dangling"
+ln -s "$tmpdir/outside" "$tmpdir/root/etc/abs-link"
+mkfifo "$tmpdir/root/etc/test.fifo"
 
 mkdir -p "$tmpdir/first/early"
 echo "early init" > "$tmpdir/first/early/data"
+ln -s data "$tmpdir/first/early/data-link"
+
+find -P "$tmpdir/first" "$tmpdir/root" -mindepth 1 \
+	-execdir touch -h -c -m --date="2026-01-01 00:00:00 +0000" '{}' '+'
 
 export ROOTDIR="$tmpdir/root"
-export OUTFILE="$tmpdir/initrd.img"
 export FIRSTCPIODIR="$tmpdir/first"
-export FIRSTCPIO="$tmpdir/early.cpio"
-export PATH="$(printf '%s' "$PWD/.build/dest/usr/bin:$PWD/tools:$PATH" | tr ':' '\n' | grep '^/' | paste -sd ':' -)"
 
+export FIRSTCPIO="$tmpdir/early.cpio"
+export OUTFILE="$tmpdir/initrd.img"
 tools/pack-image
 
 echo "early exists: $([ -f "$FIRSTCPIO" ] && echo yes)"
 echo "main exists: $([ -f "$OUTFILE" ] && echo yes)"
+echo "outside untouched: $([ "$(stat -c %Y "$tmpdir/outside")" = "$outside_mtime" ] && echo yes || echo no)"
 
 echo "=== early cpio contents ==="
-cpio -it -F "$FIRSTCPIO" 2>/dev/null | sort
+list_entries "$FIRSTCPIO"
 
 echo "=== main cpio contents ==="
-cpio -it -F "$OUTFILE" 2>/dev/null | sort
+list_entries "$OUTFILE"
+
+find -P "$tmpdir/first" "$tmpdir/root" -mindepth 1 \
+	-execdir touch -h -c -m --date="2026-06-01 12:34:56 +0000" '{}' '+'
+
+export FIRSTCPIO="$tmpdir/early2.cpio"
+export OUTFILE="$tmpdir/initrd2.img"
+tools/pack-image
+
+echo "early reproducible: $(cmp -s "$tmpdir/early.cpio" "$tmpdir/early2.cpio" && echo yes || echo no)"
+echo "main reproducible: $(cmp -s "$tmpdir/initrd.img" "$tmpdir/initrd2.img" && echo yes || echo no)"

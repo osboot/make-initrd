@@ -1,0 +1,22 @@
+#!/bin/bash -efu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+PATH="$PWD/.build/dest/usr/sbin:$PWD/.build/dest/usr/bin:$PWD/tools:$PATH:$PWD/external/libshell/upstream"
+export PATH
+
+printf 'reproducible gzip payload\n' > "$tmpdir/img1"
+cp -- "$tmpdir/img1" "$tmpdir/img2"
+
+touch -m --date="2026-01-01 00:00:00 +0000" "$tmpdir/img1"
+touch -m --date="2026-06-01 12:34:56 +0000" "$tmpdir/img2"
+
+COMPRESS=gzip OUTFILE="$tmpdir/img1" features/compress/bin/compress-image
+COMPRESS=gzip OUTFILE="$tmpdir/img2" features/compress/bin/compress-image
+
+echo "reproducible: $(cmp -s "$tmpdir/img1" "$tmpdir/img2" && echo yes || echo no)"
+echo "gzip flg: $(od -An -tx1 -j3 -N1 "$tmpdir/img1" | tr -d ' \n')"
+echo "gzip mtime: $(od -An -tx1 -j4 -N4 "$tmpdir/img1" | tr -d ' \n')"
+echo "payload: $(gzip -dc "$tmpdir/img1")"
