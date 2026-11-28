@@ -1,0 +1,7 @@
+mounted-part: sdb vdc
+mounted-part: rc=0
+mounted-disk: sda vdc
+mounted-disk: rc=0
+none-mounted: sda sdb vdc
+none-mounted: rc=0
+rc=0

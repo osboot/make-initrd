@@ -1,0 +1,186 @@
+#!/bin/bash -eu
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' EXIT
+
+PATH="$PWD/external/libshell/upstream:$PWD/features/kickstart/data/bin:$PATH"
+. shell-quote
+
+message()
+{
+	printf 'MSG: %s\n' "$*"
+}
+
+verbose()
+{
+	printf 'VERBOSE: %s\n' "$*"
+}
+
+fatal()
+{
+	printf 'FATAL: %s\n' "$*"
+	exit 1
+}
+
+. kickstart-sh-functions
+. kickstart-sh-storage
+
+mkdir -p -- "$tmpdir/bin" "$tmpdir/sysbin" "$tmpdir/ks/fstab.d" "$tmpdir/root"
+for cmd in cat getopt grep head mkdir rm sed sha256sum tac; do
+	ln -sf "$(type -P "$cmd")" "$tmpdir/sysbin/$cmd"
+done
+
+call_log="$tmpdir/calls.log"
+sfdisk_sector="$tmpdir/sfdisk.sector"
+sfdisk_total="$tmpdir/sfdisk.total"
+sfdisk_free="$tmpdir/sfdisk.free"
+sfdisk_dump="$tmpdir/sfdisk.dump"
+export call_log sfdisk_sector sfdisk_total sfdisk_free sfdisk_dump
+
+printf '512\n' > "$sfdisk_sector"
+printf '1000\n' > "$sfdisk_total"
+printf '500\n' > "$sfdisk_free"
+: > "$sfdisk_dump"
+
+for cmd in wipefs umount numfmt; do
+	cat > "$tmpdir/bin/$cmd" <<-EOF
+	#!/bin/bash -eu
+	printf '%s %s\n' "$cmd" "\$*" >> "$call_log"
+	EOF
+	chmod +x "$tmpdir/bin/$cmd"
+done
+
+cat > "$tmpdir/bin/findmnt" <<'EOF'
+#!/bin/bash -eu
+exit 0
+EOF
+chmod +x "$tmpdir/bin/findmnt"
+
+cat > "$tmpdir/bin/sfdisk" <<'EOF'
+#!/bin/bash -eu
+case " $* " in
+	*" --list-free "*)
+		case "$*" in
+			*"/dev/vdb"*)
+				printf 'Unpartitioned space /dev/vdb: 250 KiB, 256000 bytes, 500 sectors\n'
+				;;
+			*)
+				cat "$sfdisk_free"
+				;;
+		esac
+		exit 0
+		;;
+	*" --list "*)
+		case "$*" in
+			*/dev/vda\ --list*)
+				if [ -s "$sfdisk_sector" ]; then
+					printf 'Sector size (logical/physical): %s bytes / %s bytes\n' \
+						"$(cat "$sfdisk_sector")" "$(cat "$sfdisk_sector")"
+				fi
+				;;
+			*"/dev/vda"*)
+				cat "$sfdisk_total"
+				;;
+			*)
+				printf 'Disk /dev/vdb: 500 KiB, 512000 bytes, 1000 sectors\n'
+				;;
+		esac
+		exit 0
+		;;
+	*" -d "*)
+		cat "$sfdisk_dump"
+		exit 0
+		;;
+esac
+
+line=""
+if [ ! -t 0 ]; then
+	IFS= read -r line ||:
+fi
+printf 'sfdisk %s | %s\n' "$*" "$line" >> "$call_log"
+
+case " $* " in
+	*" --append "*)
+		dev="${*: -1}"
+		printf '%s1 : start= 2048, size= 100, type=83\n' "$dev" > "$sfdisk_dump"
+		;;
+esac
+EOF
+chmod +x "$tmpdir/bin/sfdisk"
+
+run_test()
+{
+	local rc=0
+	: > "$call_log"
+	(
+		PATH="$tmpdir/bin:$tmpdir/sysbin"
+		"$@"
+	) || rc=$?
+	printf 'subtest_rc=%s\n' "$rc"
+	if [ -s "$call_log" ]; then
+		cat "$call_log"
+	fi
+}
+
+ks_datadir="$tmpdir/ks"
+ks_rootdir="$tmpdir/root"
+: > "$ks_datadir/fstab"
+DISKLABEL=dos
+
+# 1. ks_part_resize_size helper cases
+echo "=== ks_part_resize_size ==="
+printf '512\n' > "$sfdisk_sector"
+printf 'grow: [%s] rc=%s\n' "$(PATH="$tmpdir/bin:$tmpdir/sysbin" ks_part_resize_size vda "" 1)" "$?"
+rc=0
+PATH="$tmpdir/bin:$tmpdir/sysbin" ks_part_resize_size vda "" "" || rc=$?
+printf 'empty: rc=%s\n' "$rc"
+for sz in 512Mi 2Gi 100M 4096B; do
+	printf '%s -> [%s]\n' "$sz" "$(PATH="$tmpdir/bin:$tmpdir/sysbin" ks_part_resize_size vda "$sz" "")"
+done
+printf '4096\n' > "$sfdisk_sector"
+printf '8192B@4Kn -> [%s]\n' "$(PATH="$tmpdir/bin:$tmpdir/sysbin" ks_part_resize_size vda 8192B "")"
+printf '512\n' > "$sfdisk_sector"
+
+# 2. part --size=N% rounding and zero-sector guard
+echo "=== part percent rounding ==="
+printf 'Disk /dev/vda: 500 KiB, 512000 bytes, 1000 sectors\n' > "$sfdisk_total"
+printf 'Unpartitioned space /dev/vda: 247.5 KiB, 253440 bytes, 495 sectors\n' > "$sfdisk_free"
+: > "$sfdisk_dump"
+BLOCK_DEVICES="vda"
+run_test part none --size=50% --useexisting
+
+printf 'Unpartitioned space /dev/vda: 2.5 KiB, 2560 bytes, 5 sectors\n' > "$sfdisk_free"
+: > "$sfdisk_dump"
+run_test part none --size=1% --useexisting
+
+printf 'Unpartitioned space /dev/vda: 2 KiB, 2048 bytes, 4 sectors\n' > "$sfdisk_free"
+: > "$sfdisk_dump"
+run_test part none --size=1% --useexisting
+
+echo "=== part zero-sector guard ==="
+: > "$sfdisk_total"
+: > "$sfdisk_free"
+: > "$sfdisk_dump"
+BLOCK_DEVICES="vda vdb"
+run_test part none --size=50% --useexisting
+
+# 3. clearpart cases
+echo "=== clearpart ==="
+BLOCK_DEVICES="vda"
+: > "$sfdisk_dump"
+run_test clearpart --all --disklabel=invalid
+run_test clearpart --initlabel
+run_test clearpart --all --initlabel --disklabel=mbr
+run_test clearpart --all --initlabel --disklabel=gpt
+run_test clearpart --all --none
+
+echo "=== clearpart list skipped ==="
+cat > "$sfdisk_dump" <<'DUMP'
+/dev/vda1 : start= 2048, size= 2048, type=83
+/dev/vda2 : start= 4096, size= 2048, type=83
+DUMP
+(
+	ks_devname() { printf '%s\n' "${1#/dev/}"; }
+	run_test clearpart --all --initlabel --list=vda1
+)

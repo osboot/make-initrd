@@ -60,6 +60,7 @@ if [ "$has_k" = 1 ]; then
 	}
 	printf '/dev/null %s ext4\n' "$ks_rootdir"
 	printf '/dev/zero %s/boot ext4\n' "$ks_rootdir"
+	printf '/dev/null %s/home btrfs\n' "$ks_rootdir"
 	exit 0
 fi
 exec "$REAL_FINDMNT" "$@"
@@ -106,6 +107,7 @@ chmod +x "$tmpdir/bin/umount"
 	PATH="$tmpdir/bin:$tmpdir/sysbin"
 	ks_fstab /dev/null / ""
 	ks_fstab /dev/zero /boot "noatime"
+	ks_fstab /dev/null /home "subvol=@home" btrfs
 	ks_fstab /dev/full swap "" swap
 	ks_fstab /dev/urandom swap "sw,pri=10" swap
 	ks_mount
