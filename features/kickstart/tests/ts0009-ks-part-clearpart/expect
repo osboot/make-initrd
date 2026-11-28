@@ -44,7 +44,7 @@ sfdisk -q -w always /dev/vda | label: gpt
 MSG: command: clearpart --all --none
 subtest_rc=0
 === clearpart list skipped ===
-MSG: command: clearpart --all --initlabel --list=vda1
+MSG: command: clearpart --all --initlabel --list=ksdev1
 MSG: unable to initializes the disk label because there are partitions left(1) on the disk
 subtest_rc=0
 rc=0

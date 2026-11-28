@@ -176,11 +176,12 @@ run_test clearpart --all --initlabel --disklabel=gpt
 run_test clearpart --all --none
 
 echo "=== clearpart list skipped ==="
+BLOCK_DEVICES="ksdev"
 cat > "$sfdisk_dump" <<'DUMP'
-/dev/vda1 : start= 2048, size= 2048, type=83
-/dev/vda2 : start= 4096, size= 2048, type=83
+/dev/ksdev1 : start= 2048, size= 2048, type=83
+/dev/ksdev2 : start= 4096, size= 2048, type=83
 DUMP
 (
 	ks_devname() { printf '%s\n' "${1#/dev/}"; }
-	run_test clearpart --all --initlabel --list=vda1
+	run_test clearpart --all --initlabel --list=ksdev1
 )
